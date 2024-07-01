@@ -4998,6 +4998,7 @@ c:com.intellij.ide.actions.RevealFileAction
 - getActionUpdateThread():com.intellij.openapi.actionSystem.ActionUpdateThread
 - s:getFileManagerName():java.lang.String
 - s:getFileManagerName(Z):java.lang.String
+- s:isDirectoryOpenSupported():Z
 - s:isSupported():Z
 - s:openDirectory(java.io.File):V
 - s:openDirectory(java.nio.file.Path):V
@@ -7169,9 +7170,6 @@ f:com.intellij.ide.plugins.CountIcon
 f:com.intellij.ide.plugins.CreateAllServicesAndExtensionsActionKt
 - sf:ACTION_ID:java.lang.String
 - sf:performAction():V
-com.intellij.ide.plugins.CustomPluginRepoContributor
-- sf:EP_NAME:com.intellij.openapi.extensions.ExtensionPointName
-- a:getRepoUrls():java.util.List
 f:com.intellij.ide.plugins.CustomPluginRepositoryService
 - com.intellij.ide.plugins.auth.PluginRepositoryAuthListener
 - <init>():V
