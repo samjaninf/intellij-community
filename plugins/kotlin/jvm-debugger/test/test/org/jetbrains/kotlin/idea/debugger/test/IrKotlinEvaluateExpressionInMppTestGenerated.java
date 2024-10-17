@@ -2294,6 +2294,11 @@ public abstract class IrKotlinEvaluateExpressionInMppTestGenerated extends Abstr
                 runTest("testData/evaluation/singleBreakpoint/unsignedArrayOf.kt");
             }
 
+            @TestMetadata("unsignedConst.kt")
+            public void testUnsignedConst() throws Exception {
+                runTest("testData/evaluation/singleBreakpoint/unsignedConst.kt");
+            }
+
             @TestMetadata("unusedTransitiveDependencies.kt")
             public void testUnusedTransitiveDependencies() throws Exception {
                 runTest("testData/evaluation/singleBreakpoint/unusedTransitiveDependencies.kt");
@@ -2674,6 +2679,11 @@ public abstract class IrKotlinEvaluateExpressionInMppTestGenerated extends Abstr
         @TestMetadata("inlineFunWithDefaultArgument.kt")
         public void testInlineFunWithDefaultArgument() throws Exception {
             runTest("testData/evaluation/multiplatform/inlineFunWithDefaultArgument.kt");
+        }
+
+        @TestMetadata("inlineInCommonModule.kt")
+        public void testInlineInCommonModule() throws Exception {
+            runTest("testData/evaluation/multiplatform/inlineInCommonModule.kt");
         }
 
         @TestMetadata("interface.kt")
