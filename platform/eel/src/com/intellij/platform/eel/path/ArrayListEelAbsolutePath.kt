@@ -1,8 +1,6 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.eel.path
 
-import com.intellij.platform.eel.EelResult
-
 internal class ArrayListEelAbsolutePath private constructor(
   private val _root: Root,
   private val parts: List<String>,
@@ -33,7 +31,7 @@ internal class ArrayListEelAbsolutePath private constructor(
     root.fileName == other.root.fileName &&
     (0..<other.nameCount).all { getName(it) == other.getName(it) }
 
-  override fun normalizeE(): EelPath.Absolute {
+  override fun normalize(): EelPath.Absolute {
     val result = mutableListOf<String>()
     for (part in parts) {
       when (part) {
@@ -56,10 +54,7 @@ internal class ArrayListEelAbsolutePath private constructor(
     return ArrayListEelAbsolutePath(_root, result)
   }
 
-  @Deprecated("Use the method with EelPathException")
-  override fun normalize(): EelResult<out EelPath.Absolute, EelPathError> = exceptionAdapter { normalizeE() }
-
-  override fun resolveE(other: EelPath.Relative): EelPath.Absolute {
+  override fun resolve(other: EelPath.Relative): EelPath.Absolute {
     val result = parts.toMutableList()
     for (index in 0..<other.nameCount) {
       val name = other.getName(index).fileName
@@ -72,19 +67,13 @@ internal class ArrayListEelAbsolutePath private constructor(
     return ArrayListEelAbsolutePath(_root, result)
   }
 
-  @Deprecated("Use the method with EelPathException")
-  override fun resolve(other: EelPath.Relative): EelResult<out EelPath.Absolute, EelPathError> = exceptionAdapter { resolveE(other) }
-
-  override fun getChildE(name: String): EelPath.Absolute {
+  override fun getChild(name: String): EelPath.Absolute {
     val error = checkFileName(name)
     return if (error == null)
       ArrayListEelAbsolutePath(_root, parts + name)
     else
       throw EelPathException(name, error)
   }
-
-  @Deprecated("Use the method with EelPathException")
-  override fun getChild(name: String): EelResult<out EelPath.Absolute, EelPathError> = exceptionAdapter { getChildE(name) }
 
   override fun scan(): Sequence<EelPath.Absolute> =
     parts.asSequence().scan(ArrayListEelAbsolutePath(_root, listOf())) { parent, name ->
@@ -117,7 +106,7 @@ internal class ArrayListEelAbsolutePath private constructor(
     if (parts.isEmpty()) return EelPath.Relative.EMPTY
 
     require(index in parts.indices) { "$index !in ${parts.indices}" }
-    return EelPath.Relative.buildE(parts[index])
+    return EelPath.Relative.build(parts[index])
   }
 
   override fun endsWith(other: EelPath.Relative): Boolean {
@@ -143,7 +132,7 @@ internal class ArrayListEelAbsolutePath private constructor(
     return nameCount - other.nameCount
   }
 
-  override fun relativizeE(other: EelPath.Absolute): EelPath.Relative {
+  override fun relativize(other: EelPath.Absolute): EelPath.Relative {
     if (root != other.root) {
       throw EelPathException(other.root.toString(), "The other path has a different root")
     }
@@ -164,11 +153,8 @@ internal class ArrayListEelAbsolutePath private constructor(
       result += other.getName(index).fileName
     }
 
-    return EelPath.Relative.buildE(result)
+    return EelPath.Relative.build(result)
   }
-
-  @Deprecated("Use the method with EelPathException")
-  override fun relativize(other: EelPath.Absolute): EelResult<out EelPath.Relative, EelPathError> = exceptionAdapter { relativizeE(other) }
 
   override fun equals(other: Any?): Boolean =
     other is EelPath.Absolute &&
