@@ -34,6 +34,8 @@ import org.jetbrains.intellij.build.TestingOptions
 import org.jetbrains.intellij.build.TestingTasks
 import org.jetbrains.intellij.build.causal.CausalProfilingOptions
 import org.jetbrains.intellij.build.dependencies.TeamCityHelper
+import org.jetbrains.intellij.build.impl.coverage.Coverage
+import org.jetbrains.intellij.build.impl.coverage.CoverageImpl
 import org.jetbrains.intellij.build.io.ZipEntryProcessorResult
 import org.jetbrains.intellij.build.io.readZipFile
 import org.jetbrains.intellij.build.io.runProcess
@@ -72,6 +74,19 @@ private const val NO_TESTS_ERROR = 42
 internal class TestingTasksImpl(context: CompilationContext, private val options: TestingOptions) : TestingTasks {
   private val context: CompilationContext = if (options.useArchivedCompiledClasses) context.asArchived else context
 
+  override val coverage: Coverage by lazy {
+    CoverageImpl(
+      context = this.context,
+      coveredModuleNames = runConfigurations
+                             .map { it.moduleName }
+                             .takeIf { it.any() }
+                           ?: listOfNotNull(options.mainModule),
+      coveredClasses = requireNotNull(options.coveredClassesPatterns) {
+        "Test coverage is enabled but the classes pattern is not specified"
+      }.splitToSequence(';').map(::Regex).toList(),
+    )
+  }
+
   private fun loadRunConfigurations(name: String): List<JUnitRunConfigurationProperties> {
     return try {
       val projectHome = context.paths.projectHome
@@ -97,31 +112,38 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
     }
   }
 
-  private fun loadTestRunConfigurations(): List<JUnitRunConfigurationProperties>? {
-    val testConfigurationsOption = options.testConfigurations ?: return null
-    return testConfigurationsOption
-      .splitToSequence(';')
-      .filter(String::isNotEmpty)
-      .flatMap(::loadRunConfigurations)
-      .toList()
+  private val runConfigurations: List<JUnitRunConfigurationProperties> by lazy {
+    options.testConfigurations
+      ?.splitToSequence(';')
+      ?.filter(String::isNotEmpty)
+      ?.flatMap(::loadRunConfigurations)
+      ?.toList() ?: emptyList()
   }
 
+  @Deprecated("the `defaultMainModule` should be passed via `TestingOptions#mainModule`")
   override suspend fun runTests(
     additionalJvmOptions: List<String>,
     additionalSystemProperties: Map<String, String>,
     defaultMainModule: String?,
     rootExcludeCondition: ((Path) -> Boolean)?,
   ) {
+    require(defaultMainModule == null) {
+      "The `defaultMainModule` parameter is deprecated, please use `TestingOptions#mainModule` instead."
+    }
+    runTests(additionalJvmOptions, additionalSystemProperties, rootExcludeCondition)
+  }
+
+  override suspend fun runTests(additionalJvmOptions: List<String>, additionalSystemProperties: Map<String, String>, rootExcludeCondition: ((Path) -> Boolean)?) {
     if (options.redirectStdOutToFile && !TeamCityHelper.isUnderTeamCity) {
       context.messages.warning("'${TestingOptions.REDIRECT_STDOUT_TO_FILE}' can be set only for a TeamCity build, ignored.")
     }
     if (TeamCityHelper.isUnderTeamCity && options.redirectStdOutToFile) {
       redirectStdOutToFile {
-        runTestsImpl(additionalJvmOptions, additionalSystemProperties, defaultMainModule, rootExcludeCondition)
+        runTestsImpl(additionalJvmOptions, additionalSystemProperties, rootExcludeCondition)
       }
     }
     else {
-      runTestsImpl(additionalJvmOptions, additionalSystemProperties, defaultMainModule, rootExcludeCondition)
+      runTestsImpl(additionalJvmOptions, additionalSystemProperties, rootExcludeCondition)
     }
   }
 
@@ -146,20 +168,22 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
 
   private suspend fun runTestsImpl(additionalJvmOptions: List<String>,
                                    additionalSystemProperties: Map<String, String>,
-                                   defaultMainModule: String?,
                                    rootExcludeCondition: ((Path) -> Boolean)?) {
+    if (options.enableCoverage && options.isPerformanceTestsOnly) {
+      context.messages.buildStatus("Skipping performance testing with Coverage, {build.status.text}")
+      return
+    }
     if (options.isTestDiscoveryEnabled && options.isPerformanceTestsOnly) {
       context.messages.buildStatus("Skipping performance testing with Test Discovery, {build.status.text}")
       return
     }
 
-    val mainModule = options.mainModule ?: defaultMainModule
+    val mainModule = options.mainModule
     checkOptions(mainModule)
 
-    val runConfigurations = loadTestRunConfigurations()
     if (options.validateMainModule) {
       checkNotNull(mainModule)
-      val withModuleMismatch = runConfigurations?.filter { it.moduleName != mainModule } ?: emptyList()
+      val withModuleMismatch = runConfigurations.filter { it.moduleName != mainModule }
       if (withModuleMismatch.isNotEmpty()) {
         val errorMessage = withModuleMismatch.joinToString(
           prefix = "Run configuration module mismatch, expected '$mainModule' (set in option 'intellij.build.test.main.module'), actual:\n",
@@ -175,7 +199,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
         compilationTasks.buildProjectArtifacts(it)
       }
 
-      if (runConfigurations != null) {
+      if (runConfigurations.any()) {
         compilationTasks.compileModules(listOf("intellij.tools.testsBootstrap"),
                                         listOf("intellij.platform.buildScripts") + runConfigurations.map { it.moduleName })
         compilationTasks.buildProjectArtifacts(runConfigurations.flatMapTo(LinkedHashSet()) { it.requiredArtifacts })
@@ -204,7 +228,10 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
       if (options.isTestDiscoveryEnabled) {
         loadTestDiscovery(effectiveAdditionalJvmOptions, systemProperties)
       }
-      if (runConfigurations == null) {
+      if (options.enableCoverage) {
+        coverage.enable(jvmOptions = effectiveAdditionalJvmOptions, systemProperties = systemProperties)
+      }
+      if (runConfigurations.none()) {
         runTestsFromGroupsAndPatterns(effectiveAdditionalJvmOptions, checkNotNull(mainModule) {
           "Main module is not specified"
         }, rootExcludeCondition, systemProperties)
@@ -214,6 +241,9 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
       }
       if (options.isTestDiscoveryEnabled) {
         publishTestDiscovery(context.messages, testDiscoveryTraceFilePath)
+      }
+      if (options.enableCoverage) {
+        coverage.generateReport()
       }
     }
   }
@@ -427,9 +457,9 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
     if (isBootstrapSuiteDefault && !isRunningInBatchMode) {
       //module with "com.intellij.TestAll" which output should be found in `testClasspath + modulePath`
       val testFrameworkCoreModule = context.findRequiredModule("intellij.platform.testFramework.core")
-      val testFrameworkCoreModuleOutputRoots = runBlocking(Dispatchers.Default) {
-        context.getModuleOutputRoots(testFrameworkCoreModule).map(Path::toFile)
-      }
+      val testFrameworkCoreModuleOutputRoots = context
+        .getModuleOutputRoots(testFrameworkCoreModule)
+        .map(Path::toFile)
       for (testFrameworkOutput in testFrameworkCoreModuleOutputRoots) {
         if (!testRoots.contains(testFrameworkOutput)) {
           testRoots.addAll(context.getModuleRuntimeClasspath(testFrameworkCoreModule, false).map(::File))
@@ -626,6 +656,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
       "kotlinx.coroutines.debug" to "on",
       "sun.io.useCanonCaches" to "false",
       "user.home" to System.getProperty("user.home"),
+      TestingOptions.USE_ARCHIVED_COMPILED_CLASSES to "${options.useArchivedCompiledClasses}",
     )) {
       if (v != null) {
         systemProperties.putIfAbsent(k, v)
@@ -635,7 +666,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
     systemProperties[TestCaseLoader.TEST_RUNNER_INDEX_FLAG] = options.bucketIndex.toString()
     systemProperties[TestCaseLoader.TEST_RUNNERS_COUNT_FLAG] = options.bucketsCount.toString()
 
-    System.getProperties().forEach { key, value ->
+    System.getProperties().forEach { (key, value) ->
       key as String
 
       if (key.startsWith("pass.")) {

@@ -240,6 +240,7 @@ grid/images
 grid/impl
 grid/json
 grid/types
+idea/customization/backend
 idea/customization/base
 images
 images/backend.svg
@@ -545,6 +546,7 @@ platform/plugins/parser/impl
 platform/plugins/testFramework
 platform/polySymbols
 platform/polySymbols/backend
+platform/pratt
 platform/progress/backend
 platform/progress/shared
 platform/project/backend
@@ -1342,4 +1344,5 @@ xml/xml-psi-api
 xml/xml-psi-impl
 xml/xml-structure-view-api
 xml/xml-structure-view-impl
+xml/xml-ui-common
 xml/xmlbeans

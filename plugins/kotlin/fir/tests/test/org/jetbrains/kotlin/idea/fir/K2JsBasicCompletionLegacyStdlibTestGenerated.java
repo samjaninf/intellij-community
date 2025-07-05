@@ -3311,6 +3311,11 @@ public abstract class K2JsBasicCompletionLegacyStdlibTestGenerated extends Abstr
                 runTest("../../completion/testData/basic/common/DoWhile.kt");
             }
 
+            @TestMetadata("DontIncreaseInvocationCountIfSomethingFound.kt")
+            public void testDontIncreaseInvocationCountIfSomethingFound() throws Exception {
+                runTest("../../completion/testData/basic/common/DontIncreaseInvocationCountIfSomethingFound.kt");
+            }
+
             @TestMetadata("DontPreferNothingType.kt")
             public void testDontPreferNothingType() throws Exception {
                 runTest("../../completion/testData/basic/common/DontPreferNothingType.kt");
@@ -3616,6 +3621,11 @@ public abstract class K2JsBasicCompletionLegacyStdlibTestGenerated extends Abstr
                 runTest("../../completion/testData/basic/common/InTypeAnnotation.kt");
             }
 
+            @TestMetadata("IncreaseInvocationCountIfNothingFound.kt")
+            public void testIncreaseInvocationCountIfNothingFound() throws Exception {
+                runTest("../../completion/testData/basic/common/IncreaseInvocationCountIfNothingFound.kt");
+            }
+
             @TestMetadata("InfixCall.kt")
             public void testInfixCall() throws Exception {
                 runTest("../../completion/testData/basic/common/InfixCall.kt");
@@ -3829,6 +3839,11 @@ public abstract class K2JsBasicCompletionLegacyStdlibTestGenerated extends Abstr
             @TestMetadata("NestedClassesOnDefaultObjectLiteral.kt")
             public void testNestedClassesOnDefaultObjectLiteral() throws Exception {
                 runTest("../../completion/testData/basic/common/NestedClassesOnDefaultObjectLiteral.kt");
+            }
+
+            @TestMetadata("NoClassMembersHighInvocationCount.kt")
+            public void testNoClassMembersHighInvocationCount() throws Exception {
+                runTest("../../completion/testData/basic/common/NoClassMembersHighInvocationCount.kt");
             }
 
             @TestMetadata("NoClassNameDuplication.kt")

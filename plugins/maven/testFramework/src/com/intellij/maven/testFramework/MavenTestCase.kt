@@ -3,17 +3,16 @@ package com.intellij.maven.testFramework
 
 import com.intellij.UtilBundle
 import com.intellij.diagnostic.ThreadDumper
-import com.intellij.execution.wsl.WSLDistribution
 import com.intellij.ide.DataManager
 import com.intellij.maven.testFramework.wsl2.JdkWslTestInstaller
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.*
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.module.JavaModuleType
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager.Companion.getInstance
 import com.intellij.openapi.module.ModuleType
-import com.intellij.openapi.module.StdModuleTypes
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.runBlockingMaybeCancellable
 import com.intellij.openapi.project.Project
@@ -33,7 +32,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.testFramework.core.FileComparisonFailedError
 import com.intellij.testFramework.*
-import com.intellij.testFramework.TemporaryDirectory.Companion.generateTemporaryPath
 import com.intellij.testFramework.fixtures.IdeaProjectTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.utils.io.createFile
@@ -60,33 +58,10 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.*
 
-/**
- * This test case uses the NIO API for handling file operations.
- *
- * **Background**:
- * The test framework is transitioning from the `IO` API to the`NIO` API
- *
- * **Implementation Notes**:
- * - `<TestCase>` represents the updated implementation using the `NIO` API.
- * - `<TestCaseLegacy>` represents the legacy implementation using the `IO` API.
- * - For now, both implementations coexist to allow for a smooth transition and backward compatibility.
- * - Eventually, `<TestCaseLegacy>` will be removed from the codebase.
- *
- * **Action Items**:
- * - Prefer using `<TestCase>` for new test cases.
- * - Update existing tests to use `<TestCase>` where possible.
- *
- *
- *
- * **Future Direction**:
- * Once the transition is complete, all test cases relying on the `IO` API will be retired,
- * and the codebase will exclusively use the `NIO` implementation.
- */
 abstract class MavenTestCase : UsefulTestCase() {
   protected var mavenProgressIndicator: MavenProgressIndicator? = null
     private set
@@ -458,7 +433,7 @@ abstract class MavenTestCase : UsefulTestCase() {
     }
   }
 
-  protected fun createModule(name: String): Module = createModule(name, StdModuleTypes.JAVA)
+  protected fun createModule(name: String): Module = createModule(name, JavaModuleType.getModuleType())
 
 
   protected fun createProjectPom(@Language(value = "XML", prefix = "<project>", suffix = "</project>") xml: String): VirtualFile {
@@ -761,9 +736,15 @@ abstract class MavenTestCase : UsefulTestCase() {
     assertSameElements(actual, expected)
   }
 
-  protected fun assertUnorderedPathsAreEqual(actual: Collection<String>, expected: Collection<String>) {
-    assertEquals((CollectionFactory.createFilePathSet(expected)), (CollectionFactory.createFilePathSet(actual)))
+  protected fun assertPathsAreEqual(actual: String, expected: String) {
+    assertUnorderedPathsAreEqual(listOf(expected), listOf(actual))
   }
+
+  protected fun assertUnorderedPathsAreEqual(actual: Collection<String>, expected: Collection<String>) {
+    assertEquals(createFilePathSet(expected), createFilePathSet(actual))
+  }
+
+  private fun createFilePathSet(expected: Collection<String>) = CollectionFactory.createFilePathSet(expected.map { FileUtil.toSystemIndependentName(it) })
 
   protected fun <T> assertUnorderedElementsAreEqual(actual: Array<T>, vararg expected: T) {
     assertUnorderedElementsAreEqual(actual.toList(), *expected)

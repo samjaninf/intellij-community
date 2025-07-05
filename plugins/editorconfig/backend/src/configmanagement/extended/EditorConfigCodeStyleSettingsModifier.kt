@@ -36,7 +36,6 @@ import org.ec4j.core.ResourceProperties
 import org.editorconfig.EditorConfigNotifier
 import org.editorconfig.Utils
 import org.editorconfig.configmanagement.EditorConfigActionUtil
-import org.editorconfig.configmanagement.EditorConfigNavigationActionsFactory
 import org.editorconfig.configmanagement.EditorConfigUsagesCollector.logEditorConfigUsed
 import org.editorconfig.plugincomponents.EditorConfigPropertiesService
 import org.editorconfig.settings.EditorConfigSettings
@@ -56,20 +55,24 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
     return false
   }
 
-  private fun isActiveForFile(settings: TransientCodeStyleSettings, psiFile: PsiFile): Boolean {
+  private fun isAcceptable(psiFile: PsiFile): Boolean {
     return Utils.isFullIntellijSettingsSupport()
            && psiFile.virtualFile != null
            && (Handler.isEnabledInTests() || !ApplicationManager.getApplication().isUnitTestMode)
            && !psiFile.project.isDisposed
-           && Utils.isEnabled(settings)
   }
 
   override fun modifySettingsAndUiCustomization(settings: TransientCodeStyleSettings, psiFile: PsiFile): Boolean {
-    if (isActiveForFile(settings, psiFile)) {
-      val project = psiFile.project
+    if (!isAcceptable(psiFile)) {
+      return false
+    }
+
+    val project = psiFile.project
+    val (properties, editorConfigs) = Utils.processEditorConfig(project, psiFile.virtualFile) // caching `editorConfigs` for the psiFile  
+
+    if (Utils.isEnabled(settings)) {
       try {
         // Get editorconfig settings
-        val (properties, editorConfigs) = Utils.processEditorConfig(project, psiFile.virtualFile)
         if (editorConfigs.isEmpty()) {
           LOG.debug { "Project has no any `.editorconfig` for ${psiFile.name}" }
           return false
@@ -77,10 +80,7 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
 
         settings.setModifier(this)
         settings.addDependency(EditorConfigPropertiesService.getInstance(project))
-        
-        val navigationFactory = EditorConfigNavigationActionsFactory.getInstance(psiFile)
-        navigationFactory?.updateEditorConfigFilePaths(editorConfigs.map { it.path })
-        
+
         // Apply editorconfig settings for the current editor
         if (applyCodeStyleSettings(settings, properties, psiFile)) {
           LOG.debug { "Modified for ${psiFile.name}" }
