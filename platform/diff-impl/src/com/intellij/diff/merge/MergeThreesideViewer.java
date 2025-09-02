@@ -15,6 +15,7 @@ import com.intellij.diff.statistics.MergeStatisticsCollector;
 import com.intellij.diff.tools.holders.EditorHolderFactory;
 import com.intellij.diff.tools.holders.TextEditorHolder;
 import com.intellij.diff.tools.simple.DiffViewerHighlighters;
+import com.intellij.diff.tools.simple.ThreesideDiffChangeBase;
 import com.intellij.diff.tools.simple.ThreesideTextDiffViewerEx;
 import com.intellij.diff.tools.util.DiffNotifications;
 import com.intellij.diff.tools.util.FoldingModelSupport;
@@ -862,6 +863,12 @@ public class MergeThreesideViewer extends ThreesideTextDiffViewerEx {
 
   public void repaintDividers() {
     myContentPanel.repaintDividers();
+  }
+
+  @Override
+  protected void onChangeAdded(@NotNull ThreesideDiffChangeBase change) {
+    if (change.isResolved(ThreeSide.LEFT) && change.isResolved(ThreeSide.RIGHT)) return;
+    super.onChangeAdded(change);
   }
 
   private void onChangeResolved(@NotNull TextMergeChange change) {
