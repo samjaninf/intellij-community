@@ -318,6 +318,7 @@ open class WebStarterLibrariesStep(contextProvider: WebStarterContextProvider) :
           is WebStarterDependency -> {
             val enabled = (value as CheckedTreeNode).isEnabled
             val attributes = if (enabled) SimpleTextAttributes.REGULAR_ATTRIBUTES else SimpleTextAttributes.GRAYED_ATTRIBUTES
+            textRenderer.icon = item.icon
             textRenderer.append(item.title, attributes)
           }
         }
