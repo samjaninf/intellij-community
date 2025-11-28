@@ -19650,6 +19650,60 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
     }
 
     @RunWith(JUnit3RunnerWithInners.class)
+    @TestMetadata("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration")
+    public static class ConvertLongToDuration extends AbstractK2LocalInspectionTest {
+        @java.lang.Override
+        @org.jetbrains.annotations.NotNull
+        public final KotlinPluginMode getPluginMode() {
+            return KotlinPluginMode.K2;
+        }
+
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
+        }
+
+        @TestMetadata("debounceLongInLambda.kt")
+        public void testDebounceLongInLambda() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/debounceLongInLambda.kt");
+        }
+
+        @TestMetadata("delayLongVarToDuration.kt")
+        public void testDelayLongVarToDuration() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/delayLongVarToDuration.kt");
+        }
+
+        @TestMetadata("delayToDuration.kt")
+        public void testDelayToDuration() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/delayToDuration.kt");
+        }
+
+        @TestMetadata("expressionDelayToDuration.kt")
+        public void testExpressionDelayToDuration() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/expressionDelayToDuration.kt");
+        }
+
+        @TestMetadata("lambdaBody.kt")
+        public void testLambdaBody() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/lambdaBody.kt");
+        }
+
+        @TestMetadata("namedArgument.kt")
+        public void testNamedArgument() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/namedArgument.kt");
+        }
+
+        @TestMetadata("nonTargetFunction.kt")
+        public void testNonTargetFunction() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/nonTargetFunction.kt");
+        }
+
+        @TestMetadata("sampleToDurationQualReceiver.kt")
+        public void testSampleToDurationQualReceiver() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/convertLongToDuration/sampleToDurationQualReceiver.kt");
+        }
+    }
+
+    @RunWith(JUnit3RunnerWithInners.class)
     @TestMetadata("../../../idea/tests/testData/inspectionsLocal/replaceWithEnumMap")
     public static class ReplaceWithEnumMap extends AbstractK2LocalInspectionTest {
         @java.lang.Override
