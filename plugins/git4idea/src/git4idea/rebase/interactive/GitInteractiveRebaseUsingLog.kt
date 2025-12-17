@@ -10,6 +10,7 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.util.use
 import com.intellij.openapi.vcs.VcsException
 import com.intellij.platform.ide.progress.withBackgroundProgress
+import com.intellij.vcs.log.Hash
 import com.intellij.vcs.log.VcsCommitMetadata
 import com.intellij.vcs.log.VcsShortCommitDetails
 import com.intellij.vcs.log.data.VcsLogData
@@ -24,6 +25,9 @@ import git4idea.config.GitConfigUtil.isRebaseUpdateRefsEnabledCached
 import git4idea.history.GitHistoryTraverser
 import git4idea.history.GitHistoryTraverserImpl
 import git4idea.i18n.GitBundle
+import git4idea.inMemory.GitObjectRepository
+import git4idea.inMemory.objects.GitObject
+import git4idea.inMemory.objects.toHash
 import git4idea.inMemory.rebase.performInMemoryRebase
 import git4idea.rebase.GitInteractiveRebaseEditorHandler
 import git4idea.rebase.GitRebaseEditorHandler
@@ -142,7 +146,8 @@ internal suspend fun interactivelyRebaseUsingLog(repository: GitRepository, comm
 
     withBackgroundProgress(repository.project, GitBundle.message("rebase.progress.indicator.title")) {
       if (!hasEditActions && shouldTryInMemory) {
-        val inMemoryResult = performInMemoryRebase(repository, generatedEntries, model)
+        val objectRepo = GitObjectRepository(repository)
+        val inMemoryResult = performInMemoryRebase(objectRepo, generatedEntries, model)
         if (inMemoryResult is GitCommitEditingOperationResult.Complete) return@withBackgroundProgress
       }
 
@@ -186,12 +191,20 @@ private suspend fun performInteractiveRebase(
 }
 
 internal fun getRebaseUpstreamFor(commit: VcsShortCommitDetails): GitRebaseParams.RebaseUpstream {
+  return getRebaseUpstreamFor(commit.id, commit.parents)
+}
+
+internal fun getRebaseUpstreamFor(commit: GitObject.Commit): GitRebaseParams.RebaseUpstream {
+  return getRebaseUpstreamFor(commit.oid.toHash(), commit.parentsOids.map { it.toHash() })
+}
+
+internal fun getRebaseUpstreamFor(commit: Hash, parents: List<Hash>): GitRebaseParams.RebaseUpstream {
   when {
-    commit.parents.isEmpty() -> return GitRebaseParams.RebaseUpstream.Root
-    commit.parents.size == 1 -> return GitRebaseParams.RebaseUpstream.Commit(commit.parents.single())
+    parents.isEmpty() -> return GitRebaseParams.RebaseUpstream.Root
+    parents.size == 1 -> return GitRebaseParams.RebaseUpstream.Commit(parents.single())
     else -> {
-      LOG.warn(Throwable("Unexpected rebase of a merge commit: $commit, parents: ${commit.parents.joinToString(" ")}"))
-      return GitRebaseParams.RebaseUpstream.Commit(commit.parents.first())
+      LOG.warn(Throwable("Unexpected rebase of a merge commit: $commit, parents: ${parents.joinToString(" ")}"))
+      return GitRebaseParams.RebaseUpstream.Commit(parents.first())
     }
   }
 }

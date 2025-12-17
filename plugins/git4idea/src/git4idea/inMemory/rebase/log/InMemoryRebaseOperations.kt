@@ -4,6 +4,7 @@ package git4idea.inMemory.rebase.log
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.vcs.log.VcsCommitMetadata
 import com.intellij.vcs.log.data.VcsLogData
+import git4idea.inMemory.GitObjectRepository
 import git4idea.inMemory.rebase.performInMemoryRebase
 import git4idea.rebase.GitRebaseEntryWithDetails
 import git4idea.rebase.interactive.GitRebaseTodoModel
@@ -51,6 +52,7 @@ internal object InMemoryRebaseOperations {
 
     modelModifier(model, targetIndices)
 
-    return performInMemoryRebase(repository, generatedEntries, model, notifySuccess = false)
+    val objectRepo = GitObjectRepository(repository)
+    return performInMemoryRebase(objectRepo, generatedEntries, model, notifySuccess = false)
   }
 }
