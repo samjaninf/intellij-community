@@ -388,10 +388,7 @@ internal class BazelBuildFileGenerator(
       result.deps.put(module, generateDeps(m2Repo = m2Repo, module = module, hasSources = hasSources, isTest = false, context = this))
 
       val hasTestSources = module.testSources.isNotEmpty()
-      val hasTestResources = module.testResources.isNotEmpty()
-      if (hasTestSources || hasTestResources || isTestClasspathModule(module)) {
-        result.testDeps.put(module, generateDeps(m2Repo = m2Repo, module = module, hasSources = hasTestSources, isTest = true, context = this))
-      }
+      result.testDeps.put(module, generateDeps(m2Repo = m2Repo, module = module, hasSources = hasTestSources, isTest = true, context = this))
     }
 
     return result
@@ -640,40 +637,32 @@ internal class BazelBuildFileGenerator(
       renderDeps(deps = deps, target = this, resourceDependencies = emptyList(), forTests = false)
     }
 
-    val moduleHasTestSources = moduleDescriptor.testSources.isNotEmpty()
-    val moduleHasTestResources = moduleDescriptor.testResources.isNotEmpty()
-
-    // Decide whether to render a test target at all
-    if (moduleHasTestSources || moduleHasTestResources || isTestClasspathModule(moduleDescriptor)) {
+    target("jvm_library") {
       val testLibTargetName = "${moduleDescriptor.targetName}$TEST_LIB_NAME_SUFFIX"
       testCompileTargets.add(BazelLabel(testLibTargetName, moduleDescriptor))
+      option("name", testLibTargetName)
 
-      load("@rules_jvm//:jvm.bzl", "jvm_library")
-      target("jvm_library") {
-        option("name", testLibTargetName)
-
-        var testDeps = moduleList.testDeps.get(moduleDescriptor)
-        if (testDeps == null || testDeps.associates.isEmpty()) { // => in this case no 'associates' attribute will be generated
-          option("module_name", module.name)
-        }
-
-        visibility(arrayOf("//visibility:public"))
-
-        option("srcs", sourcesToGlob(moduleDescriptor.testSources, moduleDescriptor))
-        if (testResourceTargets.isNotEmpty()) {
-          option("resources", testResourceTargets.map { ":${it.label}" })
-        }
-
-        javacOptionsLabel?.let { option("javac_opts", it) }
-        kotlincOptionsLabel?.let { option("kotlinc_opts", it) }
-
-        if (testDeps != null && testDeps.provided.isNotEmpty()) {
-          val extraDeps = generateProvidedLibs(testDeps.provided - moduleList.deps.get(moduleDescriptor)?.provided.orEmpty().toSet())
-          testDeps = testDeps.copy(deps = testDeps.deps + generatedProvidedLibs + extraDeps)
-        }
-
-        renderDeps(deps = testDeps, target = this, resourceDependencies = emptyList(), forTests = true)
+      var testDeps = moduleList.testDeps.get(moduleDescriptor)
+      if (testDeps == null || testDeps.associates.isEmpty()) { // => in this case no 'associates' attribute will be generated
+        option("module_name", module.name)
       }
+
+      visibility(arrayOf("//visibility:public"))
+
+      option("srcs", sourcesToGlob(moduleDescriptor.testSources, moduleDescriptor))
+      if (testResourceTargets.isNotEmpty()) {
+        option("resources", testResourceTargets.map { ":${it.label}" })
+      }
+
+      javacOptionsLabel?.let { option("javac_opts", it) }
+      kotlincOptionsLabel?.let { option("kotlinc_opts", it) }
+
+      if (testDeps != null && testDeps.provided.isNotEmpty()) {
+        val extraDeps = generateProvidedLibs(testDeps.provided - moduleList.deps.get(moduleDescriptor)?.provided.orEmpty().toSet())
+        testDeps = testDeps.copy(deps = testDeps.deps + generatedProvidedLibs + extraDeps)
+      }
+
+      renderDeps(deps = testDeps, target = this, resourceDependencies = emptyList(), forTests = true)
     }
 
     val relativePathFromRoot = moduleDescriptor.relativePathFromProjectRoot.invariantSeparatorsPathString
