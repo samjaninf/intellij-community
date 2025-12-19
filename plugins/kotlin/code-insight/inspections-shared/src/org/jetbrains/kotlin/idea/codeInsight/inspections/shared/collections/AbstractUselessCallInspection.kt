@@ -1,6 +1,8 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.idea.codeInsight.inspections.shared.collections
 
+import com.intellij.codeInspection.InspectionManager
+import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemsHolder
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
@@ -23,11 +25,24 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected abstract val uselessFqNames: Map<CallableId, Conversion>
 
     context(_: KaSession)
-    protected abstract fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
+    protected abstract fun InspectionManager.createConversionProblemDescriptor(
+        expression: KtQualifiedExpression,
+        calleeExpression: KtExpression,
+        conversion: Conversion,
+        isOnTheFly: Boolean,
+    ): ProblemDescriptor?
+
+    context(_: KaSession)
+    private fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
         conversion: Conversion
-    )
+    ) {
+        val descriptor = holder.manager.createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
+            ?: return
+
+        holder.registerProblem(descriptor)
+    }
 
     inner class QualifiedExpressionVisitor internal constructor(val holder: ProblemsHolder, val isOnTheFly: Boolean) : KtVisitorVoid() {
         override fun visitQualifiedExpression(expression: KtQualifiedExpression) {

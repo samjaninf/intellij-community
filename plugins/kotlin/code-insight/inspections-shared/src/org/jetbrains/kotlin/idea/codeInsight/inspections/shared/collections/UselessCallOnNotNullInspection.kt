@@ -39,7 +39,7 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
     )
 
     context(_: KaSession)
-    private fun InspectionManager.createConversionProblemDescriptor(
+    override fun InspectionManager.createConversionProblemDescriptor(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
         conversion: Conversion,
@@ -84,18 +84,6 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
         } else {
             null
         }
-    }
-
-    context(_: KaSession)
-    override fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
-        expression: KtQualifiedExpression,
-        calleeExpression: KtExpression,
-        conversion: Conversion
-    ) {
-        val descriptor = holder.manager.createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
-            ?: return
-
-        holder.registerProblem(descriptor)
     }
 
     context(_: KaSession)
