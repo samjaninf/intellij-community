@@ -24,6 +24,10 @@ import org.jetbrains.kotlin.psi.KtVisitorVoid
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected abstract val uselessFqNames: Map<CallableId, Conversion>
 
+    private val conversions: List<ConversionWithFix> get() = uselessFqNames.map { (callableId, conversion) ->
+        ConversionWithFixImpl(callableId, conversion)
+    }
+
     context(_: KaSession)
     protected abstract fun InspectionManager.createConversionProblemDescriptor(
         expression: KtQualifiedExpression,
@@ -36,10 +40,11 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     private fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
-        conversion: Conversion
+        conversion: ConversionWithFix
     ) {
-        val descriptor = holder.manager.createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
-            ?: return
+        val descriptor = with(conversion) {
+            holder.manager.createConversionProblemDescriptor(expression, calleeExpression, isOnTheFly) ?: return
+        }
 
         holder.registerProblem(descriptor)
     }
@@ -49,12 +54,12 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
             super.visitQualifiedExpression(expression)
             val selector = expression.selectorExpression as? KtCallExpression ?: return
             val calleeExpression = selector.calleeExpression ?: return
-            if (calleeExpression.text !in uselessFqNames.map { it.key.callableName.asString() }) return
+            if (calleeExpression.text !in conversions.map { it.callableId.callableName.asString() }) return
 
             analyze(calleeExpression) {
                 val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return
                 val callableId = resolvedCall.symbol.callableId ?: return
-                val conversion = uselessFqNames[callableId] ?: return
+                val conversion = conversions.firstOrNull { it.callableId == callableId } ?: return
                 suggestConversionIfNeeded(expression, calleeExpression, conversion)
             }
         }
@@ -78,6 +83,31 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected sealed interface Conversion {
         data class Replace(val replacementName: String) : Conversion
         object Delete : Conversion
+    }
+
+    protected interface ConversionWithFix {
+        val callableId: CallableId
+
+        context(_: KaSession)
+        fun InspectionManager.createConversionProblemDescriptor(
+            expression: KtQualifiedExpression,
+            calleeExpression: KtExpression,
+            isOnTheFly: Boolean,
+        ): ProblemDescriptor?
+    }
+
+    protected inner class ConversionWithFixImpl(
+        override val callableId: CallableId,
+        val conversion: Conversion
+    ) : ConversionWithFix {
+        context(_: KaSession)
+        override fun InspectionManager.createConversionProblemDescriptor(
+            expression: KtQualifiedExpression,
+            calleeExpression: KtExpression,
+            isOnTheFly: Boolean
+        ): ProblemDescriptor? {
+            return createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
+        }
     }
 
     protected companion object {
