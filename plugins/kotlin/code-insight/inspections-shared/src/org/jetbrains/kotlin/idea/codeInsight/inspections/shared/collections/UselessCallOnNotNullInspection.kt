@@ -43,7 +43,8 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
         override val callableId: CallableId,
     ) : Conversion {
         context(_: KaSession)
-        override fun InspectionManager.createConversionProblemDescriptor(
+        override fun createProblemDescriptor(
+            manager: InspectionManager,
             expression: KtQualifiedExpression,
             calleeExpression: KtExpression,
             isOnTheFly: Boolean
@@ -53,7 +54,7 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
             val defaultRange =
                 TextRange(expression.operationTokenNode.startOffset, calleeExpression.endOffset).shiftRight(-expression.startOffset)
             return if (notNullType) {
-                createProblemDescriptor(
+                manager.createProblemDescriptor(
                     expression,
                     defaultRange,
                     KotlinBundle.message("redundant.call.on.not.null.type"),
@@ -62,7 +63,7 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
                     RemoveUselessCallFix()
                 )
             } else if (safeExpression != null) {
-                createProblemDescriptor(
+                manager.createProblemDescriptor(
                     safeExpression.operationTokenNode.psi,
                     KotlinBundle.message("this.call.is.redundant.with"),
                     ReplaceWithDotCallFix(safeExpression).asQuickFix(),
@@ -80,7 +81,8 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
         val replacementName: String,
     ) : Conversion {
         context(_: KaSession)
-        override fun InspectionManager.createConversionProblemDescriptor(
+        override fun createProblemDescriptor(
+            manager: InspectionManager,
             expression: KtQualifiedExpression,
             calleeExpression: KtExpression,
             isOnTheFly: Boolean
@@ -98,7 +100,7 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
                 createRenameUselessCallFix(expression, replacementName),
                 safeExpression?.let { LocalQuickFix.from(ReplaceWithDotCallFix(safeExpression)) }
             )
-            return createProblemDescriptor(
+            return manager.createProblemDescriptor(
                 expression,
                 defaultRange,
                 KotlinBundle.message("call.on.not.null.type.may.be.reduced"),

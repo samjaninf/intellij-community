@@ -30,10 +30,7 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
         calleeExpression: KtExpression,
         conversion: Conversion
     ) {
-        val descriptor = with(conversion) {
-            holder.manager.createConversionProblemDescriptor(expression, calleeExpression, isOnTheFly) ?: return
-        }
-
+        val descriptor = conversion.createProblemDescriptor(holder.manager, expression, calleeExpression, isOnTheFly) ?: return
         holder.registerProblem(descriptor)
     }
 
@@ -72,7 +69,8 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
         val callableId: CallableId
 
         context(_: KaSession)
-        fun InspectionManager.createConversionProblemDescriptor(
+        fun createProblemDescriptor(
+            manager: InspectionManager,
             expression: KtQualifiedExpression,
             calleeExpression: KtExpression,
             isOnTheFly: Boolean,

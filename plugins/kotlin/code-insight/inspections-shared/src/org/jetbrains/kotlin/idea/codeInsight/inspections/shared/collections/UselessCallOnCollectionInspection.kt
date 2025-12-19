@@ -54,7 +54,8 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         override val callableId: CallableId,
     ): Conversion {
         context(_: KaSession)
-        override fun InspectionManager.createConversionProblemDescriptor(
+        override fun createProblemDescriptor(
+            manager: InspectionManager,
             expression: KtQualifiedExpression,
             calleeExpression: KtExpression,
             isOnTheFly: Boolean
@@ -80,7 +81,7 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
             } else {
                 RemoveUselessCallFix()
             }
-            return createProblemDescriptor(
+            return manager.createProblemDescriptor(
                 expression,
                 TextRange(
                     expression.operationTokenNode.startOffset - expression.startOffset,
@@ -99,7 +100,8 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         val replacementName: String,
     ): Conversion {
         context(_: KaSession)
-        override fun InspectionManager.createConversionProblemDescriptor(
+        override fun createProblemDescriptor(
+            manager: InspectionManager,
             expression: KtQualifiedExpression,
             calleeExpression: KtExpression,
             isOnTheFly: Boolean
@@ -121,7 +123,7 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
             if (expression.isUsingLabelInScope(replacementName)) {
                 return null
             }
-            return createProblemDescriptor(
+            return manager.createProblemDescriptor(
                 expression,
                 TextRange(
                     expression.operationTokenNode.startOffset - expression.startOffset,
