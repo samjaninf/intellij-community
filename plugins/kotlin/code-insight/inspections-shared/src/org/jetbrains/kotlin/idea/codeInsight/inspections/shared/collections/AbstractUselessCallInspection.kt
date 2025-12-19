@@ -24,16 +24,6 @@ import org.jetbrains.kotlin.psi.KtVisitorVoid
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected abstract val conversions: List<Conversion>
 
-    context(_: KaSession)
-    private fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
-        expression: KtQualifiedExpression,
-        calleeExpression: KtExpression,
-        conversion: Conversion
-    ) {
-        val descriptor = conversion.createProblemDescriptor(holder.manager, expression, calleeExpression, isOnTheFly) ?: return
-        holder.registerProblem(descriptor)
-    }
-
     inner class QualifiedExpressionVisitor internal constructor(val holder: ProblemsHolder, val isOnTheFly: Boolean) : KtVisitorVoid() {
         override fun visitQualifiedExpression(expression: KtQualifiedExpression) {
             super.visitQualifiedExpression(expression)
@@ -45,7 +35,9 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
                 val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return
                 val callableId = resolvedCall.symbol.callableId ?: return
                 val conversion = conversions.firstOrNull { it.callableId == callableId } ?: return
-                suggestConversionIfNeeded(expression, calleeExpression, conversion)
+
+                val descriptor = conversion.createProblemDescriptor(holder.manager, expression, calleeExpression, isOnTheFly) ?: return
+                holder.registerProblem(descriptor)
             }
         }
     }
