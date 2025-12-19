@@ -22,11 +22,7 @@ import org.jetbrains.kotlin.psi.KtVisitorVoid
 
 
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
-    protected abstract val uselessFqNames: Map<CallableId, Conversion>
-
-    private val conversions: List<ConversionWithFix> get() = uselessFqNames.map { (callableId, conversion) ->
-        ConversionWithFixImpl(callableId, conversion)
-    }
+    protected abstract val conversions: List<ConversionWithFix>
 
     context(_: KaSession)
     protected abstract fun InspectionManager.createConversionProblemDescriptor(

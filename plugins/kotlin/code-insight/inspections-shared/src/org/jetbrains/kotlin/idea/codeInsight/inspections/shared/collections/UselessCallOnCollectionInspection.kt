@@ -39,19 +39,19 @@ import org.jetbrains.kotlin.types.Variance
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
 class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
-    override val uselessFqNames = mapOf(
-        topLevelCallableId("kotlin.collections", "filterNotNull") to Conversion.Delete,
-        topLevelCallableId("kotlin.sequences", "filterNotNull") to Conversion.Delete,
-        topLevelCallableId("kotlin.collections", "filterIsInstance") to Conversion.Delete,
-        topLevelCallableId("kotlin.sequences", "filterIsInstance") to Conversion.Delete,
-        topLevelCallableId("kotlin.collections", "mapNotNull") to Conversion.Replace("map"),
-        topLevelCallableId("kotlin.sequences", "mapNotNull") to Conversion.Replace("map"),
-        topLevelCallableId("kotlin.collections", "mapNotNullTo") to Conversion.Replace("mapTo"),
-        topLevelCallableId("kotlin.sequences", "mapNotNullTo") to Conversion.Replace("mapTo"),
-        topLevelCallableId("kotlin.collections", "mapIndexedNotNull") to Conversion.Replace("mapIndexed"),
-        topLevelCallableId("kotlin.sequences", "mapIndexedNotNull") to Conversion.Replace("mapIndexed"),
-        topLevelCallableId("kotlin.collections", "mapIndexedNotNullTo") to Conversion.Replace("mapIndexedTo"),
-        topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo") to Conversion.Replace("mapIndexedTo")
+    override val conversions: List<ConversionWithFix> = listOf(
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "filterNotNull"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "filterNotNull"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "filterIsInstance"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "filterIsInstance"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapNotNull"), Conversion.Replace("map")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapNotNull"), Conversion.Replace("map")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapNotNullTo"), Conversion.Replace("mapTo")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapNotNullTo"), Conversion.Replace("mapTo")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapIndexedNotNull"), Conversion.Replace("mapIndexed")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapIndexedNotNull"), Conversion.Replace("mapIndexed")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapIndexedNotNullTo"), Conversion.Replace("mapIndexedTo")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo"), Conversion.Replace("mapIndexedTo"))
     )
 
     context(_: KaSession)

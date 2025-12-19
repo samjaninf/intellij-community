@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.idea.codeinsight.utils.callExpression
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.asQuickFix
 import org.jetbrains.kotlin.idea.quickfix.ReplaceWithDotCallFix
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtPrefixExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
@@ -29,13 +28,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
 class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
-    override val uselessFqNames: Map<CallableId, Conversion> = mapOf(
-        topLevelCallableId("kotlin.collections", "orEmpty") to Conversion.Delete,
-        topLevelCallableId("kotlin.sequences", "orEmpty") to Conversion.Delete,
-        topLevelCallableId("kotlin.text", "orEmpty") to Conversion.Delete,
-        topLevelCallableId("kotlin.text", "isNullOrEmpty") to Conversion.Replace("isEmpty"),
-        topLevelCallableId("kotlin.text", "isNullOrBlank") to Conversion.Replace("isBlank"),
-        topLevelCallableId("kotlin.collections", "isNullOrEmpty") to Conversion.Replace("isEmpty")
+    override val conversions: List<ConversionWithFix> = listOf(
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "orEmpty"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "orEmpty"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.text", "orEmpty"), Conversion.Delete),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.text", "isNullOrEmpty"), Conversion.Replace("isEmpty")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.text", "isNullOrBlank"), Conversion.Replace("isBlank")),
+        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "isNullOrEmpty"), Conversion.Replace("isEmpty"))
     )
 
     context(_: KaSession)
