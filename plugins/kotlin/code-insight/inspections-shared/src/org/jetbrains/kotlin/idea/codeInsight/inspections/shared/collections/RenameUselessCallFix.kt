@@ -7,13 +7,14 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.idea.base.psi.replaced
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
-import org.jetbrains.kotlin.idea.codeInsight.inspections.shared.collections.AbstractUselessCallInspection.ScopedLabelVisitor
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtContainerNode
+import org.jetbrains.kotlin.psi.KtLabeledExpression
 import org.jetbrains.kotlin.psi.KtPrefixExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlin.psi.KtReturnExpression
+import org.jetbrains.kotlin.psi.KtTreeVisitor
 import org.jetbrains.kotlin.psi.createExpressionByPattern
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -57,5 +58,21 @@ class RenameUselessCallFix(private val newName: String, private val invert: Bool
         val parent = parent.safeAs<KtPrefixExpression>() ?: return
         val baseExpression = parent.baseExpression ?: return
         parent.replace(baseExpression)
+    }
+}
+
+private abstract class ScopedLabelVisitor(private val label: String) : KtTreeVisitor<Unit>() {
+    private fun String.trimLabel() = trim('@').trim()
+
+    override fun visitLabeledExpression(expression: KtLabeledExpression, data: Unit?): Void? {
+        // The label has been overwritten, do not descend into children
+        if (expression.getLabelName() == label) return null
+        return super.visitLabeledExpression(expression, data)
+    }
+
+    override fun visitCallExpression(expression: KtCallExpression, data: Unit?): Void? {
+        // The label has been overwritten, do not descend into children
+        if (expression.calleeExpression?.text?.trimLabel() == label) return null
+        return super.visitCallExpression(expression, data)
     }
 }
