@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.api.types.KaTypeArgumentWithVariance
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLabeledExpression
@@ -40,19 +41,164 @@ import org.jetbrains.kotlin.types.Variance
 //  See: KT-65376
 class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
     override val conversions: List<ConversionWithFix> = listOf(
-        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "filterNotNull"), Conversion.Delete),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "filterNotNull"), Conversion.Delete),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "filterIsInstance"), Conversion.Delete),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "filterIsInstance"), Conversion.Delete),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapNotNull"), Conversion.Replace("map")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapNotNull"), Conversion.Replace("map")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapNotNullTo"), Conversion.Replace("mapTo")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapNotNullTo"), Conversion.Replace("mapTo")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapIndexedNotNull"), Conversion.Replace("mapIndexed")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapIndexedNotNull"), Conversion.Replace("mapIndexed")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.collections", "mapIndexedNotNullTo"), Conversion.Replace("mapIndexedTo")),
-        ConversionWithFixImpl(topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo"), Conversion.Replace("mapIndexedTo"))
+        UselessFilterConversionWithFix(topLevelCallableId("kotlin.collections", "filterNotNull"), Conversion.Delete),
+        UselessFilterConversionWithFix(topLevelCallableId("kotlin.sequences", "filterNotNull"), Conversion.Delete),
+        UselessFilterConversionWithFix(topLevelCallableId("kotlin.collections", "filterIsInstance"), Conversion.Delete),
+        UselessFilterConversionWithFix(topLevelCallableId("kotlin.sequences", "filterIsInstance"), Conversion.Delete),
+
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapNotNull"), Conversion.Replace("map")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapNotNull"), Conversion.Replace("map")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapNotNullTo"), Conversion.Replace("mapTo")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapNotNullTo"), Conversion.Replace("mapTo")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapIndexedNotNull"), Conversion.Replace("mapIndexed")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapIndexedNotNull"), Conversion.Replace("mapIndexed")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapIndexedNotNullTo"), Conversion.Replace("mapIndexedTo")),
+        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo"), Conversion.Replace("mapIndexedTo"))
     )
+
+    private inner class UselessFilterConversionWithFix(
+        override val callableId: CallableId,
+        val conversion: Conversion,
+    ): ConversionWithFix {
+        context(_: KaSession)
+        override fun InspectionManager.createConversionProblemDescriptor(
+            expression: KtQualifiedExpression,
+            calleeExpression: KtExpression,
+            isOnTheFly: Boolean
+        ): ProblemDescriptor? {
+            val receiverType = expression.receiverExpression.expressionType as? KaClassType ?: return null
+            val receiverTypeArgument = receiverType.typeArguments.singleOrNull() ?: return null
+            val receiverTypeArgumentType = receiverTypeArgument.type ?: return null
+            val resolvedCall = expression.resolveToCall()?.singleFunctionCallOrNull() ?: return null
+            val callableName = resolvedCall.symbol.callableId?.callableName?.asString() ?: return null
+            if (callableName == "filterIsInstance") {
+                if (receiverTypeArgument is KaTypeArgumentWithVariance && receiverTypeArgument.variance == Variance.IN_VARIANCE) return null
+                @OptIn(KaExperimentalApi::class)
+                val typeParameterDescriptor = resolvedCall.symbol.typeParameters.singleOrNull() ?: return null
+                val argumentType = resolvedCall.typeArgumentsMapping[typeParameterDescriptor] ?: return null
+                if (receiverTypeArgumentType is KaFlexibleType || !receiverTypeArgumentType.isSubtypeOf(argumentType)) return null
+            } else {
+                // xxxNotNull
+                if (receiverTypeArgumentType.isNullable) return null
+                if (callableName != "filterNotNull") {
+                    // Check if there is a function argument
+                    resolvedCall.argumentMapping.toList().lastOrNull()?.first?.let { lastArgument ->
+                        // We do not have a problem if the lambda argument might return null
+                        if (!lastArgument.isMethodReferenceReturningNotNull() && !lastArgument.isLambdaReturningNotNull()) return null
+                        // Otherwise, the
+                    }
+                }
+            }
+
+            val newName = (conversion as? Conversion.Replace)?.replacementName
+            return if (newName != null) {
+                // Do not suggest quick-fix to prevent capturing the name
+                if (expression.isUsingLabelInScope(newName)) {
+                    return null
+                }
+                createProblemDescriptor(
+                    expression,
+                    TextRange(
+                        expression.operationTokenNode.startOffset - expression.startOffset,
+                        calleeExpression.endOffset - expression.startOffset
+                    ),
+                    KotlinBundle.message("call.on.collection.type.may.be.reduced"),
+                    ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
+                    isOnTheFly,
+                    RenameUselessCallFix(newName)
+                )
+            } else {
+                val fix = if (resolvedCall.symbol.returnType.isList() && !receiverType.isList()) {
+                    ReplaceSelectorOfQualifiedExpressionFix("toList()")
+                } else {
+                    RemoveUselessCallFix()
+                }
+                createProblemDescriptor(
+                    expression,
+                    TextRange(
+                        expression.operationTokenNode.startOffset - expression.startOffset,
+                        calleeExpression.endOffset - expression.startOffset
+                    ),
+                    KotlinBundle.message("redundant.call.on.collection.type"),
+                    ProblemHighlightType.LIKE_UNUSED_SYMBOL,
+                    isOnTheFly,
+                    fix
+                )
+            }
+        }
+    }
+
+    private inner class UselessMapNotNullConversionWithFix(
+        override val callableId: CallableId,
+        val conversion: Conversion,
+    ): ConversionWithFix {
+        context(_: KaSession)
+        override fun InspectionManager.createConversionProblemDescriptor(
+            expression: KtQualifiedExpression,
+            calleeExpression: KtExpression,
+            isOnTheFly: Boolean
+        ): ProblemDescriptor? {
+            val receiverType = expression.receiverExpression.expressionType as? KaClassType ?: return null
+            val receiverTypeArgument = receiverType.typeArguments.singleOrNull() ?: return null
+            val receiverTypeArgumentType = receiverTypeArgument.type ?: return null
+            val resolvedCall = expression.resolveToCall()?.singleFunctionCallOrNull() ?: return null
+            val callableName = resolvedCall.symbol.callableId?.callableName?.asString() ?: return null
+            if (callableName == "filterIsInstance") {
+                if (receiverTypeArgument is KaTypeArgumentWithVariance && receiverTypeArgument.variance == Variance.IN_VARIANCE) return null
+                @OptIn(KaExperimentalApi::class)
+                val typeParameterDescriptor = resolvedCall.symbol.typeParameters.singleOrNull() ?: return null
+                val argumentType = resolvedCall.typeArgumentsMapping[typeParameterDescriptor] ?: return null
+                if (receiverTypeArgumentType is KaFlexibleType || !receiverTypeArgumentType.isSubtypeOf(argumentType)) return null
+            } else {
+                // xxxNotNull
+                if (receiverTypeArgumentType.isNullable) return null
+                if (callableName != "filterNotNull") {
+                    // Check if there is a function argument
+                    resolvedCall.argumentMapping.toList().lastOrNull()?.first?.let { lastArgument ->
+                        // We do not have a problem if the lambda argument might return null
+                        if (!lastArgument.isMethodReferenceReturningNotNull() && !lastArgument.isLambdaReturningNotNull()) return null
+                        // Otherwise, the
+                    }
+                }
+            }
+
+            val newName = (conversion as? Conversion.Replace)?.replacementName
+            return if (newName != null) {
+                // Do not suggest quick-fix to prevent capturing the name
+                if (expression.isUsingLabelInScope(newName)) {
+                    return null
+                }
+                createProblemDescriptor(
+                    expression,
+                    TextRange(
+                        expression.operationTokenNode.startOffset - expression.startOffset,
+                        calleeExpression.endOffset - expression.startOffset
+                    ),
+                    KotlinBundle.message("call.on.collection.type.may.be.reduced"),
+                    ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
+                    isOnTheFly,
+                    RenameUselessCallFix(newName)
+                )
+            } else {
+                val fix = if (resolvedCall.symbol.returnType.isList() && !receiverType.isList()) {
+                    ReplaceSelectorOfQualifiedExpressionFix("toList()")
+                } else {
+                    RemoveUselessCallFix()
+                }
+                createProblemDescriptor(
+                    expression,
+                    TextRange(
+                        expression.operationTokenNode.startOffset - expression.startOffset,
+                        calleeExpression.endOffset - expression.startOffset
+                    ),
+                    KotlinBundle.message("redundant.call.on.collection.type"),
+                    ProblemHighlightType.LIKE_UNUSED_SYMBOL,
+                    isOnTheFly,
+                    fix
+                )
+            }
+        }
+    }
 
     context(_: KaSession)
     private fun KtExpression.isLambdaReturningNotNull(): Boolean {
