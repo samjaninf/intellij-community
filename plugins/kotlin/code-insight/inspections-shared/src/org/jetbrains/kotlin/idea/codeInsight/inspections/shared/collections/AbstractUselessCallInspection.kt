@@ -68,11 +68,6 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
         return usingLabel
     }
 
-    protected sealed interface Conversion {
-        data class Replace(val replacementName: String) : Conversion
-        object Delete : Conversion
-    }
-
     protected interface ConversionWithFix {
         val callableId: CallableId
 
