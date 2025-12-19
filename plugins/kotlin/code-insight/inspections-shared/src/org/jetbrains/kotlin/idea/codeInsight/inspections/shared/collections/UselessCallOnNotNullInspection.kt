@@ -29,7 +29,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
 class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
-    override val conversions: List<Conversion> = listOf(
+    override val conversions: List<QualifiedFunctionCallConversion> = listOf(
         UselessOrEmptyConversion(topLevelCallableId("kotlin.collections", "orEmpty")),
         UselessOrEmptyConversion(topLevelCallableId("kotlin.sequences", "orEmpty")),
         UselessOrEmptyConversion(topLevelCallableId("kotlin.text", "orEmpty")),
@@ -40,8 +40,8 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
     )
 
     private inner class UselessOrEmptyConversion(
-        override val callableId: CallableId,
-    ) : Conversion {
+        override val targetCallableId: CallableId,
+    ) : QualifiedFunctionCallConversion {
         context(_: KaSession)
         override fun createProblemDescriptor(
             manager: InspectionManager,
@@ -77,9 +77,9 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
     }
 
     private inner class UselessIsNullOrEmptyConversion(
-        override val callableId: CallableId,
+        override val targetCallableId: CallableId,
         val replacementName: String,
-    ) : Conversion {
+    ) : QualifiedFunctionCallConversion {
         context(_: KaSession)
         override fun createProblemDescriptor(
             manager: InspectionManager,

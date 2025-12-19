@@ -4,6 +4,7 @@ package org.jetbrains.kotlin.idea.codeInsight.inspections.shared.collections
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemsHolder
+import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
@@ -14,6 +15,7 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtExpressionWithLabel
 import org.jetbrains.kotlin.psi.KtQualifiedExpression
@@ -23,21 +25,14 @@ import org.jetbrains.kotlin.psi.qualifiedExpressionVisitor
 
 
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
-    protected abstract val conversions: List<Conversion>
+    protected abstract val conversions: List<Conversion<KtQualifiedExpression>>
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): KtVisitorVoid = qualifiedExpressionVisitor(fun(expression: KtQualifiedExpression) {
-        val selector = expression.selectorExpression as? KtCallExpression ?: return
-        val calleeExpression = selector.calleeExpression ?: return
-        if (calleeExpression.text !in conversions.map { it.callableId.callableName.asString() }) return
+        val descriptor = conversions.firstNotNullOfOrNull {
+            it.createProblemDescriptor(holder.manager, expression, isOnTheFly)
+        } ?: return
 
-        analyze(calleeExpression) {
-            val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return
-            val callableId = resolvedCall.symbol.callableId ?: return
-            val conversion = conversions.firstOrNull { it.callableId == callableId } ?: return
-
-            val descriptor = conversion.createProblemDescriptor(holder.manager, expression, calleeExpression, isOnTheFly) ?: return
-            holder.registerProblem(descriptor)
-        }
+        holder.registerProblem(descriptor)
     })
 
     protected fun KtExpression.isUsingLabelInScope(labelName: String): Boolean {
@@ -53,8 +48,36 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
         return usingLabel
     }
 
-    protected interface Conversion {
-        val callableId: CallableId
+    protected interface Conversion<in T : KtElement> {
+        @ApiStatus.NonExtendable
+        fun createProblemDescriptor(
+            manager: InspectionManager,
+            element: T,
+            isOnTheFly: Boolean,
+        ): ProblemDescriptor?
+    }
+
+    protected interface QualifiedFunctionCallConversion : Conversion<KtQualifiedExpression> {
+        val targetCallableId: CallableId
+
+        @ApiStatus.NonExtendable
+        override fun createProblemDescriptor(
+            manager: InspectionManager,
+            element: KtQualifiedExpression,
+            isOnTheFly: Boolean
+        ): ProblemDescriptor? {
+            val selector = element.selectorExpression as? KtCallExpression ?: return null
+            val calleeExpression = selector.calleeExpression ?: return null
+            if (calleeExpression.text != targetCallableId.callableName.asString()) return null
+
+            analyze(element) {
+                val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return null
+                val resolvedCallableId = resolvedCall.symbol.callableId ?: return null
+                if (resolvedCallableId != targetCallableId) return null
+
+                return createProblemDescriptor(manager, element, calleeExpression, isOnTheFly)
+            }
+        }
 
         context(_: KaSession)
         fun createProblemDescriptor(

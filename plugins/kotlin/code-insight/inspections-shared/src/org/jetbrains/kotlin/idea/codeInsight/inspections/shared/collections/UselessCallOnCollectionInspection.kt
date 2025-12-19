@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.types.Variance
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
 class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
-    override val conversions: List<Conversion> = listOf(
+    override val conversions: List<QualifiedFunctionCallConversion> = listOf(
         UselessFilterConversion(topLevelCallableId("kotlin.collections", "filterNotNull")),
         UselessFilterConversion(topLevelCallableId("kotlin.sequences", "filterNotNull")),
         UselessFilterConversion(topLevelCallableId("kotlin.collections", "filterIsInstance")),
@@ -51,8 +51,8 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
     )
 
     private inner class UselessFilterConversion(
-        override val callableId: CallableId,
-    ): Conversion {
+        override val targetCallableId: CallableId,
+    ): QualifiedFunctionCallConversion {
         context(_: KaSession)
         override fun createProblemDescriptor(
             manager: InspectionManager,
@@ -96,9 +96,9 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
     }
 
     private inner class UselessMapNotNullConversion(
-        override val callableId: CallableId,
+        override val targetCallableId: CallableId,
         val replacementName: String,
-    ): Conversion {
+    ): QualifiedFunctionCallConversion {
         context(_: KaSession)
         override fun createProblemDescriptor(
             manager: InspectionManager,
