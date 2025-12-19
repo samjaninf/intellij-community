@@ -1,7 +1,9 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.idea.codeInsight.inspections.shared.collections
 
+import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalQuickFix
+import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.openapi.util.TextRange
 import org.jetbrains.kotlin.analysis.api.KaSession
@@ -39,23 +41,24 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
     override val uselessNames = uselessFqNames.keys.toShortNames()
 
     context(_: KaSession)
-    override fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
+    private fun InspectionManager.createConversionProblemDescriptor(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
-        conversion: Conversion
-    ) {
+        conversion: Conversion,
+        isOnTheFly: Boolean,
+    ): ProblemDescriptor? {
         val newName = (conversion as? Conversion.Replace)?.replacementName
 
         val safeExpression = expression as? KtSafeQualifiedExpression
         val notNullType = expression.receiverExpression.isDefinitelyNotNull
         val defaultRange =
             TextRange(expression.operationTokenNode.startOffset, calleeExpression.endOffset).shiftRight(-expression.startOffset)
-        if (newName != null && (notNullType || safeExpression != null)) {
+        return if (newName != null && (notNullType || safeExpression != null)) {
             val fixes = listOfNotNull(
                 createRenameUselessCallFix(expression, newName),
                 safeExpression?.let { LocalQuickFix.from(ReplaceWithDotCallFix(safeExpression)) }
             )
-            val descriptor = holder.manager.createProblemDescriptor(
+            createProblemDescriptor(
                 expression,
                 defaultRange,
                 KotlinBundle.message("call.on.not.null.type.may.be.reduced"),
@@ -63,9 +66,8 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
                 isOnTheFly,
                 *fixes.toTypedArray()
             )
-            holder.registerProblem(descriptor)
         } else if (notNullType) {
-            val descriptor = holder.manager.createProblemDescriptor(
+            createProblemDescriptor(
                 expression,
                 defaultRange,
                 KotlinBundle.message("redundant.call.on.not.null.type"),
@@ -73,15 +75,29 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
                 isOnTheFly,
                 RemoveUselessCallFix()
             )
-            holder.registerProblem(descriptor)
         } else if (safeExpression != null) {
-            holder.registerProblem(
+            createProblemDescriptor(
               safeExpression.operationTokenNode.psi,
               KotlinBundle.message("this.call.is.redundant.with"),
-              ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
               ReplaceWithDotCallFix(safeExpression).asQuickFix(),
+              ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
+              isOnTheFly,
             )
+        } else {
+            null
         }
+    }
+
+    context(_: KaSession)
+    override fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
+        expression: KtQualifiedExpression,
+        calleeExpression: KtExpression,
+        conversion: Conversion
+    ) {
+        val descriptor = holder.manager.createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
+            ?: return
+
+        holder.registerProblem(descriptor)
     }
 
     context(_: KaSession)

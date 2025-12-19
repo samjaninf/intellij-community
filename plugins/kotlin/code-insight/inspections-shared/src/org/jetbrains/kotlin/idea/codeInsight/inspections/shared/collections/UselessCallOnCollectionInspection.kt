@@ -1,6 +1,8 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.idea.codeInsight.inspections.shared.collections
 
+import com.intellij.codeInspection.InspectionManager
+import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.openapi.util.TextRange
 import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
@@ -76,42 +78,43 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
     }
 
     context(_: KaSession)
-    override fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
+    private fun InspectionManager.createConversionProblemDescriptor(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
-        conversion: Conversion
-    ) {
-        val receiverType = expression.receiverExpression.expressionType as? KaClassType ?: return
-        val receiverTypeArgument = receiverType.typeArguments.singleOrNull() ?: return
-        val receiverTypeArgumentType = receiverTypeArgument.type ?: return
-        val resolvedCall = expression.resolveToCall()?.singleFunctionCallOrNull() ?: return
-        val callableName = resolvedCall.symbol.callableId?.callableName?.asString() ?: return
+        conversion: Conversion,
+        isOnTheFly: Boolean,
+    ): ProblemDescriptor? {
+        val receiverType = expression.receiverExpression.expressionType as? KaClassType ?: return null
+        val receiverTypeArgument = receiverType.typeArguments.singleOrNull() ?: return null
+        val receiverTypeArgumentType = receiverTypeArgument.type ?: return null
+        val resolvedCall = expression.resolveToCall()?.singleFunctionCallOrNull() ?: return null
+        val callableName = resolvedCall.symbol.callableId?.callableName?.asString() ?: return null
         if (callableName == "filterIsInstance") {
-            if (receiverTypeArgument is KaTypeArgumentWithVariance && receiverTypeArgument.variance == Variance.IN_VARIANCE) return
+            if (receiverTypeArgument is KaTypeArgumentWithVariance && receiverTypeArgument.variance == Variance.IN_VARIANCE) return null
             @OptIn(KaExperimentalApi::class)
-            val typeParameterDescriptor = resolvedCall.symbol.typeParameters.singleOrNull() ?: return
-            val argumentType = resolvedCall.typeArgumentsMapping[typeParameterDescriptor] ?: return
-            if (receiverTypeArgumentType is KaFlexibleType || !receiverTypeArgumentType.isSubtypeOf(argumentType)) return
+            val typeParameterDescriptor = resolvedCall.symbol.typeParameters.singleOrNull() ?: return null
+            val argumentType = resolvedCall.typeArgumentsMapping[typeParameterDescriptor] ?: return null
+            if (receiverTypeArgumentType is KaFlexibleType || !receiverTypeArgumentType.isSubtypeOf(argumentType)) return null
         } else {
             // xxxNotNull
-            if (receiverTypeArgumentType.isNullable) return
+            if (receiverTypeArgumentType.isNullable) return null
             if (callableName != "filterNotNull") {
                 // Check if there is a function argument
                 resolvedCall.argumentMapping.toList().lastOrNull()?.first?.let { lastArgument ->
                     // We do not have a problem if the lambda argument might return null
-                    if (!lastArgument.isMethodReferenceReturningNotNull() && !lastArgument.isLambdaReturningNotNull()) return
+                    if (!lastArgument.isMethodReferenceReturningNotNull() && !lastArgument.isLambdaReturningNotNull()) return null
                     // Otherwise, the
                 }
             }
         }
 
         val newName = (conversion as? Conversion.Replace)?.replacementName
-        if (newName != null) {
+        return if (newName != null) {
             // Do not suggest quick-fix to prevent capturing the name
             if (expression.isUsingLabelInScope(newName)) {
-                return
+                return null
             }
-            val descriptor = holder.manager.createProblemDescriptor(
+            createProblemDescriptor(
                 expression,
                 TextRange(
                     expression.operationTokenNode.startOffset - expression.startOffset,
@@ -122,14 +125,13 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
                 isOnTheFly,
                 RenameUselessCallFix(newName)
             )
-            holder.registerProblem(descriptor)
         } else {
             val fix = if (resolvedCall.symbol.returnType.isList() && !receiverType.isList()) {
                 ReplaceSelectorOfQualifiedExpressionFix("toList()")
             } else {
                 RemoveUselessCallFix()
             }
-            val descriptor = holder.manager.createProblemDescriptor(
+            createProblemDescriptor(
               expression,
               TextRange(
                     expression.operationTokenNode.startOffset - expression.startOffset,
@@ -140,8 +142,19 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
               isOnTheFly,
               fix
             )
-            holder.registerProblem(descriptor)
         }
+    }
+
+    context(_: KaSession)
+    override fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
+        expression: KtQualifiedExpression,
+        calleeExpression: KtExpression,
+        conversion: Conversion
+    ) {
+        val problemDescriptor = holder.manager.createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
+            ?: return
+
+        holder.registerProblem(problemDescriptor)
     }
 
     context(_: KaSession)
