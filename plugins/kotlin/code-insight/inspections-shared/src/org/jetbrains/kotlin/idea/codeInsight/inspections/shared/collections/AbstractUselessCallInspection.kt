@@ -25,14 +25,6 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected abstract val conversions: List<ConversionWithFix>
 
     context(_: KaSession)
-    protected abstract fun InspectionManager.createConversionProblemDescriptor(
-        expression: KtQualifiedExpression,
-        calleeExpression: KtExpression,
-        conversion: Conversion,
-        isOnTheFly: Boolean,
-    ): ProblemDescriptor?
-
-    context(_: KaSession)
     private fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
@@ -90,20 +82,6 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
             calleeExpression: KtExpression,
             isOnTheFly: Boolean,
         ): ProblemDescriptor?
-    }
-
-    protected inner class ConversionWithFixImpl(
-        override val callableId: CallableId,
-        val conversion: Conversion
-    ) : ConversionWithFix {
-        context(_: KaSession)
-        override fun InspectionManager.createConversionProblemDescriptor(
-            expression: KtQualifiedExpression,
-            calleeExpression: KtExpression,
-            isOnTheFly: Boolean
-        ): ProblemDescriptor? {
-            return createConversionProblemDescriptor(expression, calleeExpression, conversion, isOnTheFly)
-        }
     }
 
     protected companion object {

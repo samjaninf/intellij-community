@@ -144,54 +144,6 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
     }
 
     context(_: KaSession)
-    override fun InspectionManager.createConversionProblemDescriptor(
-        expression: KtQualifiedExpression,
-        calleeExpression: KtExpression,
-        conversion: Conversion,
-        isOnTheFly: Boolean
-    ): ProblemDescriptor? {
-        val newName = (conversion as? Conversion.Replace)?.replacementName
-
-        val safeExpression = expression as? KtSafeQualifiedExpression
-        val notNullType = expression.receiverExpression.isDefinitelyNotNull
-        val defaultRange =
-            TextRange(expression.operationTokenNode.startOffset, calleeExpression.endOffset).shiftRight(-expression.startOffset)
-        return if (newName != null && (notNullType || safeExpression != null)) {
-            val fixes = listOfNotNull(
-                createRenameUselessCallFix(expression, newName),
-                safeExpression?.let { LocalQuickFix.from(ReplaceWithDotCallFix(safeExpression)) }
-            )
-            createProblemDescriptor(
-                expression,
-                defaultRange,
-                KotlinBundle.message("call.on.not.null.type.may.be.reduced"),
-                ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                isOnTheFly,
-                *fixes.toTypedArray()
-            )
-        } else if (notNullType) {
-            createProblemDescriptor(
-                expression,
-                defaultRange,
-                KotlinBundle.message("redundant.call.on.not.null.type"),
-                ProblemHighlightType.LIKE_UNUSED_SYMBOL,
-                isOnTheFly,
-                RemoveUselessCallFix()
-            )
-        } else if (safeExpression != null) {
-            createProblemDescriptor(
-                safeExpression.operationTokenNode.psi,
-                KotlinBundle.message("this.call.is.redundant.with"),
-                ReplaceWithDotCallFix(safeExpression).asQuickFix(),
-                ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                isOnTheFly,
-            )
-        } else {
-            null
-        }
-    }
-
-    context(_: KaSession)
     private fun createRenameUselessCallFix(
         expression: KtQualifiedExpression,
         newFunctionName: String
