@@ -54,8 +54,6 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo") to Conversion.Replace("mapIndexedTo")
     )
 
-    override val uselessNames = uselessFqNames.keys.toShortNames()
-
     context(_: KaSession)
     private fun KtExpression.isLambdaReturningNotNull(): Boolean {
         val expression = if (this is KtLabeledExpression) this.baseExpression else this

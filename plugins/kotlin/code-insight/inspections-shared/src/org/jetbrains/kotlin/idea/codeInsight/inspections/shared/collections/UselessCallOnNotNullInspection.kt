@@ -38,8 +38,6 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
         topLevelCallableId("kotlin.collections", "isNullOrEmpty") to Conversion.Replace("isEmpty")
     )
 
-    override val uselessNames = uselessFqNames.keys.toShortNames()
-
     context(_: KaSession)
     private fun InspectionManager.createConversionProblemDescriptor(
         expression: KtQualifiedExpression,

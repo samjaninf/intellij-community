@@ -23,8 +23,6 @@ import org.jetbrains.kotlin.psi.KtVisitorVoid
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected abstract val uselessFqNames: Map<CallableId, Conversion>
 
-    protected abstract val uselessNames: Set<String>
-
     context(_: KaSession)
     protected abstract fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
         expression: KtQualifiedExpression,
@@ -53,7 +51,7 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
             super.visitQualifiedExpression(expression)
             val selector = expression.selectorExpression as? KtCallExpression ?: return
             val calleeExpression = selector.calleeExpression ?: return
-            if (calleeExpression.text !in uselessNames) return
+            if (calleeExpression.text !in uselessFqNames.map { it.key.callableName.asString() }) return
 
             analyze(calleeExpression) {
                 val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return
@@ -89,8 +87,6 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
         fun topLevelCallableId(packagePath: String, functionName: String): CallableId {
             return CallableId(FqName.topLevel(Name.identifier(packagePath)), Name.identifier(functionName))
         }
-
-        fun Set<CallableId>.toShortNames() = mapTo(mutableSetOf()) { it.callableName.asString() }
 
         fun KtQualifiedExpression.invertSelectorFunction(): KtQualifiedExpression? {
             return EmptinessCheckFunctionUtils.invertFunctionCall(this) as? KtQualifiedExpression
