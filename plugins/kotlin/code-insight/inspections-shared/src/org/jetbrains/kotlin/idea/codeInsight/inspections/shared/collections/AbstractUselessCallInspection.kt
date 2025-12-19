@@ -19,30 +19,26 @@ import org.jetbrains.kotlin.psi.KtExpressionWithLabel
 import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitor
 import org.jetbrains.kotlin.psi.KtVisitorVoid
+import org.jetbrains.kotlin.psi.qualifiedExpressionVisitor
 
 
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
     protected abstract val conversions: List<Conversion>
 
-    inner class QualifiedExpressionVisitor internal constructor(val holder: ProblemsHolder, val isOnTheFly: Boolean) : KtVisitorVoid() {
-        override fun visitQualifiedExpression(expression: KtQualifiedExpression) {
-            super.visitQualifiedExpression(expression)
-            val selector = expression.selectorExpression as? KtCallExpression ?: return
-            val calleeExpression = selector.calleeExpression ?: return
-            if (calleeExpression.text !in conversions.map { it.callableId.callableName.asString() }) return
+    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): KtVisitorVoid = qualifiedExpressionVisitor(fun(expression: KtQualifiedExpression) {
+        val selector = expression.selectorExpression as? KtCallExpression ?: return
+        val calleeExpression = selector.calleeExpression ?: return
+        if (calleeExpression.text !in conversions.map { it.callableId.callableName.asString() }) return
 
-            analyze(calleeExpression) {
-                val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return
-                val callableId = resolvedCall.symbol.callableId ?: return
-                val conversion = conversions.firstOrNull { it.callableId == callableId } ?: return
+        analyze(calleeExpression) {
+            val resolvedCall = calleeExpression.resolveToCall()?.singleFunctionCallOrNull() ?: return
+            val callableId = resolvedCall.symbol.callableId ?: return
+            val conversion = conversions.firstOrNull { it.callableId == callableId } ?: return
 
-                val descriptor = conversion.createProblemDescriptor(holder.manager, expression, calleeExpression, isOnTheFly) ?: return
-                holder.registerProblem(descriptor)
-            }
+            val descriptor = conversion.createProblemDescriptor(holder.manager, expression, calleeExpression, isOnTheFly) ?: return
+            holder.registerProblem(descriptor)
         }
-    }
-
-    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = QualifiedExpressionVisitor(holder, isOnTheFly)
+    })
 
     protected fun KtExpression.isUsingLabelInScope(labelName: String): Boolean {
         var usingLabel = false
