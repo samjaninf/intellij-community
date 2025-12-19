@@ -22,13 +22,13 @@ import org.jetbrains.kotlin.psi.KtVisitorVoid
 
 
 abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
-    protected abstract val conversions: List<ConversionWithFix>
+    protected abstract val conversions: List<Conversion>
 
     context(_: KaSession)
     private fun QualifiedExpressionVisitor.suggestConversionIfNeeded(
         expression: KtQualifiedExpression,
         calleeExpression: KtExpression,
-        conversion: ConversionWithFix
+        conversion: Conversion
     ) {
         val descriptor = with(conversion) {
             holder.manager.createConversionProblemDescriptor(expression, calleeExpression, isOnTheFly) ?: return
@@ -68,7 +68,7 @@ abstract class AbstractUselessCallInspection : AbstractKotlinInspection() {
         return usingLabel
     }
 
-    protected interface ConversionWithFix {
+    protected interface Conversion {
         val callableId: CallableId
 
         context(_: KaSession)

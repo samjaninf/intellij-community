@@ -29,19 +29,19 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
 class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
-    override val conversions: List<ConversionWithFix> = listOf(
-        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.collections", "orEmpty")),
-        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.sequences", "orEmpty")),
-        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "orEmpty")),
+    override val conversions: List<Conversion> = listOf(
+        UselessOrEmptyConversion(topLevelCallableId("kotlin.collections", "orEmpty")),
+        UselessOrEmptyConversion(topLevelCallableId("kotlin.sequences", "orEmpty")),
+        UselessOrEmptyConversion(topLevelCallableId("kotlin.text", "orEmpty")),
 
-        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "isNullOrEmpty"), replacementName = "isEmpty"),
-        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "isNullOrBlank"), replacementName = "isBlank"),
-        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.collections", "isNullOrEmpty"), replacementName = "isEmpty")
+        UselessIsNullOrEmptyConversion(topLevelCallableId("kotlin.text", "isNullOrEmpty"), replacementName = "isEmpty"),
+        UselessIsNullOrEmptyConversion(topLevelCallableId("kotlin.text", "isNullOrBlank"), replacementName = "isBlank"),
+        UselessIsNullOrEmptyConversion(topLevelCallableId("kotlin.collections", "isNullOrEmpty"), replacementName = "isEmpty")
     )
 
-    private inner class UselessOrEmptyConversionWithFix(
+    private inner class UselessOrEmptyConversion(
         override val callableId: CallableId,
-    ) : ConversionWithFix {
+    ) : Conversion {
         context(_: KaSession)
         override fun InspectionManager.createConversionProblemDescriptor(
             expression: KtQualifiedExpression,
@@ -75,10 +75,10 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
         }
     }
 
-    private inner class UselessIsNullOrEmptyConversionWithFix(
+    private inner class UselessIsNullOrEmptyConversion(
         override val callableId: CallableId,
         val replacementName: String,
-    ) : ConversionWithFix {
+    ) : Conversion {
         context(_: KaSession)
         override fun InspectionManager.createConversionProblemDescriptor(
             expression: KtQualifiedExpression,

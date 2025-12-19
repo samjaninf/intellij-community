@@ -34,25 +34,25 @@ import org.jetbrains.kotlin.types.Variance
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
 class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
-    override val conversions: List<ConversionWithFix> = listOf(
-        UselessFilterConversionWithFix(topLevelCallableId("kotlin.collections", "filterNotNull")),
-        UselessFilterConversionWithFix(topLevelCallableId("kotlin.sequences", "filterNotNull")),
-        UselessFilterConversionWithFix(topLevelCallableId("kotlin.collections", "filterIsInstance")),
-        UselessFilterConversionWithFix(topLevelCallableId("kotlin.sequences", "filterIsInstance")),
+    override val conversions: List<Conversion> = listOf(
+        UselessFilterConversion(topLevelCallableId("kotlin.collections", "filterNotNull")),
+        UselessFilterConversion(topLevelCallableId("kotlin.sequences", "filterNotNull")),
+        UselessFilterConversion(topLevelCallableId("kotlin.collections", "filterIsInstance")),
+        UselessFilterConversion(topLevelCallableId("kotlin.sequences", "filterIsInstance")),
 
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapNotNull"), replacementName = "map"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapNotNull"), replacementName = "map"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapNotNullTo"), replacementName = "mapTo"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapNotNullTo"), replacementName = "mapTo"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapIndexedNotNull"), replacementName = "mapIndexed"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapIndexedNotNull"), replacementName = "mapIndexed"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.collections", "mapIndexedNotNullTo"), replacementName = "mapIndexedTo"),
-        UselessMapNotNullConversionWithFix(topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo"), replacementName = "mapIndexedTo")
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.collections", "mapNotNull"), replacementName = "map"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.sequences", "mapNotNull"), replacementName = "map"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.collections", "mapNotNullTo"), replacementName = "mapTo"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.sequences", "mapNotNullTo"), replacementName = "mapTo"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.collections", "mapIndexedNotNull"), replacementName = "mapIndexed"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.sequences", "mapIndexedNotNull"), replacementName = "mapIndexed"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.collections", "mapIndexedNotNullTo"), replacementName = "mapIndexedTo"),
+        UselessMapNotNullConversion(topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo"), replacementName = "mapIndexedTo")
     )
 
-    private inner class UselessFilterConversionWithFix(
+    private inner class UselessFilterConversion(
         override val callableId: CallableId,
-    ): ConversionWithFix {
+    ): Conversion {
         context(_: KaSession)
         override fun InspectionManager.createConversionProblemDescriptor(
             expression: KtQualifiedExpression,
@@ -94,10 +94,10 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         }
     }
 
-    private inner class UselessMapNotNullConversionWithFix(
+    private inner class UselessMapNotNullConversion(
         override val callableId: CallableId,
         val replacementName: String,
-    ): ConversionWithFix {
+    ): Conversion {
         context(_: KaSession)
         override fun InspectionManager.createConversionProblemDescriptor(
             expression: KtQualifiedExpression,
