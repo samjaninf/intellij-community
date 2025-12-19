@@ -30,18 +30,17 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 //  See: KT-65376
 class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
     override val conversions: List<ConversionWithFix> = listOf(
-        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.collections", "orEmpty"), Conversion.Delete),
-        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.sequences", "orEmpty"), Conversion.Delete),
-        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "orEmpty"), Conversion.Delete),
+        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.collections", "orEmpty")),
+        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.sequences", "orEmpty")),
+        UselessOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "orEmpty")),
 
-        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "isNullOrEmpty"), Conversion.Replace("isEmpty")),
-        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "isNullOrBlank"), Conversion.Replace("isBlank")),
-        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.collections", "isNullOrEmpty"), Conversion.Replace("isEmpty"))
+        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "isNullOrEmpty"), replacementName = "isEmpty"),
+        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.text", "isNullOrBlank"), replacementName = "isBlank"),
+        UselessIsNullOrEmptyConversionWithFix(topLevelCallableId("kotlin.collections", "isNullOrEmpty"), replacementName = "isEmpty")
     )
 
     private inner class UselessOrEmptyConversionWithFix(
         override val callableId: CallableId,
-        val conversion: Conversion,
     ) : ConversionWithFix {
         context(_: KaSession)
         override fun InspectionManager.createConversionProblemDescriptor(
@@ -49,26 +48,11 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
             calleeExpression: KtExpression,
             isOnTheFly: Boolean
         ): ProblemDescriptor? {
-            val newName = (conversion as? Conversion.Replace)?.replacementName
-
             val safeExpression = expression as? KtSafeQualifiedExpression
             val notNullType = expression.receiverExpression.isDefinitelyNotNull
             val defaultRange =
                 TextRange(expression.operationTokenNode.startOffset, calleeExpression.endOffset).shiftRight(-expression.startOffset)
-            return if (newName != null && (notNullType || safeExpression != null)) {
-                val fixes = listOfNotNull(
-                    createRenameUselessCallFix(expression, newName),
-                    safeExpression?.let { LocalQuickFix.from(ReplaceWithDotCallFix(safeExpression)) }
-                )
-                createProblemDescriptor(
-                    expression,
-                    defaultRange,
-                    KotlinBundle.message("call.on.not.null.type.may.be.reduced"),
-                    ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                    isOnTheFly,
-                    *fixes.toTypedArray()
-                )
-            } else if (notNullType) {
+            return if (notNullType) {
                 createProblemDescriptor(
                     expression,
                     defaultRange,
@@ -93,7 +77,7 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
 
     private inner class UselessIsNullOrEmptyConversionWithFix(
         override val callableId: CallableId,
-        val conversion: Conversion,
+        val replacementName: String,
     ) : ConversionWithFix {
         context(_: KaSession)
         override fun InspectionManager.createConversionProblemDescriptor(
@@ -101,45 +85,27 @@ class UselessCallOnNotNullInspection : AbstractUselessCallInspection() {
             calleeExpression: KtExpression,
             isOnTheFly: Boolean
         ): ProblemDescriptor? {
-            val newName = (conversion as? Conversion.Replace)?.replacementName
-
             val safeExpression = expression as? KtSafeQualifiedExpression
             val notNullType = expression.receiverExpression.isDefinitelyNotNull
             val defaultRange =
                 TextRange(expression.operationTokenNode.startOffset, calleeExpression.endOffset).shiftRight(-expression.startOffset)
-            return if (newName != null && (notNullType || safeExpression != null)) {
-                val fixes = listOfNotNull(
-                    createRenameUselessCallFix(expression, newName),
-                    safeExpression?.let { LocalQuickFix.from(ReplaceWithDotCallFix(safeExpression)) }
-                )
-                createProblemDescriptor(
-                    expression,
-                    defaultRange,
-                    KotlinBundle.message("call.on.not.null.type.may.be.reduced"),
-                    ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                    isOnTheFly,
-                    *fixes.toTypedArray()
-                )
-            } else if (notNullType) {
-                createProblemDescriptor(
-                    expression,
-                    defaultRange,
-                    KotlinBundle.message("redundant.call.on.not.null.type"),
-                    ProblemHighlightType.LIKE_UNUSED_SYMBOL,
-                    isOnTheFly,
-                    RemoveUselessCallFix()
-                )
-            } else if (safeExpression != null) {
-                createProblemDescriptor(
-                    safeExpression.operationTokenNode.psi,
-                    KotlinBundle.message("this.call.is.redundant.with"),
-                    ReplaceWithDotCallFix(safeExpression).asQuickFix(),
-                    ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                    isOnTheFly,
-                )
-            } else {
-                null
+
+            if (!notNullType && safeExpression == null) {
+                return null
             }
+
+            val fixes = listOfNotNull(
+                createRenameUselessCallFix(expression, replacementName),
+                safeExpression?.let { LocalQuickFix.from(ReplaceWithDotCallFix(safeExpression)) }
+            )
+            return createProblemDescriptor(
+                expression,
+                defaultRange,
+                KotlinBundle.message("call.on.not.null.type.may.be.reduced"),
+                ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
+                isOnTheFly,
+                *fixes.toTypedArray()
+            )
         }
     }
 
