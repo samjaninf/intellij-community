@@ -246,20 +246,20 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
     if (options.testConfigurations != null) {
       val testConfigurationsOptionName = "intellij.build.test.configurations"
       if (options.testPatterns != null) {
-        warnOptionIgnored(testConfigurationsOptionName, "intellij.build.test.patterns")
+        errorOptionIgnored(testConfigurationsOptionName, "intellij.build.test.patterns")
       }
       if (options.testGroups != TestingOptions.ALL_EXCLUDE_DEFINED_GROUP) {
-        warnOptionIgnored(testConfigurationsOptionName, "intellij.build.test.groups")
+        errorOptionIgnored(testConfigurationsOptionName, "intellij.build.test.groups")
       }
       if (mainModule != null && !options.validateMainModule) {
-        warnOptionIgnored(testConfigurationsOptionName, "intellij.build.test.main.module")
+        errorOptionIgnored(testConfigurationsOptionName, "intellij.build.test.main.module")
       }
       if (options.searchScope != JUnitRunConfigurationProperties.TestSearchScope.MODULE_WITH_DEPENDENCIES.serialized) {
-        warnOptionIgnored(testConfigurationsOptionName, "intellij.build.test.search.scope")
+        errorOptionIgnored(testConfigurationsOptionName, "intellij.build.test.search.scope")
       }
     }
     else if (options.testPatterns != null && options.testGroups != TestingOptions.ALL_EXCLUDE_DEFINED_GROUP) {
-      warnOptionIgnored("intellij.build.test.patterns", "intellij.build.test.groups")
+      errorOptionIgnored("intellij.build.test.patterns", "intellij.build.test.groups")
     }
 
     if (options.validateMainModule && mainModule.isNullOrEmpty()) {
@@ -276,8 +276,8 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
     }
   }
 
-  private fun warnOptionIgnored(specifiedOption: String, ignoredOption: String) {
-    context.messages.warning("'${specifiedOption}' option is specified, so '${ignoredOption}' will be ignored.")
+  private fun errorOptionIgnored(specifiedOption: String, ignoredOption: String) {
+    context.messages.logErrorAndThrow("'${specifiedOption}' option is specified, so '${ignoredOption}' will be ignored.")
   }
 
   private suspend fun runTestsFromRunConfigurations(
