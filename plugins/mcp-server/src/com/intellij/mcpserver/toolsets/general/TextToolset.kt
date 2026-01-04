@@ -27,7 +27,6 @@ import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.Cancellation
 import com.intellij.openapi.progress.coroutineToIndicator
-import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readText
@@ -271,14 +270,8 @@ class TextToolset : McpToolset {
       val file = usage.virtualFile ?: return@mapNotNull null
       val document = readAction { FileDocumentManager.getInstance().getDocument(file) } ?: return@mapNotNull null
       val textRange = readAction { usage.navigationRange } ?: return@mapNotNull null
-      val startLineNumber = document.getLineNumber(textRange.startOffset)
-      val startLineStartOffset = document.getLineStartOffset(startLineNumber)
-      val endLineNumber = document.getLineNumber(textRange.endOffset)
-      val endLineEndOffset = document.getLineEndOffset(endLineNumber)
-      val textBeforeOccurrence = document.getText(TextRange(startLineStartOffset, textRange.startOffset)).take(MAX_USAGE_TEXT_CHARS)
-      val textInner = document.getText(TextRange(textRange.startOffset, textRange.endOffset)).take(MAX_USAGE_TEXT_CHARS)
-      val textAfterOccurrence = document.getText(TextRange(textRange.endOffset, endLineEndOffset)).take(MAX_USAGE_TEXT_CHARS)
-      UsageInfoEntry(projectDir.relativizeIfPossible(file), startLineNumber + 1, "$textBeforeOccurrence||$textInner||$textAfterOccurrence")
+      val snippetText = document.buildUsageSnippetText(textRange, MAX_USAGE_TEXT_CHARS)
+      UsageInfoEntry(projectDir.relativizeIfPossible(file), snippetText.lineNumber, snippetText.lineText)
     }
 
     return UsageInfoResult(entries = entries, probablyHasMoreMatchingEntries = usages.size >= maxUsageCount, timedOut = timedOut)
