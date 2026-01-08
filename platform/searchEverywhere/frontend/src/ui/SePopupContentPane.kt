@@ -184,6 +184,9 @@ class SePopupContentPane(
 
   private var quickDocPopup: JBPopup? = null
 
+  val currentResultsInList: List<SeItemData> get() =
+    resultListModel.elements().iterator().asSequence().mapNotNull { (it as? SeResultListItemRow)?.item }.toList()
+
   init {
     layout = GridLayout()
 
