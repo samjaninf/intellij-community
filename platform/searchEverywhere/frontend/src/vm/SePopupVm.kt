@@ -68,7 +68,6 @@ class SePopupVm(
   val coroutineScope: CoroutineScope,
   val session: SeSession,
   private val project: Project?,
-  initialDummyTabs: List<SeDummyTabVm>,
   tabs: List<SeTab>,
   deferredTabs: List<SuspendLazyProperty<SeTab?>>,
   adaptedTabs: SuspendLazyProperty<List<SeTab>>,
