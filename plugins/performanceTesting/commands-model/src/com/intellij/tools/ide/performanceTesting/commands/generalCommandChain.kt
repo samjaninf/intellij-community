@@ -810,6 +810,10 @@ fun <T : CommandChain> T.setRegistrySelectedOption(registry: String, optionValue
   addCommand("${CMD_PREFIX}set $registry=[option]$optionValue")
 }
 
+fun <T : CommandChain> T.setRegistries(registries: List<String>, value: Boolean): T = apply {
+  registries.forEach { setRegistry(it, value) }
+}
+
 fun <T : CommandChain> T.validateGradleMatrixCompatibility(): T = apply {
   addCommand("${CMD_PREFIX}validateGradleMatrixCompatibility")
 }
