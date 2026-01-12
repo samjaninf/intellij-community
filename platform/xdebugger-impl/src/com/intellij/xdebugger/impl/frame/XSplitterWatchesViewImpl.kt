@@ -2,6 +2,8 @@
 package com.intellij.xdebugger.impl.frame
 
 import com.intellij.ide.dnd.DnDNativeTarget
+import com.intellij.openapi.util.Key
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.util.application
 import com.intellij.util.ui.components.BorderLayoutPanel
@@ -28,13 +30,16 @@ import javax.swing.JPanel
  */
 @Internal
 class XSplitterWatchesViewImpl(
-  session: XDebugSessionImpl,
+  session: XDebugSessionProxy,
   watchesInVariables: Boolean,
   isVertical: Boolean,
-  withToolbar: Boolean
-) : XWatchesViewImpl(session.also { checkContract(it) }, watchesInVariables, isVertical, withToolbar), DnDNativeTarget, XWatchesView {
+  withToolbar: Boolean,
+  customComponent : JComponent? = null
+) : XWatchesViewImpl(session.also { it.project.putUserData(customComponentKey, customComponent) }, watchesInVariables, isVertical, withToolbar), DnDNativeTarget, XWatchesView {
+
   companion object {
     private const val proportionKey = "debugger.immediate.window.in.watches.proportion.key"
+    private val customComponentKey = Key<JComponent>("XDebugger.CustomComponent")
 
     private fun checkContract(session: XDebugSessionImpl) {
       if (tryGetBottomComponentProvider(session, null) == null)
@@ -58,6 +63,21 @@ class XSplitterWatchesViewImpl(
   private var localsPanel : JComponent? = null
 
   override fun createMainPanel(localsPanelComponent: JComponent): JPanel {
+    val customComponent = sessionProxy?.project?.getUserData(customComponentKey)
+    if (customComponent != null) {
+      myPanel = BorderLayoutPanel()
+      customized = true
+      localsPanel = localsPanelComponent
+      val evaluatorComponent = customComponent
+      splitter = OnePixelSplitter(true, proportionKey, 0.01f, 0.99f)
+
+      splitter.firstComponent = localsPanel
+      splitter.secondComponent = evaluatorComponent
+
+      myPanel?.addToCenter(splitter)
+      return myPanel!!
+    }
+
     customized = getShowCustomized()
     localsPanel = localsPanelComponent
 

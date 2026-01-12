@@ -22,6 +22,8 @@ import com.intellij.platform.debugger.impl.frontend.frame.FrontendXStackFrame
 import com.intellij.platform.debugger.impl.frontend.frame.FrontendXSuspendContext
 import com.intellij.platform.debugger.impl.frontend.storage.FrontendXStackFramesStorage
 import com.intellij.platform.debugger.impl.frontend.storage.getOrCreateStackFrame
+import com.intellij.platform.debugger.impl.rpc.*
+import com.intellij.platform.debugger.impl.shared.DebuggerTabCustomizer
 import com.intellij.platform.debugger.impl.rpc.ErrorOccurredEvent
 import com.intellij.platform.debugger.impl.rpc.NewExecutionStackGroupsEvent
 import com.intellij.platform.debugger.impl.rpc.NewExecutionStacksEvent
@@ -389,7 +391,8 @@ class FrontendXDebuggerSession(
       consoleViewDeferred.await()
       // TODO restore content to reuse on frontend if needed (it is not used now in create)
       XDebugSessionTab.create(proxy, tabInfo.iconId?.icon(), tabInfo.executionEnvironmentProxyDto?.executionEnvironment(project, tabScope), null,
-                              tabInfo.forceNewDebuggerUi, tabInfo.withFramesCustomization, tabInfo.defaultFramesViewKey).apply {
+                              tabInfo.forceNewDebuggerUi, tabInfo.withFramesCustomization, tabInfo.defaultFramesViewKey,
+                              DebuggerTabCustomizer.getInstance()?.createBottomComponentForVariablesView()).apply {
         setAdditionalKeysProvider { sink ->
           sink[SplitDebuggerDataKeys.SPLIT_RUN_CONTENT_DESCRIPTOR_KEY] = backendRunContentDescriptorId
           if (executionEnvironmentId != null) {

@@ -28,13 +28,15 @@ import com.intellij.xdebugger.impl.frame.XWatchesViewImpl
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.awt.Dimension
 import javax.swing.Icon
+import javax.swing.JComponent
 
 @Internal
 class XDebugSessionTab3(
   proxy: XDebugSessionProxy,
   icon: Icon?,
   environmentProxy: ExecutionEnvironmentProxy?,
-  val defaultFramesViewKey: String?
+  val defaultFramesViewKey: String?,
+  val customBottomComponent: JComponent? = null
 ) : XDebugSessionTabNewUI(proxy, icon, environmentProxy) {
 
   companion object {
@@ -60,9 +62,12 @@ class XDebugSessionTab3(
     val xDebugSession = XDebuggerEntityConverter.getSessionNonSplitOnly(sessionProxy)
     if (xDebugSession is XDebugSessionImpl) {
       if (xDebugSession.debugProcess.useSplitterView()) { // TODO terekhin migrate Immediate window to using new debugger API
-        return XSplitterWatchesViewImpl(xDebugSession, watchesIsVariables, true, withToolbar = false)
+        return XSplitterWatchesViewImpl(sessionProxy, watchesIsVariables, true, withToolbar = false)
       }
     }
+    if(customBottomComponent != null)
+      return XSplitterWatchesViewImpl(sessionProxy, watchesIsVariables, true, withToolbar = false, customComponent = customBottomComponent)
+
     return XWatchesViewImpl(sessionProxy, watchesIsVariables, true, false)
   }
 

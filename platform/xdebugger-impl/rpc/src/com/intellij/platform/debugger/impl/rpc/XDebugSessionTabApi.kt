@@ -82,7 +82,13 @@ data class XDebuggerSessionTabInfo(
   @Serializable(with = DeferredSerializer::class) val backendRunContendDescriptorId: Deferred<RunContentDescriptorIdImpl>,
   @Serializable(with = DeferredSerializer::class) val showTab: Deferred<Unit>,
   @Serializable(with = DeferredSerializer::class) val tabLayouterDto: Deferred<XDebugTabLayouterDto>,
+  val customBottomComponentProvider: XDebugVariablesViewCustomBottomComponentDto?,
 ) : XDebuggerSessionTabAbstractInfo
+
+@ApiStatus.Internal
+@Serializable
+object XDebugVariablesViewCustomBottomComponentDto
+
 
 @ApiStatus.Internal
 @Serializable

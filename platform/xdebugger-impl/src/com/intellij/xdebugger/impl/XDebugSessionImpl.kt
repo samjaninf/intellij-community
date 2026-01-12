@@ -590,6 +590,7 @@ class XDebugSessionImpl @JvmOverloads constructor(
     val forceNewDebuggerUi = debugProcess.forceShowNewDebuggerUi()
     val withFramesCustomization = debugProcess.allowFramesViewCustomization()
     val defaultFramesViewKey: String? = debugProcess.getDefaultFramesViewKey()
+    val bottomComponentProvider = debugProcess.getBottomLocalsComponentProvider()
 
     if (SplitDebuggerMode.isSplitDebugger()) {
       if (shouldShowTab) {
@@ -601,10 +602,13 @@ class XDebugSessionImpl @JvmOverloads constructor(
       val runContentDescriptorId = CompletableDeferred<RunContentDescriptorIdImpl>()
       val tabLayouterDto = CompletableDeferred<XDebugTabLayouterDto>()
       val executionEnvironmentId = executionEnvironment?.storeGlobally(localTabScope)
+      val bottomComponentDto = if (bottomComponentProvider != null) XDebugVariablesViewCustomBottomComponentDto else null
       val tabInfo = XDebuggerSessionTabInfo(myIcon?.rpcId(), forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey,
                                             executionEnvironmentId, executionEnvironment?.toDto(localTabScope),
                                             additionalTabComponentManager.id, tabClosedChannel,
-                                            runContentDescriptorId, myShowTabDeferred, tabLayouterDto)
+                                            runContentDescriptorId, myShowTabDeferred, tabLayouterDto,
+                                            bottomComponentDto
+                                            )
       if (myTabInitDataFlow.compareAndSet(null, tabInfo)) {
         // This is a mock tab used in backend only
         // Using a RunTab as a mock component let us reuse context reusing,
@@ -677,8 +681,9 @@ class XDebugSessionImpl @JvmOverloads constructor(
     else {
       if (myTabInitDataFlow.compareAndSet(null, XDebuggerSessionTabInfoNoInit)) {
         val proxy = this.asProxy()
+        val bottomComponent = bottomComponentProvider?.createBottomLocalsComponent()
         val tab = XDebugSessionTab.create(proxy, myIcon, executionEnvironment?.let { BackendExecutionEnvironmentProxy(it) }, contentToReuse,
-                                          forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey)
+                                          forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey, bottomComponent)
         tabInitialized(tab)
         myMockRunContentDescriptor = tab.runContentDescriptor
         myDebugProcess!!.sessionInitialized()
