@@ -800,6 +800,7 @@ platform/testFramework/junit5/eel
 platform/testFramework/junit5/highlighting
 platform/testFramework/junit5/projectStructure
 platform/testFramework/monorepo
+platform/testFramework/selfContainedProjects
 platform/testFramework/teamCity
 platform/testFramework/ui
 platform/testRunner
