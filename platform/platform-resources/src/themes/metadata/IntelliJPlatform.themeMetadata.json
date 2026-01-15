@@ -2158,9 +2158,29 @@
       "description": "Border for spinner components"
     },
     {
+      "key": "StatusBar.background",
+      "description": "Background of the status bar"
+    },
+    {
       "key": "StatusBar.fontSizeOffset",
       "description": "Status bar font size offset",
       "since": "2024.1"
+    },
+    {
+      "key": "StatusBar.Breadcrumbs.chevronInset",
+      "description": "Horizontal inset of breadcrumb chevrons"
+    },
+    {
+      "key": "StatusBar.Breadcrumbs.foreground",
+      "description": "Text color of breadcrumbs in the status bar"
+    },
+    {
+      "key": "StatusBar.Breadcrumbs.hoverBackground",
+      "description": "Background color of a hovered breadcrumb item"
+    },
+    {
+      "key": "StatusBar.Breadcrumbs.hoverForeground",
+      "description": "Text color of a hovered breadcrumb item"
     },
     {
       "key": "StatusBar.Breadcrumbs.navBarInsets",
@@ -2168,14 +2188,41 @@
       "since": "2023.1"
     },
     {
-      "key": "StatusBar.Widget.widgetInsets",
-      "description": "Insets around status bar widgets",
-      "since": "2023.1"
+      "key": "StatusBar.Breadcrumbs.pressedBackground",
+      "description": "Background color of a pressed breadcrumb item"
+    },
+    {
+      "key": "StatusBar.Breadcrumbs.selectionBackground",
+      "description": "Background color of a selected breadcrumb item"
+    },
+    {
+      "key": "StatusBar.Breadcrumbs.selectionInactiveBackground",
+      "description": "Background color of a selected breadcrumb item when the status bar is inactive"
+    },
+    {
+      "key": "StatusBar.Widget.foreground",
+      "description": "Text color of status bar widgets"
+    },
+    {
+      "key": "StatusBar.Widget.hoverBackground",
+      "description": "Background color of a hovered status bar widget"
+    },
+    {
+      "key": "StatusBar.Widget.hoverForeground",
+      "description": "Text color of a hovered status bar widget"
     },
     {
       "key": "StatusBar.Widget.hoverInsets",
-      "description": "Insets of the hover area around status bar widgets",
-      "since": "2025.3"
+      "description": "Insets of the hover area around status bar widgets"
+    },
+    {
+      "key": "StatusBar.Widget.pressedBackground",
+      "description": "Background color of a pressed status bar widget"
+    },
+    {
+      "key": "StatusBar.Widget.widgetInsets",
+      "description": "Insets around status bar widgets",
+      "since": "2023.1"
     },
     {
       "key": "StripeToolbar.Button.size",
