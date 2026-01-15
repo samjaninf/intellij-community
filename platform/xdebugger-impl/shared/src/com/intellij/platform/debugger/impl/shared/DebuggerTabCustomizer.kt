@@ -2,16 +2,18 @@
 package com.intellij.platform.debugger.impl.shared
 
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import org.jetbrains.annotations.ApiStatus
 import javax.swing.JComponent
 
 // TODO: maybe move to frontend?
 @ApiStatus.Internal
 interface DebuggerTabCustomizer {
-  fun createBottomComponentForVariablesView(): JComponent
+  fun createBottomComponentForVariablesView(session: XDebugSessionProxy): JComponent
 
   companion object {
     private val EP_NAME = ExtensionPointName<DebuggerTabCustomizer>("com.intellij.xdebugger.debuggerTabCustomizer")
-    fun getInstance(): DebuggerTabCustomizer? = EP_NAME.extensionList.singleOrNull()
+    fun getInstanceSafe(): DebuggerTabCustomizer? = EP_NAME.extensionList.singleOrNull()
+    fun getInstance(): DebuggerTabCustomizer = checkNotNull(getInstanceSafe())
   }
 }
