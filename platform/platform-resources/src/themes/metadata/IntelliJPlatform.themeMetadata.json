@@ -3,6 +3,14 @@
   "fixed": false,
   "ui": [
     {
+      "key": "ActionButton.focusedBorderColor",
+      "description": "ActionButton border color when focused"
+    },
+    {
+      "key": "ActionButton.hoverSeparatorColor",
+      "description": "ActionButton separator line color on hover"
+    },
+    {
       "key": "ActionButton.separatorColor",
       "description": "ActionButton separator line color",
       "since": "2023.1"
@@ -25,6 +33,18 @@
     },
     {
       "key": "Banner.warningBorderColor"
+    },
+    {
+      "key": "AlertDialog.background",
+      "description": "Background of alert dialogs"
+    },
+    {
+      "key": "Badge.greenOutlineBorderColor",
+      "description": "Border color for green outline badge"
+    },
+    {
+      "key": "Badge.greenOutlineForeground",
+      "description": "Foreground color for green outline badge"
     },
     {
       "key": "Banner.errorBackground"
@@ -105,6 +125,10 @@
       "description": "Used in tool buttons bars and the navigation bar"
     },
     {
+      "key": "Button.border",
+      "description": "Border color for buttons"
+    },
+    {
       "key": "Button.minimumSize",
       "description": "Minimum size of buttons"
     },
@@ -127,8 +151,20 @@
       "description": "Chevron arrow color for default split button"
     },
     {
+      "key": "CheckBox.borderInsets",
+      "description": "Insets for CheckBox border"
+    },
+    {
       "key": "CheckBox.iconSize",
       "description": "Size of CheckBox icon"
+    },
+    {
+      "key": "ComboBox.border",
+      "description": "Border color for ComboBox"
+    },
+    {
+      "key": "ComboBox.padding",
+      "description": "Padding for ComboBox"
     },
     {
       "key": "ComboBox.minimumSize",
@@ -420,6 +456,10 @@
     },
     {
       "key": "Counter.foreground"
+    },
+    {
+      "key": "DataSummary.Chart.barColor",
+      "description": "Color for bars in DataSummary charts"
     },
     {
       "key": "DebuggerPopup.borderColor",
