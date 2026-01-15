@@ -1394,9 +1394,21 @@
       "description": "Light-colored links. Used in the Variables tab of the Debugger tool window. Can be seen when a tree line is long, does not fit into the tab's width, and its popup on hover goes beyond the right monitor side."
     },
     {
+      "key": "Link.focusedBorderColor",
+      "description": "Border color for focused link"
+    },
+    {
       "key": "MainMenu.transparentSelectionBackground",
       "description": "Selection background in colorful header mode",
       "since": "2023.2"
+    },
+    {
+      "key": "MainMenu.selectionBackground",
+      "description": "Selection background color for main menu items"
+    },
+    {
+      "key": "MainMenu.selectionForeground",
+      "description": "Selection foreground color for main menu items"
     },
     {
       "key": "MemoryIndicator.usedBackground",
@@ -1446,6 +1458,10 @@
       "key": "NewUiOnboarding.Dialog.background",
       "description": "Background of the dialog with proposal to start the onboarding to the New UI",
       "since": "2023.2.1"
+    },
+    {
+      "key": "NewClass.SearchField.background",
+      "description": "Background color for the search field in the New Class dialog"
     },
     {
       "key": "Notification.background",
@@ -1658,6 +1674,14 @@
       "key": "Plugins.eapTagBackground"
     },
     {
+      "key": "Plugins.paidTagBackground",
+      "description": "Background color for paid tag in Plugins list"
+    },
+    {
+      "key": "Plugins.trialTagBackground",
+      "description": "Background color for trial tag in Plugins list"
+    },
+    {
       "key": "Plugins.lightSelectionBackground",
       "description": "Selection background"
     },
@@ -1746,6 +1770,10 @@
     },
     {
       "key": "Popup.Advertiser.foreground"
+    },
+    {
+      "key": "Popup.Advertiser.fontSizeOffset",
+      "description": "Font size offset for the advertiser text in popups"
     },
     {
       "key": "Popup.Body.bottomInsetNoAd",
@@ -1870,8 +1898,34 @@
       "key": "ProgressBar.warningEndColor"
     },
     {
+      "key": "ProgressBar.indeterminateendcolor",
+      "description": "The lighter part in an indeterminate progress bar"
+    },
+    {
+      "key": "ProgressBar.failedcolor",
+      "description": "Use the \"Test Progress Indicators\" action in internal mode to preview progress bars"
+    },
+    {
+      "key": "ProgressBar.failedendcolor",
+      "description": "The lighter part in a failed indeterminate progress bar"
+    },
+    {
+      "key": "ProgressBar.passedcolor"
+    },
+    {
+      "key": "ProgressBar.passedendcolor"
+    },
+    {
       "key": "RadioButton.iconSize",
       "description": "Size of RadioButton icon"
+    },
+    {
+      "key": "RadioButton.borderInsets",
+      "description": "Insets around the radio button border"
+    },
+    {
+      "key": "RadioButton.iconTextGap",
+      "description": "Gap between the radio button icon and text"
     },
     {
       "key": "SearchEverywhere.Advertiser.background",
@@ -1886,6 +1940,10 @@
     {
       "key": "SearchEverywhere.Header.background",
       "description": "Tabs area background"
+    },
+    {
+      "key": "SearchEverywhere.Header.insets",
+      "description": "Insets for the Search Everywhere header"
     },
     {
       "key": "SearchEverywhere.List.separatorColor",
@@ -2040,6 +2098,10 @@
       "description": "Minimum size of spinners"
     },
     {
+      "key": "Spinner.border",
+      "description": "Border for spinner components"
+    },
+    {
       "key": "StatusBar.fontSizeOffset",
       "description": "Status bar font size offset",
       "since": "2024.1"
@@ -2105,6 +2167,10 @@
       "description": "A background of a hovered row in a focused list if hover is allowed."
     },
     {
+      "key": "List.border",
+      "description": "Border insets for list items"
+    },
+    {
       "key": "List.hoverInactiveBackground",
       "since": "2020.3",
       "description": "A background of a hovered row in an unfocused list if hover is allowed."
@@ -2157,6 +2223,14 @@
     {
       "key": "TextField.minimumSize",
       "description": "Minimum size of text fields"
+    },
+    {
+      "key": "PasswordField.border",
+      "description": "Border for password fields"
+    },
+    {
+      "key": "SearchFieldWithExtension.border",
+      "description": "Border for search fields with extensions"
     },
     {
       "key": "Tree.hoverBackground",
@@ -2939,6 +3013,14 @@
       "since": "2022.3"
     },
     {
+      "key": "MainToolbar.borderColor",
+      "description": "Border color for the Main Toolbar"
+    },
+    {
+      "key": "MainWindow.background",
+      "description": "Background color of the IDE main window"
+    },
+    {
       "key": "MainToolbar.fontSizeOffset",
       "description": "Main toolbar widgets font size offset",
       "since": "2024.1"
@@ -2959,9 +3041,41 @@
       "since": "2023.1"
     },
     {
+      "key": "MainToolbar.Dropdown.pressedBackground",
+      "description": "Background color for pressed state of combo widgets in the main toolbar"
+    },
+    {
+      "key": "MainToolbar.Dropdown.transparentHoverBackground",
+      "description": "Transparent hover background color for combo widgets in the main toolbar"
+    },
+    {
       "key": "MainToolbar.Icon.insets",
       "description": "Insets around buttons on the Main Toolbar",
       "since": "2023.2"
+    },
+    {
+      "key": "MainToolbar.Icon.background",
+      "description": "Background color for main toolbar icons"
+    },
+    {
+      "key": "MainToolbar.Icon.pressedBackground",
+      "description": "Background color for pressed state of icons in the main toolbar"
+    },
+    {
+      "key": "ManagedIdeBadgeBackground",
+      "description": "Background color for Managed IDE badge"
+    },
+    {
+      "key": "ManagedIdeBadgeBackgroundHover",
+      "description": "Hover background color for Managed IDE badge"
+    },
+    {
+      "key": "ManagedIdeBadgeBorder",
+      "description": "Border color for Managed IDE badge"
+    },
+    {
+      "key": "ManagedIdeMenuItemHover",
+      "description": "Hover background color for Managed IDE menu items"
     },
     {
       "key": "RunWidget.configurationSelectorFontSizeOffset",
