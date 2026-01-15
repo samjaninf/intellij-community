@@ -1256,6 +1256,58 @@
       "description": "Badge color indicating the success status"
     },
     {
+      "key": "Ide.Shadow.borderInsets",
+      "description": "Insets for the IDE shadow border"
+    },
+    {
+      "key": "Ide.Shadow.bottom0Color"
+    },
+    {
+      "key": "Ide.Shadow.bottom1Color"
+    },
+    {
+      "key": "Ide.Shadow.bottomLeft0Color"
+    },
+    {
+      "key": "Ide.Shadow.bottomLeft1Color"
+    },
+    {
+      "key": "Ide.Shadow.bottomRight0Color"
+    },
+    {
+      "key": "Ide.Shadow.bottomRight1Color"
+    },
+    {
+      "key": "Ide.Shadow.left0Color"
+    },
+    {
+      "key": "Ide.Shadow.left1Color"
+    },
+    {
+      "key": "Ide.Shadow.right0Color"
+    },
+    {
+      "key": "Ide.Shadow.right1Color"
+    },
+    {
+      "key": "Ide.Shadow.top0Color"
+    },
+    {
+      "key": "Ide.Shadow.top1Color"
+    },
+    {
+      "key": "Ide.Shadow.topLeft0Color"
+    },
+    {
+      "key": "Ide.Shadow.topLeft1Color"
+    },
+    {
+      "key": "Ide.Shadow.topRight0Color"
+    },
+    {
+      "key": "Ide.Shadow.topRight1Color"
+    },
+    {
       "key": "InformationHint.borderColor"
     },
     {
