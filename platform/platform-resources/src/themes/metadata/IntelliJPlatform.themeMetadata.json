@@ -1500,6 +1500,62 @@
       "description": "Top/Left/Bottom/Right insets of the notification"
     },
     {
+      "key": "Notification.iconHoverBackground",
+      "description": "Background color for the notification icon on hover"
+    },
+    {
+      "key": "Notification.Shadow.borderInsets",
+      "description": "Top/Left/Bottom/Right insets of the notification balloon shadow"
+    },
+    {
+      "key": "Notification.Shadow.bottom0Color"
+    },
+    {
+      "key": "Notification.Shadow.bottom1Color"
+    },
+    {
+      "key": "Notification.Shadow.bottomLeft0Color"
+    },
+    {
+      "key": "Notification.Shadow.bottomLeft1Color"
+    },
+    {
+      "key": "Notification.Shadow.bottomRight0Color"
+    },
+    {
+      "key": "Notification.Shadow.bottomRight1Color"
+    },
+    {
+      "key": "Notification.Shadow.left0Color"
+    },
+    {
+      "key": "Notification.Shadow.left1Color"
+    },
+    {
+      "key": "Notification.Shadow.right0Color"
+    },
+    {
+      "key": "Notification.Shadow.right1Color"
+    },
+    {
+      "key": "Notification.Shadow.top0Color"
+    },
+    {
+      "key": "Notification.Shadow.top1Color"
+    },
+    {
+      "key": "Notification.Shadow.topLeft0Color"
+    },
+    {
+      "key": "Notification.Shadow.topLeft1Color"
+    },
+    {
+      "key": "Notification.Shadow.topRight0Color"
+    },
+    {
+      "key": "Notification.Shadow.topRight1Color"
+    },
+    {
       "key": "Notification.iconOffsetSize",
       "description": "Width/HorizontalOffset: Width for icon component, HorizontalOffset horizontal X for start icon"
     },
