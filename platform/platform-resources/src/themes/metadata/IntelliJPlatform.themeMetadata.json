@@ -2336,6 +2336,36 @@
       "description": "Border for search fields with extensions"
     },
     {
+      "key": "Tree.border",
+      "description": "Inner tree border. Format: \"top, left, bottom, right\" in pixels, e.g. \"4,12,4,12\"",
+      "since": "2025.1"
+    },
+    {
+      "key": "Tree.border.compact",
+      "description": "Inner tree border used in compact mode. Format: \"top, left, bottom, right\" in pixels, e.g. \"2,8,2,8\"",
+      "since": "2025.1"
+    },
+    {
+      "key": "Tree.collapsedIcon",
+      "description": "An icon used for collapsed tree nodes",
+      "since": "2025.1"
+    },
+    {
+      "key": "Tree.collapsedSelectedIcon",
+      "description": "An icon used for collapsed tree nodes when selected",
+      "since": "2025.1"
+    },
+    {
+      "key": "Tree.expandedIcon",
+      "description": "An icon used for expanded tree nodes",
+      "since": "2025.1"
+    },
+    {
+      "key": "Tree.expandedSelectedIcon",
+      "description": "An icon used for expanded tree nodes when selected",
+      "since": "2025.1"
+    },
+    {
       "key": "Tree.hoverBackground",
       "since": "2020.3",
       "description": "A background of a hovered row in a focused tree if hover is allowed."
@@ -2769,6 +2799,36 @@
       "since": "2025.1"
     },
     {
+      "key": "TrialWidget.Progress.background",
+      "description": "Background of trial widget in progress state",
+      "since": "2025.1"
+    },
+    {
+      "key": "TrialWidget.Progress.borderColor",
+      "description": "Border color of trial widget in progress state. Use transparent color if no border needed",
+      "since": "2025.1"
+    },
+    {
+      "key": "TrialWidget.Progress.foreground",
+      "description": "Foreground of trial widget in progress state",
+      "since": "2025.1"
+    },
+    {
+      "key": "TrialWidget.Progress.hoverBackground",
+      "description": "Hover background of trial widget in progress state",
+      "since": "2025.1"
+    },
+    {
+      "key": "TrialWidget.Progress.hoverBorderColor",
+      "description": "Hover border color of trial widget in progress state. Use transparent color if no border needed",
+      "since": "2025.1"
+    },
+    {
+      "key": "TrialWidget.Progress.hoverForeground",
+      "description": "Hover foreground of trial widget in progress state",
+      "since": "2025.1"
+    },
+    {
       "key": "UiDesigner.Panel.background",
       "description": "Android plugin: panels around the preview area"
     },
@@ -2777,8 +2837,24 @@
       "description": "Android plugin: the app preview area"
     },
     {
+      "key": "UnattendedHostStatus.dangerBackground",
+      "description": "Background for danger status of unattended host in Gateway"
+    },
+    {
+      "key": "UnattendedHostStatus.warningBackground",
+      "description": "Background for warning status of unattended host in Gateway"
+    },
+    {
+      "key": "UnattendedHostStatus.warningForeground",
+      "description": "Foreground for warning status of unattended host in Gateway"
+    },
+    {
       "key": "ValidationTooltip.errorBackground",
       "description": "Error description tooltip above a control. See the \"Validation Dialog Test\" action in internal mode (press Enter for validation in the dialog)."
+    },
+    {
+      "key": "ValidationTooltip.errorForeground",
+      "description": "Foreground color for error validation tooltip"
     },
     {
       "key": "ValidationTooltip.errorBorderColor"
@@ -2786,6 +2862,10 @@
     {
       "key": "ValidationTooltip.warningBackground",
       "description": "Warning description tooltip above a control. See the \"Show Standard Panels\" action in internal mode (press Enter for validation in the dialog)."
+    },
+    {
+      "key": "ValidationTooltip.warningForeground",
+      "description": "Foreground color for warning validation tooltip"
     },
     {
       "key": "ValidationTooltip.warningBorderColor"
@@ -3120,6 +3200,34 @@
       "key": "Tooltip.Learning.foreground",
       "description": "Foreground for tooltips text used in lessons",
       "since": "2021.2"
+    },
+    {
+      "key": "Tooltip.Learning.Header.foreground",
+      "description": "Foreground for the header in lesson tooltips"
+    },
+    {
+      "key": "Tooltip.Learning.iconBorderColor",
+      "description": "Border color for icons used in lesson tooltips"
+    },
+    {
+      "key": "Tooltip.Learning.iconFillColor",
+      "description": "Fill color for icons used in lesson tooltips"
+    },
+    {
+      "key": "Tooltip.Learning.linkForeground",
+      "description": "Foreground for links in lesson tooltips"
+    },
+    {
+      "key": "Tooltip.Learning.linkUnderlineDefaultColor",
+      "description": "Default underline color for links in lesson tooltips"
+    },
+    {
+      "key": "Tooltip.Learning.linkUnderlineHoveredColor",
+      "description": "Hovered underline color for links in lesson tooltips"
+    },
+    {
+      "key": "Tooltip.Learning.secondaryActionForeground",
+      "description": "Foreground for secondary actions in lesson tooltips"
     },
     {
       "key": "Tooltip.Learning.stepNumberForeground",
