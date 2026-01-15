@@ -1315,6 +1315,66 @@
       "description": "A popup in the editor with refactoring options"
     },
     {
+      "key": "Island.arc",
+      "description": "The corner radius of islands",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.arc.compact",
+      "description": "The corner radius of islands in compact mode",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.borderArcLength",
+      "description": "The length of islands border corner arc",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.borderArcLength.compact",
+      "description": "The length of islands border corner arc in compact mode",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.borderColor",
+      "description": "The color of islands border",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.borderWidth",
+      "description": "The width of islands border",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.borderWidth.compact",
+      "description": "The width of islands border in compact mode",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.inactiveAlpha",
+      "description": "The transparency of islands when it is inactive",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.inactiveAlphaInStatusBar.os.linux",
+      "description": "The transparency of islands in the status bar when it is inactive on Linux",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.inactiveAlphaInStatusBar.os.mac",
+      "description": "The transparency of islands in the status bar when it is inactive on macOS",
+      "since": "2026.1"
+    },
+    {
+      "key": "Island.inactiveAlphaInStatusBar.os.windows",
+      "description": "The transparency of islands in the status bar when it is inactive on Windows",
+      "since": "2026.1"
+    },
+    {
+      "key": "Islands",
+      "description": "Enables or disables islands UI mode",
+      "since": "2026.1"
+    },
+    {
       "key": "Label.disabledText"
     },
     {
