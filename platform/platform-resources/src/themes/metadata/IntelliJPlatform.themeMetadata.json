@@ -2516,6 +2516,22 @@
       "description": "Action shortcuts"
     },
     {
+      "key": "ToolWindow.Button.DragAndDrop.buttonDropBackground",
+      "description": "Background of the drop target area for a tool window stripe button"
+    },
+    {
+      "key": "ToolWindow.Button.DragAndDrop.buttonDropBorderColor",
+      "description": "Border color of the drop target area for a tool window stripe button"
+    },
+    {
+      "key": "ToolWindow.Button.DragAndDrop.buttonFloatingBackground",
+      "description": "Background of a tool window stripe button while it's being dragged"
+    },
+    {
+      "key": "ToolWindow.Button.foreground",
+      "description": "Foreground color of a tool window stripe button"
+    },
+    {
       "key": "ToolWindow.Button.hoverBackground",
       "description": "Buttons in a tool window stripe"
     },
@@ -2526,11 +2542,19 @@
       "key": "ToolWindow.Button.selectedForeground"
     },
     {
+      "key": "ToolWindow.DragAndDrop.areaBackground",
+      "description": "Background of the drop target area in a tool window"
+    },
+    {
       "key": "ToolWindow.Header.background",
       "description": "Active tool window header"
     },
     {
       "key": "ToolWindow.Header.borderColor"
+    },
+    {
+      "key": "ToolWindow.Header.font.size.offset",
+      "description": "Tool window header font size offset"
     },
     {
       "key": "ToolWindow.Header.fontSizeOffset",
@@ -2596,8 +2620,28 @@
       "since": "2021.3"
     },
     {
+      "key": "ToolWindow.Stripe.DragAndDrop.separatorColor",
+      "description": "Color of the separator that appears between buttons on a tool window stripe during drag-and-drop"
+    },
+    {
+      "key": "ToolWindow.Stripe.background",
+      "description": "Background color of the tool window stripe"
+    },
+    {
+      "key": "ToolWindow.Stripe.borderColor",
+      "description": "Border color of the tool window stripe"
+    },
+    {
+      "key": "ToolWindow.Stripe.separatorColor",
+      "description": "Color of separators on the tool window stripe"
+    },
+    {
       "key": "ToolWindow.background",
       "since": "2021.3"
+    },
+    {
+      "key": "ToolWindow.borderColor",
+      "description": "General border color of tool windows"
     },
     {
       "key": "Tooltip.separatorColor",
