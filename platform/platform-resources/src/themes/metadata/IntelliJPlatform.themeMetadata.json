@@ -566,6 +566,11 @@
       "description": "Editor inplace search/replace fields background color"
     },
     {
+      "key": "Editor.SearchField.bordercolor",
+      "description": "Editor inplace search/replace fields border color",
+      "since": "2024.1"
+    },
+    {
       "key": "Editor.ReplaceToolbar.borderInsets",
       "description": "Insets around editor replace panel",
       "since": "2023.3.1"
@@ -583,6 +588,56 @@
     {
       "key": "Editor.Toolbar.borderColor",
       "description": "Editor header component border"
+    },
+    {
+      "key": "Editor.ToolTip.background",
+      "description": "Editor tooltip background color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.border",
+      "description": "Editor tooltip border color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.errorBackground",
+      "description": "Editor error tooltip background color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.errorBorder",
+      "description": "Editor error tooltip border color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.iconHoverBackground",
+      "description": "Editor tooltip icon hover background color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.selectionBackground",
+      "description": "Editor tooltip selection background color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.successBackground",
+      "description": "Editor success tooltip background color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.successBorder",
+      "description": "Editor success tooltip border color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.warningBackground",
+      "description": "Editor warning tooltip background color",
+      "since": "2024.1"
+    },
+    {
+      "key": "Editor.ToolTip.warningBorder",
+      "description": "Editor warning tooltip border color",
+      "since": "2024.1"
     },
     {
       "key": "Editor.Gutter.emptyAnnotationAreaWidth",
@@ -613,6 +668,31 @@
       "key": "EditorTabs.borderColor",
       "description": "The editor tabs border color. If value isn't specified the value of DefaultTabs.borderColor will be used",
       "since": "2019.2"
+    },
+    {
+      "key": "EditorTabs.underTabsBorderColor",
+      "description": "Border color under the editor tabs",
+      "since": "2024.1"
+    },
+    {
+      "key": "EditorTabs.underlinedBorderColor",
+      "description": "Border color for the selected editor tab",
+      "since": "2024.1"
+    },
+    {
+      "key": "EditorTabs.inactiveUnderlinedTabBorderColor",
+      "description": "Border color for the selected editor tab when the editor is not focused",
+      "since": "2024.1"
+    },
+    {
+      "key": "EditorTabs.inactiveUnderlinedTabBackground",
+      "description": "Background for the selected editor tab when the editor is not focused",
+      "since": "2024.1"
+    },
+    {
+      "key": "EditorTabs.underlineArc",
+      "description": "Arc radius for the editor tab underline",
+      "since": "2024.1"
     },
     {
       "key": "EditorTabs.fontSizeOffset",
