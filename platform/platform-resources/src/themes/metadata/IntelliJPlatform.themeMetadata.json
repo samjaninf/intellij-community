@@ -1138,6 +1138,54 @@
       "deprecated": true
     },
     {
+      "key": "HelpBrowser.HelpBrowserMessage.Snippet.MoreLines.background",
+      "description": "Background color of the 'more lines' indicator in help browser messages"
+    },
+    {
+      "key": "HelpBrowser.HelpBrowserMessage.Snippet.MoreLines.foreground",
+      "description": "Text color of the 'more lines' indicator in help browser messages"
+    },
+    {
+      "key": "HelpBrowser.HelpBrowserMessage.Snippet.MoreLines.hoverBackground",
+      "description": "Background color of the 'more lines' indicator in help browser messages on hover"
+    },
+    {
+      "key": "HelpBrowser.HelpBrowserMessage.Snippet.MoreLines.hoverForeground",
+      "description": "Text color of the 'more lines' indicator in help browser messages on hover"
+    },
+    {
+      "key": "HelpBrowser.HelpBrowserMessage.Snippet.border",
+      "description": "Border color of code snippets in help browser messages"
+    },
+    {
+      "key": "HelpBrowser.UserMessage.Snippet.MoreLines.background",
+      "description": "Background color of the 'more lines' indicator in user messages"
+    },
+    {
+      "key": "HelpBrowser.UserMessage.Snippet.MoreLines.foreground",
+      "description": "Text color of the 'more lines' indicator in user messages"
+    },
+    {
+      "key": "HelpBrowser.UserMessage.Snippet.MoreLines.hoverBackground",
+      "description": "Background color of the 'more lines' indicator in user messages on hover"
+    },
+    {
+      "key": "HelpBrowser.UserMessage.Snippet.MoreLines.hoverForeground",
+      "description": "Text color of the 'more lines' indicator in user messages on hover"
+    },
+    {
+      "key": "HelpBrowser.UserMessage.Snippet.border",
+      "description": "Border color of code snippets in user messages"
+    },
+    {
+      "key": "HelpBrowser.UserMessage.background",
+      "description": "Background color of user messages in the help browser"
+    },
+    {
+      "key": "HelpBrowser.titleHighlightForeground",
+      "description": "Foreground color of highlighted titles in the help browser"
+    },
+    {
       "key": "HelpTooltip.background",
       "description": "Use ToolTip.background instead",
       "deprecated": true
@@ -1161,6 +1209,11 @@
       "key": "HelpTooltip.infoForeground",
       "description": "Use ToolTip.infoForeground instead",
       "deprecated": true
+    },
+    {
+      "key": "HelpTooltip.verticalGap",
+      "description": "Vertical gap between HelpTooltip elements",
+      "since": "2024.1"
     },
     {
       "key": "IconBadge.borderWidth",
