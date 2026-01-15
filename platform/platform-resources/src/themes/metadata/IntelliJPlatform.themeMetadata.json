@@ -965,6 +965,16 @@
       "description": "GotIt tooltip link foreground color if different from Link.activeForeground"
     },
     {
+      "key": "GotItTooltip.linkUnderlineDefaultColor",
+      "description": "GotIt tooltip link underline color",
+      "since": "2023.3"
+    },
+    {
+      "key": "GotItTooltip.linkUnderlineHoveredColor",
+      "description": "GotIt tooltip link underline color on hover",
+      "since": "2023.3"
+    },
+    {
       "key": "GotItTooltip.codeForeground",
       "description": "GotIt tooltip inline code element foreground color if different from GotItTooltip.foreground",
       "since": "2023.1.1"
@@ -985,6 +995,11 @@
       "since": "2023.1"
     },
     {
+      "key": "GotItTooltip.secondaryActionForeground",
+      "description": "GotIt tooltip secondary action foreground color",
+      "since": "2023.3"
+    },
+    {
       "key": "GotItTooltip.imageBorderColor",
       "description": "GotIt tooltip image rounded border color if different from GotItTooltip.background",
       "since": "2023.2.1"
@@ -993,6 +1008,16 @@
       "key": "GotItTooltip.animationBackground",
       "description": "GotIt tooltip animation background color if different from GotItTooltip.background",
       "since": "2023.2.1"
+    },
+    {
+      "key": "GotItTooltip.iconFillColor",
+      "description": "GotIt tooltip icon fill color",
+      "since": "2023.3"
+    },
+    {
+      "key": "GotItTooltip.iconBorderColor",
+      "description": "GotIt tooltip icon border color",
+      "since": "2023.3"
     },
     {
       "key": "GotItTooltip.Header.foreground",
@@ -1023,6 +1048,11 @@
       "key": "GotItTooltip.Button.endBorderColor",
       "description": "GotIt tooltip button outline gradient end color if different from Button.endBorderColor",
       "since": "2022.3.1"
+    },
+    {
+      "key": "GotItTooltip.Button.contrastBackground",
+      "description": "GotIt tooltip button contrast background color",
+      "since": "2023.3"
     },
     {
       "key": "GotItTooltip.startBackground",
