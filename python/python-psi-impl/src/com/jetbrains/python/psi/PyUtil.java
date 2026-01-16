@@ -1375,84 +1375,15 @@ public final class PyUtil {
 
   public static boolean isSignatureCompatibleTo(@NotNull PyCallable callable, @NotNull PyCallable otherCallable,
                                                 @NotNull TypeEvalContext context) {
-    final List<PyCallableParameter> parameters = callable.getParameters(context);
-    final List<PyCallableParameter> otherParameters = otherCallable.getParameters(context);
-    final int optionalCount = optionalParametersCount(parameters);
-    final int otherOptionalCount = optionalParametersCount(otherParameters);
-    final int requiredCount = requiredParametersCount(callable, parameters);
-    final int otherRequiredCount = requiredParametersCount(otherCallable, otherParameters);
-    if (hasPositionalContainer(otherParameters) || hasKeywordContainer(otherParameters)) {
-      if (otherParameters.size() == specialParametersCount(otherCallable, otherParameters)) {
-        return true;
-      }
+    List<PyCallableParameter> parameters = callable.getParameters(context);
+    List<PyCallableParameter> otherParameters = otherCallable.getParameters(context);
+    if (!parameters.isEmpty() && parameters.getFirst().isSelf()) {
+      parameters = parameters.subList(1, parameters.size());
     }
-    if (hasPositionalContainer(parameters) || hasKeywordContainer(parameters)) {
-      return requiredCount <= otherRequiredCount;
+    if (!otherParameters.isEmpty() && otherParameters.getFirst().isSelf()) {
+      otherParameters = otherParameters.subList(1, otherParameters.size());
     }
-    return requiredCount <= otherRequiredCount &&
-           optionalCount >= otherOptionalCount &&
-           namedParametersCount(parameters) >= namedParametersCount(otherParameters);
-  }
-
-  private static int optionalParametersCount(@NotNull List<PyCallableParameter> parameters) {
-    int n = 0;
-    for (PyCallableParameter parameter : parameters) {
-      if (parameter.hasDefaultValue()) {
-        n++;
-      }
-    }
-    return n;
-  }
-
-  private static int requiredParametersCount(@NotNull PyCallable callable, @NotNull List<PyCallableParameter> parameters) {
-    return namedParametersCount(parameters) - optionalParametersCount(parameters) - specialParametersCount(callable, parameters);
-  }
-
-  private static int specialParametersCount(@NotNull PyCallable callable, @NotNull List<PyCallableParameter> parameters) {
-    int n = 0;
-    if (hasPositionalContainer(parameters)) {
-      n++;
-    }
-    if (hasKeywordContainer(parameters)) {
-      n++;
-    }
-    if (isFirstParameterSpecial(callable, parameters)) {
-      n++;
-    }
-    return n;
-  }
-
-  private static boolean hasPositionalContainer(@NotNull List<PyCallableParameter> parameters) {
-    for (PyCallableParameter parameter : parameters) {
-      if (parameter.isPositionalContainer()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private static boolean hasKeywordContainer(@NotNull List<PyCallableParameter> parameters) {
-    for (PyCallableParameter parameter : parameters) {
-      if (parameter.isKeywordContainer()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private static int namedParametersCount(@NotNull List<PyCallableParameter> parameters) {
-    return ContainerUtil.count(parameters, p -> p.getParameter() instanceof PyNamedParameter);
-  }
-
-  private static boolean isFirstParameterSpecial(@NotNull PyCallable callable, @NotNull List<PyCallableParameter> parameters) {
-    final PyFunction method = callable.asMethod();
-    if (method != null) {
-      return isNewMethod(method) || method.getModifier() != STATICMETHOD;
-    }
-    else {
-      final PyCallableParameter first = ContainerUtil.getFirstItem(parameters);
-      return first != null && PyNames.CANONICAL_SELF.equals(first.getName());
-    }
+    return PyCallableParameterMapping.mapCallableParameters(otherParameters, parameters, context) != null;
   }
 
   /**

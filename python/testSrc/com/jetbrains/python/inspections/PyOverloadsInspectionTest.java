@@ -56,6 +56,11 @@ public class PyOverloadsInspectionTest extends PyInspectionTestCase {
     doTest();
   }
 
+  // PY-86522
+  public void testOverloadsStructuralCompatibility() {
+    doTest();
+  }
+
   @NotNull
   @Override
   protected Class<? extends PyInspection> getInspectionClass() {

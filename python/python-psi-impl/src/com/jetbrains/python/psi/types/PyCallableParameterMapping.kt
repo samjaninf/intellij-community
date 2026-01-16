@@ -114,7 +114,6 @@ object PyCallableParameterMapping {
         ParameterKind.POSITIONAL_OR_KEYWORD -> {
           if (actualParameter.kind == ParameterKind.POSITIONAL_OR_KEYWORD) {
             when {
-              expectedParameter.parameter.isSelf && actualParameter.parameter.isSelf -> continue
               expectedParameter.name != actualParameter.name -> return null
               expectedParameter.hasDefault && !actualParameter.hasDefault -> return null
             }
@@ -324,7 +323,7 @@ object PyCallableParameterMapping {
           val isPositionalOnly = paramName == null || isPrivate(paramName)
           if (isPositionalOnly) {
             parameters.lastOrNull()?.let {
-              if (it.kind != ParameterKind.POSITIONAL_ONLY && it.kind != ParameterKind.TYPE_VAR_TUPLE) {
+              if (it.kind != ParameterKind.POSITIONAL_ONLY && it.kind != ParameterKind.TYPE_VAR_TUPLE && !it.parameter.isSelf) {
                 // Previous parameter should also be positional-only in this case
                 return null
               }
