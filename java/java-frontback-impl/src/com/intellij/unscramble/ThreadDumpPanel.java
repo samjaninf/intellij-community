@@ -34,20 +34,12 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.threadDumpParser.ThreadState;
-import com.intellij.ui.ColoredListCellRenderer;
-import com.intellij.ui.DocumentAdapter;
-import com.intellij.ui.EditorNotificationPanel;
-import com.intellij.ui.LightColors;
-import com.intellij.ui.ListSpeedSearch;
-import com.intellij.ui.ScrollPaneFactory;
-import com.intellij.ui.SearchTextField;
-import com.intellij.ui.SideBorder;
-import com.intellij.ui.SimpleTextAttributes;
-import com.intellij.ui.SpeedSearchComparator;
-import com.intellij.ui.components.JBList;
+import com.intellij.ui.*;
+import com.intellij.ui.treeStructure.Tree;
 import com.intellij.util.PlatformIcons;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
@@ -57,10 +49,10 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import java.awt.BorderLayout;
-import java.awt.Color;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.*;
+import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.util.ArrayList;
@@ -72,7 +64,7 @@ import java.util.List;
  * @author Konstantin Bulenkov
  */
 public final class ThreadDumpPanel extends JPanel implements NoStackTraceFoldingPanel {
-  private final JBList<DumpItem> myThreadList;
+  private final Tree myThreadTree;
   private final EditorNotificationPanel myNotificationPanel = new EditorNotificationPanel(EditorNotificationPanel.Status.Info);
   private final List<DumpItem> myThreadDump;
   private final List<DumpItem> myMergedThreadDump;
@@ -110,11 +102,11 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
 
     myFilterField = createSearchTextField();
     myFilterPanel = createFilterPanel();
-    myThreadList = createThreadList(consoleView);
+    myThreadTree = createThreadsTree(consoleView);
 
     configureToolbar(project, consoleView, toolbarActions);
 
-    updateThreadDumpItemList();
+    updateThreadsTree();
 
     Editor editor = CommonDataKeys.EDITOR.getData(DataManager.getInstance().getDataContext(consoleView.getPreferredFocusableComponent()));
     if (editor != null) {
@@ -130,12 +122,17 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     }
   }
 
+  @ApiStatus.Internal
+  Tree getTree() {
+    return myThreadTree;
+  }
+
   private SearchTextField createSearchTextField() {
     SearchTextField searchTextField = new SearchTextField();
     searchTextField.addDocumentListener(new DocumentAdapter() {
       @Override
       protected void textChanged(@NotNull DocumentEvent e) {
-        updateThreadDumpItemList();
+        updateThreadsTree();
       }
     });
     return searchTextField;
@@ -149,38 +146,42 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     return filterPanel;
   }
 
-  private static JBList<DumpItem> createThreadList(ConsoleView consoleView) {
-    JBList<DumpItem> threadList = new JBList<>(new DefaultListModel<>());
-    threadList.setCellRenderer(new ThreadListCellRenderer());
-    threadList.setEmptyText(JavaFrontbackBundle.message("thread.dump.loading.text"));
-    threadList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    threadList.addListSelectionListener(new ListSelectionListener() {
-      int currentSelectedIndex = -2; // to avoid multiple expensive invocations of printStackTrace()
+  private static Tree createThreadsTree(ConsoleView consoleView) {
+    Tree threadTree = new Tree();
+    threadTree.setName("Thread Dump");
+    threadTree.setCellRenderer(new ThreadTreeCellRenderer());
+    threadTree.setRootVisible(false);
+    threadTree.getEmptyText().setText(JavaFrontbackBundle.message("thread.dump.loading.text"));
+    threadTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+    threadTree.addTreeSelectionListener(new TreeSelectionListener() {
+      DumpItem currentlySelectedItem = null; // to avoid multiple expensive invocations of printStackTrace()
       @Override
-      public void valueChanged(ListSelectionEvent e) {
-        int index = threadList.getSelectedIndex();
-        if (index != currentSelectedIndex) {
-          if (index >= 0) {
-            DumpItem selection = threadList.getModel().getElementAt(index);
+      public void valueChanged(TreeSelectionEvent e) {
+        TreePath path = e.getPath();
+        if (threadTree.isPathSelected(path)) {
+          DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+          if (node.getUserObject() instanceof DumpItem selection && selection != currentlySelectedItem) {
             AnalyzeStacktraceUtil.printStacktrace(consoleView, selection.getStackTrace());
+            currentlySelectedItem = selection;
           }
-          else {
-            AnalyzeStacktraceUtil.printStacktrace(consoleView, "");
-          }
-          currentSelectedIndex = index;
+        } else {
+          AnalyzeStacktraceUtil.printStacktrace(consoleView, "");
         }
-        threadList.repaint();
+        threadTree.repaint();
       }
     });
-    ListSpeedSearch
-      .installOn(threadList, DumpItem::getName)
+    TreeSpeedSearch
+      .installOn(threadTree, true, path -> {
+      var node = (DefaultMutableTreeNode)path.getLastPathComponent();
+      return node.getUserObject() instanceof DumpItem item ? item.getName() : "";
+      })
       .setComparator(new SpeedSearchComparator(false, true));
-    return threadList;
+    return threadTree;
   }
 
   private void configureToolbar(Project project, ConsoleView consoleView, DefaultActionGroup toolbarActions) {
     FilterAction filterAction = new FilterAction();
-    filterAction.registerCustomShortcutSet(ActionManager.getInstance().getAction(IdeActions.ACTION_FIND).getShortcutSet(), myThreadList);
+    filterAction.registerCustomShortcutSet(ActionManager.getInstance().getAction(IdeActions.ACTION_FIND).getShortcutSet(), myThreadTree);
     toolbarActions.add(filterAction);
     toolbarActions.add(new CopyToClipboardAction(project));
     toolbarActions.add(new SortThreadsAction());
@@ -197,7 +198,7 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     northPanel.add(myNotificationPanel, BorderLayout.NORTH);
     northPanel.add(myFilterPanel, BorderLayout.SOUTH);
     leftPanel.add(northPanel, BorderLayout.NORTH);
-    leftPanel.add(ScrollPaneFactory.createScrollPane(myThreadList, SideBorder.LEFT | SideBorder.RIGHT), BorderLayout.CENTER);
+    leftPanel.add(ScrollPaneFactory.createScrollPane(myThreadTree, SideBorder.LEFT | SideBorder.RIGHT), BorderLayout.CENTER);
 
     Splitter splitter = new Splitter(false, 0.3f);
     splitter.setFirstComponent(leftPanel);
@@ -208,12 +209,13 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
   private void sortAndUpdateThreadDumpItemList() {
     myThreadDump.sort(currentComparator);
     myMergedThreadDump.sort(currentComparator);
-    updateThreadDumpItemList();
+    updateThreadsTree();
   }
 
-  private void updateThreadDumpItemList() {
+  private void updateThreadsTree() {
     String text = myFilterPanel.isVisible() ? myFilterField.getText() : "";
-    Object selection = myThreadList.getSelectedValue();
+    var path = myThreadTree.getSelectionPath();
+    var selection = path != null ? (DumpItem)((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject() : null;
     int selectedIndex = 0;
     int index = 0;
     ArrayList<DumpItem> filteredThreadStates = new ArrayList<>();
@@ -228,11 +230,18 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
         index++;
       }
     }
-
     // Add all of them in a single call, otherwise it works too slow recalculating UI layout.
-    DefaultListModel<DumpItem> model = (DefaultListModel<DumpItem>)myThreadList.getModel();
-    model.clear();
-    model.addAll(filteredThreadStates);
+    var model = (DefaultTreeModel)myThreadTree.getModel();
+    var root = ((DefaultMutableTreeNode)model.getRoot());
+    if (root != null) {
+      root.removeAllChildren();
+
+      for (DumpItem threadState : filteredThreadStates) {
+        root.add(new DefaultMutableTreeNode(threadState));
+      }
+    }
+    model.reload();
+
     int truncated = useMerged ? myMergedDumpItemsTruncated : myDumpItemsTruncated;
     if (truncated > 0) {
       myNotificationPanel.text(JavaFrontbackBundle.message("truncated.dump.notification", threadStates.size()));
@@ -241,11 +250,11 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     else {
       myNotificationPanel.setVisible(false);
     }
-    if (!model.isEmpty()) {
-      myThreadList.setSelectedIndex(selectedIndex);
+    if (root != null && root.getChildCount() > 0) {
+      myThreadTree.setSelectionRow(selectedIndex);
     }
-    myThreadList.revalidate();
-    myThreadList.repaint();
+    myThreadTree.revalidate();
+    myThreadTree.repaint();
   }
 
   private static void highlightOccurrences(String filter, Project project, Editor editor) {
@@ -263,20 +272,30 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     }
   }
 
-  private static class ThreadListCellRenderer extends ColoredListCellRenderer<DumpItem> {
-    private String iconToolTip;
+  private static class ThreadTreeCellRenderer extends ColoredTreeCellRenderer {
+    @Nls private String iconToolTip;
 
     @Override
-    protected void customizeCellRenderer(@NotNull JList<? extends DumpItem> list, DumpItem threadState, int index, boolean selected, boolean hasFocus) {
-      setIcon(threadState.getIcon());
-      iconToolTip = threadState.getIconToolTip();
-      if (!selected) {
-        DumpItem selectedThread = list.getSelectedValue();
-        setBackground(getBackgroundColor(threadState, selectedThread));
+    public void customizeCellRenderer(@NotNull JTree tree,
+                                      Object value,
+                                      boolean selected,
+                                      boolean expanded,
+                                      boolean leaf,
+                                      int row,
+                                      boolean hasFocus) {
+      var node = (DefaultMutableTreeNode)value;
+      if (node.getUserObject() instanceof DumpItem dumpItem) {
+        setIcon((dumpItem).getIcon());
+        iconToolTip = dumpItem.getIconToolTip();
+        if (selected) {
+          var selectedNode = (DefaultMutableTreeNode)tree.getLastSelectedPathComponent();
+          var selectedThread = (DumpItem)selectedNode.getUserObject();
+          setBackground(getBackgroundColor(dumpItem, selectedThread));
+        }
+        SimpleTextAttributes attrs = dumpItem.getAttributes();
+        append(dumpItem.getName(), attrs);
+        append(dumpItem.getStateDesc(), attrs);
       }
-      SimpleTextAttributes attrs = threadState.getAttributes();
-      append(threadState.getName(), attrs);
-      append(threadState.getStateDesc(), attrs);
     }
 
     @Override
@@ -298,7 +317,7 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
   }
 
   public void selectStackFrame(int index) {
-    myThreadList.setSelectedIndex(index);
+    myThreadTree.setSelectionRow(index);
   }
 
   private final class SortThreadsAction extends DumbAwareAction {
@@ -377,7 +396,7 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
         IdeFocusManager.getInstance(getEventProject(e)).requestFocus(myFilterField, true);
         myFilterField.selectText();
       }
-      updateThreadDumpItemList();
+      updateThreadsTree();
     }
   }
 
@@ -400,7 +419,7 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     @Override
     public void setSelected(@NotNull AnActionEvent e, boolean state) {
       UISettings.getInstance().getState().setMergeEqualStackTraces(state);
-      updateThreadDumpItemList();
+      updateThreadsTree();
     }
   }
 
