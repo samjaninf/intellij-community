@@ -1,8 +1,8 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package git4idea.rebase
 
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.UiWithModelAccess
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -34,6 +34,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.Nls
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @Service(Service.Level.PROJECT)
 internal class GitRewordService(private val project: Project, private val cs: CoroutineScope) {
@@ -102,7 +105,7 @@ private suspend fun executeRewordOperation(
 
 private suspend fun showDialogForMessage(project: Project, specs: Collection<RewordSpec>): String {
   val logData = VcsProjectLog.awaitLogIsReady(project)?.dataManager ?: error("Git Log is not ready")
-  return withContext(Dispatchers.EDT) {
+  return withContext(Dispatchers.UiWithModelAccess) {
     val dialog = GitNewCommitMessageActionDialog(project = project,
                                                  originMessage = specs.first().commit.fullMessage,
                                                  selectedChanges = null,
@@ -110,10 +113,14 @@ private suspend fun showDialogForMessage(project: Project, specs: Collection<Rew
                                                  title = GitBundle.message("rebase.log.reword.dialog.title"),
                                                  dialogLabel = buildRewordDialogLabel(specs))
     suspendCancellableCoroutine { cont ->
-      dialog.show {
-        cont.resume(it) { _, _, _ ->
-          runInEdt(ModalityState.any()) { dialog.close(CANCEL_EXIT_CODE) }
+      dialog.show(onOk = { if (cont.isActive) cont.resume(it) }, onClose = {
+        if (cont.isActive) {
+          cont.resumeWithException(CancellationException("Dialog closed"))
         }
+      })
+
+      cont.invokeOnCancellation {
+        runInEdt(ModalityState.any()) { dialog.close(CANCEL_EXIT_CODE) }
       }
     }
   }
