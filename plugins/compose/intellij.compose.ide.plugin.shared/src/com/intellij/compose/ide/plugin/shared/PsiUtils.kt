@@ -26,6 +26,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.parentOfType
 import com.intellij.util.concurrency.annotations.RequiresReadLock
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaSession
@@ -33,15 +34,20 @@ import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
 import org.jetbrains.kotlin.analysis.api.resolution.calls
 import org.jetbrains.kotlin.analysis.api.resolution.singleConstructorCallOrNull
+import org.jetbrains.kotlin.analysis.api.resolution.successfulFunctionCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotated
+import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentList
 
@@ -75,6 +81,34 @@ fun isComposeEnabledForElementModule(element: PsiElement): Boolean {
 
 internal fun PsiElement.isComposableFunction(): Boolean =
   this is KtNamedFunction && this.hasComposableAnnotation()
+
+internal fun KtProperty.isComposableGetter(): Boolean =
+  getter?.hasComposableAnnotation() == true
+
+internal fun KtCallableDeclaration.isComposableType(): Boolean =
+  typeReference?.hasComposableAnnotation() == true
+
+internal fun KtLambdaExpression.isComposableLambda(): Boolean {
+  val parent = this.parent
+  if (parent is KtAnnotatedExpression && parent.hasComposableAnnotation()) return true
+
+  if (parent !is KtValueArgument) return false
+
+  val callExpression = parent.parentOfType<KtCallExpression>() ?: return false
+  return analyze(callExpression) {
+    val functionCall = callExpression.resolveToCall()?.successfulFunctionCallOrNull() ?: return@analyze false
+    val parameterSymbol = functionCall.valueArgumentMapping[this@isComposableLambda]?.symbol ?: return@analyze false
+    parameterSymbol.returnType.annotations.any { it.classId == COMPOSABLE_ANNOTATION_CLASS_ID }
+  }
+}
+
+internal fun KtLambdaExpression.isStandardLambda(): Boolean {
+  if (parent is KtProperty) {
+    val property = parent as KtProperty
+    if (!property.isComposableType()) return true
+  }
+  return false
+}
 
 internal fun KtAnnotated.hasComposableAnnotation(): Boolean =
   this.getAnnotationWithCaching(COMPOSABLE_FUNCTION_KEY) { it.isComposableAnnotation() } != null
