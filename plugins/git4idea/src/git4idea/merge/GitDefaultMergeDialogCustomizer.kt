@@ -56,7 +56,7 @@ import javax.swing.JPanel
 internal open class GitDefaultMergeDialogCustomizer(
   private val project: Project
 ) : MergeDialogCustomizer() {
-  override fun getMultipleFileMergeDescription(files: MutableCollection<VirtualFile>): @NlsContexts.Label String {
+  override fun getMultipleFileMergeDescription(files: Collection<VirtualFile>): @NlsContexts.Label String {
     val repos = getRepositoriesForFiles(project, files)
       .ifEmpty { getRepositories(project).filter { it.stagingAreaHolder.allConflicts.isNotEmpty() } }
 
