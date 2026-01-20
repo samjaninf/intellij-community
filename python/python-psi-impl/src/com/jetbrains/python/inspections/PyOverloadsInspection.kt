@@ -8,6 +8,7 @@ import com.intellij.util.Processor
 import com.intellij.util.containers.SortedList
 import com.intellij.util.containers.sequenceOfNotNull
 import com.intellij.util.containers.tail
+import com.jetbrains.python.PyNames
 import com.jetbrains.python.PyPsiBundle
 import com.jetbrains.python.ast.PyAstFunction
 import com.jetbrains.python.codeInsight.controlflow.ScopeOwner
@@ -20,6 +21,9 @@ import com.jetbrains.python.psi.PyKnownDecorator
 import com.jetbrains.python.psi.PyKnownDecoratorUtil
 import com.jetbrains.python.psi.PyUtil
 import com.jetbrains.python.psi.impl.PyClassImpl
+import com.jetbrains.python.psi.types.PyCallableType
+import com.jetbrains.python.psi.types.PyCallableTypeImpl
+import com.jetbrains.python.psi.types.PyTypeChecker
 import com.jetbrains.python.psi.types.TypeEvalContext
 import com.jetbrains.python.pyi.PyiFile
 import com.jetbrains.python.pyi.PyiUtil
@@ -65,6 +69,8 @@ class PyOverloadsInspection : PyInspection() {
       checkClassMethodAndStaticMethodConsistency(overloads, implementation)
 
       checkOverrideAndFinal(overloads, implementation)
+
+      checkOverloadsOverlapping(overloads)
 
       var requiresImplementation = true
       if (owner.containingFile is PyiFile) {
@@ -147,6 +153,42 @@ class PyOverloadsInspection : PyInspection() {
       return decoratorList.decorators.any { decorator ->
         PyKnownDecoratorUtil.asKnownDecorators(decorator, myTypeEvalContext).any {
           it == PyKnownDecorator.TYPING_OVERRIDE || it == PyKnownDecorator.TYPING_EXTENSIONS_OVERRIDE
+        }
+      }
+    }
+
+    private fun checkOverloadsOverlapping(overloads: List<PyFunction>) {
+      if (overloads.size < 2) return
+
+      // __get__ method should be special-cased
+      if (overloads.firstOrNull()?.name == PyNames.DUNDER_GET) return
+
+      for (i in overloads.indices) {
+        val current = overloads[i]
+        val currCallableType = myTypeEvalContext.getType(current) as? PyCallableType ?: continue
+        val currParams = currCallableType.getParameters(myTypeEvalContext) ?: continue
+        val currReturnType = currCallableType.getReturnType(myTypeEvalContext)
+
+        val currOverloadWithoutReturn = PyCallableTypeImpl(currParams, null)
+
+        for (j in (i + 1) until overloads.size) {
+          val next = overloads[j]
+          val nextCallableType = myTypeEvalContext.getType(next) as? PyCallableType ?: continue
+          val nextParams = nextCallableType.getParameters(myTypeEvalContext) ?: continue
+          val nextReturnType = nextCallableType.getReturnType(myTypeEvalContext)
+
+          val nextOverloadWithoutReturn = PyCallableTypeImpl(nextParams, null)
+
+          if (PyTypeChecker.match(nextOverloadWithoutReturn, currOverloadWithoutReturn, myTypeEvalContext)) {
+            registerProblem(next.nameIdentifier,
+                            PyPsiBundle.message("INSP.overloads.overload.overlapped.by.a.broader.type", i + 1))
+          }
+          else if (PyTypeChecker.match(currOverloadWithoutReturn, nextOverloadWithoutReturn, myTypeEvalContext)) {
+            if (!PyTypeChecker.match(nextReturnType, currReturnType, myTypeEvalContext)) {
+              registerProblem(current.nameIdentifier,
+                              PyPsiBundle.message("INSP.overloads.overload.overlaps.other.overload.with.incompatible.return.type", j + 1))
+            }
+          }
         }
       }
     }
