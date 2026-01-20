@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
 // Used to run JUnit 5 tests via JUnit 5 runtime
 @SuppressWarnings({"UseOfSystemOutOrSystemErr", "CallToPrintStackTrace"})
 public final class JUnit5TeamCityRunnerForTestsOnClasspath {
-  private static final String ourCollectTestsFile = System.getProperty("intellij.build.test.list.classes");
+  static final String LIST_CLASSES = System.getProperty("intellij.build.test.list.classes");
 
-  public static void assertNoUnhandledExceptions(String kind, Throwable e) {
+  static void assertNoUnhandledExceptions(String kind, Throwable e) {
     String runConfigurationName = System.getProperty("intellij.build.run.configuration.name");
     final String testName =
       kind + ".assertNoUnhandledExceptions" + (runConfigurationName == null ? "" : ("(" + runConfigurationName + ")"));
@@ -60,7 +60,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
   }
 
   public static void main(String[] args) {
-    JUnit5TeamCityRunnerForTestAllSuite.TCExecutionListener listener = null;
+    JUnit5TeamCityRunner.TCExecutionListener listener = null;
     Throwable caughtException = null;
     boolean noTestsFound = false;
 
@@ -82,7 +82,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
       try {
         nameFilter = createClassNameFilter(classLoader);
         postDiscoveryFilter = createPostDiscoveryFilter(classLoader);
-        performancePostDiscoveryFilter = new JUnit5TeamCityRunnerForTestAllSuite.PerformancePostDiscoveryFilter();
+        performancePostDiscoveryFilter = new JUnit5TeamCityRunner.PerformancePostDiscoveryFilter();
         classPathRoots = getClassPathRoots(classLoader);
       }
       catch (Throwable e) {
@@ -105,11 +105,11 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
         .filters(nameFilter, postDiscoveryFilter, performancePostDiscoveryFilter, EngineFilter.excludeEngines(VintageTestDescriptor.ENGINE_ID)).build();
       TestPlan testPlan = launcher.discover(discoveryRequest);
       if (testPlan.containsTests()) {
-        if (ourCollectTestsFile != null) {
+        if (LIST_CLASSES != null) {
           saveListOfTestClasses(testPlan);
           return;
         }
-        listener = new JUnit5TeamCityRunnerForTestAllSuite.TCExecutionListener();
+        listener = new JUnit5TeamCityRunner.TCExecutionListener();
         launcher.execute(testPlan, listener);
       }
       else {
@@ -142,7 +142,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
     System.exit(exitCode);
   }
 
-  private static Set<Path> getClassPathRoots(ClassLoader classLoader) throws Throwable {
+  static Set<Path> getClassPathRoots(ClassLoader classLoader) throws Throwable {
     //noinspection unchecked
     List<Path> paths = (List<Path>)MethodHandles.publicLookup()
       .findStatic(Class.forName("com.intellij.TestAll", false, classLoader),
@@ -167,7 +167,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
       .collect(Collectors.toSet());
   }
 
-  private static ClassNameFilter createClassNameFilter(ClassLoader classLoader)
+  static ClassNameFilter createClassNameFilter(ClassLoader classLoader)
     throws NoSuchMethodException, ClassNotFoundException, IllegalAccessException {
     MethodHandle included = MethodHandles.publicLookup()
       .findStatic(Class.forName("com.intellij.TestCaseLoader", true, classLoader),
@@ -189,7 +189,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
     };
   }
 
-  private static PostDiscoveryFilter createPostDiscoveryFilter(ClassLoader classLoader)
+  static PostDiscoveryFilter createPostDiscoveryFilter(ClassLoader classLoader)
     throws NoSuchMethodException, ClassNotFoundException, IllegalAccessException {
     MethodHandle included = MethodHandles.publicLookup()
       .findStatic(Class.forName("com.intellij.TestCaseLoader", true, classLoader),
@@ -239,7 +239,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
     };
   }
 
-  private static void saveListOfTestClasses(TestPlan testPlan) {
+  static void saveListOfTestClasses(TestPlan testPlan) {
     ArrayList<String> testClasses = new ArrayList<>(0);
     for (TestIdentifier root : testPlan.getRoots()) {
       Set<TestIdentifier> firstLevel = testPlan.getChildren(root);
@@ -250,7 +250,7 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
           .ifPresent(name -> testClasses.add(name));
       }
     }
-    Path path = Path.of(ourCollectTestsFile);
+    Path path = Path.of(LIST_CLASSES);
     try {
       Files.createDirectories(path.getParent());
       Files.write(path, testClasses);

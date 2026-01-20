@@ -81,7 +81,7 @@ public final class JUnit5BazelRunner {
   private static final Launcher launcher = LauncherFactory.create();
 
   private static final BucketsPostDiscoveryFilter bucketingPostDiscoveryFilter = new BucketsPostDiscoveryFilter();
-  private static final PostDiscoveryFilter performancePostDiscoveryFilter = new JUnit5TeamCityRunnerForTestAllSuite.PerformancePostDiscoveryFilter();
+  private static final PostDiscoveryFilter performancePostDiscoveryFilter = new JUnit5TeamCityRunner.PerformancePostDiscoveryFilter();
 
   private static LauncherDiscoveryRequest getDiscoveryRequest() throws Throwable {
     List<? extends DiscoverySelector> bazelTestSelectors = getTestsSelectors(ourClassLoader);

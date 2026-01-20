@@ -571,7 +571,7 @@ public class TestAll implements Test {
       JUnit4TestAdapterCache cache;
       if ("junit5".equals(System.getProperty("intellij.build.test.runner"))) {
         try {
-          cache = (JUnit4TestAdapterCache)Class.forName("com.intellij.tests.JUnit5TeamCityRunnerForTestAllSuite")
+          cache = (JUnit4TestAdapterCache)Class.forName("com.intellij.tests.JUnit5TeamCityRunner")
             .getMethod("createJUnit4TestAdapterCache")
             .invoke(null);
         }

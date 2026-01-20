@@ -508,12 +508,12 @@ public class TestCaseLoader {
     myLastTestClass = null;
   }
 
-  // called reflectively from `JUnit5TeamCityRunnerForTestAllSuite#createPerformancePostDiscoveryFilter`
+  // called reflectively from `JUnit5TeamCityRunner#createPerformancePostDiscoveryFilter`
   public static boolean isPerformanceTestsRun() {
     return PERFORMANCE_TESTS_ONLY;
   }
 
-  // called reflectively from `JUnit5TeamCityRunnerForTestAllSuite#createPerformancePostDiscoveryFilter`
+  // called reflectively from `JUnit5TeamCityRunner#createPerformancePostDiscoveryFilter`
   public static boolean isIncludingPerformanceTestsRun() {
     return INCLUDE_PERFORMANCE_TESTS;
   }

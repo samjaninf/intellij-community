@@ -1,25 +1,36 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.tests;
 
-import jetbrains.buildServer.messages.serviceMessages.MapSerializerUtil;
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage;
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes;
+import jetbrains.buildServer.messages.serviceMessages.TestFinished;
+import jetbrains.buildServer.messages.serviceMessages.TestStarted;
+import jetbrains.buildServer.messages.serviceMessages.TestStdOut;
+import jetbrains.buildServer.messages.serviceMessages.TestSuiteFinished;
+import jetbrains.buildServer.messages.serviceMessages.TestSuiteStarted;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.JUnit4TestAdapterCache;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
+import org.junit.platform.commons.logging.LogRecordListener;
+import org.junit.platform.commons.logging.LoggerFactory;
 import org.junit.platform.engine.DiscoverySelector;
+import org.junit.platform.engine.EngineDiscoveryRequest;
+import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.Filter;
 import org.junit.platform.engine.FilterResult;
 import org.junit.platform.engine.TestDescriptor;
+import org.junit.platform.engine.TestEngine;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestSource;
+import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.ClassNameFilter;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
 import org.junit.platform.engine.support.descriptor.MethodSource;
+import org.junit.platform.launcher.EngineFilter;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.PostDiscoveryFilter;
@@ -33,15 +44,20 @@ import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
+import org.junit.vintage.engine.VintageTestEngine;
+import org.junit.vintage.engine.descriptor.VintageTestDescriptor;
 import org.opentest4j.AssertionFailedError;
 import org.opentest4j.MultipleFailuresError;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,12 +66,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
-import static com.intellij.tests.JUnit5TeamCityRunnerForTestsOnClasspath.assertNoUnhandledExceptions;
-
-// Used to run JUnit 3/4 tests via JUnit 5 runtime
+/**
+ * Runs JUnit 3/4 tests using {@linkplain VintageTestEngine}/{@linkplain OrderedVintageTestEngine}, or JUnit 5 tests using {@linkplain JupiterTestEngine}.
+ *
+ * Supported options:
+ * - __class__ className[;...]
+ * - __package__ packageName
+ * - __classpathroot__
+ *   if {@systemProperty intellij.build.test.engine.vintage} is set, {@code only} runs only JUnit 3/4 tests using {@linkplain OrderedVintageTestEngine}, {@code false} runs only JUnit 5 tests; otherwise, both are run
+ *   if {@systemProperty intellij.build.test.reverse.order} is set, JUnit 3/4 tests are run in reverse order
+ * - className
+ * - className methodName
+ * if {@systemProperty intellij.build.test.list.classes} is set, only test discovery is performed and the resulting list of test classes is saved to the file specified by this property
+ */
 @SuppressWarnings("UseOfSystemOutOrSystemErr")
-public final class JUnit5TeamCityRunnerForTestAllSuite {
+public final class JUnit5TeamCityRunner {
+  private static final String ENGINE_VINTAGE = System.getProperty("intellij.build.test.engine.vintage");
+  private static final String REVERSE_ORDER = System.getProperty("intellij.build.test.reverse.order");
+
   public static void main(String[] args) throws ClassNotFoundException {
     if (args.length != 1 && args.length != 2) {
       System.err.printf("Expected one or two arguments, got %d: %s%n", args.length, Arrays.toString(args));
@@ -66,41 +97,85 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
     Throwable caughtException = null;
 
     try {
-      Launcher launcher = LauncherFactory.create(LauncherConfig.builder().enableLauncherSessionListenerAutoRegistration(true).build());
+      ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
       List<? extends DiscoverySelector> selectors;
       List<Filter<?>> filters = new ArrayList<>(0);
-      if (args.length == 1) {
-        selectors = Collections.singletonList(DiscoverySelectors.selectClass(args[0]));
+      Optional<OrderedVintageTestEngine> optionalOrderedVintageEngine = Optional.empty();
+
+      if (args[0].equals("__class__")) {
+        String[] classNames = args[1].split(";");
+        selectors = Arrays.stream(classNames).map(DiscoverySelectors::selectClass).toList();
+        // no filters
       }
       else if (args[0].equals("__package__")) {
-        selectors = Collections.singletonList(DiscoverySelectors.selectPackage(args[1]));
+        String packageName = args[1];
+        selectors = Collections.singletonList(DiscoverySelectors.selectPackage(packageName));
         // exclude subpackages
         filters.add(ClassNameFilter.excludeClassNamePatterns("\\Q" + args[1] + "\\E\\.[^.]+\\..*"));
       }
-      else if (args[0].equals("__classes__")) {
-        String[] classes = args[1].split(";");
-        selectors = Arrays.stream(classes).map(DiscoverySelectors::selectClass).toList();
+      else if (args[0].equals("__classpathroot__")) {
+        Set<Path> classpathRoots = JUnit5TeamCityRunnerForTestsOnClasspath.getClassPathRoots(classLoader);
+        if (classpathRoots == null) throw new RuntimeException("Failed to get classpath roots");
+        selectors = DiscoverySelectors.selectClasspathRoots(classpathRoots);
+        filters.add(JUnit5TeamCityRunnerForTestsOnClasspath.createClassNameFilter(classLoader));      // name check
+        filters.add(JUnit5TeamCityRunnerForTestsOnClasspath.createPostDiscoveryFilter(classLoader));  // bucketing
+        if (!"false".equals(ENGINE_VINTAGE)) filters.add(new IgnorePostDiscoveryFilter());            // IJIgnore and Ignore support in JUnit 3/4
+        filters.add(new PerformancePostDiscoveryFilter());                                            // PerformanceUnitTest support
+        if (!"false".equals(ENGINE_VINTAGE)) filters.add(new HeadlessPostDiscoveryFilter());          // SkipInHeadlessEnvironment support in JUnit 3/4
+
+        // filter engines
+        if ("false".equals(ENGINE_VINTAGE)) {  // JUnit 5 tests only
+          filters.add(EngineFilter.excludeEngines(VintageTestDescriptor.ENGINE_ID));
+        }
+        else {
+          // TODO: use vintage by default
+          optionalOrderedVintageEngine = Optional.of(new OrderedVintageTestEngine());
+          filters.add(EngineFilter.excludeEngines(VintageTestDescriptor.ENGINE_ID));  // mask VintageTestEngine to avoid running JUnit 3/4 tests twice
+
+          if ("only".equals(ENGINE_VINTAGE)) {  // JUnit 3/4 tests only
+            filters.add(EngineFilter.includeEngines(OrderedVintageTestEngine.ENGINE_ID));
+          }
+          else if (ENGINE_VINTAGE == null) {  // all tests
+          }
+          else throw new RuntimeException("Unsupported 'intellij.build.test.engine.vintage' value: " + ENGINE_VINTAGE);
+        }
+      }
+      else if (args.length == 1) {
+        String className = args[0];
+        selectors = Collections.singletonList(DiscoverySelectors.selectClass(className));
+        // no filters
       }
       else {
-        selectors = Collections.singletonList(DiscoverySelectors.selectMethod(args[0], args[1]));
+        String className = args[0];
+        String methodName = args[1];
+        selectors = Collections.singletonList(DiscoverySelectors.selectMethod(className, methodName));
+        // no filters
       }
-      if (Boolean.getBoolean("idea.performance.tests.discovery.filter")) {
-        // Add filter
-        filters.add(new PerformancePostDiscoveryFilter());
-      }
+
+      LoggerFactory.addListener(new TCLogRecordListener());  // report warnings/errors as build problems on TeamCity, incl. test discovery
+
+      Launcher launcher = LauncherFactory.create(LauncherConfig.builder().addTestEngines(optionalOrderedVintageEngine.stream().toArray(TestEngine[]::new)).build());
       LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
         .selectors(selectors)
-        .filters(filters.toArray(new Filter[0]))
+        .filters(filters.toArray(Filter[]::new))
         .build();
-      listener = new TCExecutionListener();
       TestPlan testPlan = launcher.discover(discoveryRequest);
-      launcher.execute(testPlan, listener);
+
+      boolean reportAsBootstrapTestsSuite = "only".equals(ENGINE_VINTAGE);  // mask suite names to preserve test identity on TeamCity
+      listener = new TCExecutionListener(reportAsBootstrapTestsSuite);
+
+      if (JUnit5TeamCityRunnerForTestsOnClasspath.LIST_CLASSES != null) {
+        JUnit5TeamCityRunnerForTestsOnClasspath.saveListOfTestClasses(testPlan);  // save only
+      }
+      else {
+        launcher.execute(testPlan, listener);
+      }
     }
     catch (Throwable e) {
       caughtException = e;
     }
     finally {
-      assertNoUnhandledExceptions("JUnit5TeamCityRunnerForTestAllSuite", caughtException);
+      JUnit5TeamCityRunnerForTestsOnClasspath.assertNoUnhandledExceptions("JUnit5TeamCityRunnerForTestAllSuite", caughtException);  // TODO: rename to JUnit5TeamCityRunner
     }
 
     // Determine exit code OUTSIDE of try/catch/finally to avoid finally overriding the exit code
@@ -158,12 +233,45 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
     };
   }
 
+  public static class TCLogRecordListener extends LogRecordListener {
+    private static final List<String> KNOWN_EXCEPTIONAL_WARNINGS = List.of(  // TODO: migrate these tests to JUnit 5
+      "Discovered 2 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used.",  // https://github.com/junit-team/junit-framework/issues/2794
+      "Discovered 3 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used.",
+      "Discovered 4 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used.",
+      "Runner org.jetbrains.plugins.ruby.ruby.runners.GemSuite (used on class ",
+      "Runner org.jetbrains.plugins.ruby.ruby.runners.IndexingModeSuite (used on ",
+      "Runner org.junit.internal.runners.SuiteMethod (used on class com.intellij.codeInsight.template.emmet.HtmlEmmetAbbreviationTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.internal.runners.SuiteMethod (used on class com.intellij.codeInsight.template.emmet.XslEmmetAbbreviationTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.internal.runners.SuiteMethod (used on class com.intellij.codeInsight.template.emmet.filters.BemEmmetFilterTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.internal.runners.SuiteMethod (used on class css.emmet.CssPropertiesEmmetAbbreviationTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.intellij.database.grid.DataGridInsertRowWithValueTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.intellij.lang.ruby.rbs.psi.data.RbsTypeSignatureSubtypeCheckerTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.intellij.selenium.shared.pageobject.englishWordDetector.EnglishWordDetectorTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.intellij.sql.SqlLiveTemplatesTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.intellij.sql.completion.AllSqlCompletionTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.intellij.sql.refactoring.SqlExtractNamedQueryTest) was not able to satisfy all filter requests.",
+      "Runner org.junit.runners.Parameterized (used on class com.jetbrains.rd.platform.codeWithMe.FileManifestUtilTest) was not able to satisfy all filter requests."
+    );
+
+    @Override
+    public void logRecordSubmitted(LogRecord r) {
+      if (r.getLevel() == Level.WARNING && KNOWN_EXCEPTIONAL_WARNINGS.stream().noneMatch(w -> r.getMessage().startsWith(w)) ||
+          r.getLevel() == Level.SEVERE) {
+        System.out.println(ServiceMessage.asString(ServiceMessageTypes.BUILD_PROBLEM, Map.of("description", r.getMessage())));
+      }
+    }
+  }
+
   public static class TCExecutionListener implements TestExecutionListener {
     /**
      * The same constant as com.intellij.rt.execution.TestListenerProtocol.CLASS_CONFIGURATION
      */
     private static final String CLASS_CONFIGURATION = "Class Configuration";
     private final PrintStream myPrintStream;
+
+    private static final String BOOTSTRAP_TESTS_SUITE_NAME = "com.intellij.tests.BootstrapTests";
+    private final boolean myReportAsBootstrapTestsSuite;
+
     private TestPlan myTestPlan;
     private long myCurrentTestStart = 0;
     private int myFinishCount = 0;
@@ -188,6 +296,11 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
     }
 
     public TCExecutionListener() {
+      this(false);
+    }
+
+    private TCExecutionListener(boolean reportAsBootstrapTestsSuite) {
+      myReportAsBootstrapTestsSuite = reportAsBootstrapTestsSuite;
       myPrintStream = System.out;
       myPrintStream.println("##teamcity[enteredTheMatrix]");
     }
@@ -206,12 +319,22 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
       builder.append("timestamp = ").append(entry.getTimestamp());
       entry.getKeyValuePairs().forEach((key, value) -> builder.append(", ").append(key).append(" = ").append(value));
       builder.append("\n");
-      myPrintStream.println("##teamcity[testStdOut" + idAndName(testIdentifier) + " out = '" + escapeName(builder.toString()) + "']");
+      myPrintStream.println(new TestStdOut(getName(testIdentifier), builder.toString()));
     }
 
     @Override
     public void testPlanExecutionStarted(TestPlan testPlan) {
       myTestPlan = testPlan;
+      if (myReportAsBootstrapTestsSuite) {
+        myPrintStream.println(new TestSuiteStarted(BOOTSTRAP_TESTS_SUITE_NAME));
+      }
+    }
+
+    @Override
+    public void testPlanExecutionFinished(TestPlan testPlan) {
+      if (myReportAsBootstrapTestsSuite) {
+        myPrintStream.println(new TestSuiteFinished(BOOTSTRAP_TESTS_SUITE_NAME));
+      }
     }
 
     @Override
@@ -228,7 +351,9 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
       }
       else if (hasNonTrivialParent(testIdentifier)) {
         myFinishCount = 0;
-        myPrintStream.println("##teamcity[testSuiteStarted" + idAndName(testIdentifier) + "]");
+        if (!myReportAsBootstrapTestsSuite) {
+          myPrintStream.println(new TestSuiteStarted(getName(testIdentifier)));
+        }
       }
     }
 
@@ -280,13 +405,9 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
         }
         if (messageName != null) {
           if (status == TestExecutionResult.Status.FAILED) {
-            String parentId = getParentId(testIdentifier);
-            String nameAndId = " name='" + CLASS_CONFIGURATION +
-                               "' nodeId='" + escapeName(getId(testIdentifier)) +
-                               "' parentNodeId='" + escapeName(parentId) + "'";
-            myPrintStream.println("##teamcity[testStarted" + nameAndId + "]");
-            testFailure(CLASS_CONFIGURATION, getId(testIdentifier), parentId, messageName, throwableOptional, 0, reason);
-            myPrintStream.println("##teamcity[testFinished" + nameAndId + "]");
+            myPrintStream.println(new TestStarted(CLASS_CONFIGURATION, false, null));
+            testFailure(CLASS_CONFIGURATION, messageName, throwableOptional, 0, reason);
+            myPrintStream.println(new TestFinished(CLASS_CONFIGURATION, 0));
           }
 
           final Set<TestIdentifier> descendants = myTestPlan != null ? myTestPlan.getDescendants(testIdentifier) : Collections.emptySet();
@@ -300,7 +421,9 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
             myFinishCount = 0;
           }
         }
-        myPrintStream.println("##teamcity[testSuiteFinished" + idAndName(testIdentifier) + "]");
+        if (!myReportAsBootstrapTestsSuite) {
+          myPrintStream.println(new TestSuiteFinished(getName(testIdentifier)));
+        }
       }
     }
 
@@ -313,12 +436,11 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
     }
 
     private void testStarted(TestIdentifier testIdentifier) {
-      myPrintStream.println("##teamcity[testStarted" + idAndName(testIdentifier) + " captureStandardOutput='" + CAPTURE_STANDARD_OUTPUT + "']");
+      myPrintStream.println(new TestStarted(getName(testIdentifier), CAPTURE_STANDARD_OUTPUT, null));
     }
 
     private void testFinished(TestIdentifier testIdentifier, long duration) {
-      myPrintStream.println(
-        "##teamcity[testFinished" + idAndName(testIdentifier) + (duration > 0 ? " duration='" + duration + "'" : "") + "]");
+      myPrintStream.println(new TestFinished(getName(testIdentifier), (int)duration));
     }
 
     private void testFailure(TestIdentifier testIdentifier,
@@ -326,7 +448,7 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
                              Throwable ex,
                              long duration,
                              String reason) {
-      testFailure(getName(testIdentifier), getId(testIdentifier), getParentId(testIdentifier), messageName, ex, duration, reason);
+      testFailure(getName(testIdentifier), messageName, ex, duration, reason);
     }
 
     private static String getName(TestIdentifier testIdentifier) {
@@ -348,8 +470,6 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
     }
 
     private void testFailure(String methodName,
-                             String id,
-                             String parentId,
                              String messageName,
                              Throwable ex,
                              long duration,
@@ -357,9 +477,6 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
       final Map<String, String> attrs = new LinkedHashMap<>();
       try {
         attrs.put("name", methodName);
-        attrs.put("id", id);
-        attrs.put("nodeId", id);
-        attrs.put("parentNodeId", parentId);
         if (duration > 0) {
           attrs.put("duration", Long.toString(duration));
         }
@@ -372,7 +489,7 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
         if (ex != null) {
           if (ex instanceof MultipleFailuresError && ((MultipleFailuresError)ex).hasFailures()) {
             for (Throwable assertionError : ((MultipleFailuresError)ex).getFailures()) {
-              testFailure(methodName, id, parentId, messageName, assertionError, duration, reason);
+              testFailure(methodName, messageName, assertionError, duration, reason);
             }
           }
           else if (ex instanceof AssertionFailedError &&
@@ -431,20 +548,6 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
       return stringWriter.toString();
     }
 
-    private static String getId(TestIdentifier identifier) {
-      return identifier.getUniqueId();
-    }
-
-    private String idAndName(TestIdentifier testIdentifier) {
-      String id = getId(testIdentifier);
-      String name = getName(testIdentifier);
-      String parentId = getParentId(testIdentifier);
-      return " id='" + escapeName(id) +
-             "' name='" + escapeName(name) +
-             "' nodeId='" + escapeName(id) +
-             "' parentNodeId='" + escapeName(parentId) + "'";
-    }
-
     /**
      * Required for TC to match parametrized and factory tests when we attach metadata after the run
      */
@@ -478,18 +581,6 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
       Collections.reverse(names);
       names.add(getName(testIdentifier));
       return String.join(": ", names);
-    }
-
-    private String getParentId(TestIdentifier testIdentifier) {
-      Optional<TestIdentifier> parent = myTestPlan.getParent(testIdentifier);
-
-      return parent
-        .map(identifier -> identifier.getUniqueId())
-        .orElse("0");
-    }
-
-    private static String escapeName(String str) {
-      return MapSerializerUtil.escapeStr(str, MapSerializerUtil.STD_ESCAPER2);
     }
 
     static class LimitedStackTracePrintWriter extends PrintWriter {
@@ -578,6 +669,7 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
     private static final boolean isIncludingPerformanceTestsRun;
     private static final boolean isPerformanceTestsRun;
     private static final MethodHandle isPerformanceTest;
+
     static {
       try {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -626,6 +718,131 @@ public final class JUnit5TeamCityRunnerForTestAllSuite {
       catch (Throwable e) {
         return FilterResult.excluded(e.getMessage());
       }
+    }
+  }
+
+  public static class IgnorePostDiscoveryFilter implements PostDiscoveryFilter {
+    private static final Class<? extends Annotation> ignoreJUnit3;
+    private static final Class<? extends Annotation> ignoreIJ;
+
+    static {
+      try {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        //noinspection unchecked
+        ignoreJUnit3 = (Class<? extends Annotation>)Class.forName("com.intellij.idea.IgnoreJUnit3", true, classLoader);
+        //noinspection unchecked
+        ignoreIJ = (Class<? extends Annotation>)Class.forName("com.intellij.idea.IJIgnore", true, classLoader);
+      }
+      catch (Throwable e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public FilterResult apply(TestDescriptor descriptor) {
+      if (descriptor instanceof EngineDescriptor) {
+        return FilterResult.included(null);
+      }
+      TestSource source = descriptor.getSource().orElse(null);
+      if (source == null) {
+        return FilterResult.included("No source for descriptor");
+      }
+      if (source instanceof MethodSource methodSource) {
+        Method method = methodSource.getJavaMethod();
+        Class<?> aClass = methodSource.getJavaClass();
+        if (method.isAnnotationPresent(ignoreJUnit3) || method.isAnnotationPresent(ignoreIJ) ||
+            aClass.isAnnotationPresent(ignoreJUnit3) || aClass.isAnnotationPresent(ignoreIJ)) {
+          return FilterResult.excluded("Ignored");
+        }
+        return FilterResult.included(null);
+      }
+      if (source instanceof ClassSource classSource) {
+        Class<?> aClass = classSource.getJavaClass();
+        if (aClass.isAnnotationPresent(ignoreJUnit3) || aClass.isAnnotationPresent(ignoreIJ)) {
+          return FilterResult.excluded("Ignored");
+        }
+        return FilterResult.included(null);
+      }
+      return FilterResult.included("Unknown source type " + source.getClass());
+    }
+  }
+
+  public static class HeadlessPostDiscoveryFilter implements PostDiscoveryFilter {
+    private static final boolean shouldSkipHeadless;
+    private static final Class<? extends Annotation> headless;
+
+    static {
+      try {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        shouldSkipHeadless = (boolean)MethodHandles.publicLookup()
+          .findStatic(Class.forName("com.intellij.testFramework.TestFrameworkUtil", true, classLoader),
+                      "shouldSkipHeadless", MethodType.methodType(boolean.class))
+          .invokeExact();
+        //noinspection unchecked
+        headless = (Class<? extends Annotation>)Class.forName("com.intellij.testFramework.SkipInHeadlessEnvironment", true, classLoader);
+      }
+      catch (Throwable e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public FilterResult apply(TestDescriptor descriptor) {
+      if (descriptor instanceof EngineDescriptor) {
+        return FilterResult.included(null);
+      }
+      TestSource source = descriptor.getSource().orElse(null);
+      if (source == null) {
+        return FilterResult.included("No source for descriptor");
+      }
+      if (source instanceof MethodSource methodSource) {
+        Class<?> aClass = methodSource.getJavaClass();
+        if (shouldSkipHeadless && aClass.isAnnotationPresent(headless)) {
+          return FilterResult.excluded("Ignored");
+        }
+        return FilterResult.included(null);
+      }
+      if (source instanceof ClassSource classSource) {
+        Class<?> aClass = classSource.getJavaClass();
+        if (shouldSkipHeadless && aClass.isAnnotationPresent(headless)) {
+          return FilterResult.excluded("Ignored");
+        }
+        return FilterResult.included(null);
+      }
+      return FilterResult.included("Unknown source type " + source.getClass());
+    }
+  }
+
+  public static final class OrderedVintageTestEngine implements TestEngine {
+    public static final String ENGINE_ID = "ordered-vintage";
+
+    @SuppressWarnings("FieldMayBeStatic") private final VintageTestEngine delegate = new VintageTestEngine();
+
+    @Override
+    public String getId() {
+      return ENGINE_ID;
+    }
+
+    @Override
+    public TestDescriptor discover(EngineDiscoveryRequest request, UniqueId uniqueId) {
+      TestDescriptor root = delegate.discover(request, uniqueId);
+      root.orderChildren(children -> {
+        Collections.sort(children, (a, b) -> {
+          assert a.getSource().isPresent() && a.getSource().get() instanceof ClassSource;
+          ClassSource aClass = (ClassSource)a.getSource().get();
+          assert b.getSource().isPresent() && b.getSource().get() instanceof ClassSource;
+          ClassSource bClass = (ClassSource)b.getSource().get();
+          return aClass.getJavaClass().getName().compareTo(bClass.getJavaClass().getName());
+        });
+        if ("true".equals(REVERSE_ORDER)) Collections.reverse(children);
+        return children;
+      });
+      return root;
+    }
+
+    @Override
+    public void execute(ExecutionRequest request) {
+      delegate.execute(request);
     }
   }
 }

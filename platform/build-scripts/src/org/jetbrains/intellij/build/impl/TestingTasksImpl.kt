@@ -821,13 +821,16 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
         val testClassesListFile = Files.createTempFile("tests-to-run-", ".list").apply { Files.delete(this) }
         runJUnit5Engine(
           mainModule = mainModule,
-          systemProperties = systemProperties + ("intellij.build.test.list.classes" to testClassesListFile.absolutePathString()),
+          systemProperties = systemProperties + listOf(
+            "intellij.build.test.list.classes" to testClassesListFile.absolutePathString(),
+            "intellij.build.test.engine.vintage" to "only",
+            ),
           jvmArgs = jvmArgs,
           envVariables = envVariables,
           bootstrapClasspath = bootstrapClasspath,
           modulePath = modulePath,
           testClasspath = testClasspath,
-          suiteName = options.bootstrapSuite,
+          suiteName = "__classpathroot__",
           methodName = null,
           devBuildSettings = null,
         )
@@ -847,7 +850,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
           val exitCode = block("running test class '$testClassName'") {
             runJUnit5Engine(
               mainModule = mainModule,
-              systemProperties = systemProperties + ("idea.performance.tests.discovery.filter" to "true"),
+              systemProperties = systemProperties,
               jvmArgs = jvmArgs,
               envVariables = envVariables,
               bootstrapClasspath = bootstrapClasspath,
@@ -898,13 +901,13 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
           val exitCode = block("running tests in package '$packageName'") {
             runJUnit5Engine(
               mainModule = mainModule,
-              systemProperties = systemProperties + ("idea.performance.tests.discovery.filter" to "true"),
+              systemProperties = systemProperties,
               jvmArgs = jvmArgs,
               envVariables = envVariables,
               bootstrapClasspath = bootstrapClasspath,
               modulePath = modulePath,
               testClasspath = testClasspath,
-              suiteName = "__classes__",
+              suiteName = "__class__",
               methodName = classes.joinToString(";"),
               devBuildSettings = devBuildServerSettings,
             )
@@ -990,13 +993,15 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
           block("run junit 3+4 tests${spanNameSuffix}") {
             runJUnit5Engine(
               mainModule = mainModule,
-              systemProperties = systemProperties + additionalProperties + additionalPropertiesJUnit34,
+              systemProperties = systemProperties + additionalProperties + additionalPropertiesJUnit34 + listOf(
+                "intellij.build.test.engine.vintage" to "only",
+              ),
               jvmArgs = jvmArgs,
               envVariables = envVariables,
               bootstrapClasspath = bootstrapClasspath,
               modulePath = modulePath,
               testClasspath = testClasspath,
-              suiteName = options.bootstrapSuite,
+              suiteName = "__classpathroot__",
               methodName = null,
               devBuildSettings = devBuildServerSettings,
             )
@@ -1135,7 +1140,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
         appendJUnitStarter(classpath, context)
       }
 
-      if (!isBootstrapSuiteDefault || options.isDedicatedTestRuntime != "false" || suiteName == null) {
+      if (!isBootstrapSuiteDefault || options.isDedicatedTestRuntime != "false" || suiteName == null || suiteName == "__classpathroot__") {
         classpath.addAll(testClasspath)
       }
 
@@ -1201,7 +1206,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
 
     val environment: MutableMap<String, String> = HashMap(envVariables)
 
-    val mainClass = if (suiteName == null) "com.intellij.tests.JUnit5TeamCityRunnerForTestsOnClasspath" else "com.intellij.tests.JUnit5TeamCityRunnerForTestAllSuite"
+    val mainClass = if (suiteName == null) "com.intellij.tests.JUnit5TeamCityRunnerForTestsOnClasspath" else "com.intellij.tests.JUnit5TeamCityRunner"
     if (devBuildModeSettings == null) {
       args.add(mainClass)
     }
