@@ -52,7 +52,8 @@ internal abstract class WhatsNewContent() {
                  !ScreenReader.isActive()) {
         val provider = WhatsNewInVisionContentProvider.getInstance()
         WhatsNewVisionContent(provider, provider.getContent().entities.first())
-      } else {
+      }
+      else {
         ExternalProductResourceUrls.getInstance().whatIsNewPageUrl?.toDecodedForm()?.let { WhatsNewUrlContent(it) }
       }
     }
@@ -94,7 +95,8 @@ internal abstract class WhatsNewContent() {
     override fun toString(): String {
       if (hash != null) {
         return "$year-$release-$eap-$hash"
-      } else {
+      }
+      else {
         return "$year-$release-$eap"
       }
     }
@@ -161,8 +163,8 @@ internal class WhatsNewUrlContent(val url: String) : WhatsNewContent() {
   }
 }
 
-internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionContentProvider, page: WhatsNewInVisionContentProvider.Page)
-  : WhatsNewContent() {
+internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionContentProvider, page: WhatsNewInVisionContentProvider.Page) :
+  WhatsNewContent() {
   companion object {
     const val WHATS_NEW_VISION_SCHEME = "whatsnew-vision"
     const val LOCALHOST = "localhost"
@@ -185,6 +187,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
   private val contentHash: String
   private val myActionWhiteList: Set<String>
   private val visionActionIds = setOf(GIF_VALUE, ZOOM_VALUE)
+
   init {
     var html = page.html
     val pattern = page.publicVars.distinctBy { it.value }
@@ -210,15 +213,16 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
   }
 
   private fun getRequest(dataContext: DataContext?): HTMLEditorProvider.Request {
-    val request = html(content)
-    request.withQueryHandler(getHandler(dataContext))
-    request.withResourceHandler(getRequestHandler(dataContext))
+    val request = dataContext?.project?.let { WhatsNewResourceProvider.getInstance(it).getRequest(content) }
+                  ?: html(content)
     return request
+      .withQueryHandler(getHandler(dataContext))
+      .withResourceHandler(getRequestHandler(dataContext))
   }
 
   @OptIn(DelicateCoroutinesApi::class)
   private fun getRequestHandler(dataContext: DataContext?): HTMLEditorProvider.ResourceHandler? {
-    if(dataContext == null) return logger.error("dataContext is null").let { null }
+    if (dataContext == null) return logger.error("dataContext is null").let { null }
 
     return WhatsNewRequestHandler(contentProvider)
   }
@@ -244,8 +248,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
       override suspend fun query(id: Long, request: String): String {
         val contains = myActionWhiteList.contains(request)
         if (!contains) {
-          if(visionActionIds.contains(request))
-          {
+          if (visionActionIds.contains(request)) {
             WhatsNewCounterUsageCollector.visionActionPerformed(dataContext.project, request)
             logger.trace { "EapWhatsNew action $request performed" }
             return "true"
