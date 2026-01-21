@@ -199,6 +199,17 @@ class MergeConflictModel(
     return LineRange(newLineStart, newLineEnd)
   }
 
+  @RequiresWriteLock
+  fun resetAllChanges() {
+    getAllChanges().forEach { change: TextMergeChange -> resetResolvedChange(change.index, force = true) }
+    resetOutputContent()
+  }
+
+  @RequiresWriteLock
+  fun replaceAllChanges(side: Side) {
+    getAllChanges().forEach { change: TextMergeChange -> replaceChange(change.index, side, true) }
+  }
+
   @RequiresEdt
   private fun markChangeResolved(change: TextMergeChange, side: Side) {
     if (change.isResolved) return

@@ -155,6 +155,12 @@ abstract class MergeTestBase : HeavyDiffTestCase() {
       return viewer.model.canResolveChangeAutomatically(change.index, ThreeSide.BASE)
     }
 
+    fun resetAll() {
+      command(changes) {
+        viewer.model.resetAllChanges()
+      }
+    }
+
     //
     // Text modification
     //
