@@ -392,7 +392,7 @@ class FrontendXDebuggerSession(
       // TODO restore content to reuse on frontend if needed (it is not used now in create)
       XDebugSessionTab.create(proxy, tabInfo.iconId?.icon(), tabInfo.executionEnvironmentProxyDto?.executionEnvironment(project, tabScope), null,
                               tabInfo.forceNewDebuggerUi, tabInfo.withFramesCustomization, tabInfo.defaultFramesViewKey,
-                              DebuggerTabCustomizer.getInstanceSafe()?.createBottomComponentForVariablesView(this@FrontendXDebuggerSession)).apply {
+                              customBottomComponent).apply {
         setAdditionalKeysProvider { sink ->
           sink[SplitDebuggerDataKeys.SPLIT_RUN_CONTENT_DESCRIPTOR_KEY] = backendRunContentDescriptorId
           if (executionEnvironmentId != null) {

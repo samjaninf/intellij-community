@@ -602,12 +602,12 @@ class XDebugSessionImpl @JvmOverloads constructor(
       val runContentDescriptorId = CompletableDeferred<RunContentDescriptorIdImpl>()
       val tabLayouterDto = CompletableDeferred<XDebugTabLayouterDto>()
       val executionEnvironmentId = executionEnvironment?.storeGlobally(localTabScope)
-      val bottomComponentDto = if (bottomComponentProvider != null) XDebugVariablesViewCustomBottomComponentDto else null
+
       val tabInfo = XDebuggerSessionTabInfo(myIcon?.rpcId(), forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey,
                                             executionEnvironmentId, executionEnvironment?.toDto(localTabScope),
                                             additionalTabComponentManager.id, tabClosedChannel,
                                             runContentDescriptorId, myShowTabDeferred, tabLayouterDto,
-                                            bottomComponentDto
+                                            bottomComponentProvider?.let { XDebugVariablesViewCustomBottomComponentDto }
                                             )
       if (myTabInitDataFlow.compareAndSet(null, tabInfo)) {
         // This is a mock tab used in backend only
