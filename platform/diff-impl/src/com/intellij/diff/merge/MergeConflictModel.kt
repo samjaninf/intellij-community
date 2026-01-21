@@ -119,10 +119,19 @@ class MergeConflictModel(
     return LineRange(resultModel.getLineStart(change.index), resultModel.getLineEnd(change.index))
   }
 
+  /**
+   * Resets the resolved state of a specific change by restoring its base content
+   * and invalidating the change in the result model. This action ensures the
+   * change is marked as unresolved and its state is reverted to the original.
+   *
+   * @param index The index of the change to reset.
+   * @param force If true, resets the change regardless of its resolved state. If false,
+   *              only resets the change if it is already marked as resolved.
+   */
   @RequiresWriteLock
-  fun resetResolvedChange(index: Int) {
+  fun resetResolvedChange(index: Int, force: Boolean = false) {
     val change = getByIndex(index)
-    if (!change.isResolved) return
+    if (!force && !change.isResolved) return
     val changeFragment = change.fragment
     val startLine = changeFragment.getStartLine(ThreeSide.BASE)
     val endLine = changeFragment.getEndLine(ThreeSide.BASE)
@@ -131,12 +140,7 @@ class MergeConflictModel(
     val baseContent = DiffUtil.getLines(content, startLine, endLine)
 
     resultModel.replaceChange(change.index, baseContent)
-
     change.resetState()
-    //if (change.isResolvedWithAI) {
-    //  myAggregator.wasRolLEDBackAfterAI(change.index)
-    //}
-    markChangeResolved(change.index)
     resultModel.invalidateChange(change.index)
   }
 
