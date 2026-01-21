@@ -14411,6 +14411,16 @@ public abstract class LocalInspectionTestGenerated extends AbstractK1LocalInspec
             runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/forNotTarget.kt");
         }
 
+        @TestMetadata("getMethod.kt")
+        public void testGetMethod() throws Exception {
+            runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/getMethod.kt");
+        }
+
+        @TestMetadata("getMethodDifferentArray.kt")
+        public void testGetMethodDifferentArray() throws Exception {
+            runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/getMethodDifferentArray.kt");
+        }
+
         @TestMetadata("implicitReceiver.kt")
         public void testImplicitReceiver() throws Exception {
             runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/implicitReceiver.kt");

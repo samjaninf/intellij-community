@@ -9727,6 +9727,16 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
             runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/forNotTarget.kt");
         }
 
+        @TestMetadata("getMethod.kt")
+        public void testGetMethod() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/getMethod.kt");
+        }
+
+        @TestMetadata("getMethodDifferentArray.kt")
+        public void testGetMethodDifferentArray() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/getMethodDifferentArray.kt");
+        }
+
         @TestMetadata("implicitReceiver.kt")
         public void testImplicitReceiver() throws Exception {
             runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/implicitReceiver.kt");

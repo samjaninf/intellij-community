@@ -20,6 +20,8 @@ import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinDeclarationNameValidator
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinNameSuggester
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinNameSuggestionProvider
+import org.jetbrains.kotlin.idea.references.mainReference
+import org.jetbrains.kotlin.idea.base.psi.isAssignmentLHS
 import org.jetbrains.kotlin.idea.base.psi.replaced
 import org.jetbrains.kotlin.idea.base.psi.safeDeparenthesize
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
@@ -28,13 +30,15 @@ import org.jetbrains.kotlin.idea.codeInsight.inspections.shared.AbstractRangeIns
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.inspections.KotlinApplicableInspectionBase
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.inspections.KotlinModCommandQuickFix
 import org.jetbrains.kotlin.idea.codeinsight.utils.ImplicitReceiverInfo
-import org.jetbrains.kotlin.idea.codeinsight.utils.LoopToCollectionTransformUtils
+import org.jetbrains.kotlin.idea.codeinsight.utils.LoopToCollectionTransformUtils.findGetCallAccess
+import org.jetbrains.kotlin.idea.codeinsight.utils.getImplicitReceiverInfo
+import org.jetbrains.kotlin.idea.codeinsight.utils.LoopToCollectionTransformUtils.transformLoop
+import org.jetbrains.kotlin.idea.codeinsight.utils.LoopToCollectionTransformUtils.transformLoopWithIndex
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.DOWN_TO
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.RANGE_TO
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.RANGE_UNTIL
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.UNTIL
-import org.jetbrains.kotlin.idea.codeinsight.utils.getImplicitReceiverInfo
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
@@ -45,11 +49,11 @@ import org.jetbrains.kotlin.psi.KtContainerNode
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtForExpression
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtParenthesizedExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.psi.KtQualifiedExpression
-import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.KtVisitorVoid
@@ -94,7 +98,7 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
         val indexUsagePattern: IndexUsagePattern,
         val implicitReceiverInfo: ImplicitReceiverInfo?,
         val suggestedElementName: String?,
-        val arrayAccessUsages: List<SmartPsiElementPointer<KtArrayAccessExpression>>,
+        val indexedAccessUsages: List<SmartPsiElementPointer<KtExpression>>,  // Either KtArrayAccessExpression or KtDotQualifiedExpression
     )
 
     private fun getProblemDescription(context: Context): @InspectionMessage String {
@@ -164,15 +168,15 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
             }
         } else null
 
-        // Store array access usages as smart pointers for use in quick fixes
-        val arrayAccessPointers = indexUsageAnalysis.arrayAccessUsages.map { it.createSmartPointer() }
+        // Store indexed access usages as smart pointers for use in quick fixes
+        val indexedAccessPointers = indexUsageAnalysis.indexedAccessUsages.map { it.createSmartPointer() }
 
         return Context(
             explicitReceiver,
             indexUsageAnalysis.pattern,
             implicitReceiverInfo,
             suggestedElementName,
-            arrayAccessPointers
+            indexedAccessPointers
         )
     }
 
@@ -231,18 +235,19 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
 
     /**
      * Result of analyzing how the loop index variable is used in the loop body.
+     * Supports both bracket notation (`arr[i]`) and `.get()` method calls (`arr.get(i)`).
      */
     private data class IndexUsageAnalysis(
         val pattern: IndexUsagePattern,
-        val arrayAccessUsages: List<KtArrayAccessExpression>,
+        val indexedAccessUsages: List<KtExpression>,  // Either KtArrayAccessExpression or KtDotQualifiedExpression
     )
 
     /**
      * Analyzes how the loop index variable is used in the loop body.
      *
      * @return IndexUsageAnalysis containing:
-     *   - pattern: ELEMENT_LOOP (all array accesses), WITH_INDEX (mixed), or INDICES_ONLY (no array accesses)
-     *   - arrayAccessUsages: list of valid array access expressions for transformation
+     *   - pattern: ELEMENT_LOOP (all indexed accesses), WITH_INDEX (mixed), or INDICES_ONLY (no indexed accesses)
+     *   - indexedAccessUsages: list of valid indexed access expressions for transformation
      */
     private fun analyzeIndexUsagePattern(range: RangeExpression, explicitReceiver: KtExpression?): IndexUsageAnalysis {
         val forExpression = findContainingForLoop(range)
@@ -253,51 +258,55 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
         val usages = ReferencesSearch.search(loopParam).findAll()
         if (usages.isEmpty()) return IndexUsageAnalysis(IndexUsagePattern.INDICES_ONLY, emptyList())
 
-        val validArrayAccesses = mutableListOf<KtArrayAccessExpression>()
+        val validIndexedAccesses = mutableListOf<KtExpression>()
         var otherUsageCount = 0
 
         for (reference in usages) {
             val usage = reference.element
-            val arrayAccess = usage.parents.match(KtContainerNode::class, last = KtArrayAccessExpression::class)
 
+            // Check for bracket notation: arr[i]
+            val arrayAccess = usage.parents.match(KtContainerNode::class, last = KtArrayAccessExpression::class)
             if (arrayAccess != null && isValidElementLoopCandidate(arrayAccess, explicitReceiver)) {
-                validArrayAccesses.add(arrayAccess)
-            } else {
-                otherUsageCount++
+                validIndexedAccesses.add(arrayAccess)
+                continue
             }
+
+            // Check for .get() method call: arr.get(i)
+            val getCall = findGetCallAccess(usage)
+            if (getCall != null && isValidGetCallCandidate(getCall, explicitReceiver)) {
+                validIndexedAccesses.add(getCall)
+                continue
+            }
+
+            otherUsageCount++
         }
 
         val pattern = when {
-            validArrayAccesses.isNotEmpty() && otherUsageCount == 0 -> IndexUsagePattern.ELEMENT_LOOP
-            validArrayAccesses.isNotEmpty() && otherUsageCount > 0 -> IndexUsagePattern.WITH_INDEX
+            validIndexedAccesses.isNotEmpty() && otherUsageCount == 0 -> IndexUsagePattern.ELEMENT_LOOP
+            validIndexedAccesses.isNotEmpty() && otherUsageCount > 0 -> IndexUsagePattern.WITH_INDEX
             else -> IndexUsagePattern.INDICES_ONLY
         }
 
-        return IndexUsageAnalysis(pattern, validArrayAccesses)
+        return IndexUsageAnalysis(pattern, validIndexedAccesses)
     }
 
     private fun findContainingForLoop(range: RangeExpression): KtForExpression? =
         range.expression.parents.match(KtContainerNode::class, last = KtForExpression::class)
 
     private fun isValidElementLoopCandidate(arrayAccess: KtArrayAccessExpression, explicitReceiver: KtExpression?): Boolean {
-        // Must use the loop parameter as the only index
         if (arrayAccess.indexExpressions.size != 1) return false
+        return receiversMatch(arrayAccess.arrayExpression, explicitReceiver) && !arrayAccess.isAssignmentLHS()
+    }
 
-        // Check if the array receiver matches the size call receiver
-        val receiversMatch = if (explicitReceiver != null) {
-            // Explicit receiver case: arr.size -> arr[i]
-            (arrayAccess.arrayExpression as? KtSimpleNameExpression)?.getReferencedName() ==
-                    (explicitReceiver as? KtSimpleNameExpression)?.getReferencedName()
-        } else {
-            // Implicit receiver case: size -> this[i]
-            arrayAccess.arrayExpression is KtThisExpression
-        }
+    private fun isValidGetCallCandidate(getCall: KtDotQualifiedExpression, explicitReceiver: KtExpression?): Boolean {
+        return receiversMatch(getCall.receiverExpression, explicitReceiver) && !getCall.isAssignmentLHS()
+    }
 
-        if (!receiversMatch) return false
-
-        // Don't suggest if array access is being assigned to (it's being modified)
-        val parent = arrayAccess.parent
-        return parent !is KtBinaryExpression || parent.left != arrayAccess || parent.operationToken !in KtTokens.ALL_ASSIGNMENTS
+    private fun receiversMatch(accessReceiver: KtExpression?, explicitReceiver: KtExpression?): Boolean {
+        if (explicitReceiver == null) return accessReceiver?.safeDeparenthesize() is KtThisExpression
+        if (accessReceiver == null) return false
+        return (accessReceiver as? KtNameReferenceExpression)?.mainReference?.resolve() ==
+                (explicitReceiver as? KtNameReferenceExpression)?.mainReference?.resolve()
     }
 
     private fun createQuickFixes(context: Context): List<KotlinModCommandQuickFix<KtExpression>> {
@@ -390,14 +399,14 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
             val loopRange = forExpression.loopRange ?: return
             val elementName = context.suggestedElementName ?: return
 
-            // Get writable array accesses from smart pointers
-            val arrayAccesses = context.arrayAccessUsages.mapNotNull { pointer ->
+            // Get writable indexed accesses from smart pointers
+            val indexedAccesses = context.indexedAccessUsages.mapNotNull { pointer ->
                 pointer.element?.let { updater.getWritable(it) }
             }
-            if (arrayAccesses.isEmpty()) return
+            if (indexedAccesses.isEmpty()) return
 
             val collection = resolveCollectionExpression(project)
-            LoopToCollectionTransformUtils.transformLoop(project, arrayAccesses, loopParameter, loopRange, collection, elementName)
+            transformLoop(project, indexedAccesses, loopParameter, loopRange, collection, elementName)
         }
 
         /**
@@ -431,15 +440,15 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
             val loopRange = forExpression.loopRange ?: return
             val elementName = context.suggestedElementName ?: return
 
-            // Get writable array accesses from smart pointers
-            val arrayAccesses = context.arrayAccessUsages.mapNotNull { pointer ->
+            // Get writable indexed accesses from smart pointers
+            val indexedAccesses = context.indexedAccessUsages.mapNotNull { pointer ->
                 pointer.element?.let { updater.getWritable(it) }
             }
-            if (arrayAccesses.isEmpty()) return
+            if (indexedAccesses.isEmpty()) return
 
             val collection = resolveCollectionExpression(project)
-            LoopToCollectionTransformUtils.transformLoopWithIndex(
-                project, arrayAccesses, loopParameter, loopRange, collection, elementName
+            transformLoopWithIndex(
+                project, indexedAccesses, loopParameter, loopRange, collection, elementName
             )
         }
 
