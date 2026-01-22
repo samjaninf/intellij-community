@@ -1373,17 +1373,22 @@ public final class PyUtil {
   }
 
 
-  public static boolean isSignatureCompatibleTo(@NotNull PyCallable callable, @NotNull PyCallable otherCallable,
-                                                @NotNull TypeEvalContext context) {
-    List<PyCallableParameter> parameters = callable.getParameters(context);
-    List<PyCallableParameter> otherParameters = otherCallable.getParameters(context);
-    if (!parameters.isEmpty() && parameters.getFirst().isSelf()) {
-      parameters = parameters.subList(1, parameters.size());
+  /**
+   * Checks if the input signature of {@code derivedCallable} is compatible with
+   * the input signature of {@code baseCallable} (i.e., can safely override it).
+   */
+  public static boolean isInputSignatureCompatibleTo(@NotNull PyCallable derivedCallable,
+                                                     @NotNull PyCallable baseCallable,
+                                                     @NotNull TypeEvalContext context) {
+    List<PyCallableParameter> baseParams = baseCallable.getParameters(context);
+    List<PyCallableParameter> derivedParams = derivedCallable.getParameters(context);
+    if (!baseParams.isEmpty() && baseParams.getFirst().isSelf()) {
+      baseParams = baseParams.subList(1, baseParams.size());
     }
-    if (!otherParameters.isEmpty() && otherParameters.getFirst().isSelf()) {
-      otherParameters = otherParameters.subList(1, otherParameters.size());
+    if (!derivedParams.isEmpty() && derivedParams.getFirst().isSelf()) {
+      derivedParams = derivedParams.subList(1, derivedParams.size());
     }
-    return PyCallableParameterMapping.mapCallableParameters(otherParameters, parameters, context) != null;
+    return PyCallableParameterMapping.mapCallableParameters(baseParams, derivedParams, context) != null;
   }
 
   /**

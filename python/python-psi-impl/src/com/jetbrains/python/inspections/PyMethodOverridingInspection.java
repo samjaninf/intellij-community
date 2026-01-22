@@ -44,7 +44,7 @@ public final class PyMethodOverridingInspection extends PyInspection {
 
       for (PsiElement psiElement : PySuperMethodsSearch.search(function, myTypeEvalContext).asIterable()) {
         if (psiElement instanceof PyFunction baseMethod) {
-          if (!PyUtil.isSignatureCompatibleTo(function, baseMethod, myTypeEvalContext)) {
+          if (!PyUtil.isInputSignatureCompatibleTo(function, baseMethod, myTypeEvalContext)) {
             final PyClass baseClass = baseMethod.getContainingClass();
             final String msg = PyPsiBundle.message("INSP.signature.mismatch",
                                                    cls.getName() + "." + function.getName() + "()",

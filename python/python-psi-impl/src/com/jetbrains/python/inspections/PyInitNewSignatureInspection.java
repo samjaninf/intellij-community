@@ -45,8 +45,8 @@ public final class PyInitNewSignatureInspection extends PyInspection {
       final List<PyFunction> complementaryMethods = findComplementaryMethods(cls, node);
 
       for (PyFunction complementaryMethod : complementaryMethods) {
-        if (PyUtil.isSignatureCompatibleTo(complementaryMethod, node, myTypeEvalContext) ||
-            PyUtil.isSignatureCompatibleTo(node, complementaryMethod, myTypeEvalContext)) {
+        if (PyUtil.isInputSignatureCompatibleTo(complementaryMethod, node, myTypeEvalContext) ||
+            PyUtil.isInputSignatureCompatibleTo(node, complementaryMethod, myTypeEvalContext)) {
           return;
         }
       }

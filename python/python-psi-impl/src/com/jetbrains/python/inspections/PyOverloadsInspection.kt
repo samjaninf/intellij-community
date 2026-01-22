@@ -99,7 +99,7 @@ class PyOverloadsInspection : PyInspection() {
       if (implementation != null) {
         overloads
           .asSequence()
-          .filter { !PyUtil.isSignatureCompatibleTo(implementation, it, myTypeEvalContext) }
+          .filter { !PyUtil.isInputSignatureCompatibleTo(implementation, it, myTypeEvalContext) }
           .forEach {
             registerProblem(it.nameIdentifier,
                             PyPsiBundle.message("INSP.overloads.this.overload.signature.not.compatible.with.implementation",
