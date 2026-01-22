@@ -4289,5 +4289,21 @@ public class Py3TypeCheckerInspectionTest extends PyInspectionTestCase {
                        c: list[int] = second_edge
                    """);
   }
+
+  public void testWildcardSignatures() {
+    doTestByText("""
+                   from typing import Protocol
+                   
+                   class Expected(Protocol):
+                       def __call__(self, *args, **kwargs): ...
+                   
+                   class Actual(Protocol):
+                       def __call__(self, a: float, *, key: str): ...
+                   
+                   def foo(e: Expected, a: Actual):
+                       _: Expected = a
+                       _: Actual = e
+                   """);
+  }
 }
 

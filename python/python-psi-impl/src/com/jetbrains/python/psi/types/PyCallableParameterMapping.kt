@@ -55,6 +55,12 @@ object PyCallableParameterMapping {
     val expectedCategorizedParameters = categorizeParameters(expectedCallableParameters, context) ?: return null
     val actualCategorizedParameters = categorizeParameters(actualCallableParameters, context) ?: return null
 
+    // Special handling for wildcard signatures (*args, **kwargs)
+    // Wildcard signatures match with any other signature
+    if (isWildcardSignature(expectedCategorizedParameters, context)) {
+      return PyTypeParameterMapping.mapByShape(emptyList(), emptyList())
+    }
+
     val expectedParameters = ArrayDeque(expectedCategorizedParameters)
     val actualParameters = ArrayDeque(actualCategorizedParameters)
 
@@ -182,7 +188,7 @@ object PyCallableParameterMapping {
           // Consume all remaining keyword parameters
           var actualKeywordParam = actualParameters.pop()
           while (actualParameters.isNotEmpty() && !actualKeywordParam.parameter.isKeywordContainer) {
-            if (!(actualKeywordParam.acceptsKeywordArgument) || !actualKeywordParam.hasDefault) {
+            if ((!actualKeywordParam.acceptsKeywordArgument || !actualKeywordParam.hasDefault) && actualKeywordParam.kind != ParameterKind.POSITIONAL_CONTAINER) {
               return null
             }
             expectedTypes.add(kwargsType)
@@ -265,6 +271,38 @@ object PyCallableParameterMapping {
       }
     }
     return flattenedParameters
+  }
+
+  /**
+   * Checks if the given list of parameters represents a wildcard signature.
+   * A wildcard signature contains only untyped *args and **kwargs (or *args: Any, **kwargs: Any),
+   * possibly with a self parameter for methods.
+   *
+   * See https://typing.python.org/en/latest/spec/callables.html#meaning-of-in-callable
+   */
+  private fun isWildcardSignature(parameters: List<Parameter>, context: TypeEvalContext): Boolean {
+    if (parameters.isEmpty()) return false
+
+    var hasArgs = false
+    var hasKwargs = false
+
+    for (param in parameters) {
+      when {
+        param.parameter.isSelf -> continue
+        param.kind == ParameterKind.POSITIONAL_CONTAINER || param.kind == ParameterKind.KEYWORD_CONTAINER -> {
+          val type = param.getArgumentType(context)
+          if (type != null) return false
+          if (param.kind == ParameterKind.POSITIONAL_CONTAINER) {
+            hasArgs = true
+          }
+          else {
+            hasKwargs = true
+          }
+        }
+        else -> return false
+      }
+    }
+    return hasArgs && hasKwargs
   }
 
   private enum class ParameterState {

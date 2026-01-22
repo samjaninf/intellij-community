@@ -549,6 +549,35 @@ class PyCallableParameterMappingTest : PyTestCase() {
     checkMatch("(*, a)", "(*, b=None, **kwargs)")
   }
 
+  fun testWildcardSignatures() {
+    checkMatch("(*args, **kwargs)", "()")
+    checkMatch("()", "(*args, **kwargs)")
+    checkMatch("(*args, **kwargs)", "(a: int)")
+    checkMatch("(a: int)", "(*args, **kwargs)")
+    checkMatch("(*args, **kwargs)", "(a: int, b: str)")
+    checkMatch("(a: int, b: str)", "(*args, **kwargs)")
+    checkMatch("(*args, **kwargs)", "(a: int, /, b: str)")
+    checkMatch("(a: int, /, b: str)", "(*args, **kwargs)")
+    checkMatch("(*args, **kwargs)", "(*, a: int, b: str)")
+    checkMatch("(*, a: int, b: str)", "(*args, **kwargs)")
+    checkMatch("(*args, **kwargs)", "(a: int, *args2)")
+    checkMatch("(a: int, *args2)", "(*args, **kwargs)")
+    checkMatch("(*args, **kwargs)", "(a: int, **kwargs2)")
+    checkMatch("(a: int, **kwargs2)", "(*args, **kwargs)")
+    checkMatch("(a: int, /, **kwargs2)", "(*args, **kwargs)")
+
+    checkMatch("(*args: Any, **kwargs: Any)", "()")
+    checkMatch("()", "(*args: Any, **kwargs: Any)")
+    checkMatch("(*args: Any, **kwargs: Any)", "(a: int, b: str)")
+    checkMatch("(a: int, b: str)", "(*args: Any, **kwargs: Any)")
+    checkMatch("(*args: Any, **kwargs: Any)", "(*, a: int)")
+    checkMatch("(*, a: int)", "(*args: Any, **kwargs: Any)")
+
+    // Typed wildcard should NOT be wildcard (only untyped or Any are wildcards)
+    checkNotMatch("(*args: int, **kwargs: str)", "(a: float)")
+    checkNotMatch("(a: float)", "(*args: int, **kwargs: str)")
+  }
+
   fun checkNotMatch(expectedSignature: String, actualSignature: String) {
     checkMatch(expectedSignature, actualSignature, false)
   }
