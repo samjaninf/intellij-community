@@ -82,6 +82,20 @@ class CachingHttpProxyTest {
       exchange.responseBody.use { it.write(body) }
     }
 
+    // /auth-check - returns 200 only if Authorization header is present
+    mockServer.createContext("/auth-check") { exchange ->
+      val authHeader = exchange.requestHeaders.getFirst("Authorization")
+      if (authHeader != null && authHeader == "Bearer secret-token") {
+        val body = "Authorized".toByteArray()
+        exchange.sendResponseHeaders(200, body.size.toLong())
+        exchange.responseBody.use { it.write(body) }
+      } else {
+        val body = "Unauthorized".toByteArray()
+        exchange.sendResponseHeaders(401, body.size.toLong())
+        exchange.responseBody.use { it.write(body) }
+      }
+    }
+
     mockServer.executor = Executors.newFixedThreadPool(4)
     mockServer.start()
   }
@@ -117,11 +131,15 @@ class CachingHttpProxyTest {
     proxyHolder = null
   }
 
-  private fun makeRequest(path: String, method: String = "GET"): HttpResponse<String> {
+  private fun makeRequest(path: String, method: String = "GET", headers: Map<String, String> = emptyMap()): HttpResponse<String> {
     val url = "http://127.0.0.1:${proxy.port}/proxy/127.0.0.1:$mockPort$path"
     val requestBuilder = HttpRequest.newBuilder()
       .uri(URI.create(url))
       .timeout(Duration.ofSeconds(10))
+
+    headers.forEach { (name, value) ->
+      requestBuilder.header(name, value)
+    }
 
     when (method.uppercase()) {
       "GET" -> requestBuilder.GET()
@@ -170,6 +188,8 @@ class CachingHttpProxyTest {
     assertFileContent(getHeadersPath("/status/404"), """
       SELFCONTAINED-PROXY-X-Cached-Status-Code: 404
     """.trimIndent())
+
+    assertFalse(proxy.hadErrors)
   }
 
   @Test
@@ -198,6 +218,23 @@ class CachingHttpProxyTest {
     assertEquals(200, getResponse.statusCode())
 
     // Now make HEAD request
+    val headResponse = makeRequest("/status/200", "HEAD")
+    assertEquals(200, headResponse.statusCode())
+    assertTrue(headResponse.body().isEmpty(), "HEAD response should have no body")
+
+    // Verify Content-Length header is present
+    val contentLength = headResponse.headers().firstValue("content-length")
+    assertTrue(contentLength.isPresent, "Content-Length header should be present")
+    assertEquals("16", contentLength.get()) // "OK response body" is 16 bytes
+
+    assertFalse(proxy.hadErrors)
+  }
+
+  @Test
+  fun `HEAD request is successful even if not in cache`() {
+    startProxy(offline = false, allowHttp = true)
+
+    // Make HEAD request directly (no prior GET)
     val headResponse = makeRequest("/status/200", "HEAD")
     assertEquals(200, headResponse.statusCode())
     assertTrue(headResponse.body().isEmpty(), "HEAD response should have no body")
@@ -311,6 +348,24 @@ class CachingHttpProxyTest {
     assertTrue(response2.headers().firstValue("cache-control").isPresent, "Cached response should have Cache-Control")
     assertEquals("max-age=3600", response2.headers().firstValue("cache-control").get())
 
+    assertFalse(proxy.hadErrors)
+  }
+
+  @Test
+  fun `authorization header is bypassed to upstream in online mode`() {
+    startProxy(offline = false, allowHttp = true)
+
+    // Request with incorrect token
+    val response1 = makeRequest("/auth-check", headers = mapOf("Authorization" to "Bearer wrong-token"))
+    assertEquals(401, response1.statusCode())
+    assertEquals("Unauthorized", response1.body())
+    assertFalse(proxy.hadErrors)
+
+
+    // Request with correct token
+    val response2 = makeRequest("/auth-check", headers = mapOf("Authorization" to "Bearer secret-token"))
+    assertEquals(200, response2.statusCode())
+    assertEquals("Authorized", response2.body())
     assertFalse(proxy.hadErrors)
   }
 

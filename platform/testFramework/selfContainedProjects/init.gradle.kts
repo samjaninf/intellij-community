@@ -38,8 +38,12 @@ fun logVerbose(message: String) {
 
 // --- Repository URL Rewriting ---
 fun rewriteUrl(originalUrl: URI): URI {
-  if (originalUrl.scheme != "https") {
-    error("non-HTTPS URLs are unsupported: $originalUrl")
+  if (originalUrl.scheme != "https" && originalUrl.scheme != "http") {
+    error("Only HTTP and HTTPS URLs are supported: $originalUrl")
+  }
+
+  if (originalUrl.host == "localhost" || originalUrl.host == "127.0.0.1" || originalUrl.host == "[::1]" || originalUrl.host == "[0:0:0:0:0:0:0:1]") {
+    return originalUrl
   }
 
   val newUrl = "$proxyUrl/${originalUrl.host}${originalUrl.path}"
@@ -53,6 +57,9 @@ fun rewriteRepositories(repositories: RepositoryHandler, context: String) {
       val original = url
       val newUrl = rewriteUrl(original)
       url = newUrl
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
       logVerbose("[$context] Rewrote: $original -> $newUrl")
     }
   }
@@ -70,6 +77,9 @@ beforeSettings {
     if (this is MavenArtifactRepository) {
       val original = url
       url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
       logVerbose("[pluginManagement] Rewrote: $original -> $url")
     }
   }
@@ -80,18 +90,88 @@ beforeSettings {
     if (this is MavenArtifactRepository) {
       val original = url
       url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
       logVerbose("[dependencyResolutionManagement] Rewrote: $original -> $url")
     }
   }
 }
 
-// Hook into all projects to rewrite project-level repositories
+gradle.settingsEvaluated {
+  pluginManagement.repositories.all {
+    if (this is MavenArtifactRepository) {
+      val original = url
+      url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
+      logVerbose("[pluginManagement] Rewrote: $original -> $url")
+    }
+  }
+
+  // Intercept dependencyResolutionManagement repositories as they are added
+  @Suppress("UnstableApiUsage")
+  dependencyResolutionManagement.repositories.all {
+    if (this is MavenArtifactRepository) {
+      val original = url
+      url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
+      logVerbose("[dependencyResolutionManagement] Rewrote: $original -> $url")
+    }
+  }
+
+  buildscript.repositories.all {
+    if (this is MavenArtifactRepository) {
+      val original = url
+      url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
+      logVerbose("[buildscript] Rewrote: $original -> $url")
+    }
+  }
+}
+
+allprojects {
+  //rewriteRepositories(buildscript.repositories, "project:${project.name}:buildscript")
+  repositories.all {
+    if (this is MavenArtifactRepository) {
+      val original = url
+      url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
+      logVerbose("[buildscript:${project.name}] Rewrote: $original -> $url")
+    }
+  }
+}
+
+// Hook into all projects to rewrite project-level and buildscript repositories
 gradle.allprojects {
+  //rewriteRepositories(buildscript.repositories, "project:${project.name}:buildscript")
+  buildscript.repositories.all {
+    if (this is MavenArtifactRepository) {
+      val original = url
+      url = rewriteUrl(original)
+      if (url.scheme == "http") {
+        isAllowInsecureProtocol = true
+      }
+      logVerbose("[buildscript:${project.name}] Rewrote: $original -> $url")
+    }
+  }
+
+
   afterEvaluate {
     repositories.all {
       if (this is MavenArtifactRepository) {
         val original = url
         url = rewriteUrl(original)
+        if (url.scheme == "http") {
+          isAllowInsecureProtocol = true
+        }
         logVerbose("[project:${project.name}] Rewrote: $original -> $url")
       }
     }

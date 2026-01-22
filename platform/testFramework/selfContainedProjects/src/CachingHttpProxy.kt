@@ -55,8 +55,10 @@ class CachingHttpProxy(
   val hitCount: Long
     get() = hitCountHolder.load()
 
+  private val proxyPath = "proxy"
+
   private val server = HttpServer.create(listen, 0).also { server ->
-    server.createContext("/proxy") { exchange ->
+    server.createContext("/$proxyPath") { exchange ->
       try {
         handleProxyRequest(exchange)
       }
@@ -88,6 +90,17 @@ class CachingHttpProxy(
     val errorBody = message.toByteArray()
     exchange.sendResponseHeaders(httpCode, errorBody.size.toLong())
     exchange.responseBody.use { it.write(errorBody) }
+  }
+
+  val proxyUrl: String by lazy {
+    val host = server.address.address.hostAddress.let {
+      if (it.contains(":")) {
+        "[$it]"
+      } else {
+        it
+      }
+    }
+    "http://$host:${server.address.port}/$proxyPath"
   }
 
   private fun handleProxyRequest(exchange: HttpExchange) {
@@ -198,12 +211,17 @@ class CachingHttpProxy(
     headersPath: Path,
     isHeadRequest: Boolean,
   ) {
-    // Always fetch with GET to get content for caching
-    val request = HttpRequest.newBuilder()
+    val requestBuilder = HttpRequest.newBuilder()
       .uri(URI.create(targetUrl))
-      .GET()
       .timeout(Duration.ofMinutes(5))
-      .build()
+
+    // Forward Authorization header from client
+    exchange.requestHeaders.getFirst("Authorization")?.let {
+      requestBuilder.header("Authorization", it)
+    }
+
+    // Always fetch with GET to get content for caching
+    val request = requestBuilder.GET().build()
 
     val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
     val statusCode = response.statusCode()
@@ -219,7 +237,9 @@ class CachingHttpProxy(
 
     // Only cache non-transient responses (not 5xx server errors)
     // Cache 200 OK, 404 Not Found, and other client errors the same way
-    val shouldCache = statusCode < 500
+    // Do NOT cache 401 Unauthorized or 407 Proxy Authentication Required as they are part of auth handshakes
+    val authRequired = statusCode == 401 || statusCode == 407
+    val shouldCache = statusCode < 500 && !authRequired
 
     if (shouldCache) {
       cachePath.createParentDirectories().writeBytes(bytes)
@@ -237,7 +257,9 @@ class CachingHttpProxy(
     }
     else {
       LOG.warn("NOT CACHING (transient error): $cleanPath (status $statusCode)")
-      hadErrorsHolder.store(true)
+      if (!authRequired) {
+        hadErrorsHolder.store(true)
+      }
     }
 
     // Forward headers to client
