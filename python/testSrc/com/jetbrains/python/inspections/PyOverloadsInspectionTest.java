@@ -72,6 +72,11 @@ public class PyOverloadsInspectionTest extends PyInspectionTestCase {
     doTest();
   }
 
+  // PY-86525
+  public void testIncompatibleSelfType() {
+    doTest();
+  }
+
   @NotNull
   @Override
   protected Class<? extends PyInspection> getInspectionClass() {

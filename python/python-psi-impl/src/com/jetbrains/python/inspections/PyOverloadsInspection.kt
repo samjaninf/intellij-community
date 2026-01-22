@@ -21,8 +21,8 @@ import com.jetbrains.python.psi.PyKnownDecorator
 import com.jetbrains.python.psi.PyKnownDecoratorUtil
 import com.jetbrains.python.psi.PyUtil
 import com.jetbrains.python.psi.impl.PyClassImpl
+import com.jetbrains.python.psi.types.PyCallableParameterListTypeImpl
 import com.jetbrains.python.psi.types.PyCallableType
-import com.jetbrains.python.psi.types.PyCallableTypeImpl
 import com.jetbrains.python.psi.types.PyTypeChecker
 import com.jetbrains.python.psi.types.TypeEvalContext
 import com.jetbrains.python.pyi.PyiFile
@@ -99,7 +99,12 @@ class PyOverloadsInspection : PyInspection() {
       if (implementation != null) {
         overloads
           .asSequence()
-          .filter { !PyUtil.isInputSignatureCompatibleTo(implementation, it, myTypeEvalContext) }
+          .filter {
+            val overloadInputSignature = PyCallableParameterListTypeImpl(it.getParameters(myTypeEvalContext))
+            val implementationInputSignature = PyCallableParameterListTypeImpl(implementation.getParameters(myTypeEvalContext))
+
+            !PyTypeChecker.match(overloadInputSignature, implementationInputSignature, myTypeEvalContext)
+          }
           .forEach {
             registerProblem(it.nameIdentifier,
                             PyPsiBundle.message("INSP.overloads.this.overload.signature.not.compatible.with.implementation",
@@ -168,8 +173,7 @@ class PyOverloadsInspection : PyInspection() {
         val currCallableType = myTypeEvalContext.getType(current) as? PyCallableType ?: continue
         val currParams = currCallableType.getParameters(myTypeEvalContext) ?: continue
         val currReturnType = currCallableType.getReturnType(myTypeEvalContext)
-
-        val currOverloadWithoutReturn = PyCallableTypeImpl(currParams, null)
+        val currInputSignature = PyCallableParameterListTypeImpl(currParams)
 
         for (j in (i + 1) until overloads.size) {
           val next = overloads[j]
@@ -177,13 +181,13 @@ class PyOverloadsInspection : PyInspection() {
           val nextParams = nextCallableType.getParameters(myTypeEvalContext) ?: continue
           val nextReturnType = nextCallableType.getReturnType(myTypeEvalContext)
 
-          val nextOverloadWithoutReturn = PyCallableTypeImpl(nextParams, null)
+          val nextOverloadInputSignature = PyCallableParameterListTypeImpl(nextParams)
 
-          if (PyTypeChecker.match(nextOverloadWithoutReturn, currOverloadWithoutReturn, myTypeEvalContext)) {
+          if (PyTypeChecker.match(nextOverloadInputSignature, currInputSignature, myTypeEvalContext)) {
             registerProblem(next.nameIdentifier,
                             PyPsiBundle.message("INSP.overloads.overload.overlapped.by.a.broader.type", i + 1))
           }
-          else if (PyTypeChecker.match(currOverloadWithoutReturn, nextOverloadWithoutReturn, myTypeEvalContext)) {
+          else if (PyTypeChecker.match(currInputSignature, nextOverloadInputSignature, myTypeEvalContext)) {
             if (!PyTypeChecker.match(nextReturnType, currReturnType, myTypeEvalContext)) {
               registerProblem(current.nameIdentifier,
                               PyPsiBundle.message("INSP.overloads.overload.overlaps.other.overload.with.incompatible.return.type", j + 1))

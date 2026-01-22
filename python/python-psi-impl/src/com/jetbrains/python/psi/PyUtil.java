@@ -1372,25 +1372,6 @@ public final class PyUtil {
     return PyUtilCore.findNextAtOffset(psiFile, caretOffset, toSkip);
   }
 
-
-  /**
-   * Checks if the input signature of {@code derivedCallable} is compatible with
-   * the input signature of {@code baseCallable} (i.e., can safely override it).
-   */
-  public static boolean isInputSignatureCompatibleTo(@NotNull PyCallable derivedCallable,
-                                                     @NotNull PyCallable baseCallable,
-                                                     @NotNull TypeEvalContext context) {
-    List<PyCallableParameter> baseParams = baseCallable.getParameters(context);
-    List<PyCallableParameter> derivedParams = derivedCallable.getParameters(context);
-    if (!baseParams.isEmpty() && baseParams.getFirst().isSelf()) {
-      baseParams = baseParams.subList(1, baseParams.size());
-    }
-    if (!derivedParams.isEmpty() && derivedParams.getFirst().isSelf()) {
-      derivedParams = derivedParams.subList(1, derivedParams.size());
-    }
-    return PyCallableParameterMapping.mapCallableParameters(baseParams, derivedParams, context) != null;
-  }
-
   /**
    * @return true if passed {@code element} is a method (this means a function inside a class) named {@code __init__}.
    * @see PyUtil#isNewMethod(PsiElement)

@@ -13,6 +13,9 @@ import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFunction;
 import com.jetbrains.python.psi.PyParameterList;
 import com.jetbrains.python.psi.PyUtil;
+import com.jetbrains.python.psi.types.PyCallableParameter;
+import com.jetbrains.python.psi.types.PyCallableParameterListTypeImpl;
+import com.jetbrains.python.psi.types.PyTypeChecker;
 import com.jetbrains.python.psi.types.TypeEvalContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,8 +48,7 @@ public final class PyInitNewSignatureInspection extends PyInspection {
       final List<PyFunction> complementaryMethods = findComplementaryMethods(cls, node);
 
       for (PyFunction complementaryMethod : complementaryMethods) {
-        if (PyUtil.isInputSignatureCompatibleTo(complementaryMethod, node, myTypeEvalContext) ||
-            PyUtil.isInputSignatureCompatibleTo(node, complementaryMethod, myTypeEvalContext)) {
+        if (matchSignatures(node, complementaryMethod) || matchSignatures(complementaryMethod, node)) {
           return;
         }
       }
@@ -58,6 +60,23 @@ public final class PyInitNewSignatureInspection extends PyInspection {
       else if (!complementaryMethods.isEmpty()) {
         registerIncompatibilityProblem(node, null);
       }
+    }
+
+    private boolean matchSignatures(@NotNull PyFunction current, @NotNull PyFunction other) {
+      List<PyCallableParameter> currentParameters = current.getParameters(myTypeEvalContext);
+      List<PyCallableParameter> otherParameters = other.getParameters(myTypeEvalContext);
+
+      if (!currentParameters.isEmpty() && currentParameters.getFirst().isSelf()) {
+        currentParameters = currentParameters.subList(1, currentParameters.size());
+      }
+      var currentInputSignature = new PyCallableParameterListTypeImpl(currentParameters);
+
+      if (!otherParameters.isEmpty() && otherParameters.getFirst().isSelf()) {
+        otherParameters = otherParameters.subList(1, otherParameters.size());
+      }
+      var otherInputSignature = new PyCallableParameterListTypeImpl(otherParameters);
+
+      return PyTypeChecker.match(currentInputSignature, otherInputSignature, myTypeEvalContext);
     }
 
     private @NotNull List<PyFunction> findComplementaryMethods(@NotNull PyClass cls, @NotNull PyFunction original) {
