@@ -1594,6 +1594,7 @@ com.intellij.ui.dsl.builder.SegmentedButton
 - sf:DEFAULT_MAX_BUTTONS_COUNT:I
 - a:align(com.intellij.ui.dsl.builder.Align):com.intellij.ui.dsl.builder.SegmentedButton
 - a:bind(com.intellij.openapi.observable.properties.ObservableMutableProperty):com.intellij.ui.dsl.builder.SegmentedButton
+- a:bind(com.intellij.ui.dsl.builder.MutableProperty):com.intellij.ui.dsl.builder.SegmentedButton
 - a:customize(com.intellij.ui.dsl.gridLayout.UnscaledGaps):com.intellij.ui.dsl.builder.SegmentedButton
 - a:enabled(Z):com.intellij.ui.dsl.builder.SegmentedButton
 - a:gap(com.intellij.ui.dsl.builder.RightGap):com.intellij.ui.dsl.builder.SegmentedButton
