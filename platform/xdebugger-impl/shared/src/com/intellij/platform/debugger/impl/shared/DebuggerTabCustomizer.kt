@@ -4,6 +4,8 @@ package com.intellij.platform.debugger.impl.shared
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.platform.debugger.impl.rpc.XDebugVariablesViewCustomBottomComponentDto
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
+import com.intellij.xdebugger.ui.IXDebuggerSessionTab
+import kotlinx.coroutines.Deferred
 import org.jetbrains.annotations.ApiStatus
 import javax.swing.JComponent
 
@@ -13,6 +15,7 @@ interface DebuggerTabCustomizer {
   fun createBottomComponentForVariablesView(
     session: XDebugSessionProxy,
     providerDto: XDebugVariablesViewCustomBottomComponentDto,
+    tabDeferred : Deferred<IXDebuggerSessionTab>
   ): JComponent
 
   companion object {
