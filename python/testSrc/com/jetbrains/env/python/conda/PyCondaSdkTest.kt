@@ -12,8 +12,8 @@ import com.intellij.openapi.util.SystemInfoRt
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.common.timeoutRunBlocking
-import com.jetbrains.getPythonBinaryPath
-import com.jetbrains.getPythonVersion
+import com.jetbrains.env.getPythonBinaryPath
+import com.jetbrains.env.getPythonVersion
 import com.jetbrains.python.getOrThrow
 import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.run.PythonScriptExecution
