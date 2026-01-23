@@ -291,8 +291,7 @@ f:com.intellij.history.core.tree.RootEntry
 - write(java.io.DataOutput):V
 c:com.intellij.history.integration.IdeaGateway
 - <init>():V
-- acquireAndClearCurrentContent(com.intellij.openapi.vfs.VirtualFile,com.intellij.openapi.editor.Document):com.intellij.openapi.util.Pair
-- acquireAndUpdateActualContent(com.intellij.openapi.vfs.VirtualFile,com.intellij.openapi.editor.Document):com.intellij.openapi.util.Pair
+- acquireAndClearCurrentContent(com.intellij.openapi.vfs.VirtualFile,com.intellij.openapi.editor.Document):com.intellij.history.integration.IdeaGateway$ContentWithTimestamp
 - areContentChangesVersioned(com.intellij.openapi.vfs.VirtualFile):Z
 - areContentChangesVersioned(java.lang.String):Z
 - createEntryForDeletion(com.intellij.openapi.vfs.VirtualFile):com.intellij.history.core.tree.Entry
