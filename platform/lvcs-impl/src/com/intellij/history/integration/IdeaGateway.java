@@ -41,6 +41,7 @@ import com.intellij.util.SmartList;
 import com.intellij.util.concurrency.annotations.RequiresReadLock;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.io.URLUtil;
+import java.util.function.Function;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -272,14 +273,14 @@ public class IdeaGateway {
   @RequiresReadLock
   public @NotNull RootEntry createTransientRootEntry() {
     RootEntry root = new RootEntry();
-    doCreateChildren(root, getLocalRoots(), false, null);
+    doCreateChildren(root, getLocalRoots(), IdeaGateway::getActualContentNoAcquire, null);
     return root;
   }
 
   @RequiresReadLock
   public @NotNull RootEntry createTransientRootEntryForPath(@NotNull String path, boolean includeChildren) {
     RootEntry root = new RootEntry();
-    doCreateChildren(root, getLocalRoots(), false, new SinglePathVisitor(path, includeChildren));
+    doCreateChildren(root, getLocalRoots(), IdeaGateway::getActualContentNoAcquire, new SinglePathVisitor(path, includeChildren));
     return root;
   }
 
@@ -294,7 +295,7 @@ public class IdeaGateway {
 
     RootEntry root = new RootEntry();
     List<SinglePathVisitor> visitors = ContainerUtil.map(paths, s -> new SinglePathVisitor(s, includeChildren));
-    doCreateChildren(root, getLocalRoots(), false, new MergingPathVisitor(visitors));
+    doCreateChildren(root, getLocalRoots(), IdeaGateway::getActualContentNoAcquire, new MergingPathVisitor(visitors));
     return root;
   }
 
@@ -312,39 +313,38 @@ public class IdeaGateway {
 
   @RequiresReadLock
   public @Nullable Entry createTransientEntry(@NotNull VirtualFile file) {
-    return doCreateEntry(file, false, null);
+    return doCreateEntry(file, IdeaGateway::getActualContentNoAcquire, null);
   }
 
   @RequiresReadLock
   public @Nullable Entry createEntryForDeletion(@NotNull VirtualFile file) {
-    return doCreateEntry(file, true, null);
+    return doCreateEntry(file, f -> {
+      FileDocumentManager m = FileDocumentManager.getInstance();
+      Document d = m.isFileModified(f) ? m.getCachedDocument(f) : null; // should not try to load document
+      return acquireAndClearCurrentContent(f, d);
+    }, null);
   }
 
-  private @Nullable Entry doCreateEntry(@NotNull VirtualFile file, boolean forDeletion, @Nullable FileTreeVisitor visitor) {
+  private @Nullable Entry doCreateEntry(@NotNull VirtualFile file,
+                                        @NotNull Function<@NotNull VirtualFile, @NotNull Pair<StoredContent, Long>> contentProvider,
+                                        @Nullable FileTreeVisitor visitor) {
     if (!file.isDirectory()) {
       if (!isVersioned(file)) return null;
 
-      return doCreateFileEntry(file, forDeletion);
+      return doCreateFileEntry(file, contentProvider);
     }
 
     DirectoryEntries entries = doCreateDirectoryEntries(file);
     if (entries == null) return null;
 
-    doCreateChildren(entries.last, iterateDBChildren(file), forDeletion, visitor);
+    doCreateChildren(entries.last, iterateDBChildren(file), contentProvider, visitor);
     if (!isVersioned(file) && entries.last.getChildren().isEmpty()) return null;
     return entries.first;
   }
 
-  private @NotNull Entry doCreateFileEntry(@NotNull VirtualFile file, boolean forDeletion) {
-    Pair<StoredContent, Long> contentAndStamps;
-    if (forDeletion) {
-      FileDocumentManager m = FileDocumentManager.getInstance();
-      Document d = m.isFileModified(file) ? m.getCachedDocument(file) : null; // should not try to load document
-      contentAndStamps = acquireAndClearCurrentContent(file, d);
-    }
-    else {
-      contentAndStamps = getActualContentNoAcquire(file);
-    }
+  private static @NotNull Entry doCreateFileEntry(@NotNull VirtualFile file,
+                                                  @NotNull Function<@NotNull VirtualFile, @NotNull Pair<StoredContent, Long>> contentProvider) {
+    Pair<StoredContent, Long> contentAndStamps = contentProvider.apply(file);
 
     StoredContent content = contentAndStamps.first;
     Long timestamp = contentAndStamps.second;
@@ -384,7 +384,7 @@ public class IdeaGateway {
     return new DirectoryEntries(first, last);
   }
 
-  private void doCreateChildren(@NotNull DirectoryEntry parent, @NotNull Iterable<? extends VirtualFile> children, boolean forDeletion,
+  private void doCreateChildren(@NotNull DirectoryEntry parent, @NotNull Iterable<? extends VirtualFile> children, @NotNull Function<@NotNull VirtualFile, @NotNull Pair<StoredContent, Long>> contentProvider,
                                 @Nullable FileTreeVisitor visitor) {
     List<Entry> entries = ContainerUtil.mapNotNull(children, each -> {
       if (visitor != null && !visitor.before(each)) return null;
@@ -393,11 +393,11 @@ public class IdeaGateway {
       Entry existingEntry = parent.findEntry(each.getName());
       if (existingEntry != null) {
         if (existingEntry instanceof DirectoryEntry existingDirectoryEntry) {
-          doCreateChildren(existingDirectoryEntry, iterateDBChildren(each), forDeletion, visitor);
+          doCreateChildren(existingDirectoryEntry, iterateDBChildren(each), contentProvider, visitor);
         }
       }
       else {
-        newEntry = doCreateEntry(each, forDeletion, visitor);
+        newEntry = doCreateEntry(each, contentProvider, visitor);
       }
 
       if (visitor != null) visitor.after(each);
