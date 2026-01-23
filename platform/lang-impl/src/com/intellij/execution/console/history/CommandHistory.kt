@@ -1,11 +1,13 @@
-// Copyright 2000-2022 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 
-package org.jetbrains.kotlin.console
+package com.intellij.execution.console.history
 
 import com.intellij.openapi.util.TextRange
 import org.jetbrains.kotlin.K1Deprecation
+import org.jetbrains.annotations.ApiStatus
 
 @K1Deprecation
+@ApiStatus.Internal
 class CommandHistory {
     class Entry(
         val entryText: String,
@@ -39,6 +41,7 @@ class CommandHistory {
 }
 
 @K1Deprecation
+@ApiStatus.Internal
 interface HistoryUpdateListener {
     fun onNewEntry(entry: CommandHistory.Entry)
 }

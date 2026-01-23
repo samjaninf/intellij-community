@@ -1,18 +1,19 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-
-package org.jetbrains.kotlin.console
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.execution.console.history
 
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.project.Project
+import org.jetbrains.annotations.ApiStatus
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import kotlin.math.max
 import kotlin.math.min
 
-internal class HistoryKeyListener(private val project: Project, private val consoleEditor: EditorEx, private val history: CommandHistory) :
+@ApiStatus.Internal
+class HistoryKeyListener(private val project: Project, private val consoleEditor: EditorEx, private val history: CommandHistory) :
     KeyAdapter(), HistoryUpdateListener {
     private var historyPos = 0
     private var prevCaretOffset = -1
