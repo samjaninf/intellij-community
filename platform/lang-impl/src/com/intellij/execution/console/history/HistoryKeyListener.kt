@@ -13,7 +13,12 @@ import kotlin.math.max
 import kotlin.math.min
 
 @ApiStatus.Internal
-class HistoryKeyListener(private val project: Project, private val consoleEditor: EditorEx, private val history: CommandHistory) :
+class HistoryKeyListener(
+  private val project: Project,
+  private val consoleEditor: EditorEx,
+  private val history: CommandHistory,
+  val moveCaretToEndOnUp: Boolean = false,
+  val keyExactMatch : Boolean = false) :
     KeyAdapter(), HistoryUpdateListener {
     private var historyPos = 0
     private var prevCaretOffset = -1
@@ -31,6 +36,7 @@ class HistoryKeyListener(private val project: Project, private val consoleEditor
     }
 
     override fun keyReleased(e: KeyEvent) {
+        if (keyExactMatch && e.modifiersEx != 0) return //suppress navigation if there are additional keys being pressed
         when (e.keyCode) {
             KeyEvent.VK_UP -> moveHistoryCursor(HistoryMove.UP)
             KeyEvent.VK_DOWN -> moveHistoryCursor(HistoryMove.DOWN)
@@ -61,10 +67,19 @@ class HistoryKeyListener(private val project: Project, private val consoleEditor
                     unfinishedCommand = document.text
                 }
 
+                val isTop = historyPos == 0
                 historyPos = max(historyPos - 1, 0)
                 WriteCommandAction.runWriteCommandAction(project) {
-                    document.setText(history[historyPos].entryText)
+                    val text = history[historyPos].entryText
+                    document.setText(text)
                     EditorUtil.scrollToTheEnd(consoleEditor)
+
+                    if (moveCaretToEndOnUp && !isTop) {
+                      prevCaretOffset = text.length
+                      caret.moveToOffset(text.length)
+                      return@runWriteCommandAction
+                    }
+
                     prevCaretOffset = 0
                     caret.moveToOffset(0)
                 }
