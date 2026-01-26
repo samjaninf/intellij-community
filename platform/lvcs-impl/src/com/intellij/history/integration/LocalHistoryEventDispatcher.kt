@@ -163,6 +163,7 @@ internal class LocalHistoryEventDispatcher(private val facade: LocalHistoryFacad
 
   private fun beforeFileDeletion(e: VFileDeleteEvent) {
     val f = e.file
+    if (LocalHistoryFilesDeletionHandler.wasProcessed(f)) return
     val entry = gateway.createEntryForDeletion(f) ?: return
     facade.deleted(gateway.getPathOrUrl(f), entry)
   }

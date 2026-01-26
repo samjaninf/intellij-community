@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.history.integration
 
 import com.intellij.history.ActivityId
@@ -26,8 +26,10 @@ import com.intellij.openapi.options.advanced.AdvancedSettings
 import com.intellij.openapi.options.advanced.AdvancedSettingsChangeListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.ShutDownTracker
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.platform.lvcs.impl.RevisionId
@@ -125,7 +127,16 @@ class LocalHistoryImpl(private val coroutineScope: CoroutineScope) : LocalHistor
         }
       }
     }
+    registerDeletionHandler()
     isInitialized.set(true)
+  }
+
+  private fun registerDeletionHandler() {
+    val deletionHandler = LocalHistoryFilesDeletionHandler(facade!!, gateway)
+    LocalFileSystem.getInstance().registerAuxiliaryFileOperationsHandler(deletionHandler)
+    Disposer.register(this) {
+      LocalFileSystem.getInstance().unregisterAuxiliaryFileOperationsHandler(deletionHandler)
+    }
   }
 
   private fun initHistory() {

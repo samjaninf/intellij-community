@@ -40,8 +40,6 @@ import com.intellij.util.SmartList;
 import com.intellij.util.concurrency.annotations.RequiresReadLock;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.io.URLUtil;
-import java.util.function.Function;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,6 +50,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class IdeaGateway {
   private static final Logger LOG = Logger.getInstance(IdeaGateway.class);
@@ -317,16 +317,12 @@ public class IdeaGateway {
 
   @RequiresReadLock
   public @Nullable Entry createEntryForDeletion(@NotNull VirtualFile file) {
-    return doCreateEntry(file, f -> {
-      FileDocumentManager m = FileDocumentManager.getInstance();
-      Document d = m.isFileModified(f) ? m.getCachedDocument(f) : null; // should not try to load document
-      return acquireAndClearCurrentContent(f, d);
-    }, null);
+    return doCreateEntry(file, f -> acquireContentForDeletedFile(f, null), null);
   }
 
-  private @Nullable Entry doCreateEntry(@NotNull VirtualFile file,
-                                        @NotNull Function<@NotNull VirtualFile, @NotNull ContentWithTimestamp> contentProvider,
-                                        @Nullable FileTreeVisitor visitor) {
+  @Nullable Entry doCreateEntry(@NotNull VirtualFile file,
+                                @NotNull Function<@NotNull VirtualFile, @NotNull ContentWithTimestamp> contentProvider,
+                                @Nullable FileTreeVisitor visitor) {
     if (!file.isDirectory()) {
       if (!isVersioned(file)) return null;
 
@@ -564,7 +560,15 @@ public class IdeaGateway {
                                                      d.getModificationStamp()));
   }
 
-  public @NotNull ContentWithTimestamp acquireAndClearCurrentContent(@NotNull VirtualFile f, @Nullable Document d) {
+  /**
+   * @param contentFallback fallback in case if acquired content is unavailable
+   *                        (see {@link StoredContent#acquireContent(VirtualFile)} implementation details)
+   */
+  @NotNull ContentWithTimestamp acquireContentForDeletedFile(@NotNull VirtualFile f,
+                                                             @Nullable Supplier<? extends @NotNull StoredContent> contentFallback) {
+    FileDocumentManager m = FileDocumentManager.getInstance();
+    Document d = m.isFileModified(f) ? m.getCachedDocument(f) : null; // should not try to load document
+
     DocumentContentWithTimestamps contentAndStamp = f.getUserData(SAVED_DOCUMENT_CONTENT_AND_STAMP_KEY);
     f.putUserData(SAVED_DOCUMENT_CONTENT_AND_STAMP_KEY, null);
 
@@ -585,7 +589,12 @@ public class IdeaGateway {
       return new ContentWithTimestamp(Clock.getTime(), StoredContent.acquireContent(bytesFromDocument(d)));
     }
 
-    return new ContentWithTimestamp(f.getTimeStamp(), StoredContent.acquireContent(f));
+    StoredContent content = StoredContent.acquireContent(f);
+    if (!content.isAvailable() && contentFallback != null) {
+      content = contentFallback.get();
+    }
+
+    return new ContentWithTimestamp(f.getTimeStamp(), content);
   }
 
   private static @NotNull ContentWithTimestamp getActualContentNoAcquire(@NotNull VirtualFile f) {
