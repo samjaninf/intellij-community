@@ -50,8 +50,8 @@ class KotlinGenerateEqualsAndHashcodeAction : KotlinGenerateMemberActionBase<Inf
             val classSymbol = klass.symbol as? KaClassSymbol ?: return@analyzeInModalWindow null
             val properties = getPropertiesToUseInGeneratedMember(klass)
 
-            val equalsMethodForClass = findEqualsMethodForClass(classSymbol)
-            val hashCodeMethodForClass = findHashCodeMethodForClass(classSymbol)
+            val equalsMethodForClass = this.findEqualsMethodForClass(classSymbol)
+            val hashCodeMethodForClass = this.findHashCodeMethodForClass(classSymbol)
 
             Triple(
                 Info(

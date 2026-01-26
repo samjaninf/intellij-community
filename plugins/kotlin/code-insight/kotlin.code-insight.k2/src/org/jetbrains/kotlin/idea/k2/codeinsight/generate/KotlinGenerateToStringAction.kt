@@ -19,7 +19,13 @@ import org.jetbrains.kotlin.idea.k2.codeinsight.generate.GenerateEqualsAndHashCo
 import org.jetbrains.kotlin.idea.k2.codeinsight.generate.GenerateEqualsAndHashCodeUtils.generateToString
 import org.jetbrains.kotlin.idea.util.application.executeWriteCommand
 import org.jetbrains.kotlin.idea.util.application.isUnitTestMode
-import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.UserDataProperty
 import org.jetbrains.kotlin.psi.psiUtil.hasExpectModifier
 import org.jetbrains.kotlin.utils.addToStdlib.lastIsInstanceOrNull
 
@@ -40,7 +46,7 @@ class KotlinGenerateToStringAction : KotlinGenerateMemberActionBase<KotlinGenera
     public override fun prepareMembersInfo(klass: KtClassOrObject, project: Project, editor: Editor): Info? {
         val (preInfo, existsToString) = analyzeInModalWindow(klass, KotlinBundle.message("fix.change.signature.prepare")) {
             val classSymbol = klass.symbol as? KaClassSymbol ?: return@analyzeInModalWindow null
-            val toStringMethod = findToStringMethodForClass(classSymbol)
+            val toStringMethod = this.findToStringMethodForClass(classSymbol)
             val existsToString = toStringMethod?.containingSymbol == classSymbol && toStringMethod.origin == KaSymbolOrigin.SOURCE
 
             val properties = getPropertiesToUseInGeneratedMember(klass)

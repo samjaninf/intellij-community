@@ -35,16 +35,13 @@ import org.jetbrains.kotlin.util.OperatorNameConventions
 
 @OptIn(KaContextParameterApi::class)
 object KotlinEqualsHashCodeToStringSymbolUtils {
-    context(_: KaSession)
-    fun findEqualsMethodForClass(classSymbol: KaClassSymbol, searchInSuper: Boolean = true): KaCallableSymbol? =
+    fun KaSession.findEqualsMethodForClass(classSymbol: KaClassSymbol, searchInSuper: Boolean = true): KaCallableSymbol? =
         findMethodForClass(classSymbol, OperatorNameConventions.EQUALS, searchInSuper) { matchesEqualsMethodSignature(it) }
 
-    context(_: KaSession)
-    fun findHashCodeMethodForClass(classSymbol: KaClassSymbol, searchInSuper: Boolean = true): KaCallableSymbol? =
+    fun KaSession.findHashCodeMethodForClass(classSymbol: KaClassSymbol, searchInSuper: Boolean = true): KaCallableSymbol? =
         findMethodForClass(classSymbol, OperatorNameConventions.HASH_CODE, searchInSuper) { matchesHashCodeMethodSignature(it) }
 
-    context(_: KaSession)
-    fun findToStringMethodForClass(classSymbol: KaClassSymbol, searchInSuper: Boolean = true): KaCallableSymbol? =
+    fun KaSession.findToStringMethodForClass(classSymbol: KaClassSymbol, searchInSuper: Boolean = true): KaCallableSymbol? =
         findMethodForClass(classSymbol, OperatorNameConventions.TO_STRING, searchInSuper) { matchesToStringMethodSignature(it) }
 
     context(_: KaSession)

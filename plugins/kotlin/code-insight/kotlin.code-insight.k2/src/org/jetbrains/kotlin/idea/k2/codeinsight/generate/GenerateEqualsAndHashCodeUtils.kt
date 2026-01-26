@@ -59,7 +59,7 @@ object GenerateEqualsAndHashCodeUtils {
         val contextMap = mutableMapOf<String, Any?>()
 
 
-        val equalsFunction = if (tryToFindEqualsMethodForClass) findEqualsMethodForClass(klass.symbol as KaClassSymbol) else null
+        val equalsFunction = if (tryToFindEqualsMethodForClass) contextOf<KaSession>().findEqualsMethodForClass(klass.symbol as KaClassSymbol) else null
 
         contextMap[BASE_PARAM_NAME] = "other"
         if (equalsFunction != null) {
@@ -103,7 +103,7 @@ object GenerateEqualsAndHashCodeUtils {
         val klass = info.klass
 
         val contextMap = mutableMapOf<String, Any?>()
-        val hashCodeFunction = if (tryToFindHashCodeMethodForClass) findHashCodeMethodForClass(klass.symbol as KaClassSymbol) else null
+        val hashCodeFunction = if (tryToFindHashCodeMethodForClass) contextOf<KaSession>().findHashCodeMethodForClass(klass.symbol as KaClassSymbol) else null
         contextMap[SUPER_HAS_HASHCODE] = hashCodeFunction != null && (hashCodeFunction.containingSymbol as? KaClassSymbol)?.classId != StandardClassIds.Any
 
         // Sort variables in `hashCode()` to preserve the same order as in `equals()`
@@ -123,7 +123,7 @@ object GenerateEqualsAndHashCodeUtils {
 
         val contextMap = mutableMapOf<String, Any?>()
 
-        val toStringFunction = findToStringMethodForClass(klass.symbol as KaClassSymbol)
+        val toStringFunction = contextOf<KaSession>().findToStringMethodForClass(klass.symbol as KaClassSymbol)
 
         contextMap["generateSuper"] = toStringFunction != null && (toStringFunction.containingSymbol as? KaClassSymbol)?.classId != StandardClassIds.Any
 
