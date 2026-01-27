@@ -212,7 +212,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     contentHash = DigestUtil.sha1Hex(page.html)
   }
 
-  private fun getRequest(dataContext: DataContext?): HTMLEditorProvider.Request {
+  private suspend fun getRequest(dataContext: DataContext?): HTMLEditorProvider.Request {
     val request = dataContext?.project?.let { WhatsNewResourceProvider.getInstance(it).getRequest(content) }
                   ?: html(content)
     return request
@@ -294,7 +294,8 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     withContext(Dispatchers.EDT) {
       logger.info("Opening What's New in editor.")
       val disposable = Disposer.newDisposable(project)
-      val editor = writeIntentReadAction { openEditor(project, title, getRequest(dataContext)) }
+      val request = getRequest(dataContext)
+      val editor = writeIntentReadAction { openEditor(project, title, request) }
       editor?.let {
         project.serviceAsync<FileEditorManager>().addTopComponent(it, ReactionsPanel.createPanel(PLACE, reactionChecker))
         WhatsNewCounterUsageCollector.openedPerformed(project, triggeredByUser)

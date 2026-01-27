@@ -7,7 +7,7 @@ import com.intellij.openapi.fileEditor.impl.HTMLEditorProvider.Request.Companion
 import com.intellij.openapi.project.Project
 
 open class WhatsNewResourceProvider(val project: Project) {
-  open fun getRequest(content: String): HTMLEditorProvider.Request = html(content)
+  open suspend fun getRequest(content: String): HTMLEditorProvider.Request = html(content)
 
   companion object {
     fun getInstance(project: Project): WhatsNewResourceProvider = project.service()
