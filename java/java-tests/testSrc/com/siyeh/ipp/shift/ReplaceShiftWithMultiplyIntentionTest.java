@@ -1,6 +1,8 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.siyeh.ipp.shift;
 
+import com.intellij.pom.java.LanguageLevel;
+import com.intellij.testFramework.IdeaTestUtil;
 import com.siyeh.ipp.IPPTestCase;
 
 public class ReplaceShiftWithMultiplyIntentionTest extends IPPTestCase {
@@ -11,7 +13,18 @@ public class ReplaceShiftWithMultiplyIntentionTest extends IPPTestCase {
   public void testLeftShiftAssign() { doTest("Replace '<<=' with '*='"); }
   public void testLongShiftAssign() { doTest("Replace '<<=' with '*='"); }
   public void testParentheses() { doTest("Replace '<<' with '*'"); }
-  public void testRightShift() { doTest("Replace '>>' with '/'"); }
+  public void testRightShift() {
+    doTest("Replace '>>' with 'Math.floorDiv'");
+    IdeaTestUtil.withLevel(myFixture.getModule(), LanguageLevel.JDK_1_7, () -> {
+      assertIntentionNotAvailable("Replace '>>' with 'Math.floorDiv'");
+    });
+  }
+  public void testRightShiftAssign() {
+    doTest("Replace '>>=' with 'Math.floorDiv'");
+    IdeaTestUtil.withLevel(myFixture.getModule(), LanguageLevel.JDK_1_7, () -> {
+      assertIntentionNotAvailable("Replace '>>' with 'Math.floorDiv'");
+    });
+  }
 
   @Override
   protected String getRelativePath() {
