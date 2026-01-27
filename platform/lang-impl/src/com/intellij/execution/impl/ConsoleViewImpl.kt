@@ -7,8 +7,10 @@ import com.google.common.base.CharMatcher
 import com.intellij.codeInsight.folding.impl.FoldingUtil
 import com.intellij.codeInsight.navigation.IncrementalSearchHandler
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase
+import com.intellij.codeWithMe.ClientId
 import com.intellij.codeWithMe.ClientId.Companion.currentOrNull
 import com.intellij.codeWithMe.ClientId.Companion.isCurrentlyUnderLocalId
+import com.intellij.codeWithMe.ClientId.Companion.withExplicitClientId
 import com.intellij.execution.ConsoleFolding
 import com.intellij.execution.ExecutionBundle
 import com.intellij.execution.actions.ClearConsoleAction
@@ -651,14 +653,19 @@ open class ConsoleViewImpl protected constructor(
   open fun flushDeferredText() {
     ThreadingAssertions.assertEventDispatchThread()
     if (isDisposed) return
-    val editor = editor as EditorEx?
-    val shouldStickToEnd = !myCancelStickToEnd && isStickingToEnd(
-      editor!!)
+
+    val editor = editor as EditorEx
+    withExplicitClientId(ClientId.localId) {
+      flushDeferredTextImpl(editor)
+    }
+  }
+
+  private fun flushDeferredTextImpl(editor: EditorEx) {
+    val shouldStickToEnd = !myCancelStickToEnd && isStickingToEnd(editor)
     myCancelStickToEnd = false // Cancel only needs to last for one update. Next time, isStickingToEnd() will be false.
 
     var deferredTokens: List<TokenBuffer.TokenInfo>
-    val document: Document = editor!!.document
-
+    val document: Document = editor.document
     synchronized(LOCK) {
       if (myOutputPaused) return
       deferredTokens = myDeferredBuffer.drain()
