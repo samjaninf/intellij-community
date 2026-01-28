@@ -13,6 +13,7 @@ import com.intellij.platform.eel.path.EelPath
 import com.intellij.platform.eel.path.EelPathException
 import org.jetbrains.annotations.ApiStatus
 import java.nio.file.Path
+import kotlin.io.path.pathString
 
 /**
  * Converts [EelPath], which is likely a path from a remote machine, to a [Path] for the local machine.
@@ -105,7 +106,11 @@ fun Path.asEelPath(descriptor: EelDescriptor): EelPath {
       }
     }
     is EelPathBoundDescriptor -> {
-      TODO() // on Windows, we need additional logic to guess the new root
+      val root = descriptor.rootPath
+      val relative = root.relativize(this)
+      return relative.drop(1).fold(EelPath.parse(relative.first().pathString, descriptor)) { path, part ->
+        part.toString().takeIf { it.isNotEmpty() }?.let { path.getChild(it) } ?: path
+      }
     }
     else -> {
       throw NoSuchElementException("Cannot find a root for $this")

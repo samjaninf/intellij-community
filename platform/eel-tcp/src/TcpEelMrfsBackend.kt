@@ -4,7 +4,7 @@ package com.intellij.platform.eel.tcp
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.platform.eel.annotations.MultiRoutingFileSystemPath
 import com.intellij.platform.eel.provider.MultiRoutingFileSystemBackend
-import com.intellij.platform.ijent.community.impl.IjentFailSafeFileSystemPosixApi
+import com.intellij.platform.ijent.community.impl.ijentFailSafeFileSystemApi
 import com.intellij.platform.ijent.community.impl.nio.IjentNioFileSystemProvider
 import com.intellij.platform.ijent.community.impl.nio.fs.IjentEphemeralRootAwareFileSystemProvider
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +40,7 @@ class TcpEelMrfsBackend(private val scope: CoroutineScope) : MultiRoutingFileSys
     val ijentDefaultProvider = IjentNioFileSystemProvider.getInstance()
 
     try {
-      val ijentFs = IjentFailSafeFileSystemPosixApi(scope, descriptor, checkIsIjentInitialized = null)
+      val ijentFs = ijentFailSafeFileSystemApi(scope, descriptor, checkIsIjentInitialized = null)
       ijentDefaultProvider.newFileSystem(ijentUri, IjentNioFileSystemProvider.newFileSystemMap(ijentFs))
     }
     catch (_: FileSystemAlreadyExistsException) {
@@ -51,7 +51,8 @@ class TcpEelMrfsBackend(private val scope: CoroutineScope) : MultiRoutingFileSys
       root = localPath,
       ijentFsProvider = ijentDefaultProvider,
       originalFsProvider = localFS.provider(),
-      useRootDirectoriesFromOriginalFs = false
+      useRootDirectoriesFromOriginalFs = false,
+      eelDescriptor = descriptor,
     ).getFileSystem(ijentUri)
   }
 
