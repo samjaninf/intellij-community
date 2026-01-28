@@ -37,7 +37,6 @@ class LambdaTestExecutionListener : TestCleanupListener() {
         }
       }
 
-      ConfigureCoroutineCancellationTimeout.configure()
     }
   }
 
