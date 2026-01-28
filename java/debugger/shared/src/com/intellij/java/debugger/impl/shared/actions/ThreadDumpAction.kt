@@ -131,8 +131,14 @@ private class FrontendDumpItem(
   override val attributes: SimpleTextAttributes get() = attributesCache[itemDto.attributesIndex.toInt().toUInt().toInt()]
   override val isDeadLocked: Boolean get() = itemDto.isDeadLocked
   override val awaitingDumpItems: Set<DumpItem> get() = internalAwaitingItems
+  override val isContainer: Boolean get() = itemDto.isContainer
+  override val id: Long get() = itemDto.id
+  override val parentId: Long? get() = itemDto.parentId
 
   fun setAwaitingItems(items: Set<DumpItem>) {
     internalAwaitingItems = items
   }
+
+  override fun toString(): String =
+    "FrontendDumpItem(name=$name)"
 }

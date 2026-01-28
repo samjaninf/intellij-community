@@ -58,6 +58,11 @@ private class CoroutineDumpItem(info: CoroutineInfoData) : MergeableDumpItem {
 
     override val name: String = info.name + ":" + info.id
 
+    override val id: Long = info.hashCode().toLong() // todo
+
+    override val parentId: Long?
+        get() = null // todo
+
     override val stateDesc: String = " (${info.state.name.lowercase()})"
 
     override val iconToolTip: String
@@ -104,6 +109,9 @@ private class CoroutineDumpItem(info: CoroutineInfoData) : MergeableDumpItem {
         State.RUNNING -> DumpItem.RUNNING_ATTRIBUTES
         State.CREATED, State.UNKNOWN -> DumpItem.UNINTERESTING_ATTRIBUTES
     }
+
+    override val isContainer: Boolean
+        get() = false
 
     override val mergeableToken: MergeableToken get() = CoroutinesMergeableToken()
 
