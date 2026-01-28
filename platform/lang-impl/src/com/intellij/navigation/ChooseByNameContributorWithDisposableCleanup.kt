@@ -1,15 +1,15 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.ide.util.gotoByName
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.navigation
 
-import com.intellij.navigation.ChooseByNameContributorEx2
-import com.intellij.navigation.NavigationItem
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
 import com.intellij.util.indexing.FindSymbolParameters
 import com.intellij.util.indexing.IdFilter
+import org.jetbrains.annotations.ApiStatus
 
+@ApiStatus.Internal
 interface ChooseByNameContributorWithDisposableCleanup : ChooseByNameContributorEx2 {
 
   fun processNamesWithDisposable(disposable: Disposable, processor: Processor<in String>, parameters: FindSymbolParameters)
