@@ -392,7 +392,7 @@ class FrontendXDebuggerSession(
 
       val customBottomComponent = tabInfo.customBottomComponentProvider?.let {
         DebuggerTabCustomizer.getInstanceSafe()
-          ?.createBottomComponentForVariablesView(this@FrontendXDebuggerSession, it, sessionTabDeferred)
+          ?.createBottomComponentForVariablesView(this@FrontendXDebuggerSession)
       }
 
       // TODO restore content to reuse on frontend if needed (it is not used now in create)
