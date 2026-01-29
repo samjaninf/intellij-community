@@ -3,6 +3,7 @@ package com.intellij.xdebugger.impl.frame
 
 import com.intellij.ide.dnd.DnDNativeTarget
 import com.intellij.openapi.util.Key
+import com.intellij.platform.debugger.impl.shared.XDebuggerMonolithAccessPoint
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.util.application
@@ -103,7 +104,8 @@ class XSplitterWatchesViewImpl(
     val bottomLocalsComponentProvider = tryGetBottomComponentProvider(session, useLowLevelDebugProcessPanel())
                                         ?: error("BottomLocalsComponentProvider is not implemented to use SplitterWatchesVariablesView")
 
-    val evaluatorComponent = bottomLocalsComponentProvider.createBottomLocalsComponent()
+    val sessionProxy = checkNotNull(XDebuggerMonolithAccessPoint.find { it.asProxy(session) })
+    val evaluatorComponent = bottomLocalsComponentProvider.createBottomLocalsComponent(sessionProxy)
     splitter = OnePixelSplitter(true, proportionKey, 0.01f, 0.99f)
 
     splitter.firstComponent = localsPanel

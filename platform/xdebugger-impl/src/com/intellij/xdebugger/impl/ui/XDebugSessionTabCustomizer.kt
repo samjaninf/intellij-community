@@ -1,8 +1,8 @@
 package com.intellij.xdebugger.impl.ui
 
+import com.intellij.platform.debugger.impl.shared.SessionTabComponentProvider
 import com.intellij.xdebugger.XDebugProcess
 import org.jetbrains.annotations.ApiStatus
-import javax.swing.JComponent
 
 @ApiStatus.Internal
 @ApiStatus.Experimental
@@ -14,10 +14,6 @@ interface XDebugSessionTabCustomizer {
   fun getDefaultFramesViewKey(): String? = null
 
   fun forceShowNewDebuggerUi(): Boolean = false
-}
-
-interface SessionTabComponentProvider {
-  fun createBottomLocalsComponent(): JComponent
 }
 
 fun XDebugProcess.allowFramesViewCustomization(): Boolean {

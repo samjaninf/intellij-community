@@ -6,6 +6,7 @@ import com.intellij.execution.ui.ExecutionConsole
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.EDT
+import com.intellij.platform.debugger.impl.shared.SessionTabComponentProvider
 import com.intellij.xdebugger.XAlternativeSourceHandler
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
@@ -35,6 +36,7 @@ import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.PauseRequ
 import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.ResumeRequested
 import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.StepType
 import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.Stop
+import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.HighLevelSetNextStatementRequested
 import com.intellij.xdebugger.impl.ui.SessionTabComponentProvider
 import com.intellij.xdebugger.impl.ui.XDebugSessionTabCustomizer
 import com.intellij.xdebugger.mixedMode.XMixedModeHighLevelDebugProcessExtension

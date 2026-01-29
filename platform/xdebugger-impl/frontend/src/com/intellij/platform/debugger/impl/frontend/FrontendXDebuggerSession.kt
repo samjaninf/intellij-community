@@ -23,6 +23,7 @@ import com.intellij.platform.debugger.impl.frontend.frame.FrontendXSuspendContex
 import com.intellij.platform.debugger.impl.frontend.storage.FrontendXStackFramesStorage
 import com.intellij.platform.debugger.impl.frontend.storage.getOrCreateStackFrame
 import com.intellij.platform.debugger.impl.rpc.*
+import com.intellij.platform.debugger.impl.shared.SessionTabComponentProvider
 import com.intellij.platform.debugger.impl.shared.DebuggerTabCustomizer
 import com.intellij.platform.debugger.impl.rpc.ErrorOccurredEvent
 import com.intellij.platform.debugger.impl.rpc.NewExecutionStackGroupsEvent
@@ -391,8 +392,8 @@ class FrontendXDebuggerSession(
       consoleViewDeferred.await()
 
       val customBottomComponent = tabInfo.customBottomComponentProvider?.let {
-        DebuggerTabCustomizer.getInstanceSafe()
-          ?.createBottomComponentForVariablesView(this@FrontendXDebuggerSession)
+        SessionTabComponentProvider.getInstanceSafe()
+          ?.createBottomLocalsComponent(this@FrontendXDebuggerSession)
       }
 
       // TODO restore content to reuse on frontend if needed (it is not used now in create)
