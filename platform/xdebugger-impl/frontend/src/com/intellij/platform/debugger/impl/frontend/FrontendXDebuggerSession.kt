@@ -391,11 +391,7 @@ class FrontendXDebuggerSession(
       // so [consoleView] will return an up-to-date result
       consoleViewDeferred.await()
 
-      val customBottomComponent = tabInfo.customBottomComponentProvider?.let {
-        SessionTabComponentProvider.getInstanceSafe()
-          ?.createBottomLocalsComponent(this@FrontendXDebuggerSession)
-      }
-
+      val customBottomComponent = SessionTabComponentProvider.getInstanceSafe()?.createBottomLocalsComponent(this@FrontendXDebuggerSession)
       // TODO restore content to reuse on frontend if needed (it is not used now in create)
       XDebugSessionTab.create(proxy, tabInfo.iconId?.icon(), tabInfo.executionEnvironmentProxyDto?.executionEnvironment(project, tabScope), null,
                               tabInfo.forceNewDebuggerUi, tabInfo.withFramesCustomization, tabInfo.defaultFramesViewKey,
