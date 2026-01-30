@@ -8,23 +8,28 @@ import com.intellij.internal.statistic.service.fus.collectors.CounterUsagesColle
 import com.intellij.openapi.project.Project
 
 internal object WhatsNewCounterUsageCollector : CounterUsagesCollector() {
-  private val eventLogGroup: EventLogGroup = EventLogGroup("whatsnew", 3)
-  
+  private val eventLogGroup: EventLogGroup = EventLogGroup("whatsnew", 4, description = "What's New usage statistics")
+
   private val visionActionId = EventFields.String("vision_action_id", listOf("whatsnew.vision.zoom", "whatsnew.vision.gif"))
 
-  private val opened = eventLogGroup.registerEvent("tab_opened", EventFields.Enum(("type"), OpenedType::class.java))
-  private val closed = eventLogGroup.registerEvent("tab_closed")
+  private val opened = eventLogGroup.registerEvent("tab_opened", EventFields.Enum(("type"), OpenedType::class.java), "What's New tab was opened")
+  private val duration = EventFields.Long("duration_seconds")
+  private val closed = eventLogGroup.registerEvent("tab_closed", duration, "What's New tab was closed")
   private val actionId = EventFields.StringValidatedByCustomRule("action_id", ActionRuleValidator::class.java)
-  private val perform = eventLogGroup.registerEvent("action_performed", actionId)
-  private val failed = eventLogGroup.registerEvent("action_failed", actionId, EventFields.Enum(("type"), ActionFailedReason::class.java))
-  private val visionAction = eventLogGroup.registerEvent("vision_action_performed", visionActionId)
+  private val perform = eventLogGroup.registerEvent("action_performed", actionId, "An action was performed in the What's New tab")
+  private val failed = eventLogGroup.registerEvent("action_failed",
+                                                   actionId,
+                                                   EventFields.Enum(("type"), ActionFailedReason::class.java),
+                                                   "An action failed in the What's New tab")
+  private val visionAction =
+    eventLogGroup.registerEvent("vision_action_performed", visionActionId, "A vision-related action was performed in the What's New tab")
 
   fun openedPerformed(project: Project?, byClient: Boolean) {
     opened.log(project, if (byClient) OpenedType.ByClient else OpenedType.Auto)
   }
 
-  fun closedPerformed(project: Project?) {
-    closed.log(project)
+  fun closedPerformed(project: Project?, seconds: Long) {
+    closed.log(project, seconds)
   }
 
   fun actionPerformed(project: Project?, id: String) {

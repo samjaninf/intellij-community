@@ -298,6 +298,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
       val editor = writeIntentReadAction { openEditor(project, title, request) }
       editor?.let {
         project.serviceAsync<FileEditorManager>().addTopComponent(it, ReactionsPanel.createPanel(PLACE, reactionChecker))
+        val startTime = System.currentTimeMillis()
         WhatsNewCounterUsageCollector.openedPerformed(project, triggeredByUser)
 
         WhatsNewContentVersionChecker.saveLastShownContent(this@WhatsNewVisionContent)
@@ -306,7 +307,8 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
         busConnection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
           override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
             if (it.file == file) {
-              WhatsNewCounterUsageCollector.closedPerformed(project)
+              val durationSeconds = (System.currentTimeMillis() - startTime) / 1000
+              WhatsNewCounterUsageCollector.closedPerformed(project, durationSeconds)
               Disposer.dispose(disposable)
             }
           }
