@@ -28,6 +28,30 @@ build --@rules_kotlin//kotlin/settings:jvm_emit_jdeps=False
 build --java_language_version=21
 build --java_runtime_version=remotejdk_21
 
+# Why we register a local Java toolchain override here:
+# 1) This module intentionally sets `BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1` below,
+#    so `rules_cc` local C++ autoconfiguration is disabled.
+# 2) During analysis, `rules_jvm_external` tool targets (for example
+#    AddJarManifestEntry) still resolve the Java toolchain type and may select
+#    `@rules_java//toolchains:toolchain_jdk_21`.
+# 3) That upstream toolchain wires
+#    `proguard_allowlister = @bazel_tools//tools/jdk:proguard_whitelister`.
+# 4) `proguard_whitelister` is a `py_binary`, and rules_python adds an implicit
+#    dependency on `@bazel_tools//tools/launcher:launcher_maker`.
+# 5) On Linux/macOS non-Windows paths, this resolves to
+#    `@bazel_tools//src/tools/launcher:launcher_maker`, which is C++ and needs a
+#    resolvable `@bazel_tools//tools/cpp:toolchain_type`.
+# 6) With local C++ autodetection disabled, this produces:
+#    "Unable to find a CC toolchain using toolchain resolution."
+# 7) `--java_toolchain`/`--host_java_toolchain` are insufficient for this path,
+#    because toolchain resolution for external tool actions can still choose the
+#    registered upstream Java toolchain.
+# 8) We therefore register our local toolchain definition via `--extra_toolchains`;
+#    the local toolchain is defined in BUILD.bazel and replaces
+#    `proguard_allowlister` with a no-op executable, removing the C++ edge while
+#    preserving the rest of the JDK21 toolchain behavior.
+build --extra_toolchains=//:jps_to_bazel_toolchain_jdk_21_definition
+
 # https://bazel.build/docs/bazel-and-java#config-build-tools-java
 # A second pair of JDK and JVM used to build and execute tools, which are used in the build process, but are not in the build results.
 # That JDK and JVM are controlled using --tool_java_language_version and --tool_java_runtime_version
