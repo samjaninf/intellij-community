@@ -678,9 +678,8 @@ class XDebugSessionImpl @JvmOverloads constructor(
     else {
       if (myTabInitDataFlow.compareAndSet(null, XDebuggerSessionTabInfoNoInit)) {
         val proxy = this.asProxy()
-        val bottomComponent = debugProcess.getSessionTabCustomer()?.getBottomLocalsComponentProvider()?.createBottomLocalsComponent(proxy)
         val tab = XDebugSessionTab.create(proxy, myIcon, executionEnvironment?.let { BackendExecutionEnvironmentProxy(it) }, contentToReuse,
-                                          forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey, bottomComponent)
+                                          forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey)
         tabInitialized(tab)
         myMockRunContentDescriptor = tab.runContentDescriptor
         myDebugProcess!!.sessionInitialized()

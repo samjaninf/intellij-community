@@ -2,7 +2,7 @@
 package com.intellij.xdebugger.impl.frame
 
 import com.intellij.ide.dnd.DnDNativeTarget
-import com.intellij.openapi.util.Key
+import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.util.application
@@ -18,6 +18,7 @@ import org.jetbrains.annotations.ApiStatus.Internal
 import javax.swing.JComponent
 import javax.swing.JPanel
 
+// TODO: Doesn't work when mixed-mode in RemDev : RIDER-134022
 /**
  * Allows customizing of variables view and splitting into 2 components.
  * Notice that you must provide the bottom component of the view by implementing XDebugSessionTabCustomizer in your XDebugProcess
@@ -33,13 +34,10 @@ class XSplitterWatchesViewImpl(
   sessionProxy: XDebugSessionProxy,
   watchesInVariables: Boolean,
   isVertical: Boolean,
-  withToolbar: Boolean,
-  customComponent : JComponent? = null
-) : XWatchesViewImpl(sessionProxy.also { it.project.putUserData(customComponentKey, customComponent) }, watchesInVariables, isVertical, withToolbar), DnDNativeTarget, XWatchesView {
+  withToolbar: Boolean) : XWatchesViewImpl(sessionProxy, watchesInVariables, isVertical, withToolbar), DnDNativeTarget, XWatchesView {
 
   companion object {
     private const val proportionKey = "debugger.immediate.window.in.watches.proportion.key"
-    private val customComponentKey = Key<JComponent>("XDebugger.CustomComponent")
   }
 
   lateinit var splitter: OnePixelSplitter
@@ -50,25 +48,10 @@ class XSplitterWatchesViewImpl(
   private var localsPanel : JComponent? = null
 
   override fun createMainPanel(localsPanelComponent: JComponent): JPanel {
-    val customComponent = sessionProxy?.project?.getUserData(customComponentKey)
-    if (customComponent != null) {
-      myPanel = BorderLayoutPanel()
-      customized = true
-      localsPanel = localsPanelComponent
-      val evaluatorComponent = customComponent
-      splitter = OnePixelSplitter(true, proportionKey, 0.01f, 0.99f)
-
-      splitter.firstComponent = localsPanel
-      splitter.secondComponent = evaluatorComponent
-
-      myPanel?.addToCenter(splitter)
-      return myPanel!!
-    }
-
     customized = getShowCustomized()
     localsPanel = localsPanelComponent
 
-    addMixedModeListenerIfNeeded(checkNotNull(session))
+    addMixedModeListenerIfNeeded()
     return BorderLayoutPanel().also {
       myPanel = it
       updateMainPanel()
@@ -86,11 +69,17 @@ class XSplitterWatchesViewImpl(
       return
     }
 
-    val session = session ?: error("Not null session is expected here")
-    val bottomLocalsComponentProvider = tryGetBottomComponentProvider(session, useLowLevelDebugProcessPanel())
-                                        ?: error("BottomLocalsComponentProvider is not implemented to use SplitterWatchesVariablesView")
+    val session = session
+    val evaluatorComponent =
+      if (session != null) {
+        val provider = tryGetBottomComponentProvider(session, useLowLevelDebugProcessPanel())
+                       ?: error("BottomLocalsComponentProvider is not implemented to use SplitterWatchesVariablesView")
+        provider.createBottomLocalsComponent(sessionProxy!!)
+      }
+      else
+        SessionTabComponentProviderShared.getInstance().createBottomLocalsComponent(sessionProxy!!)
 
-    val evaluatorComponent = bottomLocalsComponentProvider.createBottomLocalsComponent(sessionProxy!!)
+
     splitter = OnePixelSplitter(true, proportionKey, 0.01f, 0.99f)
 
     splitter.firstComponent = localsPanel
@@ -99,7 +88,8 @@ class XSplitterWatchesViewImpl(
     myPanel.addToCenter(splitter)
   }
 
-  private fun addMixedModeListenerIfNeeded(session: XDebugSessionImpl) {
+  private fun addMixedModeListenerIfNeeded() {
+    val session = this.session ?: return
     if (!session.isMixedMode) return
 
     val lowSupportsCustomization = session.lowLevelProcessOrThrow.useSplitterView()
@@ -128,7 +118,7 @@ class XSplitterWatchesViewImpl(
   }
 
   private fun getShowCustomized(): Boolean {
-    val session = session ?: return false
+    val session = session ?: return true // split debugger is on, return true to use rider default immediate window view
     if (!session.isMixedMode) return true
 
     val lowSupportsCustomization = session.lowLevelProcessOrThrow.useSplitterView()

@@ -11,14 +11,13 @@ import com.intellij.ide.ui.customization.CustomActionsListener
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowAnchor
+import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
-import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter
 import com.intellij.toolWindow.InternalDecoratorImpl
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.content.Content
 import com.intellij.util.ui.UIUtil
 import com.intellij.xdebugger.XDebuggerBundle
-import com.intellij.xdebugger.impl.XDebugSessionImpl
 import com.intellij.xdebugger.impl.frame.XDebugView
 import com.intellij.xdebugger.impl.frame.XFramesView
 import com.intellij.xdebugger.impl.frame.XSplitterWatchesViewImpl
@@ -28,15 +27,13 @@ import com.intellij.xdebugger.impl.frame.XWatchesViewImpl
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.awt.Dimension
 import javax.swing.Icon
-import javax.swing.JComponent
 
 @Internal
 class XDebugSessionTab3(
   proxy: XDebugSessionProxy,
   icon: Icon?,
   environmentProxy: ExecutionEnvironmentProxy?,
-  val defaultFramesViewKey: String?,
-  val customBottomComponent: JComponent? = null
+  val defaultFramesViewKey: String?
 ) : XDebugSessionTabNewUI(proxy, icon, environmentProxy) {
 
   companion object {
@@ -59,14 +56,9 @@ class XDebugSessionTab3(
   override fun getFramesContentId(): String = debuggerContentId
 
   private fun getWatchesViewImpl(sessionProxy: XDebugSessionProxy, watchesIsVariables: Boolean): XWatchesViewImpl {
-    val xDebugSession = XDebuggerEntityConverter.getSessionNonSplitOnly(sessionProxy)
-    if (xDebugSession is XDebugSessionImpl) {
-      if (xDebugSession.debugProcess.useSplitterView()) { // TODO terekhin migrate Immediate window to using new debugger API
-        return XSplitterWatchesViewImpl(sessionProxy, watchesIsVariables, true, withToolbar = false)
-      }
-    }
-    if(customBottomComponent != null)
-      return XSplitterWatchesViewImpl(sessionProxy, watchesIsVariables, true, withToolbar = false, customComponent = customBottomComponent)
+    val useSplitterView = SessionTabComponentProviderShared.getInstanceSafe() != null
+    if (useSplitterView)
+      return XSplitterWatchesViewImpl(sessionProxy, watchesIsVariables, true, withToolbar = false)
 
     return XWatchesViewImpl(sessionProxy, watchesIsVariables, true, false)
   }

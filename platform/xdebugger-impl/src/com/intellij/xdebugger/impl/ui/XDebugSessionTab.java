@@ -104,7 +104,7 @@ public class XDebugSessionTab extends DebuggerSessionTabBase {
     boolean forceNewDebuggerUi = XDebugSessionTabCustomizerKt.forceShowNewDebuggerUi(session.getDebugProcess());
     boolean withFramesCustomization = XDebugSessionTabCustomizerKt.allowFramesViewCustomization(session.getDebugProcess());
     @Nullable String defaultFramesViewKey = XDebugSessionTabCustomizerKt.getDefaultFramesViewKey(session.getDebugProcess());
-    return create(proxy, icon, environment == null ? null : new BackendExecutionEnvironmentProxy(environment), contentToReuse, forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey, null);
+    return create(proxy, icon, environment == null ? null : new BackendExecutionEnvironmentProxy(environment), contentToReuse, forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey);
   }
 
   @ApiStatus.Internal
@@ -114,8 +114,7 @@ public class XDebugSessionTab extends DebuggerSessionTabBase {
                                                  @Nullable RunContentDescriptor contentToReuse,
                                                  boolean forceNewDebuggerUi,
                                                  boolean withFramesCustomization,
-                                                 @Nullable String defaultFramesViewKey,
-                                                 @Nullable JComponent customComponent) {
+                                                 @Nullable String defaultFramesViewKey) {
     if (contentToReuse != null && SystemProperties.getBooleanProperty("xdebugger.reuse.session.tab", false)) {
       JComponent component = contentToReuse.getComponent();
       if (component != null) {
@@ -130,7 +129,7 @@ public class XDebugSessionTab extends DebuggerSessionTabBase {
     XDebugSessionTab tab;
     if (UIExperiment.isNewDebuggerUIEnabled() || forceNewDebuggerUi) {
       if (withFramesCustomization) {
-        tab = new XDebugSessionTab3(proxy, icon, environmentProxy, defaultFramesViewKey, customComponent);
+        tab = new XDebugSessionTab3(proxy, icon, environmentProxy, defaultFramesViewKey);
       }
       else {
         tab = new XDebugSessionTabNewUI(proxy, icon, environmentProxy);
