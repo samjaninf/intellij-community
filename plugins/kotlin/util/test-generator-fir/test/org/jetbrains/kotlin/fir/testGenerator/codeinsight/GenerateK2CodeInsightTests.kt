@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.idea.navigationToolbar.AbstractKotlinNavBarTest
 import org.jetbrains.kotlin.idea.refactoring.AbstractNameSuggestionProviderTest
 import org.jetbrains.kotlin.testGenerator.model.GroupCategory.CODE_INSIGHT
 import org.jetbrains.kotlin.testGenerator.model.MutableTWorkspace
-import org.jetbrains.kotlin.testGenerator.model.Patterns
 import org.jetbrains.kotlin.testGenerator.model.Patterns.DIRECTORY
 import org.jetbrains.kotlin.testGenerator.model.Patterns.KT
 import org.jetbrains.kotlin.testGenerator.model.Patterns.KT_OR_KTS
@@ -66,7 +65,7 @@ internal fun MutableTWorkspace.generateK2CodeInsightTests() {
 
     testGroup("code-insight/kotlin.code-insight.k2", category = CODE_INSIGHT) {
         testClass<AbstractKotlinGoToSuperDeclarationsHandlerTest> {
-            model("gotoSuperDeclarationsHandler", pattern = Patterns.KT_WITHOUT_DOTS, passTestDataPath = false)
+            model("gotoSuperDeclarationsHandler", pattern = KT_WITHOUT_DOTS, passTestDataPath = false)
         }
         testClass<AbstractKotlinGotoImplementationTest>(generatedClassName = "org.jetbrains.kotlin.idea.k2.navigation.KotlinGotoImplementationTestGenerated") {
             model("../../../idea/tests/testData/navigation/implementations", isRecursive = false)
@@ -102,6 +101,9 @@ internal fun MutableTWorkspace.generateK2CodeInsightTests() {
             model("../../../idea/tests/testData/codeInsight/surroundWith/functionLiteral", testMethodName = "doTestWithFunctionLiteralSurrounder")
             model("../../../idea/tests/testData/codeInsight/surroundWith/withIfExpression", testMethodName = "doTestWithSurroundWithIfExpression")
             model("../../../idea/tests/testData/codeInsight/surroundWith/withIfElseExpression", testMethodName = "doTestWithSurroundWithIfElseExpression")
+            model("../../../idea/tests/testData/codeInsight/surroundWith/while", testMethodName = "doTestWithWhileSurrounder")
+            model("../../../idea/tests/testData/codeInsight/surroundWith/doWhile", testMethodName = "doTestWithDoWhileSurrounder")
+            model("../../../idea/tests/testData/codeInsight/surroundWith/for", testMethodName = "doTestWithForSurrounder")
         }
         testClass<AbstractKotlinFirBreadcrumbsTest> {
             model("../../../idea/tests/testData/codeInsight/breadcrumbs", pattern = KT_OR_KTS)
