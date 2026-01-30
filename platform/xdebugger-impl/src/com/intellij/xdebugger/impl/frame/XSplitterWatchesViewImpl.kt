@@ -3,7 +3,6 @@ package com.intellij.xdebugger.impl.frame
 
 import com.intellij.ide.dnd.DnDNativeTarget
 import com.intellij.openapi.util.Key
-import com.intellij.platform.debugger.impl.shared.XDebuggerMonolithAccessPoint
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.util.application
@@ -13,7 +12,7 @@ import com.intellij.xdebugger.impl.XDebugSessionImpl
 import com.intellij.xdebugger.impl.mixedmode.highLevelProcessOrThrow
 import com.intellij.xdebugger.impl.mixedmode.lowLevelMixedModeExtensionOrThrow
 import com.intellij.xdebugger.impl.mixedmode.lowLevelProcessOrThrow
-import com.intellij.xdebugger.impl.ui.getBottomLocalsComponentProvider
+import com.intellij.xdebugger.impl.ui.getSessionTabCustomer
 import com.intellij.xdebugger.impl.ui.useSplitterView
 import org.jetbrains.annotations.ApiStatus.Internal
 import javax.swing.JComponent
@@ -31,29 +30,16 @@ import javax.swing.JPanel
  */
 @Internal
 class XSplitterWatchesViewImpl(
-  session: XDebugSessionProxy,
+  sessionProxy: XDebugSessionProxy,
   watchesInVariables: Boolean,
   isVertical: Boolean,
   withToolbar: Boolean,
   customComponent : JComponent? = null
-) : XWatchesViewImpl(session.also { it.project.putUserData(customComponentKey, customComponent) }, watchesInVariables, isVertical, withToolbar), DnDNativeTarget, XWatchesView {
+) : XWatchesViewImpl(sessionProxy.also { it.project.putUserData(customComponentKey, customComponent) }, watchesInVariables, isVertical, withToolbar), DnDNativeTarget, XWatchesView {
 
   companion object {
     private const val proportionKey = "debugger.immediate.window.in.watches.proportion.key"
     private val customComponentKey = Key<JComponent>("XDebugger.CustomComponent")
-
-    private fun checkContract(session: XDebugSessionImpl) {
-      if (tryGetBottomComponentProvider(session, null) == null)
-        error("XDebugProcess must provide a properly configured XDebugSessionTabCustomizer to use XSplitterWatchesViewImpl. Read JavaDoc for details")
-    }
-
-    private fun tryGetBottomComponentProvider(session: XDebugSessionImpl, useLowLevelDebugProcessPanel: Boolean?) =
-      when (useLowLevelDebugProcessPanel) {
-        null -> session.debugProcess
-        true -> session.lowLevelProcessOrThrow
-        false -> session.highLevelProcessOrThrow
-      }.getBottomLocalsComponentProvider()
-
   }
 
   lateinit var splitter: OnePixelSplitter
@@ -104,8 +90,7 @@ class XSplitterWatchesViewImpl(
     val bottomLocalsComponentProvider = tryGetBottomComponentProvider(session, useLowLevelDebugProcessPanel())
                                         ?: error("BottomLocalsComponentProvider is not implemented to use SplitterWatchesVariablesView")
 
-    val sessionProxy = checkNotNull(XDebuggerMonolithAccessPoint.find { it.asProxy(session) })
-    val evaluatorComponent = bottomLocalsComponentProvider.createBottomLocalsComponent(sessionProxy)
+    val evaluatorComponent = bottomLocalsComponentProvider.createBottomLocalsComponent(sessionProxy!!)
     splitter = OnePixelSplitter(true, proportionKey, 0.01f, 0.99f)
 
     splitter.firstComponent = localsPanel
@@ -160,4 +145,11 @@ class XSplitterWatchesViewImpl(
     val frame = session.currentStackFrame ?: return false
     return session.lowLevelMixedModeExtensionOrThrow.belongsToMe(frame)
   }
+
+  private fun tryGetBottomComponentProvider(session: XDebugSessionImpl, useLowLevelDebugProcessPanel: Boolean?) =
+    when (useLowLevelDebugProcessPanel) {
+      null -> session.debugProcess
+      true -> session.lowLevelProcessOrThrow
+      false -> session.highLevelProcessOrThrow
+    }.getSessionTabCustomer()?.getBottomLocalsComponentProvider()
 }

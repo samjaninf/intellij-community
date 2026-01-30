@@ -590,7 +590,6 @@ class XDebugSessionImpl @JvmOverloads constructor(
     val forceNewDebuggerUi = debugProcess.forceShowNewDebuggerUi()
     val withFramesCustomization = debugProcess.allowFramesViewCustomization()
     val defaultFramesViewKey: String? = debugProcess.getDefaultFramesViewKey()
-    val bottomComponentProvider = debugProcess.getBottomLocalsComponentProvider()
 
     if (SplitDebuggerMode.isSplitDebugger()) {
       if (shouldShowTab) {
@@ -679,7 +678,7 @@ class XDebugSessionImpl @JvmOverloads constructor(
     else {
       if (myTabInitDataFlow.compareAndSet(null, XDebuggerSessionTabInfoNoInit)) {
         val proxy = this.asProxy()
-        val bottomComponent = bottomComponentProvider?.createBottomLocalsComponent(proxy)
+        val bottomComponent = debugProcess.getSessionTabCustomer()?.getBottomLocalsComponentProvider()?.createBottomLocalsComponent(proxy)
         val tab = XDebugSessionTab.create(proxy, myIcon, executionEnvironment?.let { BackendExecutionEnvironmentProxy(it) }, contentToReuse,
                                           forceNewDebuggerUi, withFramesCustomization, defaultFramesViewKey, bottomComponent)
         tabInitialized(tab)

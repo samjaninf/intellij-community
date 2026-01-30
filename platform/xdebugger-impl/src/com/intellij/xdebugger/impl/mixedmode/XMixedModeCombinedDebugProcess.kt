@@ -6,7 +6,7 @@ import com.intellij.execution.ui.ExecutionConsole
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.EDT
-import com.intellij.platform.debugger.impl.shared.SessionTabComponentProvider
+import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
 import com.intellij.xdebugger.XAlternativeSourceHandler
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
@@ -261,7 +261,7 @@ class XMixedModeCombinedDebugProcess(
            ?: XMixedModeDebuggersEditorProvider(session, low.getEditorsProvider(), high.getEditorsProvider()).also { editorsProvider = it }
   }
 
-  override fun getBottomLocalsComponentProvider(): SessionTabComponentProvider? = getTabCustomizer()?.getBottomLocalsComponentProvider()
+  override fun getBottomLocalsComponentProvider(): SessionTabComponentProviderShared? = getTabCustomizer()?.getBottomLocalsComponentProvider()
 
   override fun allowFramesViewCustomization(): Boolean = getTabCustomizer()?.allowFramesViewCustomization() == true
 
