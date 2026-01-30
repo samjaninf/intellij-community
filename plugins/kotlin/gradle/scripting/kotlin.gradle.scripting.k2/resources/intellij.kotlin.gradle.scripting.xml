@@ -4,6 +4,7 @@
     <module name="kotlin.gradle.gradle-java"/>
     <module name="intellij.kotlin.base.scripting"/>
     <module name="intellij.kotlin.base.scripting.shared"/>
+    <module name="intellij.gradle"/>
     <plugin id="org.jetbrains.plugins.gradle"/>
     <module name="intellij.kotlin.gradle.tooling"/>
   </dependencies>

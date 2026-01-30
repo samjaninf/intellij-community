@@ -173,6 +173,7 @@ object CommunityRepositoryModules {
     },
     pluginAuto(
       listOf(
+        "intellij.gradle.plugin",
         "intellij.gradle",
         "intellij.gradle.common",
         "intellij.gradle.toolingProxy",

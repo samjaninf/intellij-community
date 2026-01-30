@@ -8,8 +8,10 @@
     Provides Java Gradle projects import, run configuration and profiler integrations.
   </description>
 
-  <depends>com.intellij.java</depends>
-  <depends>com.intellij.gradle</depends>
+  <dependencies>
+    <module name="intellij.java.backend"/>
+    <module name="intellij.gradle"/>
+  </dependencies>
 
   <module value="com.intellij.modules.gradle.java"/>
   <module value="org.jetbrains.plugins.gradle.java"/>

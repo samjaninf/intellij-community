@@ -1,7 +1,7 @@
 <idea-plugin visibility="internal">
   <dependencies>
     <plugin id="com.jetbrains.performancePlugin"/>
-    <plugin id="org.jetbrains.plugins.gradle"/>
+    <module name="intellij.gradle"/>
   </dependencies>
   <extensions defaultExtensionNs="com.jetbrains">
     <performancePlugin.commandProvider implementation="com.intellij.gradle.java.performance.GradleCommandProvider"/>

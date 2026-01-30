@@ -133,20 +133,23 @@
   files:
   - name: $MAVEN_REPOSITORY$/org/jetbrains/intellij/deps/gradle-api/9/gradle-api-9.jar
   reason: withProjectLibrary
+- name: lib/gradle-plugin.jar
+  modules:
+  - name: intellij.gradle.plugin
+  - name: intellij.gradle.common
+  - name: intellij.gradle.toolingProxy
 - name: lib/gradle-tooling-extension-api.jar
   modules:
   - name: intellij.gradle.toolingExtension
 - name: lib/gradle-tooling-extension-impl.jar
   modules:
   - name: intellij.gradle.toolingExtension.impl
-- name: lib/gradle.jar
-  modules:
-  - name: intellij.gradle
-  - name: intellij.gradle.common
-  - name: intellij.gradle.toolingProxy
 - name: lib/modules/intellij.gradle.completion.jar
   contentModules:
   - name: intellij.gradle.completion
+- name: lib/modules/intellij.gradle.jar
+  contentModules:
+  - name: intellij.gradle
 - name: lib/modules/intellij.gradle.properties.jar
   contentModules:
   - name: intellij.gradle.properties

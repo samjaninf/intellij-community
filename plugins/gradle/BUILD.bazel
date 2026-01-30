@@ -140,6 +140,7 @@ jvm_library(
     "@lib//:junit4",
     "//plugins/gradle",
     "//plugins/gradle:gradle-common",
+    "//plugins/gradle/plugin",
     "//platform/analysis-api:analysis",
     "//platform/backend/workspace",
     "//platform/core-api:core",

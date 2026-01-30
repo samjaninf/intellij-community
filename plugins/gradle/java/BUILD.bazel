@@ -16,6 +16,7 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//plugins/gradle",
+    "//plugins/gradle/plugin",
     "//plugins/gradle:gradle-common",
     "//plugins/coverage",
     "//plugins/gradle/jps-plugin:jps",

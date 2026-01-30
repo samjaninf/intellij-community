@@ -3,6 +3,7 @@
   <dependencies>
     <module name="intellij.kotlin.gradle.codeInsight.toml"/>
     <plugin id="com.intellij.modules.kotlin.k2"/>
+    <plugin id="org.jetbrains.plugins.gradle"/>
   </dependencies>
 
   <extensions defaultExtensionNs="org.jetbrains.kotlin">

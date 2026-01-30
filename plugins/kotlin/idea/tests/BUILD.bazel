@@ -160,6 +160,7 @@ jvm_library(
     "//platform/testFramework:testFramework_test_lib",
     "//platform/structuralsearch:structuralSearch",
     "//plugins/gradle:gradle-common",
+    "//plugins/gradle/plugin",
     "//RegExpSupport:regexp",
     "//RegExpSupport:regexp_test_lib",
     "//platform/platform-util-io:ide-util-io",

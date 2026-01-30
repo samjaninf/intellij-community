@@ -1,9 +1,11 @@
 <idea-plugin package="org.jetbrains.kotlin.idea.gradle.versionCatalog.toml">
   <dependencies>
+    <module name="intellij.gradle"/>
     <plugin id="org.jetbrains.plugins.gradle"/>
     <plugin id="org.toml.lang"/>
     <module name="intellij.kotlin.gradle.gradle"/>
     <module name="intellij.kotlin.gradle.tooling"/>
+    <module name="intellij.gradle.completion"/>
   </dependencies>
 
   <extensions defaultExtensionNs="com.intellij">
