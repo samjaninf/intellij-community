@@ -15,6 +15,7 @@ import com.intellij.mcpserver.reportToolActivity
 import com.intellij.mcpserver.toolsets.Constants
 import com.intellij.mcpserver.toolsets.Constants.MAX_USAGE_TEXT_CHARS
 import com.intellij.mcpserver.util.TruncateMode
+import com.intellij.mcpserver.util.buildUsageSnippetText
 import com.intellij.mcpserver.util.maxTextLength
 import com.intellij.mcpserver.util.projectDirectory
 import com.intellij.mcpserver.util.relativizeIfPossible
