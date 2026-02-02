@@ -61,6 +61,7 @@ object MovePropertyToConstructorUtils {
                 && setter == null
                 && !hasModifier(KtTokens.LATEINIT_KEYWORD)
                 && isDeclaredInSupportedClass()
+                && !KtPropertyUtils.hasExplicitBackingField(this)
     }
 
     fun KtProperty.buildReplacementConstructorParameterText(constructorParameter: KtParameter, propertyAnnotationsText: String?): String =

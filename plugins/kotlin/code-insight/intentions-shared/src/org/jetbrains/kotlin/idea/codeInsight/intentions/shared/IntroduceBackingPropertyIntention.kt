@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.idea.codeinsight.api.applicable.intentions.KotlinApp
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.CallableReturnTypeUpdaterUtils.TypeInfo
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.CallableReturnTypeUpdaterUtils.getTypeInfo
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.CallableReturnTypeUpdaterUtils.updateTypeForDeclarationInDummyFile
+import org.jetbrains.kotlin.idea.codeinsights.impl.base.intentions.KtPropertyUtils
 import org.jetbrains.kotlin.idea.refactoring.isAbstract
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.idea.util.hasJvmFieldAnnotation
@@ -83,6 +84,8 @@ class IntroduceBackingPropertyIntention :
         if (property.isAbstract()) return false
 
         if (property.isLocal) return false
+
+        if (KtPropertyUtils.hasExplicitBackingField(property)) return false
 
         if (isBackingFieldRequired(property)) return true
 
