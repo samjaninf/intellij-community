@@ -30,6 +30,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopes
 import com.intellij.util.Processor
+import com.intellij.util.asDisposable
 import com.intellij.util.indexing.FindSymbolParameters
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -62,55 +63,48 @@ internal suspend fun searchSymbols(
 
   val timedOut = withTimeoutOrNull(Constants.MEDIUM_TIMEOUT_MILLISECONDS_VALUE.milliseconds) {
     withBackgroundProgress(
-      project,
-      McpServerBundle.message("tool.activity.searching.files.for.text", q),
+      project = project,
+      title = McpServerBundle.message("tool.activity.searching.files.for.text", q),
       cancellable = true,
     ) {
-      val disposable = Disposer.newDisposable("mcp-search-symbol")
-      val classModel = GotoClassModel2(project)
-      val symbolModel = GotoSymbolModel2(project, disposable)
+      val parentDisposable = asDisposable()
+      val classModel = GotoClassModel2(project).also { Disposer.register(parentDisposable, it) }
+      val symbolModel = GotoSymbolModel2(project, parentDisposable).also { Disposer.register(parentDisposable, it) }
       val models = listOf(classModel, symbolModel)
-      try {
-        for (model in models) {
-          val viewModel = SimpleChooseByNameViewModel(project, model, requestedCount)
-          val transformedPattern = viewModel.transformPattern(q)
-          if (transformedPattern.isBlank()) continue
-          val localPattern = computeLocalPattern(model, transformedPattern)
-          val params = FindSymbolParameters.wrap(transformedPattern, searchScope)
-            .withLocalPattern(localPattern)
+      for (model in models) {
+        val viewModel = SimpleChooseByNameViewModel(project, model, requestedCount)
+        val transformedPattern = viewModel.transformPattern(q)
+        if (transformedPattern.isBlank()) continue
+        val localPattern = computeLocalPattern(model, transformedPattern)
+        val params = FindSymbolParameters.wrap(transformedPattern, searchScope)
+          .withLocalPattern(localPattern)
 
-          val completed = readAction {
-            blockingContextToIndicator {
-              val indicator = ProgressManager.getInstance().progressIndicator ?: EmptyProgressIndicator()
-              provider.filterElementsWithWeights(viewModel, params, indicator, Processor { descriptor: FoundItemDescriptor<*> ->
-                indicator.checkCanceled()
-                seenCount++
-                val navigationItem = descriptor.item as? NavigationItem ?: return@Processor seenCount < requestedCount
-                val searchItem = mapNavigationItem(
-                  item = navigationItem,
-                  projectDir = projectDir,
-                  fileDocumentManager = fileDocumentManager,
-                  pathScope = pathScope,
-                )
-                if (searchItem != null) {
-                  items.add(searchItem)
-                  if (items.size >= effectiveLimit) {
-                    reachedLimit = true
-                    return@Processor false
-                  }
+        val completed = readAction {
+          blockingContextToIndicator {
+            val indicator = ProgressManager.getInstance().progressIndicator ?: EmptyProgressIndicator()
+            provider.filterElementsWithWeights(viewModel, params, indicator, Processor { descriptor: FoundItemDescriptor<*> ->
+              indicator.checkCanceled()
+              seenCount++
+              val navigationItem = descriptor.item as? NavigationItem ?: return@Processor seenCount < requestedCount
+              val searchItem = mapNavigationItem(
+                item = navigationItem,
+                projectDir = projectDir,
+                fileDocumentManager = fileDocumentManager,
+                pathScope = pathScope,
+              )
+              if (searchItem != null) {
+                items.add(searchItem)
+                if (items.size >= effectiveLimit) {
+                  reachedLimit = true
+                  return@Processor false
                 }
-                return@Processor seenCount < requestedCount
-              })
-            }
+              }
+              return@Processor seenCount < requestedCount
+            })
           }
-
-          if (!completed || reachedLimit || seenCount >= requestedCount) break
         }
-      }
-      finally {
-        Disposer.dispose(classModel)
-        Disposer.dispose(symbolModel)
-        Disposer.dispose(disposable)
+
+        if (!completed || reachedLimit || seenCount >= requestedCount) break
       }
     }
   } == null
