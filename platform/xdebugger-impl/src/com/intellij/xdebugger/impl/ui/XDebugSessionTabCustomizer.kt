@@ -2,6 +2,7 @@ package com.intellij.xdebugger.impl.ui
 
 import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
 import com.intellij.platform.debugger.impl.shared.XDebuggerMonolithAccessPoint
+import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter
 import com.intellij.xdebugger.XDebugProcess
 import org.jetbrains.annotations.ApiStatus
 import javax.swing.JComponent
@@ -29,7 +30,7 @@ fun XDebugProcess.allowFramesViewCustomization(): Boolean {
 
 /**
  * Use XDebugProcess.getSessionTabCustomer().getBottomLocalsComponentProvider()
- * If you need to find a session proxy, use XDebugManagerProxy, XDebuggerMonolithAccessPoint
+ * If you need to find a session proxy, use XDebugManagerProxy, XDebuggerEntityConverter.asProxy
  */
 @ApiStatus.Obsolete
 fun XDebugProcess.getBottomLocalsComponentProvider(): SessionTabComponentProvider? {
@@ -37,7 +38,7 @@ fun XDebugProcess.getBottomLocalsComponentProvider(): SessionTabComponentProvide
   return object: SessionTabComponentProvider {
     override fun createBottomLocalsComponent(): JComponent {
       val session = this@getBottomLocalsComponentProvider.session
-      val proxy = XDebuggerMonolithAccessPoint.find { it.asProxy(session) } ?: error("Can't find the session proxy")
+      val proxy = XDebuggerEntityConverter.asProxy(session)
       return newProvider.createBottomLocalsComponent(proxy)
     }
   }
