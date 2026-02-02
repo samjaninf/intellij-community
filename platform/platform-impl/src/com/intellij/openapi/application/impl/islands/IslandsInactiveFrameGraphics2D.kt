@@ -1,7 +1,11 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.application.impl.islands
 
+import com.intellij.ide.ui.LafManager
+import com.intellij.ui.ColorUtil
 import com.intellij.ui.Graphics2DDelegate
+import com.intellij.ui.JBColor
+import com.intellij.util.system.OS
 import java.awt.AlphaComposite
 import java.awt.Color
 import java.awt.Component
@@ -49,6 +53,34 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
     }
     finally {
       setComposite(composite)
+    }
+  }
+
+  private fun <R> wrapPaintText(runnable: () -> R): R {
+    val alpha = getAlpha()
+
+    if (alpha == 1f || preserveComposite || isIslandsGradientColor(paint)) {
+      return runnable.invoke()
+    }
+
+    // IJPL-230775: Use alpha blending for text on macOS Islands Light at high zoom
+    // to avoid inconsistent dimming in inactive state
+    val useAlphaBlending = OS.CURRENT == OS.macOS &&
+                           LafManager.getInstance().currentUIThemeLookAndFeel?.id == ISLANDS_LIGHT_THEME_ID
+    if (!useAlphaBlending) {
+      return wrapPaint(runnable)
+    }
+
+    val originalColor = color
+    try {
+      val foreground = ColorUtil.withAlpha(originalColor, alpha.toDouble())
+      val background = JBColor.namedColor("MainWindow.background", JBColor.PanelBackground)
+      color = ColorUtil.alphaBlending(foreground, background)
+
+      return runnable.invoke()
+    }
+    finally {
+      color = originalColor
     }
   }
 
@@ -166,30 +198,34 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
   }
 
   override fun drawString(iterator: AttributedCharacterIterator?, x: Float, y: Float) {
-    wrapPaint {
+    wrapPaintText {
       super.drawString(iterator, x, y)
     }
   }
 
   override fun drawString(iterator: AttributedCharacterIterator?, x: Int, y: Int) {
-    wrapPaint {
+    wrapPaintText {
       super.drawString(iterator, x, y)
     }
   }
 
   override fun drawString(s: String?, x: Float, y: Float) {
-    wrapPaint {
+    wrapPaintText {
       super.drawString(s, x, y)
     }
   }
 
   override fun drawString(str: String, x: Int, y: Int) {
-    wrapPaint {
+    wrapPaintText {
       super.drawString(str, x, y)
     }
   }
 
   override fun create(): Graphics {
     return IslandsInactiveFrameGraphics2D(super.create() as Graphics2D, component)
+  }
+
+  companion object {
+    private const val ISLANDS_LIGHT_THEME_ID = "Islands Light"
   }
 }
