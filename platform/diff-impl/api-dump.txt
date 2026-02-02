@@ -1167,6 +1167,7 @@ f:com.intellij.diff.tools.util.DiffNotifications
 - sf:createNotificationProvider(java.lang.String,java.awt.Color,com.intellij.ui.EditorNotificationPanel$Status):com.intellij.diff.util.DiffNotificationProvider
 - bs:createNotificationProvider$default(java.lang.String,java.awt.Color,com.intellij.ui.EditorNotificationPanel$Status,I,java.lang.Object):com.intellij.diff.util.DiffNotificationProvider
 - f:createOperationCanceled():javax.swing.JPanel
+- sf:createReadOnlyFile():javax.swing.JPanel
 - sf:createRemovedContent():javax.swing.JPanel
 - sf:hideNotification(com.intellij.ui.EditorNotificationPanel):V
 c:com.intellij.diff.tools.util.DiffSplitter

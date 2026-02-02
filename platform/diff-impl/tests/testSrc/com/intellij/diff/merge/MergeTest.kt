@@ -966,6 +966,7 @@ class MergeTest : MergeTestBase() {
 
       viewer.textSettings.ignorePolicy = IgnorePolicy.IGNORE_WHITESPACES
       UIUtil.dispatchAllInvocationEvents()
+      viewer.waitWhileRediff()
       assertCantUndo()
 
       0.assertRange(0, 1, 0, 1, 0, 1)
