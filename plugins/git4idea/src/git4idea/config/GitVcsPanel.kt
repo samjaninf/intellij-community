@@ -61,7 +61,6 @@ import com.intellij.vcs.log.ui.VcsLogColorManagerFactory
 import com.intellij.vcs.log.ui.filter.FileFilterModel
 import com.intellij.vcs.log.ui.filter.StructureFilterPopupComponent
 import git4idea.GitVcs
-import git4idea.branch.GitBranchIncomingOutgoingManager
 import git4idea.cherrypick.EmptyCherryPickResolutionStrategy
 import git4idea.cherrypick.settingsMessage
 import git4idea.config.GitExecutableSelectorPanel.Companion.createGitExecutableSelectorRow
@@ -134,24 +133,22 @@ internal class GitVcsPanel(private val project: Project) :
 
   private val projectSettings get() = GitVcsSettings.getInstance(project)
 
-  private fun Panel.branchUpdateInfoRow() {
+  private fun Panel.checkIncomingChangesRows() {
     val predicate = AdvancedSettingsPredicate("git.update.incoming.outgoing.info", disposable!!)
-    row(message("settings.explicitly.check")) {
-      comboBox(EnumComboBoxModel(GitIncomingCheckStrategy::class.java))
-        .bindItem({
-                    projectSettings.incomingCheckStrategy
-                  },
-                  { selectedStrategy ->
-                    projectSettings.incomingCheckStrategy = selectedStrategy as GitIncomingCheckStrategy
-                    if (!project.isDefault) {
-                      GitBranchIncomingOutgoingManager.getInstance(project).updateIncomingScheduling()
-                    }
-                  })
+    row(message("settings.git.incoming.change.strategy.text")) {
+      comboBox(EnumComboBoxModel(GitIncomingRemoteCheckStrategy::class.java), listCellRenderer("") {
+        text(value.text)
+        value.description?.let { description ->
+          text(description) {
+            foreground = greyForeground
+          }
+        }
+      }).bindItem(projectSettings::getIncomingCommitsCheckStrategy, projectSettings::setIncomingCommitsCheckStrategy)
     }.enabledIf(predicate)
     indent {
       row {
         comment(
-          message("settings.explicitly.check.condition.comment", message("advanced.setting.git.update.incoming.outgoing.info")))
+          message("settings.git.incoming.change.strategy.condition.comment", message("advanced.setting.git.update.incoming.outgoing.info")))
           .visibleIf(predicate.not())
           .applyToComponent {
             putClientProperty(DslComponentProperty.VERTICAL_COMPONENT_GAP, VerticalComponentGap(top = false))
@@ -281,6 +278,7 @@ internal class GitVcsPanel(private val project: Project) :
       if (AbstractCommonUpdateAction.showsCustomNotification(listOf(GitVcs.getInstance(project)))) {
         updateProjectInfoFilter()
       }
+      checkIncomingChangesRows()
     }
 
     if (project.isDefault || GitRepositoryManager.getInstance(project).moreThanOneRoot()) {
@@ -289,7 +287,6 @@ internal class GitVcsPanel(private val project: Project) :
           .contextHelp(DvcsBundle.message("sync.setting.description", GitDisplayName.NAME))
       }
     }
-    branchUpdateInfoRow()
 
     fetchTagsRow()
 

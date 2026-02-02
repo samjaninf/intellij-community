@@ -42,6 +42,7 @@ import git4idea.commands.GitAuthenticationListener;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
 import git4idea.commands.GitLineHandler;
+import git4idea.config.GitIncomingRemoteCheckStrategy;
 import git4idea.config.GitVcsSettings;
 import git4idea.config.GitVersionSpecialty;
 import git4idea.history.GitHistoryUtils;
@@ -80,8 +81,6 @@ import java.util.stream.Collectors;
 
 import static com.intellij.externalProcessAuthHelper.AuthenticationMode.NONE;
 import static com.intellij.externalProcessAuthHelper.AuthenticationMode.SILENT;
-import static git4idea.config.GitIncomingCheckStrategy.Auto;
-import static git4idea.config.GitIncomingCheckStrategy.Never;
 import static git4idea.repo.GitRefUtil.addRefsHeadsPrefixIfNeeded;
 import static git4idea.repo.GitRefUtil.getResolvedHashes;
 
@@ -202,9 +201,10 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   }
 
   public boolean shouldCheckIncomingOnRemote() {
-    return AdvancedSettings.getBoolean("git.update.incoming.outgoing.info") && GitVcsSettings.getInstance(myProject).getIncomingCheckStrategy() != Never;
+    return AdvancedSettings.getBoolean("git.update.incoming.outgoing.info")
+           && GitVcsSettings.getInstance(myProject).getIncomingCommitsCheckStrategy() != GitIncomingRemoteCheckStrategy.NONE;
   }
-  
+
   public static @NotNull GitBranchIncomingOutgoingManager getInstance(@NotNull Project project) {
     return project.getService(GitBranchIncomingOutgoingManager.class);
   }
@@ -220,13 +220,19 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
         myConnection = myProject.getMessageBus().connect(this);
         myConnection.subscribe(GitRepository.GIT_REPO_CHANGE, this);
         myConnection.subscribe(GIT_AUTHENTICATION_SUCCESS, this);
+        myConnection.subscribe(GitVcsSettings.GitVcsSettingsListener.TOPIC, new GitVcsSettings.GitVcsSettingsListener() {
+          @Override
+          public void incomingCommitsCheckStrategyChanged(@NotNull GitIncomingRemoteCheckStrategy strategy) {
+            ApplicationManager.getApplication().invokeLater(() -> updateIncomingScheduling());
+          }
+        });
       }
       updateBranchesWithOutgoing();
       updateIncomingScheduling();
     });
   }
 
-  public void updateIncomingScheduling() {
+  private void updateIncomingScheduling() {
     if (myPeriodicalUpdater == null && shouldCheckIncomingOnRemote()) {
       updateBranchesWithIncoming(true);
       int timeout = Registry.intValue("git.update.incoming.info.time");
@@ -421,10 +427,8 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
     return (myAuthSuccessMap.get(repository).contains(remote)) ? SILENT : NONE;
   }
 
-  private boolean shouldAvoidUserInteraction(@NotNull GitRemote remote) {
-    return GitVcsSettings.getInstance(myProject).getIncomingCheckStrategy() == Auto &&
-           containsSSHUrl(remote) &&
-           HAS_EXTERNAL_SSH_AGENT.get();
+  private static boolean shouldAvoidUserInteraction(@NotNull GitRemote remote) {
+    return containsSSHUrl(remote) && HAS_EXTERNAL_SSH_AGENT.get();
   }
 
   private static boolean containsSSHUrl(@NotNull GitRemote remote) {

@@ -57,6 +57,15 @@ public final class GitVcsSettings extends SimplePersistentStateComponent<GitVcsO
     return project.getService(GitVcsSettings.class);
   }
 
+  @Override
+  public void loadState(@NotNull GitVcsOptions state) {
+    super.loadState(state);
+    if (state.getIncomingCheckStrategy() == GitIncomingCheckStrategy.Never) {
+      state.setIncomingCommitsCheckStrategy(GitIncomingRemoteCheckStrategy.NONE);
+      state.setIncomingCheckStrategy(GitIncomingCheckStrategy.Auto);
+    }
+  }
+
   public @NotNull UpdateMethod getUpdateMethod() {
     return getState().getUpdateMethod();
   }
@@ -254,12 +263,14 @@ public final class GitVcsSettings extends SimplePersistentStateComponent<GitVcsO
     getState().setSignOffCommit(value);
   }
 
-  public @NotNull GitIncomingCheckStrategy getIncomingCheckStrategy() {
-    return getState().getIncomingCheckStrategy();
+  public @NotNull GitIncomingRemoteCheckStrategy getIncomingCommitsCheckStrategy() {
+    return getState().getIncomingCommitsCheckStrategy();
   }
 
-  public void setIncomingCheckStrategy(@NotNull GitIncomingCheckStrategy strategy) {
-    getState().setIncomingCheckStrategy(strategy);
+  public void setIncomingCommitsCheckStrategy(@Nullable GitIncomingRemoteCheckStrategy strategy) {
+    GitIncomingRemoteCheckStrategy strategyToSet = strategy != null ? strategy : GitIncomingRemoteCheckStrategy.LS_REMOTE;
+    getState().setIncomingCommitsCheckStrategy(strategyToSet);
+    project.getMessageBus().syncPublisher(GitVcsSettingsListener.TOPIC).incomingCommitsCheckStrategyChanged(strategyToSet);
   }
 
   public boolean shouldPreviewPushOnCommitAndPush() {
@@ -376,10 +387,12 @@ public final class GitVcsSettings extends SimplePersistentStateComponent<GitVcsO
     @Topic.ProjectLevel
     Topic<GitVcsSettingsListener> TOPIC = new Topic<>(GitVcsSettingsListener.class, Topic.BroadcastDirection.NONE);
 
-    void showTagsChanged(boolean value);
+    default void showTagsChanged(boolean value) {}
 
-    void pathToGitChanged();
+    default void pathToGitChanged() {}
 
-    void branchGroupingSettingsChanged(@NotNull GroupingKey key, boolean state);
+    default void branchGroupingSettingsChanged(@NotNull GroupingKey key, boolean state) {}
+
+    default void incomingCommitsCheckStrategyChanged(@NotNull GitIncomingRemoteCheckStrategy strategy) {}
   }
 }
