@@ -3,10 +3,8 @@
 package com.intellij.execution.console.history
 
 import com.intellij.openapi.util.TextRange
-import org.jetbrains.kotlin.K1Deprecation
 import org.jetbrains.annotations.ApiStatus
 
-@K1Deprecation
 @ApiStatus.Internal
 class CommandHistory {
     class Entry(
@@ -40,7 +38,6 @@ class CommandHistory {
     val size: Int get() = entries.size
 }
 
-@K1Deprecation
 @ApiStatus.Internal
 interface HistoryUpdateListener {
     fun onNewEntry(entry: CommandHistory.Entry)
