@@ -5,8 +5,6 @@ package com.intellij.mcpserver.toolsets.general
 import com.intellij.find.FindBundle
 import com.intellij.find.FindManager
 import com.intellij.find.impl.FindInProjectUtil
-import com.intellij.find.impl.SearchEverywhereItem
-import com.intellij.ide.rpc.rpcId
 import com.intellij.mcpserver.McpServerBundle
 import com.intellij.mcpserver.McpToolset
 import com.intellij.mcpserver.annotations.McpDescription
@@ -19,7 +17,6 @@ import com.intellij.mcpserver.toolsets.Constants.MAX_USAGE_TEXT_CHARS
 import com.intellij.mcpserver.util.projectDirectory
 import com.intellij.mcpserver.util.relativizeIfPossible
 import com.intellij.mcpserver.util.resolveInProject
-import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.components.serviceAsync
 import com.intellij.openapi.editor.Document
@@ -40,41 +37,15 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.toNioPathOrNull
 import com.intellij.platform.ide.progress.withBackgroundProgress
-import com.intellij.platform.searchEverywhere.SeFilterState
-import com.intellij.platform.searchEverywhere.SeItemData
-import com.intellij.platform.searchEverywhere.SeItemsProvider
-import com.intellij.platform.searchEverywhere.SeLegacyItem
-import com.intellij.platform.searchEverywhere.SeParams
-import com.intellij.platform.searchEverywhere.SeProviderId
-import com.intellij.platform.searchEverywhere.SeProviderIdUtils
-import com.intellij.platform.searchEverywhere.SeSession
-import com.intellij.platform.searchEverywhere.SeSessionEntity
-import com.intellij.platform.searchEverywhere.SeTransferItem
-import com.intellij.platform.searchEverywhere.asRef
-import com.intellij.platform.searchEverywhere.backend.impl.SeBackendService
-import com.intellij.platform.searchEverywhere.isCommand
-import com.intellij.platform.searchEverywhere.providers.SeEverywhereFilter
-import com.intellij.platform.searchEverywhere.providers.SeTextFilterKeys
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFileSystemItem
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopes
 import com.intellij.usageView.UsageInfo
 import com.intellij.usages.FindUsagesProcessPresentation
-import com.intellij.usages.UsageInfo2UsageAdapter
 import com.intellij.usages.UsageViewPresentation
 import com.intellij.util.Processor
-import fleet.kernel.change
-import fleet.kernel.rebase.shared
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -88,8 +59,8 @@ import kotlin.io.path.isDirectory
 import kotlin.io.path.pathString
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val MAX_RESULTS_UPPER_BOUND = 5000
-private const val SEARCH_SCOPE_MULTIPLIER = 5
+internal const val MAX_RESULTS_UPPER_BOUND = 5000
+internal const val SEARCH_SCOPE_MULTIPLIER = 5
 private const val PATHS_DESCRIPTION = "Optional list of project-relative glob patterns to filter results. " +
                                       "Supports '!' excludes. Trailing '/' expands to '**'. " +
                                       "Patterns without '/' are treated as '**/pattern'. Empty strings are ignored."
@@ -403,81 +374,6 @@ private fun extractExactFileName(globPattern: String): String? {
   return lastSegment.takeIf { indexOfGlobChar(it) < 0 }
 }
 
-/**
- * Searches for symbols via Search Everywhere and maps them to [SearchItem]s.
- */
-private suspend fun searchSymbols(
-  q: String,
-  paths: List<String>?,
-  limit: Int,
-): SearchResult {
-  val effectiveLimit = normalizeLimit(limit)
-  val project = currentCoroutineContext().project
-  val projectDir = project.projectDirectory
-  val pathScope = buildPathScope(projectDir, paths)
-  val directoryFilterPath = resolveDirectoryFilter(project, pathScope)
-  val directoryFilterFile = directoryFilterPath?.let { LocalFileSystem.getInstance().findFileByNioFile(it) }
-
-  val session = SeSessionEntity.createSession()
-  try {
-    val dataContextId = SimpleDataContext.getProjectContext(project).rpcId()
-    val backendService = project.serviceAsync<SeBackendService>()
-    val fileDocumentManager = serviceAsync<FileDocumentManager>()
-    val providerIds = listOf(
-      SeProviderId(SeProviderIdUtils.CLASSES_ID),
-      SeProviderId(SeProviderIdUtils.SYMBOLS_ID),
-    )
-
-    val requestedCount = (effectiveLimit * SEARCH_SCOPE_MULTIPLIER).coerceAtMost(MAX_RESULTS_UPPER_BOUND)
-    val requestedCountChannel = Channel<Int>(capacity = 1)
-    requestedCountChannel.trySend(requestedCount)
-    requestedCountChannel.close()
-
-    val filterState = buildFilterState()
-    val params = SeParams(q, filterState)
-
-    val providerCache = HashMap<SeProviderId, SeItemsProvider?>()
-    val items = LinkedHashSet<SearchItem>()
-    var seenCount = 0
-    val timedOut = withTimeoutOrNull(Constants.MEDIUM_TIMEOUT_MILLISECONDS_VALUE.milliseconds) {
-      backendService.getItems(session, providerIds, false, params, dataContextId, requestedCountChannel)
-        .filterIsInstance<SeTransferItem>().mapNotNull { event ->
-          seenCount++
-          val item = mapSearchEverywhereItem(
-            projectDir = projectDir,
-            backendService = backendService,
-            session = session,
-            providerCache = providerCache,
-            itemData = event.itemData,
-            isAllTab = false,
-            directoryFilterPath = directoryFilterPath,
-            directoryFilterFile = directoryFilterFile,
-            fileDocumentManager = fileDocumentManager,
-            includeDetails = true,
-          ) ?: return@mapNotNull null
-          if (!matchesPathScope(pathScope, projectDir, item.filePath)) return@mapNotNull null
-          item
-        }.take(effectiveLimit).collect { item ->
-          items.add(item)
-        }
-    } == null
-
-    return SearchResult(
-      items = items.toList(),
-      more = timedOut || items.size >= effectiveLimit || seenCount >= requestedCount,
-    )
-  }
-  finally {
-    withContext(NonCancellable) {
-      change {
-        shared {
-          session.asRef().derefOrNull()?.delete()
-        }
-      }
-    }
-  }
-}
-
 private fun toGlobPath(relativePath: Path): Path {
   return if (relativePath.fileSystem === DEFAULT_FILE_SYSTEM) relativePath else Path.of(relativePath.toString())
 }
@@ -765,247 +661,21 @@ private fun resolveSearchRoot(
 /**
  * Resolves a directory filter for Find-in-Project from the common prefix.
  */
-private fun resolveDirectoryFilter(project: Project, pathScope: PathScope?): Path? {
+internal fun resolveDirectoryFilter(project: Project, pathScope: PathScope?): Path? {
   val commonDirectory = pathScope?.commonDirectory ?: return null
   val resolved = project.resolveInProject(commonDirectory.pathString)
   return resolved.takeIf { it.isDirectory() }
 }
 
 /**
- * Checks whether a file path is in the derived path scope.
- */
-private fun matchesPathScope(pathScope: PathScope?, projectDir: Path, filePath: String): Boolean {
-  if (pathScope == null) return true
-  val relativePath = toRelativePath(projectDir, filePath) ?: return false
-  return pathScope.matches(relativePath)
-}
-
-/**
- * Converts a string path to a project-relative path if possible.
- */
-private fun toRelativePath(projectDir: Path, filePath: String): Path? {
-  if (filePath.isBlank()) return null
-  val nioPath = runCatching { Path.of(filePath) }.getOrNull() ?: return null
-  if (nioPath.isAbsolute) {
-    return if (nioPath.startsWith(projectDir)) projectDir.relativize(nioPath) else null
-  }
-  return nioPath
-}
-
-/**
- * Builds Search Everywhere filter state mirroring text search options.
- */
-private fun buildFilterState(): SeFilterState {
-  val map = mutableMapOf<String, List<String>>()
-  map[SeTextFilterKeys.TEXT_FILTER] = listOf("true")
-  map[SeTextFilterKeys.MATCH_CASE] = listOf(true.toString())
-  map[SeTextFilterKeys.WORDS] = listOf(false.toString())
-  map[SeTextFilterKeys.REGEX] = listOf(false.toString())
-  map[SeEverywhereFilter.KEY_ALL_TAB] = listOf(false.toString())
-  map[SeEverywhereFilter.KEY_IS_EVERYWHERE] = listOf(false.toString())
-  return SeFilterState.Data(map)
-}
-
-/**
- * Maps Search Everywhere items to [SearchItem]s, extracting file path and snippet.
- */
-private suspend fun mapSearchEverywhereItem(
-  projectDir: Path,
-  backendService: SeBackendService,
-  session: SeSession,
-  providerCache: MutableMap<SeProviderId, SeItemsProvider?>,
-  itemData: SeItemData,
-  isAllTab: Boolean,
-  directoryFilterPath: Path?,
-  directoryFilterFile: VirtualFile?,
-  fileDocumentManager: FileDocumentManager,
-  includeDetails: Boolean,
-): SearchItem? {
-  if (itemData.isCommand) return null
-  val providerId = itemData.providerId
-
-  val item = itemData.fetchItemIfExists()
-  val provider = resolveProvider(backendService, session, providerCache, providerId, isAllTab)
-  val rawObject = (item as? SeLegacyItem)?.rawObject ?: item?.rawObject
-  val unwrappedObject = unwrapLegacyObject(rawObject)
-
-  var virtualFile: VirtualFile? = null
-  var filePath: String? = null
-  var lineText: String? = null
-  var startLine: Int? = null
-  var startColumn: Int? = null
-  var endLine: Int? = null
-  var endColumn: Int? = null
-  var startOffset: Int? = null
-  var endOffset: Int? = null
-  var psiElement: PsiElement? = null
-
-  fun applySnippet(snippet: UsageSnippet) {
-    virtualFile = snippet.file
-    filePath = snippet.filePath
-    lineText = snippet.lineText
-    startLine = snippet.startLine
-    startColumn = snippet.startColumn
-    endLine = snippet.endLine
-    endColumn = snippet.endColumn
-    startOffset = snippet.startOffset
-    endOffset = snippet.endOffset
-  }
-
-  if (rawObject is SearchEverywhereItem) {
-    if (includeDetails) {
-      val snippet = buildUsageSnippet(projectDir, fileDocumentManager, rawObject.usage)
-      if (snippet != null) {
-        applySnippet(snippet)
-      }
-    }
-    else {
-      val usageFile = readAction { rawObject.usage.file }
-      if (usageFile != null) {
-        virtualFile = usageFile
-        filePath = projectDir.relativizeIfPossible(usageFile)
-      }
-    }
-  }
-
-  if (virtualFile == null) {
-    if (item != null) {
-      virtualFile = provider?.getVirtualFileForItem(item)
-    }
-  }
-
-  if (virtualFile == null && unwrappedObject is VirtualFile) {
-    virtualFile = unwrappedObject
-  }
-
-  if (virtualFile == null && unwrappedObject is PsiFileSystemItem) {
-    virtualFile = unwrappedObject.virtualFile
-  }
-
-  if (virtualFile == null && (item != null || unwrappedObject is PsiElement)) {
-    val psiResult = readAction {
-      val providerPsi = if (item != null) provider?.getPsiElementForItem(item) else null
-      val fallbackPsi = (unwrappedObject as? PsiElement) ?: (rawObject as? PsiElement)
-      val resolvedPsi = providerPsi ?: fallbackPsi
-      val psiFile = resolvedPsi?.containingFile?.virtualFile
-      resolvedPsi to psiFile
-    }
-    psiElement = psiResult.first
-    if (psiResult.second != null) {
-      virtualFile = psiResult.second
-    }
-  }
-
-  if (includeDetails && startLine == null && psiElement != null) {
-    val snippet = buildPsiSnippet(projectDir, fileDocumentManager, psiElement)
-    if (snippet != null) {
-      applySnippet(snippet)
-    }
-  }
-
-  val resolvedVirtualFile = virtualFile
-  if (resolvedVirtualFile != null && filePath == null) {
-    filePath = projectDir.relativizeIfPossible(resolvedVirtualFile)
-  }
-
-  if (filePath == null && providerId.value == SeProviderIdUtils.FILES_ID) {
-    filePath = itemData.presentation.text.takeIf { it.isNotBlank() }
-  }
-
-  if (directoryFilterPath != null) {
-    val filterFile = virtualFile ?: return null
-    val inScope = if (directoryFilterFile != null) {
-      VfsUtilCore.isAncestor(directoryFilterFile, filterFile, false)
-    }
-    else {
-      val filePathNio = filterFile.toNioPathOrNull() ?: return null
-      filePathNio.startsWith(directoryFilterPath)
-    }
-    if (!inScope) return null
-  }
-
-  val resolvedPath = filePath?.takeIf { it.isNotBlank() } ?: return null
-  val resolvedText = if (includeDetails) lineText else null
-  val resolvedStartLine = if (includeDetails) startLine else null
-  val resolvedStartColumn = if (includeDetails) startColumn else null
-  val resolvedEndLine = if (includeDetails) endLine else null
-  val resolvedEndColumn = if (includeDetails) endColumn else null
-  val resolvedStartOffset = if (includeDetails) startOffset else null
-  val resolvedEndOffset = if (includeDetails) endOffset else null
-  return SearchItem(
-    filePath = resolvedPath,
-    startLine = resolvedStartLine,
-    startColumn = resolvedStartColumn,
-    endLine = resolvedEndLine,
-    endColumn = resolvedEndColumn,
-    startOffset = resolvedStartOffset,
-    endOffset = resolvedEndOffset,
-    lineText = resolvedText,
-  )
-}
-
-/**
- * Resolves and caches Search Everywhere providers by id.
- */
-private fun resolveProvider(
-  backendService: SeBackendService,
-  session: SeSession,
-  providerCache: MutableMap<SeProviderId, SeItemsProvider?>,
-  providerId: SeProviderId,
-  isAllTab: Boolean,
-): SeItemsProvider? {
-  if (providerCache.containsKey(providerId)) return providerCache[providerId]
-  val provider = backendService.tryGetProvider(providerId, isAllTab, session)
-  providerCache[providerId] = provider
-  return provider
-}
-
-/**
- * Unwraps legacy Search Everywhere payloads that are encoded as pairs.
- */
-private fun unwrapLegacyObject(rawObject: Any?): Any? {
-  return when (rawObject) {
-    is Pair<*, *> -> rawObject.first
-    else -> rawObject
-  }
-}
-
-/**
  * Validates and clamps the result limit.
  */
-private fun normalizeLimit(limit: Int): Int {
+internal fun normalizeLimit(limit: Int): Int {
   if (limit <= 0) mcpFail("limit must be > 0")
   return limit.coerceAtMost(MAX_RESULTS_UPPER_BOUND)
 }
 
-/**
- * Builds a snippet from a usage adapter.
- */
-private suspend fun buildUsageSnippet(
-  projectDir: Path,
-  fileDocumentManager: FileDocumentManager,
-  usage: UsageInfo2UsageAdapter,
-): UsageSnippet? {
-  return readAction {
-    val file = usage.file ?: return@readAction null
-    val textRange = usage.navigationRange ?: return@readAction null
-    buildSnippet(projectDir, fileDocumentManager, file, textRange)
-  }
-}
-
-private data class UsageSnippet(
-  @JvmField val file: VirtualFile,
-  @JvmField val filePath: String,
-  @JvmField val lineText: String,
-  @JvmField val startLine: Int,
-  @JvmField val startColumn: Int,
-  @JvmField val endLine: Int,
-  @JvmField val endColumn: Int,
-  @JvmField val startOffset: Int,
-  @JvmField val endOffset: Int,
-)
-
-private data class SearchSnippet(
+internal data class SearchSnippet(
   @JvmField val lineText: String,
   @JvmField val startLine: Int,
   @JvmField val startColumn: Int,
@@ -1042,47 +712,7 @@ internal data class SearchResult(
   @JvmField @EncodeDefault(mode = EncodeDefault.Mode.NEVER) val more: Boolean = false,
 )
 
-/**
- * Builds a snippet from a PSI element's navigation range.
- */
-private suspend fun buildPsiSnippet(
-  projectDir: Path,
-  fileDocumentManager: FileDocumentManager,
-  element: PsiElement,
-): UsageSnippet? {
-  return readAction {
-    val navigationElement = element.navigationElement ?: element
-    val file = navigationElement.containingFile?.virtualFile ?: return@readAction null
-    val textRange = navigationElement.textRange
-    buildSnippet(projectDir, fileDocumentManager, file, textRange)
-  }
-}
-
-/**
- * Builds a single-line snippet for a text range within a file.
- */
-private fun buildSnippet(
-  projectDir: Path,
-  fileDocumentManager: FileDocumentManager,
-  file: VirtualFile,
-  textRange: Segment,
-): UsageSnippet? {
-  val document = fileDocumentManager.getDocument(file) ?: return null
-  val snippet = buildSearchSnippet(document, textRange, MAX_USAGE_TEXT_CHARS)
-  return UsageSnippet(
-    file = file,
-    filePath = projectDir.relativizeIfPossible(file),
-    lineText = snippet.lineText,
-    startLine = snippet.startLine,
-    startColumn = snippet.startColumn,
-    endLine = snippet.endLine,
-    endColumn = snippet.endColumn,
-    startOffset = snippet.startOffset,
-    endOffset = snippet.endOffset,
-  )
-}
-
-private fun buildSearchSnippet(document: Document, textRange: Segment, @Suppress("SameParameterValue") maxTextChars: Int): SearchSnippet {
+internal fun buildSearchSnippet(document: Document, textRange: Segment, @Suppress("SameParameterValue") maxTextChars: Int): SearchSnippet {
   val startOffset = textRange.startOffset
   val endOffset = textRange.endOffset
   val startLineNumber = document.getLineNumber(startOffset)
