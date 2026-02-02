@@ -24,10 +24,10 @@ class TcpEelMrfsBackend(private val scope: CoroutineScope) : MultiRoutingFileSys
   private val cache = ConcurrentHashMap<String, FileSystem>()
 
   override fun compute(localFS: FileSystem, sanitizedPath: String): FileSystem? {
-    val internalName = TcpEelPathParser.extractInternalMachineId(sanitizedPath) ?: return null
-    val descriptor = TcpEelPathParser.toDescriptor(internalName) ?: return null
+    val (internalName, osFamily) = TcpEelPathParser.extractInternalMachineId(sanitizedPath) ?: return null
+    val descriptor = TcpEelPathParser.toDescriptor(internalName, osFamily) ?: return null
 
-    return cache.computeIfAbsent(internalName) { createFilesystem(internalName, localFS, descriptor) }
+    return cache.computeIfAbsent("$internalName-${osFamily.name.lowercase()}") { createFilesystem(internalName, localFS, descriptor) }
   }
 
   private fun createFilesystem(internalName: String, localFS: FileSystem, descriptor: TcpEelDescriptor): FileSystem {
@@ -57,7 +57,7 @@ class TcpEelMrfsBackend(private val scope: CoroutineScope) : MultiRoutingFileSys
   }
 
   override fun getCustomRoots(): Collection<@MultiRoutingFileSystemPath String> {
-    return cache.keys.map { "${TcpEelConstants.TCP_PROTOCOL_PREFIX}$it" }
+    return cache.keys.map { "${TcpEelConstants.TCP_PATH_PREFIX}$it" }
   }
 
   override fun getCustomFileStores(localFS: FileSystem): Collection<FileStore> {
