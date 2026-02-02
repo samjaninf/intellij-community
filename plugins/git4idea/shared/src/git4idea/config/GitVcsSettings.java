@@ -91,20 +91,6 @@ public final class GitVcsSettings extends SimplePersistentStateComponent<GitVcsO
     return ArrayUtilRt.toStringArray(getState().getPreviousCommitAuthors());
   }
 
-  @Override
-  public void loadState(@NotNull GitVcsOptions state) {
-    super.loadState(state);
-    migrateUpdateIncomingBranchInfo(state);
-  }
-
-  private static void migrateUpdateIncomingBranchInfo(@NotNull GitVcsOptions state) {
-    if (!state.isUpdateBranchesInfo()) {
-      state.setIncomingCheckStrategy(GitIncomingCheckStrategy.Never);
-      //set default value
-      state.setUpdateBranchesInfo(true);
-    }
-  }
-
   public @Nullable String getPathToGit() {
     return getState().getPathToGit();
   }

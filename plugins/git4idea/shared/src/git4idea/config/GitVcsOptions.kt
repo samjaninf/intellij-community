@@ -86,8 +86,6 @@ class GitVcsOptions : BaseState() {
   var isSetUserNameGlobally: Boolean by property(true)
   @get:OptionTag("SWAP_SIDES_IN_COMPARE_BRANCHES")
   var isSwapSidesInCompareBranches: Boolean by property(false)
-  @get:OptionTag("UPDATE_BRANCHES_INFO")
-  var isUpdateBranchesInfo: Boolean by property(true)
   @get:OptionTag("PREVIEW_PUSH_ON_COMMIT_AND_PUSH")
   var isPreviewPushOnCommitAndPush: Boolean by property(true)
   @get:OptionTag("PREVIEW_PUSH_PROTECTED_ONLY")
