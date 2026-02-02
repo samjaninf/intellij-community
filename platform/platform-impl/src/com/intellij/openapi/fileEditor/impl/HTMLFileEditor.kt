@@ -202,6 +202,14 @@ internal class HTMLFileEditor(
 
     contentPanel.jbCefClient.addDisplayHandler(object : CefDisplayHandlerAdapter() {
       override fun onStatusMessage(browser: CefBrowser, text: @NlsSafe String) = StatusBar.Info.set(text, project)
+      override fun onAddressChange(browser: CefBrowser, frame: CefFrame?, newUrl: String) {
+        if (!initial.get() && request.currentUrl != newUrl) {
+          request.apply {
+            onUrlChanged(currentUrl, newUrl)
+            currentUrl = newUrl
+          }
+        }
+      }
     }, contentPanel.cefBrowser)
 
     contentPanel.setErrorPage { errorCode, errorText, failedUrl ->

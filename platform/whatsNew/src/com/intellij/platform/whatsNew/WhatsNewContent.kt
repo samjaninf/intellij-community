@@ -187,6 +187,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
   private val contentHash: String
   private val myActionWhiteList: Set<String>
   private val visionActionIds = setOf(GIF_VALUE, ZOOM_VALUE)
+  private val multipageIds: List<String>
 
   init {
     var html = page.html
@@ -209,15 +210,8 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     }
     content = html
     myActionWhiteList = page.actions.map { it.value }.toSet()
+    multipageIds = page.multipageIds
     contentHash = DigestUtil.sha1Hex(page.html)
-  }
-
-  private suspend fun getRequest(dataContext: DataContext?): HTMLEditorProvider.Request {
-    val request = dataContext?.project?.let { WhatsNewResourceProvider.getInstance(it).getRequest(content) }
-                  ?: html(content)
-    return request
-      .withQueryHandler(getHandler(dataContext))
-      .withResourceHandler(getRequestHandler(dataContext))
   }
 
   @OptIn(DelicateCoroutinesApi::class)
@@ -294,12 +288,14 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     withContext(Dispatchers.EDT) {
       logger.info("Opening What's New in editor.")
       val disposable = Disposer.newDisposable(project)
-      val request = getRequest(dataContext)
+      val startPageId = WhatsNewMultipageIdProvider.getInstance(project).getMultipageIdIfSupported(multipageIds)
+      val request = getRequest(startPageId, dataContext)
       val editor = writeIntentReadAction { openEditor(project, title, request) }
+
       editor?.let {
         project.serviceAsync<FileEditorManager>().addTopComponent(it, ReactionsPanel.createPanel(PLACE, reactionChecker))
         val startTime = System.currentTimeMillis()
-        WhatsNewCounterUsageCollector.openedPerformed(project, triggeredByUser)
+        WhatsNewCounterUsageCollector.openedPerformed(project, startPageId, triggeredByUser)
 
         WhatsNewContentVersionChecker.saveLastShownContent(this@WhatsNewVisionContent)
 
@@ -308,13 +304,27 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
           override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
             if (it.file == file) {
               val durationSeconds = (System.currentTimeMillis() - startTime) / 1000
-              WhatsNewCounterUsageCollector.closedPerformed(project, durationSeconds)
+              WhatsNewCounterUsageCollector.closedPerformed(project, startPageId, durationSeconds)
               Disposer.dispose(disposable)
             }
           }
         })
       } ?: Disposer.dispose(disposable)
     }
+  }
+
+  private fun getRequest(
+    startPageId: String?,
+    dataContext: DataContext?,
+  ): HTMLEditorProvider.Request {
+    val request = startPageId?.let {
+      html(content, "file:///jbcefbrowser#$it").withOnUrlChanged { oldUrl, newUrl ->
+        WhatsNewCounterUsageCollector.urlChanged(dataContext?.project, oldUrl, newUrl)
+      }
+    } ?: html(content)
+    return request
+      .withQueryHandler(getHandler(dataContext))
+      .withResourceHandler(getRequestHandler(dataContext))
   }
 }
 
