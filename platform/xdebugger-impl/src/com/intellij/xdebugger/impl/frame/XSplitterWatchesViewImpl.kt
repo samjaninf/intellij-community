@@ -4,9 +4,11 @@ package com.intellij.xdebugger.impl.frame
 import com.intellij.ide.dnd.DnDNativeTarget
 import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
+import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter.getSessionNonSplitOnly
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.util.application
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebugSessionListener
 import com.intellij.xdebugger.impl.XDebugSessionImpl
 import com.intellij.xdebugger.impl.mixedmode.highLevelProcessOrThrow
@@ -69,7 +71,7 @@ class XSplitterWatchesViewImpl(
       return
     }
 
-    val session = session
+    val session = getSessionNonSplitOnly(sessionProxy!!)
     val evaluatorComponent =
       if (session != null) {
         val provider = tryGetBottomComponentProvider(session, useLowLevelDebugProcessPanel())
@@ -136,7 +138,7 @@ class XSplitterWatchesViewImpl(
     return session.lowLevelMixedModeExtensionOrThrow.belongsToMe(frame)
   }
 
-  private fun tryGetBottomComponentProvider(session: XDebugSessionImpl, useLowLevelDebugProcessPanel: Boolean?) =
+  private fun tryGetBottomComponentProvider(session: XDebugSession, useLowLevelDebugProcessPanel: Boolean?) =
     when (useLowLevelDebugProcessPanel) {
       null -> session.debugProcess
       true -> session.lowLevelProcessOrThrow
