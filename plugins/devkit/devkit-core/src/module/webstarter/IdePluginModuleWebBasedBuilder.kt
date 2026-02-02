@@ -32,6 +32,7 @@ import com.intellij.openapi.projectRoots.SdkTypeId
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.ui.dsl.builder.BottomGap
@@ -320,6 +321,16 @@ internal open class IdePluginModuleWebBasedBuilder : WebStarterModuleBuilder() {
       dependenciesLabel = message("module.builder.web.features.label")
       selectedDependenciesLabel = message("module.builder.web.selected.features.label")
       noDependenciesSelectedLabel = message("module.builder.web.select.features.hint")
+    }
+  }
+
+  override fun isAvailable(): Boolean {
+    return Util.isEnabled()
+  }
+
+  object Util {
+    fun isEnabled(): Boolean {
+      return Registry.`is`("devkit.web.based.plugin.generator.enabled", false)
     }
   }
 

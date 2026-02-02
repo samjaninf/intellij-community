@@ -1,4 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.idea.devkit.module
 
 import com.intellij.icons.AllIcons
@@ -38,6 +38,7 @@ import com.intellij.ui.dsl.builder.Panel
 import com.intellij.util.lang.JavaVersion
 import org.jetbrains.idea.devkit.DevKitBundle
 import org.jetbrains.idea.devkit.DevKitFileTemplatesFactory
+import org.jetbrains.idea.devkit.module.webstarter.IdePluginModuleWebBasedBuilder
 import org.jetbrains.idea.devkit.projectRoots.IdeaJdk
 import org.jetbrains.jps.model.java.JavaResourceRootType
 import java.util.function.Supplier
@@ -50,6 +51,7 @@ internal class IdePluginModuleBuilder : StarterModuleBuilder() {
 
   private val PLUGIN_TYPE_KEY: Key<PluginType> = Key.create("ide.plugin.type")
 
+  override fun isAvailable(): Boolean = !IdePluginModuleWebBasedBuilder.Util.isEnabled()
   override fun getBuilderId(): String = "idea-plugin"
   override fun getPresentableName(): String = DevKitBundle.message("module.builder.title")
   override fun getWeight(): Int = JVM_WEIGHT + 1000
