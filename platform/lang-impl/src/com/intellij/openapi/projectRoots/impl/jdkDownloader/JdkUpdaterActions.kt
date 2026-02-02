@@ -13,6 +13,7 @@ import com.intellij.openapi.application.asContextElement
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.serviceIfCreated
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.platform.util.coroutines.childScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -34,6 +35,7 @@ class JdkUpdaterNotifications(private val coroutineScope: CoroutineScope) {
   private var pendingActionsCopy = listOf<JdkUpdateNotification.JdkUpdateSuggestionAction>()
 
   private val updateRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+  private val notificationScope: CoroutineScope = coroutineScope.childScope("JdkUpdateNotification")
 
   init {
     coroutineScope.launch {
@@ -84,6 +86,7 @@ class JdkUpdaterNotifications(private val coroutineScope: CoroutineScope) {
           scheduleUpdate()
         },
         showVendorVersion = showVendorVersion,
+        scope = notificationScope,
       )
 
       val currentNotification = pendingNotifications.get(jdk)
