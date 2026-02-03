@@ -3,7 +3,6 @@ package git4idea.branch;
 
 import com.intellij.concurrency.JobScheduler;
 import com.intellij.dvcs.repo.RepositoryExtKt;
-import com.intellij.externalProcessAuthHelper.AuthenticationMode;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
@@ -38,7 +37,6 @@ import com.intellij.vcsUtil.VcsFileUtil;
 import git4idea.GitLocalBranch;
 import git4idea.GitRemoteBranch;
 import git4idea.commands.Git;
-import git4idea.commands.GitAuthenticationListener;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
 import git4idea.commands.GitLineHandler;
@@ -79,13 +77,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static com.intellij.externalProcessAuthHelper.AuthenticationMode.NONE;
 import static com.intellij.externalProcessAuthHelper.AuthenticationMode.SILENT;
 import static git4idea.repo.GitRefUtil.addRefsHeadsPrefixIfNeeded;
 import static git4idea.repo.GitRefUtil.getResolvedHashes;
 
 @Service(Service.Level.PROJECT)
-public final class GitBranchIncomingOutgoingManager implements GitRepositoryChangeListener, GitAuthenticationListener, Disposable {
+public final class GitBranchIncomingOutgoingManager implements GitRepositoryChangeListener, Disposable {
   private static final Logger LOG = Logger.getInstance(GitBranchIncomingOutgoingManager.class);
 
   @Topic.ProjectLevel
@@ -107,11 +104,9 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   private final @NotNull Map<GitRepository, Map<GitLocalBranch, Integer>> myLocalBranchesWithIncoming = new ConcurrentHashMap<>();
   private final @NotNull Map<GitRepository, Map<GitLocalBranch, Hash>> myLocalBranchesToFetch = new ConcurrentHashMap<>();
   private final @NotNull Map<GitRepository, Map<GitLocalBranch, Integer>> myLocalBranchesWithOutgoing = new ConcurrentHashMap<>();
-  private final @NotNull MultiMap<GitRepository, GitRemote> myErrorMap = MultiMap.createConcurrentSet();
   private final @NotNull Project myProject;
   private @Nullable ScheduledFuture<?> myPeriodicalUpdater;
   private @Nullable MessageBusConnection myConnection;
-  private final @NotNull MultiMap<GitRepository, GitRemote> myAuthSuccessMap = MultiMap.createConcurrentSet();
   private final @NotNull AtomicBoolean myIsUpdating = new AtomicBoolean();
 
   GitBranchIncomingOutgoingManager(@NotNull Project project) {
@@ -219,7 +214,6 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
       if (myConnection == null) {
         myConnection = myProject.getMessageBus().connect(this);
         myConnection.subscribe(GitRepository.GIT_REPO_CHANGE, this);
-        myConnection.subscribe(GIT_AUTHENTICATION_SUCCESS, this);
         myConnection.subscribe(GitVcsSettings.GitVcsSettingsListener.TOPIC, new GitVcsSettings.GitVcsSettingsListener() {
           @Override
           public void incomingCommitsCheckStrategyChanged(@NotNull GitIncomingRemoteCheckStrategy strategy) {
@@ -362,20 +356,17 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   private @NotNull Map<GitLocalBranch, Hash> calculateBranchesToFetch(@NotNull GitRepository repository) {
     Map<GitLocalBranch, Hash> result = new HashMap<>();
     groupTrackInfoByRemotes(repository).entrySet()
-      .forEach(entry -> result.putAll(calcBranchesToFetchForRemote(repository, entry.getKey(), entry.getValue(),
-                                                                   getAuthenticationMode(repository, entry.getKey()
-                                                                   ))));
+      .forEach(entry -> result.putAll(calcBranchesToFetchForRemote(repository, entry.getKey(), entry.getValue())));
     return result;
   }
 
   private @NotNull Map<GitLocalBranch, Hash> calcBranchesToFetchForRemote(@NotNull GitRepository repository,
                                                                           @NotNull GitRemote gitRemote,
-                                                                          @NotNull Collection<? extends GitBranchTrackInfo> trackInfoList,
-                                                                          AuthenticationMode mode) {
+                                                                          @NotNull Collection<? extends GitBranchTrackInfo> trackInfoList) {
     Map<GitLocalBranch, Hash> result = new HashMap<>();
     GitBranchesCollection branchesCollection = repository.getBranches();
     final Map<String, Hash> remoteNameWithHash =
-      lsRemote(repository, gitRemote, ContainerUtil.map(trackInfoList, info -> info.getRemoteBranch().getNameForRemoteOperations()), mode);
+      lsRemote(repository, gitRemote, ContainerUtil.map(trackInfoList, info -> info.getRemoteBranch().getNameForRemoteOperations()));
 
     for (Map.Entry<String, Hash> hashEntry : remoteNameWithHash.entrySet()) {
       String remoteBranchName = hashEntry.getKey();
@@ -422,11 +413,6 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
     return result;
   }
 
-  private @NotNull AuthenticationMode getAuthenticationMode(@NotNull GitRepository repository,
-                                                            @NotNull GitRemote remote) {
-    return (myAuthSuccessMap.get(repository).contains(remote)) ? SILENT : NONE;
-  }
-
   private static boolean shouldAvoidUserInteraction(@NotNull GitRemote remote) {
     return containsSSHUrl(remote) && HAS_EXTERNAL_SSH_AGENT.get();
   }
@@ -437,29 +423,21 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   private @NotNull Map<String, Hash> lsRemote(@NotNull GitRepository repository,
                                               @NotNull GitRemote remote,
-                                              @NotNull List<String> branchRefNames,
-                                              @NotNull AuthenticationMode authenticationMode) {
+                                              @NotNull List<String> branchRefNames) {
     Map<String, Hash> result = new HashMap<>();
 
     if (!supportsIncomingOutgoing()) return result;
-    if (authenticationMode == NONE || (authenticationMode == SILENT && shouldAvoidUserInteraction(remote))) {
-      myErrorMap.putValue(repository, remote);
+    if (shouldAvoidUserInteraction(remote)) {
       return result;
     }
 
     VcsFileUtil.chunkArguments(branchRefNames).forEach(refs -> {
-      List<String> params = ContainerUtil.concat(List.of("--heads", remote.getName()), //NON-NLS
-      refs);
+      List<String> params = ContainerUtil.concat(List.of("--heads", remote.getName()), refs);
       GitCommandResult lsRemoteResult =
-        Git.getInstance().runCommand(() -> createLsRemoteHandler(repository, remote, params, authenticationMode));
+        Git.getInstance().runCommand(() -> createLsRemoteHandler(repository, remote, params));
       if (lsRemoteResult.success()) {
         Map<String, String> hashWithNameMap = ContainerUtil.map2MapNotNull(lsRemoteResult.getOutput(), GitRefUtil::parseBranchesLine);
         result.putAll(getResolvedHashes(hashWithNameMap));
-        myErrorMap.remove(repository, remote);
-        myAuthSuccessMap.putValue(repository, remote);
-      }
-      else {
-        myErrorMap.putValue(repository, remote);
       }
     });
     return result;
@@ -467,9 +445,9 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   private @NotNull GitLineHandler createLsRemoteHandler(@NotNull GitRepository repository,
                                                         @NotNull GitRemote remote,
-                                                        @NotNull List<String> params, @NotNull AuthenticationMode authenticationMode) {
+                                                        @NotNull List<String> params) {
     GitLineHandler h = new GitLineHandler(myProject, repository.getRoot(), GitCommand.LS_REMOTE);
-    h.setIgnoreAuthenticationMode(authenticationMode);
+    h.setIgnoreAuthenticationMode(SILENT);
     h.addParameters(params);
     h.setUrls(remote.getUrls());
     return h;
@@ -527,12 +505,6 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
       myDirtyReposWithIncoming.add(repository);
     }
     scheduleUpdate();
-  }
-
-  @Override
-  public void authenticationSucceeded(@NotNull GitRepository repository, @NotNull GitRemote remote) {
-    if (!shouldCheckIncomingOnRemote()) return;
-    myAuthSuccessMap.putValue(repository, remote);
   }
 
   private static @NotNull MultiMap<GitRemote, GitBranchTrackInfo> groupTrackInfoByRemotes(@NotNull GitRepository repository) {
