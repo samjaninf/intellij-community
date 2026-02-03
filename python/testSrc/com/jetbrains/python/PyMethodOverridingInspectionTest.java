@@ -123,7 +123,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
     doTest();
   }
 
-  // PY-86525
+  // PY-87372
   public void testIncompatibleTypeInSignature() {
     doTestByText("""
                    class Base():
@@ -136,7 +136,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-  // PY-86525
+  // PY-87372
   public void testIncompatibleReturnType() {
     doTestByText("""
                    class Base():
@@ -153,7 +153,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-  // PY-86525
+  // PY-87372
   public void testIncompatiblePosContainer() {
     doTestByText("""
                    class Base():
@@ -166,7 +166,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-  // PY-86525
+  // PY-87372
   public void testOptionalVsNonOptionalParamType() {
     doTestByText("""
                    class Base():
@@ -179,7 +179,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-  // PY-86525
+  // PY-87372
   public void testParamWithDefaultValue() {
     doTestByText("""
                    class Base:
@@ -200,7 +200,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-  // PY-86525
+  // PY-87372
   public void testCovariantReturnType() {
     doTestByText("""
                    class Base():
@@ -213,7 +213,7 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-  // PY-86525
+  // PY-87372
   public void testClassmethodIncompatibility() {
     doTestByText("""
                    class Base():
@@ -225,6 +225,17 @@ public class PyMethodOverridingInspectionTest extends PyInspectionTestCase {
                        @classmethod
                        def method<warning descr="Signature of method 'Child.method()' does not match signature of the base method in class 'Base'">(cls, x: str)</warning>:
                            pass
+                   """);
+  }
+
+  // PY-87372
+  public void testNoReturnTypeAnnotationNotReported() {
+    doTestByText("""
+                   class Base():
+                       def method(self, x: int): ...
+                   
+                   class Child(Base):
+                       def method(self, x: int) -> str: ...
                    """);
   }
 
