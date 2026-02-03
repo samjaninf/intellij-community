@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.analysis.api.components.ShortenCommand
 import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 import org.jetbrains.kotlin.analysis.api.components.ShortenStrategy
 import org.jetbrains.kotlin.analysis.api.components.collectPossibleReferenceShortenings
+import org.jetbrains.kotlin.analysis.api.components.collectPossibleReferenceShorteningsInElement
 import org.jetbrains.kotlin.analysis.api.permissions.KaAllowAnalysisFromWriteAction
 import org.jetbrains.kotlin.analysis.api.permissions.KaAllowAnalysisOnEdt
 import org.jetbrains.kotlin.analysis.api.symbols.KaCallableSymbol
@@ -244,6 +245,31 @@ fun collectPossibleReferenceShorteningsForIde(
     shortenOptions,
     classShortenStrategy,
     callableShortenStrategy
+)
+
+/**
+ * Collects possible references to shorten.
+ *
+ * Compared to [collectPossibleReferenceShorteningsInElement], uses [defaultClassShortenStrategyForIde] and [defaultCallableShortenStrategyForIde]
+ * strategies for shortening by default, which respect Kotlin Code Style Settings from the IDE.
+ *
+ * In the IDE, this function should be preferred to [collectPossibleReferenceShorteningsInElement] due to better defaults.
+ *
+ * Overall, consider using more simple and straighforward [shortenReferences] functions,
+ * or [org.jetbrains.kotlin.idea.base.codeInsight.ShortenReferencesFacility] if you need to support both K1 and K2 Modes.
+ */
+context(_: KaSession)
+@ApiStatus.Internal
+fun collectPossibleReferenceShorteningsInElementForIde(
+    element: KtElement,
+    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(element),
+    callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(element),
+): ShortenCommand = collectPossibleReferenceShorteningsInElement(
+    element,
+    shortenOptions,
+    classShortenStrategy,
+    callableShortenStrategy,
 )
 
 
