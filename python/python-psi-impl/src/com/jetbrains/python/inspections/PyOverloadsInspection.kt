@@ -38,6 +38,7 @@ class PyOverloadsInspection : PyInspection() {
   ): PsiElementVisitor = Visitor(holder, PyInspectionVisitor.getContext(session))
 
   private class Visitor(holder: ProblemsHolder, context: TypeEvalContext) : PyInspectionVisitor(holder, context) {
+    private val OVERLOADS_ANALYSIS_LIMIT = 30
 
     override fun visitPyClass(node: PyClass) {
       processScope(node) { node.visitMethods(it, false, myTypeEvalContext) }
@@ -163,7 +164,8 @@ class PyOverloadsInspection : PyInspection() {
     }
 
     private fun checkOverloadsOverlapping(overloads: List<PyFunction>) {
-      if (overloads.size < 2) return
+      // This analysis is N^2 so limited to a reasonable number of overloads to prevent performance issues
+      if (overloads.size !in 2..OVERLOADS_ANALYSIS_LIMIT) return
 
       // __get__ method should be special-cased
       if (overloads.firstOrNull()?.name == PyNames.DUNDER_GET) return
