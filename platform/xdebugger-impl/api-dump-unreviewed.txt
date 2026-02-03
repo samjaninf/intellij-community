@@ -598,8 +598,6 @@ c:com.intellij.xdebugger.impl.ui.ExecutionPointHighlighter
 - show(com.intellij.xdebugger.XSourcePosition,Z,com.intellij.openapi.editor.markup.GutterIconRenderer,Z):V
 - update(Z):V
 - updateGutterIcon(com.intellij.openapi.editor.markup.GutterIconRenderer):V
-com.intellij.xdebugger.impl.ui.SessionTabComponentProvider
-- a:createBottomLocalsComponent():javax.swing.JComponent
 f:com.intellij.xdebugger.impl.ui.TextViewer
 - com.intellij.ui.EditorTextField
 - <init>(com.intellij.openapi.editor.Document,com.intellij.openapi.project.Project,Z,com.intellij.openapi.fileTypes.FileType,Z):V

@@ -2,7 +2,6 @@
 package com.intellij.xdebugger.impl.frame
 
 import com.intellij.ide.dnd.DnDNativeTarget
-import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter.getSessionNonSplitOnly
 import com.intellij.ui.OnePixelSplitter
@@ -10,10 +9,10 @@ import com.intellij.util.application
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebugSessionListener
-import com.intellij.xdebugger.impl.XDebugSessionImpl
 import com.intellij.xdebugger.impl.mixedmode.highLevelProcessOrThrow
 import com.intellij.xdebugger.impl.mixedmode.lowLevelMixedModeExtensionOrThrow
 import com.intellij.xdebugger.impl.mixedmode.lowLevelProcessOrThrow
+import com.intellij.xdebugger.impl.ui.SessionTabComponentProvider
 import com.intellij.xdebugger.impl.ui.getSessionTabCustomer
 import com.intellij.xdebugger.impl.ui.useSplitterView
 import org.jetbrains.annotations.ApiStatus.Internal
@@ -79,7 +78,7 @@ class XSplitterWatchesViewImpl(
         provider.createBottomLocalsComponent(sessionProxy!!)
       }
       else
-        SessionTabComponentProviderShared.getInstance().createBottomLocalsComponent(sessionProxy!!)
+        SessionTabComponentProvider.getInstance().createBottomLocalsComponent(sessionProxy!!)
 
 
     splitter = OnePixelSplitter(true, proportionKey, 0.01f, 0.99f)

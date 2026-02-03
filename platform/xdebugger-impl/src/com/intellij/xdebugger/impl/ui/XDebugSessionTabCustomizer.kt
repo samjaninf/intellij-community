@@ -1,7 +1,6 @@
 package com.intellij.xdebugger.impl.ui
 
-import com.intellij.platform.debugger.impl.shared.SessionTabComponentProviderShared
-import com.intellij.platform.debugger.impl.shared.XDebuggerMonolithAccessPoint
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter
 import com.intellij.xdebugger.XDebugProcess
 import org.jetbrains.annotations.ApiStatus
@@ -10,18 +9,13 @@ import javax.swing.JComponent
 @ApiStatus.Internal
 @ApiStatus.Experimental
 interface XDebugSessionTabCustomizer {
-  fun getBottomLocalsComponentProvider(): SessionTabComponentProviderShared? = null
+  fun getBottomLocalsComponentProvider(): SessionTabComponentProvider? = null
 
   fun allowFramesViewCustomization(): Boolean = false
 
   fun getDefaultFramesViewKey(): String? = null
 
   fun forceShowNewDebuggerUi(): Boolean = false
-}
-
-@ApiStatus.Obsolete
-interface SessionTabComponentProvider {
-  fun createBottomLocalsComponent(): JComponent
 }
 
 fun XDebugProcess.allowFramesViewCustomization(): Boolean {
@@ -40,6 +34,10 @@ fun XDebugProcess.getBottomLocalsComponentProvider(): SessionTabComponentProvide
       val session = this@getBottomLocalsComponentProvider.session
       val proxy = XDebuggerEntityConverter.asProxy(session)
       return newProvider.createBottomLocalsComponent(proxy)
+    }
+
+    override fun createBottomLocalsComponent(session: XDebugSessionProxy): JComponent {
+      error("Should be unreachable")
     }
   }
 }
