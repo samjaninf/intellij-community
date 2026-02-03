@@ -4,8 +4,10 @@ package git4idea.fetch
 import git4idea.config.GitVcsSettings
 import git4idea.repo.GitRemote
 import git4idea.repo.GitRepository
+import org.jetbrains.annotations.ApiStatus
 
-data class GitFetchSpec @JvmOverloads constructor(
+@ApiStatus.Internal
+data class GitFetchSpec(
   val repository: GitRepository,
   val remote: GitRemote,
   val refspec: String? = null,
