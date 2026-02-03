@@ -70,10 +70,10 @@ class XSplitterWatchesViewImpl(
       return
     }
 
-    val session = getSessionNonSplitOnly(sessionProxy!!)
+    val monolithSession = getSessionNonSplitOnly(sessionProxy!!)
     val evaluatorComponent =
-      if (session != null) {
-        val provider = tryGetBottomComponentProvider(session, useLowLevelDebugProcessPanel())
+      if (monolithSession != null) {
+        val provider = tryGetBottomComponentProvider(monolithSession, useLowLevelDebugProcessPanel())
                        ?: error("BottomLocalsComponentProvider is not implemented to use SplitterWatchesVariablesView")
         provider.createBottomLocalsComponent(sessionProxy!!)
       }
