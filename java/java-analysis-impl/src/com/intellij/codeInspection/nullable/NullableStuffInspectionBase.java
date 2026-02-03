@@ -93,6 +93,7 @@ import com.intellij.psi.SyntheticElement;
 import com.intellij.psi.TypeAnnotationProvider;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.codeStyle.VariableKind;
+import com.intellij.psi.impl.PsiImplUtil;
 import com.intellij.psi.impl.search.JavaNullMethodArgumentUtil;
 import com.intellij.psi.impl.search.JavaOverridingMethodsSearcher;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -385,9 +386,13 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
                                         LocalQuickFix.from(action));
               }
               else {
-                ModCommandAction action = new MoveAnnotationOnStaticMemberQualifyingTypeFix(annotation);
-                reportIncorrectLocation(holder, annotation, listOwner, "inspection.nullable.problems.outer.type",
-                                        LocalQuickFix.from(action));
+                // If outer is qualifier of static member then don't report problem as it is already reported
+                // as ANNOTATION_NOT_ALLOWED_STATIC which contains exactly the same fix "Move annotation".
+                if (!PsiImplUtil.isTypeQualifierOfStaticMember(outerCtx)) {
+                  ModCommandAction action = new MoveAnnotationOnStaticMemberQualifyingTypeFix(annotation);
+                  reportIncorrectLocation(holder, annotation, listOwner, "inspection.nullable.problems.outer.type",
+                                          LocalQuickFix.from(action));
+                }
               }
             }
             if (parent instanceof PsiReferenceList) {
