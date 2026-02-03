@@ -90,14 +90,14 @@ class XSplitterWatchesViewImpl(
   }
 
   private fun addMixedModeListenerIfNeeded() {
-    val session = this.session ?: return
-    if (!session.isMixedMode) return
+    val monolithSession = getSessionNonSplitOnly(sessionProxy!!) ?: return
+    if (!monolithSession.isMixedMode) return
 
-    val lowSupportsCustomization = session.lowLevelProcessOrThrow.useSplitterView()
-    val highSupportsCustomization = session.highLevelProcessOrThrow.useSplitterView()
+    val lowSupportsCustomization = monolithSession.lowLevelProcessOrThrow.useSplitterView()
+    val highSupportsCustomization = monolithSession.highLevelProcessOrThrow.useSplitterView()
     if (lowSupportsCustomization == highSupportsCustomization) return
 
-    session.addSessionListener(object : XDebugSessionListener {
+    monolithSession.addSessionListener(object : XDebugSessionListener {
       override fun stackFrameChanged() {
         updateView()
       }
@@ -119,11 +119,11 @@ class XSplitterWatchesViewImpl(
   }
 
   private fun getShowCustomized(): Boolean {
-    val session = session ?: return true // split debugger is on, return true to use rider default immediate window view
-    if (!session.isMixedMode) return true
+    val monolithSession = getSessionNonSplitOnly(sessionProxy!!) ?: return true // split debugger is on, return true to use rider default immediate window view
+    if (!monolithSession.isMixedMode) return true
 
-    val lowSupportsCustomization = session.lowLevelProcessOrThrow.useSplitterView()
-    val highSupportsCustomization = session.highLevelProcessOrThrow.useSplitterView()
+    val lowSupportsCustomization = monolithSession.lowLevelProcessOrThrow.useSplitterView()
+    val highSupportsCustomization = monolithSession.highLevelProcessOrThrow.useSplitterView()
 
     val useLowLevelPanel = useLowLevelDebugProcessPanel() == true
     val useHighLevelPanel = !useLowLevelPanel
@@ -131,10 +131,10 @@ class XSplitterWatchesViewImpl(
   }
 
   private fun useLowLevelDebugProcessPanel(): Boolean? {
-    val session = session ?: return null
-    if (!session.isMixedMode) return null
-    val frame = session.currentStackFrame ?: return false
-    return session.lowLevelMixedModeExtensionOrThrow.belongsToMe(frame)
+    val monolithSession = getSessionNonSplitOnly(sessionProxy!!) ?: return null
+    if (!monolithSession.isMixedMode) return null
+    val frame = monolithSession.currentStackFrame ?: return false
+    return monolithSession.lowLevelMixedModeExtensionOrThrow.belongsToMe(frame)
   }
 
   private fun tryGetBottomComponentProvider(session: XDebugSession, useLowLevelDebugProcessPanel: Boolean?) =
