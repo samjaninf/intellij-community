@@ -3680,6 +3680,11 @@ public abstract class K1IntentionTestGenerated extends AbstractK1IntentionTest {
                 runTest("testData/intentions/changeVisibility/private/expect2.kt");
             }
 
+            @TestMetadata("explicitBackingField.kt")
+            public void testExplicitBackingField() throws Exception {
+                runTest("testData/intentions/changeVisibility/private/explicitBackingField.kt");
+            }
+
             @TestMetadata("hasModifier1.kt")
             public void testHasModifier1() throws Exception {
                 runTest("testData/intentions/changeVisibility/private/hasModifier1.kt");
@@ -7581,6 +7586,11 @@ public abstract class K1IntentionTestGenerated extends AbstractK1IntentionTest {
             runTest("testData/intentions/convertPropertyToFunction/existingFunJavaConflict.kt");
         }
 
+        @TestMetadata("explicitBackingField.kt")
+        public void testExplicitBackingField() throws Exception {
+            runTest("testData/intentions/convertPropertyToFunction/explicitBackingField.kt");
+        }
+
         @TestMetadata("expressionBody.kt")
         public void testExpressionBody() throws Exception {
             runTest("testData/intentions/convertPropertyToFunction/expressionBody.kt");
@@ -10231,6 +10241,11 @@ public abstract class K1IntentionTestGenerated extends AbstractK1IntentionTest {
             @TestMetadata("delegatedProperty.kt")
             public void testDelegatedProperty() throws Exception {
                 runTest("testData/intentions/declarations/convertMemberToExtension/delegatedProperty.kt");
+            }
+
+            @TestMetadata("explicitBackingField.kt")
+            public void testExplicitBackingField() throws Exception {
+                runTest("testData/intentions/declarations/convertMemberToExtension/explicitBackingField.kt");
             }
 
             @TestMetadata("explicitUnit.kt")

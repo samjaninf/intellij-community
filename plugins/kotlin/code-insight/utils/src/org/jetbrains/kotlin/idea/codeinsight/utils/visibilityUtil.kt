@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.idea.base.projectStructure.languageVersionSettings
 import org.jetbrains.kotlin.idea.base.psi.KotlinPsiHeuristics
 import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtBackingField
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtConstructor
@@ -34,6 +35,7 @@ import org.jetbrains.kotlin.psi.KtParameterList
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
+import org.jetbrains.kotlin.psi.psiUtil.allChildren
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
@@ -142,6 +144,7 @@ fun KtModifierListOwner.canBePrivate(): Boolean {
     if (modifierList?.hasModifier(KtTokens.ABSTRACT_KEYWORD) == true) return false
     if (this.isAnnotationClassPrimaryConstructor()) return false
     if (this is KtProperty && KotlinPsiHeuristics.hasJvmFieldAnnotation(this)) return false
+    if (this is KtProperty && this.allChildren.find { it is KtBackingField } != null) return false
 
     if (this is KtDeclaration) {
         if (hasActualModifier() || isExpectDeclaration()) return false
@@ -156,6 +159,7 @@ fun KtModifierListOwner.canBePrivate(): Boolean {
 fun KtModifierListOwner.canBePublic(): Boolean = !isSealedClassConstructor()
 
 fun KtModifierListOwner.canBeProtected(): Boolean {
+    if (this is KtProperty && this.allChildren.find { it is KtBackingField } != null) return false
     return when (val parent = if (this is KtPropertyAccessor) this.property.parent else this.parent) {
         is KtClassBody -> {
             val parentClass = parent.parent as? KtClass
