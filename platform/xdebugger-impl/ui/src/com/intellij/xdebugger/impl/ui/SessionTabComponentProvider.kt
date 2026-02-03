@@ -7,7 +7,7 @@ import javax.swing.JComponent
 
 
 interface SessionTabComponentProvider {
-  @ApiStatus.Obsolete
+  @Deprecated("Use createBottomLocalsComponent(session: XDebugSessionProxy)")
   fun createBottomLocalsComponent(): JComponent;
 
   @ApiStatus.Internal

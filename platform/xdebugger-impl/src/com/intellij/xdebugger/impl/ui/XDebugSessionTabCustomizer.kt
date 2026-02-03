@@ -22,14 +22,11 @@ fun XDebugProcess.allowFramesViewCustomization(): Boolean {
   return (this as? XDebugSessionTabCustomizer)?.allowFramesViewCustomization() ?: false
 }
 
-/**
- * Use XDebugProcess.getSessionTabCustomer().getBottomLocalsComponentProvider()
- * If you need to find a session proxy, use XDebugManagerProxy, XDebuggerEntityConverter.asProxy
- */
-@ApiStatus.Obsolete
+@Deprecated("Use getSessionTabCustomer().getBottomLocalsComponentProvider(). If you need to find a session proxy, use XDebugManagerProxy, XDebuggerEntityConverter.asProxy")
 fun XDebugProcess.getBottomLocalsComponentProvider(): SessionTabComponentProvider? {
   val newProvider = (this as? XDebugSessionTabCustomizer)?.getBottomLocalsComponentProvider() ?: return null
   return object: SessionTabComponentProvider {
+    @Deprecated("Use createBottomLocalsComponent(session: XDebugSessionProxy)")
     override fun createBottomLocalsComponent(): JComponent {
       val session = this@getBottomLocalsComponentProvider.session
       val proxy = XDebuggerEntityConverter.asProxy(session)
