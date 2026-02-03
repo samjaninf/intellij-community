@@ -39,6 +39,8 @@ import git4idea.commands.GitLineHandler;
 import git4idea.config.GitIncomingRemoteCheckStrategy;
 import git4idea.config.GitVcsSettings;
 import git4idea.config.GitVersionSpecialty;
+import git4idea.fetch.GitFetchSpec;
+import git4idea.fetch.GitFetchSupport;
 import git4idea.history.GitHistoryUtils;
 import git4idea.push.GitPushSupport;
 import git4idea.push.GitPushTarget;
@@ -187,9 +189,10 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
     return new GitInOutCountersInProject(repoStates);
   }
 
-  public boolean shouldCheckIncomingOnRemote() {
-    return AdvancedSettings.getBoolean("git.update.incoming.outgoing.info")
-           && GitVcsSettings.getInstance(myProject).getIncomingCommitsCheckStrategy() != GitIncomingRemoteCheckStrategy.NONE;
+  private @NotNull GitIncomingRemoteCheckStrategy getIncomingRemoteCheckStrategy() {
+    if (!AdvancedSettings.getBoolean("git.update.incoming.outgoing.info")) return GitIncomingRemoteCheckStrategy.NONE;
+
+    return GitVcsSettings.getInstance(myProject).getIncomingCommitsCheckStrategy();
   }
 
   public static @NotNull GitBranchIncomingOutgoingManager getInstance(@NotNull Project project) {
@@ -219,13 +222,14 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   }
 
   private void updateIncomingScheduling() {
-    if (myPeriodicalUpdater == null && shouldCheckIncomingOnRemote()) {
+    boolean shouldCheckIncomingOnRemote = getIncomingRemoteCheckStrategy() != GitIncomingRemoteCheckStrategy.NONE;
+    if (myPeriodicalUpdater == null && shouldCheckIncomingOnRemote) {
       updateBranchesWithIncoming(true);
       int timeout = Registry.intValue("git.update.incoming.info.time");
       myPeriodicalUpdater = JobScheduler.getScheduler().scheduleWithFixedDelay(() -> updateBranchesWithIncoming(true), timeout, timeout,
                                                                                TimeUnit.MINUTES);
     }
-    else if (myPeriodicalUpdater != null && !shouldCheckIncomingOnRemote()) {
+    else if (myPeriodicalUpdater != null && !shouldCheckIncomingOnRemote) {
       stopScheduling();
     }
   }
@@ -263,14 +267,42 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
       for (GitRepository r : withOutgoing) {
         myLocalBranchesWithOutgoing.put(r, calculateBranchesWithOutgoing(r));
       }
+
+      if (shouldRequestRemoteInfo) {
+        GitIncomingRemoteCheckStrategy remoteCheckStrategy = getIncomingRemoteCheckStrategy();
+        requestRemoteInfo(remoteCheckStrategy, withIncoming);
+      } else {
+        LOG.debug("No remote state refresh requested");
+      }
+
       for (GitRepository r : withIncoming) {
-        if (shouldRequestRemoteInfo && shouldCheckIncomingOnRemote()) {
-          myLocalBranchesToFetch.put(r, calculateBranchesToFetch(r));
-        }
         myLocalBranchesWithIncoming.put(r, calcBranchesWithIncoming(r));
       }
       BackgroundTaskUtil.syncPublisher(myProject, GIT_INCOMING_OUTGOING_CHANGED).incomingOutgoingInfoChanged();
     }));
+  }
+
+  private void requestRemoteInfo(GitIncomingRemoteCheckStrategy remoteCheckStrategy, List<GitRepository> repositories) {
+    myLocalBranchesToFetch.remove(repositories);
+    switch (remoteCheckStrategy) {
+      case FETCH -> {
+        LOG.info("Fetching %d repositories".formatted(repositories.size()));
+        List<GitFetchSpec> remotesToFetch = new ArrayList<>();
+        for (GitRepository repository : repositories) {
+          for (GitRemote remote : repository.getRemotes()) {
+            remotesToFetch.add(GitFetchSpec.withSilentAuth(repository, remote));
+          }
+        }
+        GitFetchSupport.fetchSupport(myProject).fetch(remotesToFetch);
+      }
+      case LS_REMOTE -> {
+        LOG.info("Listing remote info for %d repositories".formatted(repositories.size()));
+        repositories.forEach(r -> myLocalBranchesToFetch.put(r, calculateBranchesToFetch(r)));
+      }
+      case NONE -> {
+        LOG.debug("Remote check disabled");
+      }
+    }
   }
 
   @ApiStatus.Internal
