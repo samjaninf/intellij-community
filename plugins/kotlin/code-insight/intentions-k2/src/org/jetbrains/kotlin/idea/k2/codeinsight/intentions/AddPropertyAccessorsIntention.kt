@@ -16,9 +16,9 @@ import org.jetbrains.kotlin.analysis.api.symbols.KaPropertySymbol
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.asUnit
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.intentions.KotlinApplicableModCommandAction
 import org.jetbrains.kotlin.idea.codeinsight.api.applicators.ApplicabilityRange
+import org.jetbrains.kotlin.idea.codeinsight.utils.hasExplicitBackingField
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.intentions.AddAccessorUtils
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.intentions.AddAccessorUtils.addAccessors
-import org.jetbrains.kotlin.idea.codeinsights.impl.base.intentions.KtPropertyUtils
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.JvmStandardClassIds
 import org.jetbrains.kotlin.psi.KtProperty
@@ -47,7 +47,7 @@ internal abstract class AbstractAddAccessorIntention(
             element.hasModifier(KtTokens.ABSTRACT_KEYWORD) ||
             element.hasModifier(KtTokens.LATEINIT_KEYWORD) ||
             element.hasModifier(KtTokens.CONST_KEYWORD) ||
-            KtPropertyUtils.hasExplicitBackingField(element)
+            element.hasExplicitBackingField()
         ) {
             return false
         }

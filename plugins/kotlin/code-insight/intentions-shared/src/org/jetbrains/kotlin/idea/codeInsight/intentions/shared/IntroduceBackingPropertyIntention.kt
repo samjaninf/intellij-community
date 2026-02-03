@@ -16,10 +16,10 @@ import org.jetbrains.kotlin.idea.base.psi.replaced
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
 import org.jetbrains.kotlin.idea.base.util.reformat
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.intentions.KotlinApplicableModCommandAction
+import org.jetbrains.kotlin.idea.codeinsight.utils.hasExplicitBackingField
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.CallableReturnTypeUpdaterUtils.TypeInfo
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.CallableReturnTypeUpdaterUtils.getTypeInfo
 import org.jetbrains.kotlin.idea.codeinsights.impl.base.CallableReturnTypeUpdaterUtils.updateTypeForDeclarationInDummyFile
-import org.jetbrains.kotlin.idea.codeinsights.impl.base.intentions.KtPropertyUtils
 import org.jetbrains.kotlin.idea.refactoring.isAbstract
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.idea.util.hasJvmFieldAnnotation
@@ -85,7 +85,7 @@ class IntroduceBackingPropertyIntention :
 
         if (property.isLocal) return false
 
-        if (KtPropertyUtils.hasExplicitBackingField(property)) return false
+        if (property.hasExplicitBackingField()) return false
 
         if (isBackingFieldRequired(property)) return true
 

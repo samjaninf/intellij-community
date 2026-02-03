@@ -14,8 +14,8 @@ import com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.idea.base.psi.imports.addImport
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.intentions.SelfTargetingRangeIntention
+import org.jetbrains.kotlin.idea.codeinsight.utils.hasExplicitBackingField
 import org.jetbrains.kotlin.idea.codeinsight.utils.isFunInterface
-import org.jetbrains.kotlin.idea.codeinsights.impl.base.intentions.KtPropertyUtils
 import org.jetbrains.kotlin.idea.core.moveCaret
 import org.jetbrains.kotlin.idea.core.unblockDocument
 import org.jetbrains.kotlin.idea.quickfix.BodySelectionType
@@ -53,7 +53,7 @@ class ConvertMemberToExtensionIntention : SelfTargetingRangeIntention<KtCallable
         if (element.receiverTypeReference != null) return false
         if (element.hasModifier(KtTokens.OVERRIDE_KEYWORD)) return false
         when (element) {
-            is KtProperty -> if (KtPropertyUtils.hasExplicitBackingField(element) || element.hasInitializer() || element.hasDelegate()) return false
+            is KtProperty -> if (element.hasExplicitBackingField() || element.hasInitializer() || element.hasDelegate()) return false
             is KtSecondaryConstructor -> return false
         }
         return true
