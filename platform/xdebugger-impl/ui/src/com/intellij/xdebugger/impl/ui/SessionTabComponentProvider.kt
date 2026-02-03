@@ -16,7 +16,12 @@ interface SessionTabComponentProvider {
   @ApiStatus.Internal
   companion object {
     private val EP_NAME = ExtensionPointName<SessionTabComponentProvider>("com.intellij.xdebugger.debuggerTabCustomizer")
-    fun getInstanceSafe(): SessionTabComponentProvider? = EP_NAME.extensionList.singleOrNull()
-    fun getInstance(): SessionTabComponentProvider = checkNotNull(getInstanceSafe())
+
+    fun hasProvider(): Boolean = EP_NAME.extensionList.any()
+
+    fun getInstance(): SessionTabComponentProvider {
+      assert(hasProvider()) { "SessionTabComponentProvider is not registered" }
+      return EP_NAME.extensionList.single()
+    }
   }
 }
