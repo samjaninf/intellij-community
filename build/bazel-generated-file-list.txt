@@ -867,6 +867,10 @@ plugins/ByteCodeViewer
 plugins/IntelliLang
 plugins/IntelliLang/backend
 plugins/IntelliLang/tests
+plugins/agent-workbench/chat
+plugins/agent-workbench/codex/common
+plugins/agent-workbench/plugin
+plugins/agent-workbench/sessions
 plugins/ant
 plugins/ant/jps-plugin
 plugins/built-in-help
