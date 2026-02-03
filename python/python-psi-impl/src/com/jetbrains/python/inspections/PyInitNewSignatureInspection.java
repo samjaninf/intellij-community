@@ -55,7 +55,7 @@ public final class PyInitNewSignatureInspection extends PyInspection {
 
       if (complementaryMethods.size() == 1) {
         registerIncompatibilityProblem(node, PythonUiService.getInstance().createPyChangeSignatureQuickFixForMismatchingMethods(
-          node, complementaryMethods.get(0)));
+          node, complementaryMethods.getFirst()));
       }
       else if (!complementaryMethods.isEmpty()) {
         registerIncompatibilityProblem(node, null);
@@ -66,17 +66,14 @@ public final class PyInitNewSignatureInspection extends PyInspection {
       List<PyCallableParameter> currentParameters = current.getParameters(myTypeEvalContext);
       List<PyCallableParameter> otherParameters = other.getParameters(myTypeEvalContext);
 
-      if (!currentParameters.isEmpty() && currentParameters.getFirst().isSelf()) {
-        currentParameters = currentParameters.subList(1, currentParameters.size());
-      }
-      var currentInputSignature = new PyCallableParameterListTypeImpl(currentParameters);
-
-      if (!otherParameters.isEmpty() && otherParameters.getFirst().isSelf()) {
-        otherParameters = otherParameters.subList(1, otherParameters.size());
-      }
-      var otherInputSignature = new PyCallableParameterListTypeImpl(otherParameters);
+      var currentInputSignature = new PyCallableParameterListTypeImpl(dropSelf(currentParameters));
+      var otherInputSignature = new PyCallableParameterListTypeImpl(dropSelf(otherParameters));
 
       return PyTypeChecker.match(currentInputSignature, otherInputSignature, myTypeEvalContext);
+    }
+
+    private static List<PyCallableParameter> dropSelf(@NotNull List<PyCallableParameter> parameters) {
+      return parameters.isEmpty() || !parameters.getFirst().isSelf() ? parameters : parameters.subList(1, parameters.size());
     }
 
     private @NotNull List<PyFunction> findComplementaryMethods(@NotNull PyClass cls, @NotNull PyFunction original) {

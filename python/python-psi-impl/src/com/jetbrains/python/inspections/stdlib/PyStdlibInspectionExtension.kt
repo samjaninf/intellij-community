@@ -17,7 +17,8 @@ import com.jetbrains.python.psi.types.TypeEvalContext
 class PyStdlibInspectionExtension : PyInspectionExtension() {
 
   override fun ignoreInitNewSignatures(original: PyFunction, complementary: PyFunction): Boolean {
-    return PyNames.TYPE_ENUM == complementary.containingClass?.qualifiedName
+    val qName = complementary.containingClass?.qualifiedName
+    return PyNames.TYPE_ENUM == qName || PyNames.TYPE == qName
   }
 
   override fun ignoreUnresolvedMember(type: PyType, name: String, context: TypeEvalContext): Boolean {
