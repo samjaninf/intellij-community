@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.analysis.api.symbols.KaTypeAliasSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaTypeParameterSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
 import org.jetbrains.kotlin.analysis.api.types.symbol
+import org.jetbrains.kotlin.idea.base.analysis.api.utils.ShortenCommandForIde
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.collectPossibleReferenceShorteningsForIde
 import org.jetbrains.kotlin.idea.completion.impl.k2.ImportStrategyDetector
 import org.jetbrains.kotlin.idea.completion.impl.k2.K2CompletionContext
@@ -357,7 +358,7 @@ private class K2ClassifierLookupElementRenderer(
     }
 
     @RequiresReadLock
-    private fun collectPossibleReferenceShortenings(): ShortenCommand? {
+    private fun collectPossibleReferenceShortenings(): ShortenCommandForIde? {
         val file = position.element
             ?.copy() as? KtFile
             ?: return null

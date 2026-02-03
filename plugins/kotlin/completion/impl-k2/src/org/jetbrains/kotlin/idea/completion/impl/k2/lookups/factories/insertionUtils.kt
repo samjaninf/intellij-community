@@ -11,9 +11,9 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.parentOfType
 import org.jetbrains.kotlin.analysis.api.KaImplementationDetail
 import org.jetbrains.kotlin.analysis.api.components.QualifierToShortenInfo
-import org.jetbrains.kotlin.analysis.api.components.ShortenCommand
 import org.jetbrains.kotlin.analysis.api.components.ThisLabelToShortenInfo
 import org.jetbrains.kotlin.analysis.api.components.TypeToShortenInfo
+import org.jetbrains.kotlin.idea.base.analysis.api.utils.ShortenCommandForIde
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.allowAnalysisFromWriteActionInEdt
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.collectPossibleReferenceShorteningsForIde
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.invokeShortening
@@ -46,7 +46,7 @@ import org.jetbrains.kotlin.psi.KtTypeReference
  */
 internal fun InsertionContext.insertAndShortenReferencesInStringUsingTemporarySuffix(
     string: String,
-    shortenCommand: ShortenCommand? = null,
+    shortenCommand: ShortenCommandForIde? = null,
 ) {
     val file = file as? KtFile
         ?: return
@@ -92,7 +92,7 @@ internal fun InsertionContext.insertAndShortenReferencesInStringUsingTemporarySu
         && editor.caretModel.caretCount == 1
     ) {
         try {
-            ShortenCommandWrapper(
+            ShortenCommandForIdeWrapper(
                 delegate = shortenCommand,
                 copy = file,
             )
@@ -151,10 +151,10 @@ private fun PsiElement.isContextReceiverWithoutFunctionalTypeDeclaration(): Bool
 }
 
 @OptIn(KaImplementationDetail::class)
-private class ShortenCommandWrapper(
-    delegate: ShortenCommand,
+private class ShortenCommandForIdeWrapper(
+    delegate: ShortenCommandForIde,
     private val copy: KtFile,
-) : ShortenCommand {
+) : ShortenCommandForIde {
 
     override val targetFile: SmartPsiElementPointer<KtFile> =
         copy.createSmartPointer()

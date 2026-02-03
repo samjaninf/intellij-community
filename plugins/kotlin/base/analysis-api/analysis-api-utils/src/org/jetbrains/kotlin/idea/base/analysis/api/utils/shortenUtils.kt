@@ -8,7 +8,6 @@ import com.intellij.psi.SmartPsiElementPointer
 import com.intellij.psi.createSmartPointer
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaSession
-import org.jetbrains.kotlin.analysis.api.components.ShortenCommand
 import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 import org.jetbrains.kotlin.analysis.api.components.ShortenStrategy
 import org.jetbrains.kotlin.analysis.api.components.collectPossibleReferenceShortenings
@@ -118,7 +117,7 @@ fun shortenReferences(
  * and hence could block the EDT thread for a long period of time. Therefore, this function should be called only to shorten references
  * in *newly generated code* by IDE actions. In other cases, please consider using
  * [org.jetbrains.kotlin.analysis.api.components.KtReferenceShortenerMixIn] in a background thread to perform the analysis and then
- * modify PSI on the EDT thread by invoking [org.jetbrains.kotlin.analysis.api.components.ShortenCommand.invokeShortening].
+ * modify PSI on the EDT thread by invoking [invokeShortening] on the resulting [ShortenCommandForIde].
  */
 @OptIn(
     KaAllowAnalysisFromWriteAction::class,
@@ -151,9 +150,9 @@ fun deprecatedShortenReferencesInRange(
     .firstNotNullOfOrNull { it.element }
 
 /**
- * Shortens the references specified in [ShortenCommand] and inserts needed imports
+ * Shortens the references specified in [ShortenCommandForIde] and inserts needed imports
  */
-fun ShortenCommand.invokeShortening(): List<SmartPsiElementPointer<KtElement>> {
+fun ShortenCommandForIde.invokeShortening(): List<SmartPsiElementPointer<KtElement>> {
     // if the file has been invalidated, there's nothing we can shorten
     val targetFile = targetFile.element ?: return emptyList()
     val psiFactory = KtPsiFactory(targetFile.project)
@@ -239,13 +238,13 @@ fun collectPossibleReferenceShorteningsForIde(
     shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(file),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(file),
-): ShortenCommand = collectPossibleReferenceShortenings(
+): ShortenCommandForIde = collectPossibleReferenceShortenings(
     file,
     selection,
     shortenOptions,
     classShortenStrategy,
     callableShortenStrategy
-)
+).toIdeCommand()
 
 /**
  * Collects possible references to shorten.
@@ -265,12 +264,12 @@ fun collectPossibleReferenceShorteningsInElementForIde(
     shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(element),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(element),
-): ShortenCommand = collectPossibleReferenceShorteningsInElement(
+): ShortenCommandForIde = collectPossibleReferenceShorteningsInElement(
     element,
     shortenOptions,
     classShortenStrategy,
     callableShortenStrategy,
-)
+).toIdeCommand()
 
 
 /**
