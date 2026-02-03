@@ -15,5 +15,11 @@
     <module name="intellij.platform.lang.impl"/>
     <module name="intellij.platform.projectModel"/>
   </dependencies>
+
+  <extensionPoints>
+    <extensionPoint name="xdebugger.debuggerTabCustomizer"
+                    interface="com.intellij.xdebugger.impl.ui.SessionTabComponentProvider" dynamic="true"/>
+  </extensionPoints>
+
   <!-- endregion -->
 </idea-plugin>
