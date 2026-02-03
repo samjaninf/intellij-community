@@ -8,9 +8,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.options.advanced.AdvancedSettings;
-import com.intellij.openapi.progress.ProcessCanceledException;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.progress.util.BackgroundTaskUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.NotNullLazyValue;
@@ -28,7 +25,6 @@ import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.messages.Topic;
 import com.intellij.util.ui.update.DisposableUpdate;
 import com.intellij.util.ui.update.MergingUpdateQueue;
-import com.intellij.util.ui.update.Update;
 import com.intellij.vcs.git.branch.GitInOutCountersInProject;
 import com.intellij.vcs.git.branch.GitInOutCountersInRepo;
 import com.intellij.vcs.git.branch.GitInOutProjectState;
@@ -44,7 +40,6 @@ import git4idea.config.GitIncomingRemoteCheckStrategy;
 import git4idea.config.GitVcsSettings;
 import git4idea.config.GitVersionSpecialty;
 import git4idea.history.GitHistoryUtils;
-import git4idea.i18n.GitBundle;
 import git4idea.push.GitPushSupport;
 import git4idea.push.GitPushTarget;
 import git4idea.repo.GitBranchTrackInfo;
@@ -72,9 +67,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.intellij.externalProcessAuthHelper.AuthenticationMode.SILENT;
@@ -107,7 +100,6 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   private final @NotNull Project myProject;
   private @Nullable ScheduledFuture<?> myPeriodicalUpdater;
   private @Nullable MessageBusConnection myConnection;
-  private final @NotNull AtomicBoolean myIsUpdating = new AtomicBoolean();
 
   GitBranchIncomingOutgoingManager(@NotNull Project project) {
     myProject = project;
@@ -247,41 +239,9 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   }
 
   @CalledInAny
-  public void forceUpdateBranches(@Nullable Runnable runAfterUpdate) {
-    if (!myIsUpdating.compareAndSet(false, true)) return;
+  public void updateAfterFetch() {
     updateBranchesWithIncoming(false);
     updateBranchesWithOutgoing();
-    new Task.Backgroundable(myProject, GitBundle.message("branches.update.info.process")) {
-      @Override
-      public void run(@NotNull ProgressIndicator indicator) {
-        Semaphore semaphore = new Semaphore(0);
-        //to avoid eating events and make semaphore being released we use 'this' here instead of "update"
-        myQueue.queue(Update.create(this, () -> semaphore.release()));
-        myQueue.flush();
-
-        try {
-          while (true) {
-            if (indicator.isCanceled()) break;
-            if (semaphore.tryAcquire(100, TimeUnit.MILLISECONDS)) break;
-          }
-        }
-        catch (InterruptedException e) {
-          throw new ProcessCanceledException(e);
-        }
-      }
-
-      @Override
-      public void onFinished() {
-        myIsUpdating.set(false);
-        if (runAfterUpdate != null) {
-          runAfterUpdate.run();
-        }
-      }
-    }.queue();
-  }
-
-  public boolean isUpdating() {
-    return myIsUpdating.get();
   }
 
   private void scheduleUpdate() {
