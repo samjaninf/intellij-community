@@ -269,7 +269,7 @@ class IjentEphemeralRootAwareFileSystemProvider(
     return ijentFsProvider
   }
 
-  override fun wrapDelegatePath(delegatePath: Path?): Path? {
+  public override fun wrapDelegatePath(delegatePath: Path?): Path? {
     if (delegatePath == null) return null
 
     if (delegatePath is IjentNioPath) {
@@ -341,7 +341,11 @@ class IjentEphemeralRootAwareFileSystem(
   }
 
   override fun getRootDirectories(): Iterable<Path?> {
-    return if (useRootDirectoriesFromOriginalFs) originalFs.rootDirectories else listOf(Path(root.pathString))
+    return if (useRootDirectoriesFromOriginalFs) {
+      originalFs.rootDirectories
+    } else {
+      ijentFs.rootDirectories.map { rootAwareFileSystemProvider.wrapDelegatePath(it) }
+    }
   }
 
   override fun close() {
@@ -397,7 +401,12 @@ class IjentEphemeralRootAwareFileSystem(
       }
       EelOsFamily.Windows -> {
         if (relativePath != null) {
-          arrayOf(relativePath.removePrefix("/"), *parts)
+          if (relativePath.startsWith("/@/")) {
+            arrayOf("${relativePath[3]}:${relativePath.drop(4)}", *parts)
+          }
+          else {
+            arrayOf(relativePath.removePrefix("/"), *parts)
+          }
         }
         else parts
       }

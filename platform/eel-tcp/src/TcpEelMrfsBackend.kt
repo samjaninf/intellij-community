@@ -14,6 +14,7 @@ import java.nio.file.FileSystem
 import java.nio.file.FileSystemAlreadyExistsException
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.path.pathString
 
 
 class TcpEelMrfsBackend(private val scope: CoroutineScope) : MultiRoutingFileSystemBackend {
@@ -57,7 +58,7 @@ class TcpEelMrfsBackend(private val scope: CoroutineScope) : MultiRoutingFileSys
   }
 
   override fun getCustomRoots(): Collection<@MultiRoutingFileSystemPath String> {
-    return cache.keys.map { "${TcpEelConstants.TCP_PATH_PREFIX}$it" }
+    return cache.values.flatMap { it.rootDirectories }.map { it.pathString }
   }
 
   override fun getCustomFileStores(localFS: FileSystem): Collection<FileStore> {

@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.trace
 import com.intellij.openapi.project.Project
 import com.intellij.platform.eel.EelDescriptor
+import com.intellij.platform.eel.EelOsFamily
 import com.intellij.platform.eel.EelPathBoundDescriptor
 import com.intellij.platform.eel.annotations.MultiRoutingFileSystemPath
 import com.intellij.platform.eel.isPosix
@@ -43,6 +44,8 @@ fun EelPath.asNioPath(project: Project?): @MultiRoutingFileSystemPath Path {
   return asNioPath()
 }
 
+private val WINDOWS_DRIVE_PREFIX_REGEX = Regex("^\\w:")
+
 /** See docs for [asNioPath] */
 @Deprecated("It never returns null anymore")
 @ApiStatus.Experimental
@@ -63,7 +66,17 @@ fun EelPath.asNioPathOrNull(): @MultiRoutingFileSystemPath Path? {
   }
 
   @MultiRoutingFileSystemPath
-  val result = parts.fold(root, Path::resolve)
+  val result = when (descriptor.osFamily) {
+    EelOsFamily.Windows -> {
+      if (WINDOWS_DRIVE_PREFIX_REGEX.containsMatchIn(this.root.toString())) {
+        (listOf("@", this.root.toString().take(1)) + parts).fold(root, Path::resolve)
+      }
+      else {
+        parts.fold(root, Path::resolve)
+      }
+    }
+    EelOsFamily.Posix -> parts.fold(root, Path::resolve)
+  }
   LOG.trace {
     "asNioPathOrNull(): path=$this basePath=$root result=$result"
   }
