@@ -1021,4 +1021,28 @@ public final class PsiImplUtil {
     }
     return element;
   }
+
+  /**
+   * @return true if ref is a type qualifier of a static member
+   */
+  @ApiStatus.Internal
+  public static boolean isTypeQualifierOfStaticMember(@NotNull PsiJavaCodeReferenceElement ref) {
+    PsiElement parent = ref.getParent();
+    while (parent instanceof PsiJavaCodeReferenceElement) {
+      PsiJavaCodeReferenceElement referenceElement = (PsiJavaCodeReferenceElement)parent;
+      PsiElement qualified = referenceElement.resolve();
+      if (qualified instanceof PsiMember) {
+        if (((PsiMember)qualified).hasModifierProperty(PsiModifier.STATIC)) {
+          return true;
+        }
+      }
+      if (qualified instanceof PsiClass) {
+        parent = parent.getParent();
+      }
+      else {
+        break;
+      }
+    }
+    return false;
+  }
 }
