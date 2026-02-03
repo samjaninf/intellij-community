@@ -1,6 +1,7 @@
 package com.jetbrains.python.psi.types
 
 import com.jetbrains.python.PyNames.isPrivate
+import com.jetbrains.python.psi.impl.ParamHelper
 import org.jetbrains.annotations.ApiStatus
 import java.util.ArrayDeque
 
@@ -57,7 +58,7 @@ object PyCallableParameterMapping {
 
     // Special handling for wildcard signatures (*args, **kwargs)
     // Wildcard signatures match with any other signature
-    if (isWildcardSignature(expectedCategorizedParameters, context)) {
+    if (ParamHelper.isWildcardSignature(expectedCallableParameters, context)) {
       return PyTypeParameterMapping.mapByShape(emptyList(), emptyList())
     }
 
@@ -271,38 +272,6 @@ object PyCallableParameterMapping {
       }
     }
     return flattenedParameters
-  }
-
-  /**
-   * Checks if the given list of parameters represents a wildcard signature.
-   * A wildcard signature contains only untyped *args and **kwargs (or *args: Any, **kwargs: Any),
-   * possibly with a self parameter for methods.
-   *
-   * See https://typing.python.org/en/latest/spec/callables.html#meaning-of-in-callable
-   */
-  private fun isWildcardSignature(parameters: List<Parameter>, context: TypeEvalContext): Boolean {
-    if (parameters.isEmpty()) return false
-
-    var hasArgs = false
-    var hasKwargs = false
-
-    for (param in parameters) {
-      when {
-        param.parameter.isSelf -> continue
-        param.kind == ParameterKind.POSITIONAL_CONTAINER || param.kind == ParameterKind.KEYWORD_CONTAINER -> {
-          val type = param.getArgumentType(context)
-          if (type != null) return false
-          if (param.kind == ParameterKind.POSITIONAL_CONTAINER) {
-            hasArgs = true
-          }
-          else {
-            hasKwargs = true
-          }
-        }
-        else -> return false
-      }
-    }
-    return hasArgs && hasKwargs
   }
 
   private enum class ParameterState {

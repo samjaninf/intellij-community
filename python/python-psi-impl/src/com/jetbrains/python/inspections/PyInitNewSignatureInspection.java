@@ -13,6 +13,7 @@ import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFunction;
 import com.jetbrains.python.psi.PyParameterList;
 import com.jetbrains.python.psi.PyUtil;
+import com.jetbrains.python.psi.impl.ParamHelper;
 import com.jetbrains.python.psi.types.PyCallableParameter;
 import com.jetbrains.python.psi.types.PyCallableParameterListTypeImpl;
 import com.jetbrains.python.psi.types.PyTypeChecker;
@@ -66,14 +67,10 @@ public final class PyInitNewSignatureInspection extends PyInspection {
       List<PyCallableParameter> currentParameters = current.getParameters(myTypeEvalContext);
       List<PyCallableParameter> otherParameters = other.getParameters(myTypeEvalContext);
 
-      var currentInputSignature = new PyCallableParameterListTypeImpl(dropSelf(currentParameters));
-      var otherInputSignature = new PyCallableParameterListTypeImpl(dropSelf(otherParameters));
+      var currentInputSignature = new PyCallableParameterListTypeImpl(ParamHelper.dropSelf(currentParameters));
+      var otherInputSignature = new PyCallableParameterListTypeImpl(ParamHelper.dropSelf(otherParameters));
 
       return PyTypeChecker.match(currentInputSignature, otherInputSignature, myTypeEvalContext);
-    }
-
-    private static List<PyCallableParameter> dropSelf(@NotNull List<PyCallableParameter> parameters) {
-      return parameters.isEmpty() || !parameters.getFirst().isSelf() ? parameters : parameters.subList(1, parameters.size());
     }
 
     private @NotNull List<PyFunction> findComplementaryMethods(@NotNull PyClass cls, @NotNull PyFunction original) {
