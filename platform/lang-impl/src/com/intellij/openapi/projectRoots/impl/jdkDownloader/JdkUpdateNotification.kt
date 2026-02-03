@@ -1,6 +1,7 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.projectRoots.impl.jdkDownloader
 
+import com.intellij.execution.wsl.WslPath
 import com.intellij.ide.actions.SettingsEntryPointAction
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
@@ -16,7 +17,10 @@ import com.intellij.openapi.progress.coroutineToIndicator
 import com.intellij.openapi.project.ProjectBundle
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkType
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.platform.eel.provider.getEelDescriptor
+import com.intellij.platform.eel.provider.toEelApi
 import com.intellij.platform.ide.progress.withBackgroundProgress
 import com.intellij.util.application
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
+import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.io.path.invariantSeparatorsPathString
@@ -192,7 +197,9 @@ class JdkUpdateNotification(val jdk: Sdk,
     val newJdkHome = try {
       val installer = JdkInstaller.getInstance()
 
-      val request = installer.prepareJdkInstallation(newItem, installer.defaultInstallDir(newItem))
+      val eel = if (Registry.`is`("java.home.finder.use.eel")) jdk.homePath?.let { Path.of(it).getEelDescriptor().toEelApi() } else null
+      val wsl = jdk.homePath?.let { WslPath.getDistributionByWindowsUncPath(it) }
+      val request = installer.prepareJdkInstallation(newItem, installer.defaultInstallDir(newItem, eel, wsl))
 
       coroutineToIndicator { indicator ->
         installer.installJdk(request, indicator, e.project)
