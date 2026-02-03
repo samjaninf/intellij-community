@@ -683,9 +683,14 @@ public final class PyTypingTypeProvider extends PyTypeProviderWithCustomContext<
                 return type;
               }
             }
-            else if (current instanceof PyNamedParameter) {
-              Ref<PyType> type = getTypeFromTypeHint((PyNamedParameter)current, context);
+            else if (current instanceof PyNamedParameter namedParameter) {
+              Ref<PyType> type = getTypeFromTypeHint(namedParameter, context);
               if (type != null) {
+                if (namedParameter.isPositionalContainer()) {
+                  return Ref.create(PyTypeUtil.toPositionalContainerType(namedParameter, type.get()));
+                } else if (namedParameter.isKeywordContainer()) {
+                  return Ref.create(PyTypeUtil.toKeywordContainerType(namedParameter, type.get()));
+                }
                 return type;
               }
             }

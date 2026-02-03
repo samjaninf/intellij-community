@@ -4213,5 +4213,21 @@ public class Py3TypeCheckerInspectionTest extends PyInspectionTestCase {
                    c: C = <warning descr="Expected type 'C', got 'A & B' instead">a_and_b</warning>
                    """);
   }
+
+  // PY-86902
+  public void testVarPositionalParamAssignment() {
+    doTestByText("""
+                   def f(*args: str, argv: tuple[str, ...]) -> None:
+                       args = argv
+                   """);
+  }
+
+  // PY-86902
+  public void testVarKeywordParamAssignment() {
+    doTestByText("""
+                   def f(args: dict[str, str], **kwargs: str) -> None:
+                       kwargs = args
+                   """);
+  }
 }
 
