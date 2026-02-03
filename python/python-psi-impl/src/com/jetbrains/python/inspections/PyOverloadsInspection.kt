@@ -3,17 +3,23 @@ package com.jetbrains.python.inspections
 
 import com.intellij.codeInspection.LocalInspectionToolSession
 import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.codeInspection.util.InspectionMessage
+import com.intellij.openapi.util.NlsSafe
+import com.intellij.openapi.util.text.HtmlChunk
+import com.intellij.openapi.util.text.buildHtmlChunk
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.util.Processor
 import com.intellij.util.containers.SortedList
 import com.intellij.util.containers.sequenceOfNotNull
 import com.intellij.util.containers.tail
+import com.intellij.xml.util.XmlStringUtil
 import com.jetbrains.python.PyNames
 import com.jetbrains.python.PyPsiBundle
 import com.jetbrains.python.ast.PyAstFunction
 import com.jetbrains.python.codeInsight.controlflow.ScopeOwner
 import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider
 import com.jetbrains.python.codeInsight.typing.isProtocol
+import com.jetbrains.python.documentation.PythonDocumentationProvider
 import com.jetbrains.python.psi.PyClass
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyFunction
@@ -27,6 +33,7 @@ import com.jetbrains.python.psi.types.PyTypeChecker
 import com.jetbrains.python.psi.types.TypeEvalContext
 import com.jetbrains.python.pyi.PyiFile
 import com.jetbrains.python.pyi.PyiUtil
+import org.jetbrains.annotations.Nls
 import java.util.EnumSet
 
 class PyOverloadsInspection : PyInspection() {
@@ -186,18 +193,35 @@ class PyOverloadsInspection : PyInspection() {
           val nextOverloadInputSignature = PyCallableParameterListTypeImpl(nextParams)
 
           if (PyTypeChecker.match(nextOverloadInputSignature, currInputSignature, myTypeEvalContext)) {
-            registerProblem(next.nameIdentifier,
-                            PyPsiBundle.message("INSP.overloads.overload.overlapped.by.a.broader.type", i + 1))
+            val signatureRepresentation = PythonDocumentationProvider.getTypeName(nextCallableType, myTypeEvalContext)
+            val message =
+              buildMessage(PyPsiBundle.message("INSP.overloads.overload.overlapped.by.a.broader.type", i + 1),
+                           signatureRepresentation)
+            registerProblem(next.nameIdentifier, message)
           }
           else if (PyTypeChecker.match(currInputSignature, nextOverloadInputSignature, myTypeEvalContext)) {
             if (!PyTypeChecker.match(nextReturnType, currReturnType, myTypeEvalContext)) {
-              registerProblem(current.nameIdentifier,
-                              PyPsiBundle.message("INSP.overloads.overload.overlaps.other.overload.with.incompatible.return.type", j + 1))
+              val signatureRepresentation = PythonDocumentationProvider.getTypeName(currCallableType, myTypeEvalContext)
+              val message =
+                buildMessage(PyPsiBundle.message("INSP.overloads.overload.overlaps.with.incompatible.return.type", j + 1),
+                             signatureRepresentation)
+              registerProblem(current.nameIdentifier, message)
             }
           }
         }
       }
     }
+
+    @InspectionMessage
+    private fun buildMessage(
+      @Nls msg: String,
+      @NlsSafe signature: String,
+    ): String = XmlStringUtil
+      .wrapInHtml(buildHtmlChunk {
+        append(msg)
+        append(HtmlChunk.br())
+        append(PyPsiBundle.message("INSP.overloads.overload.conflicting.signature", signature))
+      }.toString())
   }
 
   private class GroupingFunctionsByNameProcessor : Processor<PyFunction> {
