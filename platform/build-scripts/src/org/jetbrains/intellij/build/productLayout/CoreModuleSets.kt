@@ -130,6 +130,8 @@ object CoreModuleSets {
     embeddedModule("intellij.libraries.velocity")
     embeddedModule("intellij.libraries.xtext.xbase")
     embeddedModule("intellij.libraries.xz")
+    embeddedModule("intellij.libraries.opentelemetry.sdk.autoconfigure.spi")
+    embeddedModule("intellij.libraries.opentelemetry.exporter.sender.jdk")
   }
 
   /**

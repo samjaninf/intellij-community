@@ -9478,6 +9478,48 @@ http_file(
 )
 
 http_file(
+  name = "io_opentelemetry-opentelemetry-exporter-otlp-1_48_0_http",
+  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.48.0/opentelemetry-exporter-otlp-1.48.0.jar",
+  sha256 = "b66cfe7da3afc1274f93e4c0faa5a7ac52b5f2a4d9567fc27ac84397f03f83c1",
+  downloaded_file_path = "opentelemetry-exporter-otlp-1.48.0.jar"
+)
+
+http_file(
+  name = "io_opentelemetry-opentelemetry-exporter-otlp-1_48_0-sources_http",
+  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.48.0/opentelemetry-exporter-otlp-1.48.0-sources.jar",
+  sha256 = "170cabc77bac7d9778e6a7d078b2d772684ab8d8ccaf75814e4eb7cdcaea1d8b",
+  downloaded_file_path = "opentelemetry-exporter-otlp-1.48.0-sources.jar"
+)
+
+http_file(
+  name = "io_opentelemetry-opentelemetry-exporter-sender-jdk-1_48_0_http",
+  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/io/opentelemetry/opentelemetry-exporter-sender-jdk/1.48.0/opentelemetry-exporter-sender-jdk-1.48.0.jar",
+  sha256 = "a8e33b293554a46f69ffbb97d0e108ef8c6475f4fcf812b38e8c3bc47fa3b581",
+  downloaded_file_path = "opentelemetry-exporter-sender-jdk-1.48.0.jar"
+)
+
+http_file(
+  name = "io_opentelemetry-opentelemetry-exporter-sender-jdk-1_48_0-sources_http",
+  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/io/opentelemetry/opentelemetry-exporter-sender-jdk/1.48.0/opentelemetry-exporter-sender-jdk-1.48.0-sources.jar",
+  sha256 = "c5f13e26357b6753361267dab43cd38e9438dd70b08300d225e04f83e715ca70",
+  downloaded_file_path = "opentelemetry-exporter-sender-jdk-1.48.0-sources.jar"
+)
+
+http_file(
+  name = "io_opentelemetry-opentelemetry-sdk-extension-autoconfigure-spi-1_48_0_http",
+  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.48.0/opentelemetry-sdk-extension-autoconfigure-spi-1.48.0.jar",
+  sha256 = "c2f95d66182b71e852a97b9bcb6e545ecf6c3e155a0e3d5faf2dbf96deb1a9df",
+  downloaded_file_path = "opentelemetry-sdk-extension-autoconfigure-spi-1.48.0.jar"
+)
+
+http_file(
+  name = "io_opentelemetry-opentelemetry-sdk-extension-autoconfigure-spi-1_48_0-sources_http",
+  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.48.0/opentelemetry-sdk-extension-autoconfigure-spi-1.48.0-sources.jar",
+  sha256 = "2591926439711fe69fbbbae8250827d50ee20a53797352349e993f063fcf4312",
+  downloaded_file_path = "opentelemetry-sdk-extension-autoconfigure-spi-1.48.0-sources.jar"
+)
+
+http_file(
   name = "oro-oro-2_0_8_http",
   url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/oro/oro/2.0.8/oro-2.0.8.jar",
   sha256 = "e00ccdad5df7eb43fdee44232ef64602bf63807c2d133a7be83ba09fd49af26e",

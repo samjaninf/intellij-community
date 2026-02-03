@@ -471,6 +471,9 @@ libraries/netty/codec-compression
 libraries/netty/codec-http
 libraries/netty/handler-proxy
 libraries/opencsv
+libraries/opentelemetry-exporter-otlp
+libraries/opentelemetry-exporter-sender-jdk
+libraries/opentelemetry-sdk-autoconfigure-spi
 libraries/oro-matcher
 libraries/plexus-utils
 libraries/protobuf

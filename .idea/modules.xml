@@ -944,6 +944,9 @@
       <module fileurl="file://$PROJECT_DIR$/libraries/netty/codec-http/intellij.libraries.netty.codec.http.iml" filepath="$PROJECT_DIR$/libraries/netty/codec-http/intellij.libraries.netty.codec.http.iml" />
       <module fileurl="file://$PROJECT_DIR$/libraries/netty/handler-proxy/intellij.libraries.netty.handler.proxy.iml" filepath="$PROJECT_DIR$/libraries/netty/handler-proxy/intellij.libraries.netty.handler.proxy.iml" />
       <module fileurl="file://$PROJECT_DIR$/libraries/opencsv/intellij.libraries.opencsv.iml" filepath="$PROJECT_DIR$/libraries/opencsv/intellij.libraries.opencsv.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libraries/opentelemetry-exporter-otlp/intellij.libraries.opentelemetry.exporter.otlp.iml" filepath="$PROJECT_DIR$/libraries/opentelemetry-exporter-otlp/intellij.libraries.opentelemetry.exporter.otlp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libraries/opentelemetry-exporter-sender-jdk/intellij.libraries.opentelemetry.exporter.sender.jdk.iml" filepath="$PROJECT_DIR$/libraries/opentelemetry-exporter-sender-jdk/intellij.libraries.opentelemetry.exporter.sender.jdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libraries/opentelemetry-sdk-autoconfigure-spi/intellij.libraries.opentelemetry.sdk.autoconfigure.spi.iml" filepath="$PROJECT_DIR$/libraries/opentelemetry-sdk-autoconfigure-spi/intellij.libraries.opentelemetry.sdk.autoconfigure.spi.iml" />
       <module fileurl="file://$PROJECT_DIR$/libraries/oro-matcher/intellij.libraries.oro.matcher.iml" filepath="$PROJECT_DIR$/libraries/oro-matcher/intellij.libraries.oro.matcher.iml" />
       <module fileurl="file://$PROJECT_DIR$/libraries/plexus-utils/intellij.libraries.plexus.utils.iml" filepath="$PROJECT_DIR$/libraries/plexus-utils/intellij.libraries.plexus.utils.iml" />
       <module fileurl="file://$PROJECT_DIR$/libraries/protobuf/intellij.libraries.protobuf.iml" filepath="$PROJECT_DIR$/libraries/protobuf/intellij.libraries.protobuf.iml" />

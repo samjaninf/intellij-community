@@ -11903,6 +11903,51 @@ jvm_import(
 )
 
 copy_file(
+  name = "io.opentelemetry/opentelemetry-exporter-otlp-1.48.0.jar_copy",
+  src = "@io_opentelemetry-opentelemetry-exporter-otlp-1_48_0_http//file",
+  out = "io.opentelemetry/opentelemetry-exporter-otlp-1.48.0.jar",
+  allow_symlink = True,
+  visibility = ["//visibility:public"]
+)
+
+jvm_import(
+  name = "libraries-opentelemetry-exporter-otlp-opentelemetry-exporter-otlp-library",
+  jar = "@io_opentelemetry-opentelemetry-exporter-otlp-1_48_0_http//file",
+  source_jar = "@io_opentelemetry-opentelemetry-exporter-otlp-1_48_0-sources_http//file",
+  visibility = ["//visibility:public"]
+)
+
+copy_file(
+  name = "io.opentelemetry/opentelemetry-exporter-sender-jdk-1.48.0.jar_copy",
+  src = "@io_opentelemetry-opentelemetry-exporter-sender-jdk-1_48_0_http//file",
+  out = "io.opentelemetry/opentelemetry-exporter-sender-jdk-1.48.0.jar",
+  allow_symlink = True,
+  visibility = ["//visibility:public"]
+)
+
+jvm_import(
+  name = "libraries-opentelemetry-exporter-sender-jdk-opentelemetry-exporter-sender-jdk",
+  jar = "@io_opentelemetry-opentelemetry-exporter-sender-jdk-1_48_0_http//file",
+  source_jar = "@io_opentelemetry-opentelemetry-exporter-sender-jdk-1_48_0-sources_http//file",
+  visibility = ["//visibility:public"]
+)
+
+copy_file(
+  name = "io.opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi-1.48.0.jar_copy",
+  src = "@io_opentelemetry-opentelemetry-sdk-extension-autoconfigure-spi-1_48_0_http//file",
+  out = "io.opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi-1.48.0.jar",
+  allow_symlink = True,
+  visibility = ["//visibility:public"]
+)
+
+jvm_import(
+  name = "libraries-opentelemetry-sdk-autoconfigure-spi-opentelemetry-sdk-autoconfigure-spi",
+  jar = "@io_opentelemetry-opentelemetry-sdk-extension-autoconfigure-spi-1_48_0_http//file",
+  source_jar = "@io_opentelemetry-opentelemetry-sdk-extension-autoconfigure-spi-1_48_0-sources_http//file",
+  visibility = ["//visibility:public"]
+)
+
+copy_file(
   name = "oro/oro-2.0.8.jar_copy",
   src = "@oro-oro-2_0_8_http//file",
   out = "oro/oro-2.0.8.jar",
