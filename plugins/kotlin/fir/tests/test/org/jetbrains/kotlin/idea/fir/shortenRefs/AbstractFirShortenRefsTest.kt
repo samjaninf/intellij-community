@@ -7,7 +7,6 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.ReferencesSearch
 import org.jetbrains.kotlin.AbstractImportsTest
 import org.jetbrains.kotlin.analysis.api.analyze
-import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 import org.jetbrains.kotlin.analysis.api.components.ShortenStrategy
 import org.jetbrains.kotlin.analysis.api.permissions.KaAllowAnalysisOnEdt
 import org.jetbrains.kotlin.analysis.api.permissions.allowAnalysisOnEdt
@@ -18,6 +17,7 @@ import org.jetbrains.kotlin.idea.base.analysis.api.utils.defaultCallableShortenS
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.defaultClassShortenStrategyForIde
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.invokeShortening
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.shortenReferences
+import org.jetbrains.kotlin.idea.base.codeInsight.ShortenOptionsForIde
 import org.jetbrains.kotlin.idea.base.test.IgnoreTests
 import org.jetbrains.kotlin.idea.base.test.InTextDirectivesUtils
 import org.jetbrains.kotlin.idea.base.test.executeOnPooledThreadInReadAction
@@ -55,7 +55,7 @@ abstract class AbstractFirShortenRefsTest : AbstractImportsTest() {
                     .toSet()
             }
             project.executeWriteCommand("") {
-                shortenReferences(references, ShortenOptions.ALL_ENABLED, classShortenStrategy, callableShortenStrategy)
+                shortenReferences(references, ShortenOptionsForIde.ALL_ENABLED, classShortenStrategy, callableShortenStrategy)
             }
         } else {
             val selectionModel = myFixture.editor.selectionModel
@@ -67,7 +67,7 @@ abstract class AbstractFirShortenRefsTest : AbstractImportsTest() {
                     collectPossibleReferenceShorteningsForIde(
                         file,
                         selection,
-                        ShortenOptions.ALL_ENABLED,
+                        ShortenOptionsForIde.ALL_ENABLED,
                         classShortenStrategy,
                         callableShortenStrategy
                     )

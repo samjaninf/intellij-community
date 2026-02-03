@@ -8,7 +8,6 @@ import com.intellij.psi.SmartPsiElementPointer
 import com.intellij.psi.createSmartPointer
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaSession
-import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 import org.jetbrains.kotlin.analysis.api.components.ShortenStrategy
 import org.jetbrains.kotlin.analysis.api.components.collectPossibleReferenceShortenings
 import org.jetbrains.kotlin.analysis.api.components.collectPossibleReferenceShorteningsInElement
@@ -18,6 +17,7 @@ import org.jetbrains.kotlin.analysis.api.symbols.KaCallableSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassLikeSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaConstructorSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaEnumEntrySymbol
+import org.jetbrains.kotlin.idea.base.codeInsight.ShortenOptionsForIde
 import org.jetbrains.kotlin.idea.base.psi.imports.addImport
 import org.jetbrains.kotlin.idea.formatter.kotlinCustomSettings
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocName
@@ -39,7 +39,7 @@ import org.jetbrains.kotlin.resolve.calls.util.getCalleeExpressionIfAny
 )
 fun shortenReferences(
     element: KtElement,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(element),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(element),
 ): KtElement? = shortenReferencesInRange(
@@ -59,7 +59,7 @@ fun shortenReferences(
 )
 fun deprecatedShortenReferences(
     element: KtElement,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategy,
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategy,
 ): PsiElement? = shortenReferences(element, shortenOptions, classShortenStrategy, callableShortenStrategy)
@@ -85,7 +85,7 @@ fun deprecatedShortenReferences(
 )
 fun shortenReferences(
     elements: Iterable<KtElement>,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(elements.firstOrNull()),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(elements.firstOrNull()),
 ) {
@@ -126,7 +126,7 @@ fun shortenReferences(
 fun shortenReferencesInRange(
     file: KtFile,
     selection: TextRange = file.textRange,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(file),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(file),
 ): List<SmartPsiElementPointer<KtElement>> = allowAnalysisFromWriteActionInEdt(file) {
@@ -143,7 +143,7 @@ fun shortenReferencesInRange(
 fun deprecatedShortenReferencesInRange(
     file: KtFile,
     selection: TextRange = file.textRange,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategy,
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategy,
 ): PsiElement? = shortenReferencesInRange(file, selection, shortenOptions, classShortenStrategy, callableShortenStrategy)
@@ -235,13 +235,13 @@ context(_: KaSession)
 fun collectPossibleReferenceShorteningsForIde(
     file: KtFile,
     selection: TextRange = file.textRange,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(file),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(file),
 ): ShortenCommandForIde = collectPossibleReferenceShortenings(
     file,
     selection,
-    shortenOptions,
+    shortenOptions.toShortenOptions(),
     classShortenStrategy,
     callableShortenStrategy
 ).toIdeCommand()
@@ -261,12 +261,12 @@ context(_: KaSession)
 @ApiStatus.Internal
 fun collectPossibleReferenceShorteningsInElementForIde(
     element: KtElement,
-    shortenOptions: ShortenOptions = ShortenOptions.DEFAULT,
+    shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(element),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(element),
 ): ShortenCommandForIde = collectPossibleReferenceShorteningsInElement(
     element,
-    shortenOptions,
+    shortenOptions.toShortenOptions(),
     classShortenStrategy,
     callableShortenStrategy,
 ).toIdeCommand()

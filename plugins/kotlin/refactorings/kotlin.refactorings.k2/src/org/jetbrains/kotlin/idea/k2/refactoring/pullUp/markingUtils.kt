@@ -5,13 +5,13 @@ import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
-import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
 import org.jetbrains.kotlin.analysis.api.resolution.successfulCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassKind
 import org.jetbrains.kotlin.analysis.api.types.KaSubstitutor
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.shortenReferences
+import org.jetbrains.kotlin.idea.base.codeInsight.ShortenOptionsForIde
 import org.jetbrains.kotlin.idea.base.util.quoteIfNeeded
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.name.FqName
@@ -120,7 +120,7 @@ internal fun applyMarking(
                     expression.replaceWithTargetThis = null
 
                     val newThisExpression = expression.replace(targetThis) as KtExpression
-                    shortenReferences(newThisExpression.getQualifiedExpressionForReceiverOrThis(), ShortenOptions.ALL_ENABLED)
+                    shortenReferences(newThisExpression.getQualifiedExpressionForReceiverOrThis(), ShortenOptionsForIde.ALL_ENABLED)
                 }
             }
 
