@@ -86,9 +86,10 @@ open class MultipleFileMergeDialog(
   private val mergeProvider: MergeProvider,
   private val mergeDialogCustomizer: MergeDialogCustomizer
 ) : DialogWrapper(project) {
-  private var unresolvedFiles = files.toMutableList()
+  private val unresolvedFiles = files.toMutableList()
+  private val _processedFiles = mutableListOf<VirtualFile>()
   private val mergeSession = (mergeProvider as? MergeProvider2)?.createMergeSession(files)
-  val processedFiles: MutableList<VirtualFile> = mutableListOf()
+  val processedFiles: List<VirtualFile> get() = _processedFiles
   private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(),
                                                        CustomColumns.createColumns(mergeDialogCustomizer, mergeSession))
   private lateinit var table: TreeTable
@@ -355,7 +356,7 @@ open class MultipleFileMergeDialog(
         mergeProvider.conflictResolvedForFile(it)
       }
     }
-    processedFiles.addAll(files)
+    _processedFiles.addAll(files)
 
     if (project != null) VcsDirtyScopeManager.getInstance(project).filesDirty(files, emptyList())
   }
