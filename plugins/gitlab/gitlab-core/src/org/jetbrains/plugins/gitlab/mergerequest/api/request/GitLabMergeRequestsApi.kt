@@ -25,12 +25,35 @@ import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestByBra
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestDTO
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestMetricsDTO
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestRebaseDTO
+import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestShortRestDTO
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequestState
 import org.jetbrains.plugins.gitlab.mergerequest.data.asApiParameter
 import org.jetbrains.plugins.gitlab.util.GitLabApiRequestName
 import java.net.URI
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+
+@SinceGitLab("14.0", note = "No exact version, but definitely exists in minimal")
+suspend fun GitLabApi.Rest.createMergeRequest(
+  project: GitLabProjectCoordinates,
+  sourceBranch: String,
+  targetBranch: String,
+  title: String,
+  description: String? = null
+): HttpResponse<out GitLabMergeRequestShortRestDTO> {
+  val uri = project.restApiUri
+    .resolveRelative("merge_requests")
+    .withQuery {
+      "source_branch" eq sourceBranch
+      "target_branch" eq targetBranch
+      "title" eq title
+      "description" eq description
+    }
+  val request = request(uri).POST(HttpRequest.BodyPublishers.noBody()).build()
+  return withErrorStats(GitLabApiRequestName.REST_CREATE_MERGE_REQUEST) {
+    loadJsonValue(request)
+  }
+}
 
 @SinceGitLab("7.0", note = "?search available since 10.4, ?scope since 9.5")
 fun getMergeRequestListURI(project: GitLabProjectCoordinates,

@@ -41,11 +41,11 @@ import org.jetbrains.plugins.gitlab.api.dto.GitLabWorkItemDTO.WorkItemType
 import org.jetbrains.plugins.gitlab.api.getResultOrThrow
 import org.jetbrains.plugins.gitlab.api.request.createAllProjectLabelsFlow
 import org.jetbrains.plugins.gitlab.api.request.createAllWorkItemsFlow
-import org.jetbrains.plugins.gitlab.api.request.createMergeRequest
 import org.jetbrains.plugins.gitlab.api.request.getProjectNamespace
 import org.jetbrains.plugins.gitlab.api.request.getProjectUsers
 import org.jetbrains.plugins.gitlab.api.request.getProjectUsersURI
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestDTO
+import org.jetbrains.plugins.gitlab.mergerequest.api.request.createMergeRequest
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.loadMergeRequest
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestSetReviewers
 import org.jetbrains.plugins.gitlab.upload.markdownUploadFile
@@ -84,7 +84,12 @@ interface GitLabProject {
    * The reason for this wait is that GitLab might take a few moments to process the merge request
    * before returning one that can be displayed in the IDE in a useful way.
    */
-  suspend fun createMergeRequestAndAwaitCompletion(sourceBranch: String, targetBranch: String, title: String, description: String?): GitLabMergeRequestDTO
+  suspend fun createMergeRequestAndAwaitCompletion(
+    sourceBranch: String,
+    targetBranch: String,
+    title: String,
+    description: String?,
+  ): GitLabMergeRequestDTO
   suspend fun adjustReviewers(mrIid: String, reviewers: List<GitLabUserDTO>): GitLabMergeRequestDTO
 
   fun reloadData()
@@ -155,22 +160,23 @@ class GitLabLazyProject(
   }
 
   @Throws(GitLabGraphQLMutationException::class)
-  override suspend fun createMergeRequestAndAwaitCompletion(sourceBranch: String, targetBranch: String, title: String, description: String?): GitLabMergeRequestDTO {
+  override suspend fun createMergeRequestAndAwaitCompletion(
+    sourceBranch: String,
+    targetBranch: String,
+    title: String,
+    description: String?,
+  ): GitLabMergeRequestDTO {
     return cs.async(Dispatchers.IO) {
-      var data: GitLabMergeRequestDTO = api.graphQL.createMergeRequest(projectCoordinates, sourceBranch, targetBranch, title, description).getResultOrThrow()
-      val iid = data.iid
-      var attempts = 1
-      while (attempts++ < GitLabRegistry.getRequestPollingAttempts()) {
-        val updatedMr = api.graphQL.loadMergeRequest(projectCoordinates, iid).body()
-        requireNotNull(updatedMr)
-
-        data = updatedMr
-
-        if (data.diffRefs != null) break
-
+      val iid = api.rest.createMergeRequest(projectCoordinates, sourceBranch, targetBranch, title, description).body().iid
+      val attempts = GitLabRegistry.getRequestPollingAttempts()
+      repeat(attempts) {
+        val data = api.graphQL.loadMergeRequest(projectCoordinates, iid).body()
+        if (data?.diffRefs != null) {
+          return@async data
+        }
         delay(GitLabRegistry.getRequestPollingIntervalMillis().toLong())
       }
-      data
+      error("Merge request $iid was created but the data was not loaded within $attempts attempts.")
     }.await()
   }
 
