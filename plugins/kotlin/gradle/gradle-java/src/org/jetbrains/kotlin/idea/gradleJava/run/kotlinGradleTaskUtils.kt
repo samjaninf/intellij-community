@@ -194,6 +194,10 @@ fun configureKmpJvmRunConfigurationFromMainFunction(
     configuration.name = function.getKMPGradleConfigurationName(runTask)
     configuration.isDebugAllEnabled = false
     configuration.isDebugServerProcess = false
+    if (runTask.gradlePluginType == KotlinGradlePluginType.Jvm) {
+        configuration.isComposeJvm = true
+        configuration.mainFunctionClassFqn = function.containingKtFile.javaFileFacadeFqName.asString()
+    }
 
     configuration.settings.apply {
         externalProjectPath = ExternalSystemApiUtil.getExternalProjectPath(module)
@@ -207,7 +211,7 @@ private const val quietParameter: String = "--quiet"
 fun getGradleExtensions(moduleDataNode: DataNode<*>): List<GradleExtension>? =
     ExternalSystemApiUtil.find(moduleDataNode, GradleExtensionsDataService.KEY)?.data?.extensions
 
-internal enum class KotlinGradlePluginType {
+enum class KotlinGradlePluginType {
     Jvm,
     Multiplatform;
 
