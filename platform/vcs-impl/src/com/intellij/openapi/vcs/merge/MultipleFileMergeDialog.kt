@@ -203,6 +203,9 @@ open class MultipleFileMergeDialog(
             }
         }
       }
+    }.apply {
+      // Temporary workaround for IDEA-302779
+      minimumSize = JBUI.size(200, 150)
     }
 
     fun updateButtonState() {
