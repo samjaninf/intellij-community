@@ -57,6 +57,7 @@ import com.intellij.ui.treeStructure.treetable.TreeTable
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.EditSourceOnDoubleClickHandler
 import com.intellij.util.application
+import com.intellij.util.concurrency.annotations.RequiresBlockingContext
 import com.intellij.util.concurrency.annotations.RequiresEdt
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.ColumnInfo
@@ -130,7 +131,7 @@ open class MultipleFileMergeDialog(
       object : DoubleClickListener() {
         override fun onDoubleClick(event: MouseEvent): Boolean {
           if (EditSourceOnDoubleClickHandler.isToggleEvent(tree, event)) return false
-          showMergeDialog()
+          showMergeDialog(selectedFiles)
           return true
         }
       }.installOn(this)
@@ -166,20 +167,20 @@ open class MultipleFileMergeDialog(
         panel {
           row {
             acceptYoursButton = button(VcsBundle.message("multiple.file.merge.accept.yours")) {
-              acceptRevision(MergeSession.Resolution.AcceptedYours)
+              acceptRevision(MergeSession.Resolution.AcceptedYours, table.selectedFiles)
             }.align(AlignX.FILL)
               .component
           }
           row {
             acceptTheirsButton = button(VcsBundle.message("multiple.file.merge.accept.theirs")) {
-              acceptRevision(MergeSession.Resolution.AcceptedTheirs)
+              acceptRevision(MergeSession.Resolution.AcceptedTheirs, table.selectedFiles)
             }.align(AlignX.FILL)
               .component
           }
           row {
             val mergeAction = object : AbstractAction(VcsBundle.message("multiple.file.merge.merge")) {
               override fun actionPerformed(e: ActionEvent) {
-                showMergeDialog()
+                showMergeDialog(table.selectedFiles)
               }
             }
             mergeAction.putValue(DEFAULT_ACTION, true)
@@ -288,14 +289,13 @@ open class MultipleFileMergeDialog(
     return true
   }
 
-  private fun acceptRevision(resolution: MergeSession.Resolution) {
+  private fun acceptRevision(resolution: MergeSession.Resolution, files: List<VirtualFile>) {
     assert(resolution.yoursOrTheirs())
 
     val side = if (resolution == MergeSession.Resolution.AcceptedYours) MergeAction.LEFT else MergeAction.RIGHT
     MergeStatisticsCollector.logButtonClickOnTable(project, side)
 
     FileDocumentManager.getInstance().saveAllDocuments()
-    val files = table.selectedFiles
 
     ProgressManager.getInstance().run(object : Task.Modal(project,
                                                           VcsBundle.message(
@@ -396,9 +396,10 @@ open class MultipleFileMergeDialog(
     }
   }
 
-  private fun showMergeDialog() {
+  @RequiresBlockingContext
+  @RequiresEdt
+  private fun showMergeDialog(files: List<VirtualFile>) {
     val requestFactory = DiffRequestFactory.getInstance()
-    val files = table.selectedFiles
     if (files.isEmpty()) return
     if (!beforeResolve(files)) {
       return
