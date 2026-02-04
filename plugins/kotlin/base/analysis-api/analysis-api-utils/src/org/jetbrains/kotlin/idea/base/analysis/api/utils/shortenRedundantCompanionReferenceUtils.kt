@@ -1,6 +1,8 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.idea.base.analysis.api.utils
 
+import com.intellij.openapi.util.TextRange
+import com.intellij.psi.util.descendantsOfType
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
@@ -11,15 +13,45 @@ import org.jetbrains.kotlin.analysis.api.resolution.successfulCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassKind
 import org.jetbrains.kotlin.analysis.api.symbols.KaNamedClassSymbol
+import org.jetbrains.kotlin.idea.base.codeInsight.ShortenOptionsForIde
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
+
+context(_: KaSession)
+internal fun collectPossibleCompanionReferenceShortenings(
+    file: KtFile,
+    selection: TextRange,
+    shortenOptions: ShortenOptionsForIde,
+): List<KtReferenceExpression> {
+    if (!shortenOptions.removeExplicitCompanionReferences) return emptyList()
+
+    return file.descendantsOfType<KtReferenceExpression>()
+        .filter { it.canBeRedundantCompanionReference() }
+        .filter { it.textRange.intersects(selection) }
+        .filter { it.isRedundantCompanionReference() }
+        .toList()
+}
+
+context(_: KaSession)
+internal fun collectPossibleCompanionReferenceShorteningsInElement(
+    element: KtElement,
+    shortenOptions: ShortenOptionsForIde,
+): List<KtReferenceExpression> {
+    if (!shortenOptions.removeExplicitCompanionReferences) return emptyList()
+
+    return element.descendantsOfType<KtReferenceExpression>()
+        .filter { it.canBeRedundantCompanionReference() }
+        .filter { it.isRedundantCompanionReference() }
+        .toList()
+}
 
 @ApiStatus.Internal
 fun KtReferenceExpression.canBeRedundantCompanionReference(): Boolean {

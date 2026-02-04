@@ -207,6 +207,13 @@ fun ShortenCommandForIde.invokeShortening(): List<SmartPsiElementPointer<KtEleme
         shorteningResults += kDocName.createSmartPointer()
     }
 
+    for ((companionReference) in companionReferencesToShorten) {
+        val companionReferenceElement = companionReference.element ?: continue
+
+        companionReferenceElement.deleteReferenceFromQualifiedExpression()
+        // N.B. `shorteningResults` are not updated for now
+    }
+
     return shorteningResults
 }
 
@@ -247,7 +254,10 @@ fun collectPossibleReferenceShorteningsForIde(
         callableShortenStrategy
     )
 
-    return ShortenCommandForIdeImpl(shortenCommand, companionReferencesToShorten = emptyList())
+    val companionReferencesToShorten = collectPossibleCompanionReferenceShortenings(file, selection, shortenOptions)
+        .map { CompanionReferenceToShorten(it.createSmartPointer()) }
+
+    return ShortenCommandForIdeImpl(shortenCommand, companionReferencesToShorten)
 }
 
 /**
@@ -276,7 +286,10 @@ fun collectPossibleReferenceShorteningsInElementForIde(
         callableShortenStrategy,
     )
 
-    return ShortenCommandForIdeImpl(shortenCommand, companionReferencesToShorten = emptyList())
+    val companionReferencesToShorten = collectPossibleCompanionReferenceShorteningsInElement(element, shortenOptions)
+        .map { CompanionReferenceToShorten(it.createSmartPointer()) }
+
+    return ShortenCommandForIdeImpl(shortenCommand, companionReferencesToShorten)
 }
 
 
