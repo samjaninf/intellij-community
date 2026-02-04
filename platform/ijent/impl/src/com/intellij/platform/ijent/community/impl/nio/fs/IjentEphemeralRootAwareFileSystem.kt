@@ -12,6 +12,7 @@ import com.intellij.platform.eel.EelDescriptor
 import com.intellij.platform.eel.EelOsFamily
 import com.intellij.platform.eel.provider.getEelDescriptor
 import com.intellij.platform.eel.provider.utils.EelPathUtils
+ import com.intellij.platform.eel.provider.utils.WindowsPathUtils
 import com.intellij.platform.ijent.community.impl.nio.IjentNioPath
 import com.intellij.util.text.nullize
 import org.jetbrains.annotations.ApiStatus
@@ -33,7 +34,6 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileAttributeView
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.spi.FileSystemProvider
-import kotlin.io.path.Path
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.pathString
 
@@ -401,14 +401,14 @@ class IjentEphemeralRootAwareFileSystem(
       }
       EelOsFamily.Windows -> {
         if (relativePath != null) {
-          if (relativePath.startsWith("/@/")) {
-            arrayOf("${relativePath[3]}:${relativePath.drop(4)}", *parts)
-          }
-          else {
-            arrayOf(relativePath.removePrefix("/"), *parts)
-          }
+          arrayOf(WindowsPathUtils.rootRelativeToEelPath(relativePath.removePrefix("/")), *parts)
         }
-        else parts
+        else if (path.isNotEmpty()) {
+          parts
+        }
+        else {
+          error("Windows $path is not under any root of $root")
+        }
       }
     }
   }

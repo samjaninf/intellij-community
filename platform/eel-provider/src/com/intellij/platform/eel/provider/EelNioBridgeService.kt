@@ -9,9 +9,9 @@ import com.intellij.platform.eel.EelDescriptor
 import com.intellij.platform.eel.EelOsFamily
 import com.intellij.platform.eel.EelPathBoundDescriptor
 import com.intellij.platform.eel.annotations.MultiRoutingFileSystemPath
-import com.intellij.platform.eel.isPosix
 import com.intellij.platform.eel.path.EelPath
 import com.intellij.platform.eel.path.EelPathException
+import com.intellij.platform.eel.provider.utils.WindowsPathUtils
 import org.jetbrains.annotations.ApiStatus
 import java.nio.file.Path
 import kotlin.io.path.pathString
@@ -44,8 +44,6 @@ fun EelPath.asNioPath(project: Project?): @MultiRoutingFileSystemPath Path {
   return asNioPath()
 }
 
-private val WINDOWS_DRIVE_PREFIX_REGEX = Regex("^\\w:")
-
 /** See docs for [asNioPath] */
 @Deprecated("It never returns null anymore")
 @ApiStatus.Experimental
@@ -68,12 +66,7 @@ fun EelPath.asNioPathOrNull(): @MultiRoutingFileSystemPath Path? {
   @MultiRoutingFileSystemPath
   val result = when (descriptor.osFamily) {
     EelOsFamily.Windows -> {
-      if (WINDOWS_DRIVE_PREFIX_REGEX.containsMatchIn(this.root.toString())) {
-        (listOf("@", this.root.toString().take(1)) + parts).fold(root, Path::resolve)
-      }
-      else {
-        parts.fold(root, Path::resolve)
-      }
+      WindowsPathUtils.resolveEelPathOntoRoot(root, this)
     }
     EelOsFamily.Posix -> parts.fold(root, Path::resolve)
   }
@@ -111,17 +104,17 @@ fun Path.asEelPath(): EelPath {
 fun Path.asEelPath(descriptor: EelDescriptor): EelPath {
   when (descriptor) {
     is LocalEelDescriptor -> return EelPath.parse(toString(), descriptor)
-    is EelPathBoundDescriptor if (descriptor.osFamily.isPosix) -> {
-      val root = descriptor.rootPath
-      val relative = root.relativize(this)
-      return relative.fold(EelPath.parse("/", descriptor)) { path, part ->
-        part.toString().takeIf { it.isNotEmpty() }?.let { path.getChild(it) } ?: path
-      }
-    }
     is EelPathBoundDescriptor -> {
-      val root = descriptor.rootPath
-      val relative = root.relativize(this)
-      return relative.drop(1).fold(EelPath.parse(relative.first().pathString, descriptor)) { path, part ->
+      val relative = descriptor.rootPath.relativize(this)
+      val (eelRoot, rest) = when (descriptor.osFamily) {
+        EelOsFamily.Posix -> {
+          "/" to relative
+        }
+        EelOsFamily.Windows -> {
+          WindowsPathUtils.rootRelativeToEelPath(relative)
+        }
+      }
+      return rest.fold(EelPath.parse(eelRoot, descriptor)) { path, part ->
         part.toString().takeIf { it.isNotEmpty() }?.let { path.getChild(it) } ?: path
       }
     }
