@@ -56,6 +56,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.CalledInAny;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -249,37 +250,39 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   }
 
   private void scheduleUpdate() {
-    myQueue.queue(DisposableUpdate.createDisposable(this, "update", () -> {
-      List<GitRepository> withIncoming;
-      List<GitRepository> withOutgoing;
+    myQueue.queue(DisposableUpdate.createDisposable(this, "update", this::runUpdate));
+  }
 
-      boolean shouldRequestRemoteInfo;
-      synchronized (LOCK) {
-        withIncoming = new ArrayList<>(myDirtyReposWithIncoming);
-        withOutgoing = new ArrayList<>(myDirtyReposWithOutgoing);
-        shouldRequestRemoteInfo = myShouldRequestRemoteInfo;
+  private void runUpdate() {
+    List<GitRepository> withIncoming;
+    List<GitRepository> withOutgoing;
 
-        myDirtyReposWithIncoming.clear();
-        myDirtyReposWithOutgoing.clear();
-        myShouldRequestRemoteInfo = false;
-      }
+    boolean shouldRequestRemoteInfo;
+    synchronized (LOCK) {
+      withIncoming = new ArrayList<>(myDirtyReposWithIncoming);
+      withOutgoing = new ArrayList<>(myDirtyReposWithOutgoing);
+      shouldRequestRemoteInfo = myShouldRequestRemoteInfo;
 
-      for (GitRepository r : withOutgoing) {
-        myLocalBranchesWithOutgoing.put(r, calculateBranchesWithOutgoing(r));
-      }
+      myDirtyReposWithIncoming.clear();
+      myDirtyReposWithOutgoing.clear();
+      myShouldRequestRemoteInfo = false;
+    }
 
-      if (shouldRequestRemoteInfo) {
-        GitIncomingRemoteCheckStrategy remoteCheckStrategy = getIncomingRemoteCheckStrategy();
-        requestRemoteInfo(remoteCheckStrategy, withIncoming);
-      } else {
-        LOG.debug("No remote state refresh requested");
-      }
+    for (GitRepository r : withOutgoing) {
+      myLocalBranchesWithOutgoing.put(r, calculateBranchesWithOutgoing(r));
+    }
 
-      for (GitRepository r : withIncoming) {
-        myLocalBranchesWithIncoming.put(r, calcBranchesWithIncoming(r));
-      }
-      BackgroundTaskUtil.syncPublisher(myProject, GIT_INCOMING_OUTGOING_CHANGED).incomingOutgoingInfoChanged();
-    }));
+    if (shouldRequestRemoteInfo) {
+      GitIncomingRemoteCheckStrategy remoteCheckStrategy = getIncomingRemoteCheckStrategy();
+      requestRemoteInfo(remoteCheckStrategy, withIncoming);
+    } else {
+      LOG.debug("No remote state refresh requested");
+    }
+
+    for (GitRepository r : withIncoming) {
+      myLocalBranchesWithIncoming.put(r, calcBranchesWithIncoming(r));
+    }
+    BackgroundTaskUtil.syncPublisher(myProject, GIT_INCOMING_OUTGOING_CHANGED).incomingOutgoingInfoChanged();
   }
 
   private void requestRemoteInfo(GitIncomingRemoteCheckStrategy remoteCheckStrategy, List<GitRepository> repositories) {
@@ -501,6 +504,16 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   private static @NotNull MultiMap<GitRemote, GitBranchTrackInfo> groupTrackInfoByRemotes(@NotNull GitRepository repository) {
     return ContainerUtil.groupBy(repository.getBranchTrackInfos(), GitBranchTrackInfo::getRemote);
+  }
+
+  @TestOnly
+  @ApiStatus.Internal
+  public void updateForTests() {
+    List<GitRepository> repositories = GitRepositoryManager.getInstance(myProject).getRepositories();
+    myDirtyReposWithIncoming.addAll(repositories);
+    myDirtyReposWithOutgoing.addAll(repositories);
+    myShouldRequestRemoteInfo = true;
+    runUpdate();
   }
 
   public interface GitIncomingOutgoingListener {
