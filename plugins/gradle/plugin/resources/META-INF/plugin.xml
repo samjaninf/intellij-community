@@ -17,7 +17,7 @@
   </description>
 
   <content namespace="jetbrains">
-    <module name="intellij.gradle"/>
+    <module name="intellij.gradle" loading="embedded"/>
     <module name="intellij.gradle.completion"/>
     <module name="intellij.gradle.toml"/>
     <module name="intellij.gradle.properties"/>
