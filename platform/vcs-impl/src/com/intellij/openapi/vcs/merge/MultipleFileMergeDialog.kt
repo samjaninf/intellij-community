@@ -89,7 +89,8 @@ open class MultipleFileMergeDialog(
   private var unresolvedFiles = files.toMutableList()
   private val mergeSession = (mergeProvider as? MergeProvider2)?.createMergeSession(files)
   val processedFiles: MutableList<VirtualFile> = mutableListOf()
-  private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(), createColumns())
+  private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(),
+                                                       CustomColumns.createColumns(mergeDialogCustomizer, mergeSession))
   private lateinit var table: TreeTable
 
   private var groupByDirectory: Boolean = false
@@ -217,35 +218,6 @@ open class MultipleFileMergeDialog(
     table.tree.selectionModel.addTreeSelectionListener { updateButtonState() }
 
     return panel
-  }
-
-  private fun createColumns(): Array<ColumnInfo<*, *>> {
-    val columns = ArrayList<ColumnInfo<*, *>>()
-    columns.add(object : ColumnInfo<DefaultMutableTreeNode, Any>(VcsBundle.message("multiple.file.merge.column.name")) {
-      override fun valueOf(node: DefaultMutableTreeNode) = node.userObject
-      override fun getColumnClass(): Class<*> = TreeTableModel::class.java
-    })
-
-    val mergeInfoColumns = mergeSession?.mergeInfoColumns
-    if (mergeInfoColumns != null) {
-      var customColumnNames = mergeDialogCustomizer.getColumnNames()
-      if (customColumnNames != null && customColumnNames.size != mergeInfoColumns.size) {
-        LOG.error("Custom column names ($customColumnNames) don't match default columns ($mergeInfoColumns)")
-        customColumnNames = null
-      }
-      mergeInfoColumns.mapIndexedTo(columns) { index, columnInfo ->
-        ColumnInfoAdapter(columnInfo, customColumnNames?.get(index) ?: columnInfo.name)
-      }
-    }
-    return columns.toTypedArray()
-  }
-
-  private class ColumnInfoAdapter(private val base: ColumnInfo<Any, Any>,
-                                  private val columnName: @ColumnName String) : ColumnInfo<DefaultMutableTreeNode, Any>(columnName) {
-    override fun valueOf(node: DefaultMutableTreeNode) = (node.userObject as? VirtualFile)?.let { base.valueOf(it) }
-    override fun getMaxStringValue() = base.maxStringValue
-    override fun getAdditionalWidth() = base.additionalWidth
-    override fun getTooltipText() = base.tooltipText ?: columnName
   }
 
   private fun toggleGroupByDirectory(state: Boolean) {
@@ -540,6 +512,40 @@ private fun getSessionResolution(result: MergeResult): MergeSession.Resolution =
 
 private val TreeTable.selectedFiles: List<VirtualFile>
   get() = VcsTreeModelData.selected(tree).userObjects(VirtualFile::class.java)
+
+private object CustomColumns {
+  fun createColumns(customizer: MergeDialogCustomizer, session: MergeSession?): Array<ColumnInfo<*, *>> {
+    val columns = ArrayList<ColumnInfo<*, *>>()
+    columns.add(object : ColumnInfo<DefaultMutableTreeNode, Any>(VcsBundle.message("multiple.file.merge.column.name")) {
+      override fun valueOf(node: DefaultMutableTreeNode) = node.userObject
+      override fun getColumnClass(): Class<*> = TreeTableModel::class.java
+    })
+
+    val mergeInfoColumns = session?.mergeInfoColumns
+    if (mergeInfoColumns != null) {
+      var customColumnNames = customizer.getColumnNames()
+      if (customColumnNames != null && customColumnNames.size != mergeInfoColumns.size) {
+        LOG.error("Custom column names ($customColumnNames) don't match default columns ($mergeInfoColumns)")
+        customColumnNames = null
+      }
+      mergeInfoColumns.mapIndexedTo(columns) { index, columnInfo ->
+        ColumnInfoAdapter(columnInfo, customColumnNames?.get(index) ?: columnInfo.name)
+      }
+    }
+    return columns.toTypedArray()
+  }
+
+
+  private class ColumnInfoAdapter(
+    private val base: ColumnInfo<Any, Any>,
+    private val columnName: @ColumnName String,
+  ) : ColumnInfo<DefaultMutableTreeNode, Any>(columnName) {
+    override fun valueOf(node: DefaultMutableTreeNode) = (node.userObject as? VirtualFile)?.let { base.valueOf(it) }
+    override fun getMaxStringValue() = base.maxStringValue
+    override fun getAdditionalWidth() = base.additionalWidth
+    override fun getTooltipText() = base.tooltipText ?: columnName
+  }
+}
 
 /**
  * See [ChangesTree.TreeStateStrategy] that cannot be applied to [TreeTable]
