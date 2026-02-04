@@ -2,7 +2,6 @@
 package org.jetbrains.kotlin.idea.base.codeInsight
 
 import org.jetbrains.annotations.ApiStatus
-import org.jetbrains.kotlin.analysis.api.components.ShortenCommand
 import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 
 /**
@@ -12,12 +11,17 @@ import org.jetbrains.kotlin.analysis.api.components.ShortenOptions
 data class ShortenOptionsForIde(
     val removeThis: Boolean = false,
     val removeThisLabels: Boolean = false,
+    val removeExplicitCompanionReferences: Boolean = true,
 ) {
     fun toShortenOptions(): ShortenOptions = ShortenOptions(removeThis, removeThisLabels)
 
     companion object {
         val DEFAULT: ShortenOptionsForIde = ShortenOptionsForIde()
 
-        val ALL_ENABLED: ShortenOptionsForIde = ShortenOptionsForIde(removeThis = true, removeThisLabels = true)
+        val ALL_ENABLED: ShortenOptionsForIde = ShortenOptionsForIde(
+            removeThis = true,
+            removeThisLabels = true,
+            removeExplicitCompanionReferences = true,
+        )
     }
 }

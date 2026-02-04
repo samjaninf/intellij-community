@@ -238,13 +238,17 @@ fun collectPossibleReferenceShorteningsForIde(
     shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(file),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(file),
-): ShortenCommandForIde = collectPossibleReferenceShortenings(
-    file,
-    selection,
-    shortenOptions.toShortenOptions(),
-    classShortenStrategy,
-    callableShortenStrategy
-).toIdeCommand()
+): ShortenCommandForIde {
+    val shortenCommand = collectPossibleReferenceShortenings(
+        file,
+        selection,
+        shortenOptions.toShortenOptions(),
+        classShortenStrategy,
+        callableShortenStrategy
+    )
+
+    return ShortenCommandForIdeImpl(shortenCommand, companionReferencesToShorten = emptyList())
+}
 
 /**
  * Collects possible references to shorten.
@@ -264,12 +268,16 @@ fun collectPossibleReferenceShorteningsInElementForIde(
     shortenOptions: ShortenOptionsForIde = ShortenOptionsForIde.DEFAULT,
     classShortenStrategy: (KaClassLikeSymbol) -> ShortenStrategy = ShortenStrategy.defaultClassShortenStrategyForIde(element),
     callableShortenStrategy: (KaCallableSymbol) -> ShortenStrategy = ShortenStrategy.defaultCallableShortenStrategyForIde(element),
-): ShortenCommandForIde = collectPossibleReferenceShorteningsInElement(
-    element,
-    shortenOptions.toShortenOptions(),
-    classShortenStrategy,
-    callableShortenStrategy,
-).toIdeCommand()
+): ShortenCommandForIde {
+    val shortenCommand = collectPossibleReferenceShorteningsInElement(
+        element,
+        shortenOptions.toShortenOptions(),
+        classShortenStrategy,
+        callableShortenStrategy,
+    )
+
+    return ShortenCommandForIdeImpl(shortenCommand, companionReferencesToShorten = emptyList())
+}
 
 
 /**

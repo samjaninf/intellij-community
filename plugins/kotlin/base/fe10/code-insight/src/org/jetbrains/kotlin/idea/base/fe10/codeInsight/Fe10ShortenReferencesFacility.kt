@@ -13,6 +13,7 @@ internal class Fe10ShortenReferencesFacility : ShortenReferencesFacility {
         val matchingFe10Options = ShortenReferences.Options.DEFAULT.copy(
             removeThis = commonShortenOptions.removeThis,
             removeThisLabels = commonShortenOptions.removeThisLabels,
+            removeExplicitCompanion = commonShortenOptions.removeExplicitCompanionReferences,
         )
 
         // do not create a new instance of reference shortener if the options are default ones

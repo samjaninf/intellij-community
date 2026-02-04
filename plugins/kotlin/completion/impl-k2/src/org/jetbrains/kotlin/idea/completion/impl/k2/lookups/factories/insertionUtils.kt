@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.analysis.api.KaImplementationDetail
 import org.jetbrains.kotlin.analysis.api.components.QualifierToShortenInfo
 import org.jetbrains.kotlin.analysis.api.components.ThisLabelToShortenInfo
 import org.jetbrains.kotlin.analysis.api.components.TypeToShortenInfo
+import org.jetbrains.kotlin.idea.base.analysis.api.utils.CompanionReferenceToShorten
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.ShortenCommandForIde
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.allowAnalysisFromWriteActionInEdt
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.collectPossibleReferenceShorteningsForIde
@@ -189,6 +190,13 @@ private class ShortenCommandForIdeWrapper(
     override val kDocQualifiersToShorten: List<SmartPsiElementPointer<KDocName>> =
         delegate.kDocQualifiersToShorten
             .mapNotNull { it.findSameElementInCopy() }
+
+    override val companionReferencesToShorten: List<CompanionReferenceToShorten> =
+        delegate.companionReferencesToShorten
+            .mapNotNull { (companionReferenceToShorten) ->
+                companionReferenceToShorten.findSameElementInCopy()
+                    ?.let { CompanionReferenceToShorten(it) }
+            }
 
     private fun <T : KtElement> T.findSameElementInCopy(): T? =
         PsiTreeUtil.findSameElementInCopy(this, copy)
