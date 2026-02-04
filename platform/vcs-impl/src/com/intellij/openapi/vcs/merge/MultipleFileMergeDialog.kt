@@ -259,7 +259,7 @@ open class MultipleFileMergeDialog(
   }
 
   private fun updateButtonState() {
-    val selectedFiles = getSelectedFiles()
+    val selectedFiles = table.selectedFiles
     val haveSelection = selectedFiles.any()
     val haveUnmergeableFiles = selectedFiles.any { mergeSession?.canMerge(it) == false }
     val haveUnacceptableFiles = selectedFiles.any { mergeSession != null && mergeSession !is MergeSessionEx && !mergeSession.canMerge(it) }
@@ -267,10 +267,6 @@ open class MultipleFileMergeDialog(
     acceptYoursButton.isEnabled = haveSelection && !haveUnacceptableFiles
     acceptTheirsButton.isEnabled = haveSelection && !haveUnacceptableFiles
     mergeButton.isEnabled = haveSelection && !haveUnmergeableFiles
-  }
-
-  private fun getSelectedFiles(): List<VirtualFile> {
-    return VcsTreeModelData.selected(table.tree).userObjects(VirtualFile::class.java)
   }
 
   override fun createActions(): Array<Action> {
@@ -298,7 +294,7 @@ open class MultipleFileMergeDialog(
     MergeStatisticsCollector.logButtonClickOnTable(project, side)
 
     FileDocumentManager.getInstance().saveAllDocuments()
-    val files = getSelectedFiles()
+    val files = table.selectedFiles
 
     ProgressManager.getInstance().run(object : Task.Modal(project,
                                                           VcsBundle.message(
@@ -401,7 +397,7 @@ open class MultipleFileMergeDialog(
 
   private fun showMergeDialog() {
     val requestFactory = DiffRequestFactory.getInstance()
-    val files = getSelectedFiles()
+    val files = table.selectedFiles
     if (files.isEmpty()) return
     if (!beforeResolve(files)) {
       return
@@ -545,7 +541,7 @@ open class MultipleFileMergeDialog(
 
   private class OnGroupingChangeTreeStateStrategy : TreeTableStateStrategy<OnGroupingChangeTreeStateStrategy.SelectionState> {
     override fun saveState(table: TreeTable): SelectionState {
-      val selectedFiles = VcsTreeModelData.selected(table.tree).userObjects(VirtualFile::class.java)
+      val selectedFiles = table.selectedFiles
       return SelectionState(selectedFiles)
     }
 
@@ -586,3 +582,6 @@ open class MultipleFileMergeDialog(
                                  val firstSelectedIndex: Int)
   }
 }
+
+private val TreeTable.selectedFiles: List<VirtualFile>
+  get() = VcsTreeModelData.selected(tree).userObjects(VirtualFile::class.java)
