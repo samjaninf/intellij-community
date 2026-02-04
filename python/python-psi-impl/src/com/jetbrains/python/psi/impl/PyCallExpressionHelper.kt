@@ -371,7 +371,7 @@ private fun PyCallSiteExpression.toCallableType(
     }
 
     return PyCallableTypeImpl(
-      callableType.getParameters(context),
+      callableType.getParametersType(context),
       clarifiedConstructorCallType ?: callableType.getCallType(context, this),
       clarifiedResolved,
       resolvedModifier,

@@ -74,6 +74,12 @@ public class PyFunctionTypeImpl implements PyFunctionType {
   }
 
   @Override
+  public @Nullable PyCallableParameterVariadicType getParametersType(@NotNull TypeEvalContext context) {
+    List<PyCallableParameter> parameters = ContainerUtil.notNullize(getParameters(context));
+    return new PyCallableParameterListTypeImpl(parameters);
+  }
+
+  @Override
   public @Nullable List<? extends RatedResolveResult> resolveMember(@NotNull String name,
                                                                     @Nullable PyExpression location,
                                                                     @NotNull AccessDirection direction,

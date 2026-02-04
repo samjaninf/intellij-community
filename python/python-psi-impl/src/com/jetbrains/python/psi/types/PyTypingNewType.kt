@@ -47,6 +47,10 @@ class PyTypingNewType(
     }
   }
 
+  override fun getParametersType(context: TypeEvalContext): PyCallableParameterVariadicType? {
+    return getParameters(context)?.let { PyCallableParameterListTypeImpl(it) }
+  }
+
   override fun getSuperClassTypes(context: TypeEvalContext): List<PyClassLikeType> = listOf(classType)
 
   override fun resolveMember(

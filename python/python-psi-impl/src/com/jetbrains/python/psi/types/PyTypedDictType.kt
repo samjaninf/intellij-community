@@ -68,6 +68,10 @@ class PyTypedDictType(
     else null
   }
 
+  override fun getParametersType(context: TypeEvalContext): PyCallableParameterVariadicType? {
+    return getParameters(context)?.let { PyCallableParameterListTypeImpl(it) }
+  }
+
   override fun toString(): String = "PyTypedDictType: $name"
 
   override fun equals(other: Any?): Boolean {

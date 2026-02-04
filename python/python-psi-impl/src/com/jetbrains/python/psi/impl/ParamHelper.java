@@ -187,8 +187,11 @@ public final class ParamHelper {
 
   public static boolean isSelfArgsKwargsCallable(@NotNull PyCallableType type, @NotNull TypeEvalContext context) {
     final List<PyCallableParameter> parameters = type.getParameters(context);
-    return parameters != null
-           && parameters.size() == 3 &&
+    return parameters != null && isSelfArgsKwargsSignature(parameters);
+  }
+
+  public static boolean isSelfArgsKwargsSignature(@NotNull List<PyCallableParameter> parameters) {
+    return parameters.size() == 3 &&
            parameters.get(0).isSelf() &&
            parameters.get(1).isPositionalContainer() &&
            parameters.get(2).isKeywordContainer();
@@ -196,8 +199,11 @@ public final class ParamHelper {
 
   public static boolean isArgsKwargsCallable(@NotNull PyCallableType type, @NotNull TypeEvalContext context) {
     final List<PyCallableParameter> parameters = type.getParameters(context);
-    return parameters != null
-           && parameters.size() == 2 &&
+    return parameters != null && isArgsKwargsSignature(parameters);
+  }
+
+  public static boolean isArgsKwargsSignature(@NotNull List<PyCallableParameter> parameters) {
+    return parameters.size() == 2 &&
            parameters.get(0).isPositionalContainer() &&
            parameters.get(1).isKeywordContainer();
   }

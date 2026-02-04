@@ -1686,15 +1686,11 @@ public final class PyTypingTypeProvider extends PyTypeProviderWithCustomContext<
               returnType = null;
             }
             if (parametersExpr instanceof PyEllipsisLiteralExpression) {
-              return new PyCallableTypeImpl(null, returnType);
+              return new PyCallableTypeImpl((PyCallableParameterVariadicType)null, returnType);
             }
             PyType parametersType = Ref.deref(getType(parametersExpr, context));
-            if (parametersType instanceof PyCallableParameterListType paramList) {
-              return new PyCallableTypeImpl(paramList.getParameters(), returnType);
-            }
-            if (parametersType instanceof PyParamSpecType || parametersType instanceof PyConcatenateType) {
-              PyCallableParameter paramSpecParam = PyCallableParameterImpl.nonPsi(parametersType);
-              return new PyCallableTypeImpl(Collections.singletonList(paramSpecParam), returnType);
+            if (parametersType instanceof PyCallableParameterVariadicType variadicType) {
+              return new PyCallableTypeImpl(variadicType, returnType);
             }
           }
         }
@@ -1702,7 +1698,7 @@ public final class PyTypingTypeProvider extends PyTypeProviderWithCustomContext<
     }
     else if (resolved instanceof PyTargetExpression targetExpression) {
       if (resolvesToQualifiedNames(targetExpression, context.getTypeContext(), CALLABLE, CALLABLE_EXT)) {
-        return new PyCallableTypeImpl(null, null);
+        return new PyCallableTypeImpl((PyCallableParameterVariadicType)null, null);
       }
     }
     return null;

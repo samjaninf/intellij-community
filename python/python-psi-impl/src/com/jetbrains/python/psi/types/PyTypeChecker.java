@@ -541,7 +541,7 @@ public final class PyTypeChecker {
                                @NotNull MatchContext context) {
     if (actual == null) return true;
     if (!(actual instanceof PyCallableParameterListType actualParameters)) return false;
-    return matchCallableParameters(expectedParameters.getParameters(), actualParameters.getParameters(), context);
+    return match(expectedParameters, actualParameters, context);
   }
 
   private static boolean match(@NotNull PyType expected, @NotNull PyUnionType actual, @NotNull MatchContext context) {
@@ -872,36 +872,17 @@ public final class PyTypeChecker {
     return actualAttributes.containsAll(expected.getAttributeNames());
   }
 
-  private static boolean matchCallableParameters(@NotNull List<PyCallableParameter> expectedParameters,
-                                                 @NotNull List<PyCallableParameter> actualParameters,
-                                                 @NotNull MatchContext matchContext) {
+  private static boolean match(@NotNull PyCallableParameterListType expectedParametersType,
+                               @NotNull PyCallableParameterListType actualParametersType,
+                               @NotNull MatchContext matchContext) {
     TypeEvalContext context = matchContext.context;
-    if (expectedParameters.size() == 1) {
-      PyType onlyExpectedParamType = expectedParameters.get(0).getType(context);
-      if (onlyExpectedParamType instanceof PyParamSpecType expectedParamSpecType) {
-        if (actualParameters.size() == 1) {
-          PyType actualOnlyParamType = actualParameters.get(0).getType(context);
-          if (actualOnlyParamType instanceof PyParamSpecType || actualOnlyParamType instanceof PyConcatenateType) {
-            return match(expectedParamSpecType, actualOnlyParamType, matchContext);
-          }
-        }
-        return match(expectedParamSpecType, new PyCallableParameterListTypeImpl(actualParameters), matchContext);
-      }
-      else if (onlyExpectedParamType instanceof PyConcatenateType expectedConcatenateType) {
-        if (actualParameters.size() == 1) {
-          PyType actualOnlyParamType = actualParameters.get(0).getType(context);
-          if (actualOnlyParamType instanceof PyParamSpecType || actualOnlyParamType instanceof PyConcatenateType) {
-            return match(expectedConcatenateType, actualOnlyParamType, matchContext);
-          }
-        }
-        return match(expectedConcatenateType, new PyCallableParameterListTypeImpl(actualParameters), matchContext);
-      }
-    }
+    List<PyCallableParameter> expectedParameters = expectedParametersType.getParameters();
+    List<PyCallableParameter> actualParameters = actualParametersType.getParameters();
 
     int startIndex = 0;
     if (!expectedParameters.isEmpty() && !actualParameters.isEmpty()) {
-      var firstExpectedParam = expectedParameters.get(0);
-      var firstActualParam = actualParameters.get(0);
+      var firstExpectedParam = expectedParameters.getFirst();
+      var firstActualParam = actualParameters.getFirst();
       if (firstExpectedParam.isSelf() && firstActualParam.isSelf()) {
         if (!match(firstExpectedParam.getType(context), firstActualParam.getType(context), matchContext).orElse(true)) {
           return false;
@@ -945,10 +926,11 @@ public final class PyTypeChecker {
     }
 
     if (expected.isCallable() && actual.isCallable()) {
-      final List<PyCallableParameter> expectedParameters = expected.getParameters(context);
-      final List<PyCallableParameter> actualParameters = actual.getParameters(context);
-      if (expectedParameters != null && actualParameters != null) {
-        if (!matchCallableParameters(expectedParameters, actualParameters, matchContext)) {
+      final PyCallableParameterVariadicType expectedParametersType = expected.getParametersType(context);
+      final PyCallableParameterVariadicType actualParametersType = actual.getParametersType(context);
+
+      if (expectedParametersType != null && actualParametersType != null) {
+        if (!match(expectedParametersType, actualParametersType, matchContext).orElse(true)) {
           return Optional.of(false);
         }
       }
@@ -1458,69 +1440,49 @@ public final class PyTypeChecker {
 
       @Override
       public PyType visitPyCallableType(@NotNull PyCallableType callableType) {
-        List<PyCallableParameter> parameters = callableType.getParameters(context);
-        boolean isSelfArgsKwargs = ParamHelper.isSelfArgsKwargsCallable(callableType, context);
-        boolean isArgsKwargs = ParamHelper.isArgsKwargsCallable(callableType, context);
-        if (parameters != null && (isSelfArgsKwargs || isArgsKwargs)) {
-          int argsIndex;
-          if (isSelfArgsKwargs) {
-            argsIndex = 1;
-          }
-          else {
-            argsIndex = 0;
-          }
-          PyCallableParameter args = parameters.get(argsIndex);
-          PyType argsType = args.getType(context);
-          PyCallableParameterVariadicType substituted = substitutions.getParamSpecs().get(argsType);
-
-          if (substituted instanceof PyCallableParameterListType listType) {
-            List<PyCallableParameter> newParameters = listType.getParameters();
-            if (isSelfArgsKwargs) {
-              newParameters = ContainerUtil.prepend(newParameters, parameters.getFirst());
-            }
-            return new PyCallableTypeImpl(newParameters, clone(callableType.getReturnType(context)), callableType.getCallable(),
-                                          callableType.getModifier(), callableType.getImplicitOffset());
-          }
-        }
-        @Nullable PyType parametersSubs;
-        if (parameters != null) {
-          PyCallableParameter onlyParam = ContainerUtil.getOnlyItem(parameters);
-          if (onlyParam != null && onlyParam.getType(context) instanceof PyParamSpecType paramSpecType) {
-            parametersSubs = clone(paramSpecType);
-          }
-          else if (onlyParam != null && onlyParam.getType(context) instanceof PyConcatenateType concatenateType) {
-            parametersSubs = clone(concatenateType);
-          }
-          else {
-            parametersSubs = new PyCallableParameterListTypeImpl(
-              StreamEx.of(parameters)
-                .mapToEntry(param -> param.getType(context))
-                .flatMapKeyValue((param, paramType) -> {
-                  PyParameter paramPsi = param.getParameter();
-                  return StreamEx.of(Collections.singletonList(param.getType(context)))
-                    .flatCollection(t -> flattenUnpackedTuple(clone(t)))
-                    .map(paramSubType -> paramPsi != null ?
-                                         PyCallableParameterImpl.psi(paramPsi, paramSubType) :
-                                         PyCallableParameterImpl.nonPsi(param.getName(), paramSubType, param.getDefaultValue()));
-                })
-                .toList()
-            );
-          }
-        }
-        else {
-          parametersSubs = null;
-        }
+        PyCallableParameterVariadicType substitutedParams = clone(callableType.getParametersType(context));
         return new PyCallableTypeImpl(
-          parametersSubs instanceof PyCallableParameterListType parameterList ? parameterList.getParameters() :
-          parametersSubs instanceof PyConcatenateType concat ? List.of(PyCallableParameterImpl.nonPsi(concat)) :
-          parametersSubs instanceof PyParamSpecType paramSpec ? List.of(PyCallableParameterImpl.nonPsi(paramSpec)) :
-          null,
-          clone(callableType.getReturnType(context))
-          ,
+          substitutedParams,
+          clone(callableType.getReturnType(context)),
           callableType.getCallable(),
           callableType.getModifier(),
           callableType.getImplicitOffset()
         );
+      }
+
+      @Override
+      public PyType visitPyCallableParameterListType(@NotNull PyCallableParameterListType callableParameterListType) {
+        List<PyCallableParameter> parameters = callableParameterListType.getParameters();
+
+        boolean isSelfArgsKwargs = ParamHelper.isSelfArgsKwargsSignature(parameters);
+        boolean isArgsKwargs = ParamHelper.isArgsKwargsSignature(parameters);
+        // substitutes (*args: P.args, **kwargs: P.kwargs) with actual signature
+        if (isSelfArgsKwargs || isArgsKwargs) {
+          PyType kwargsType = parameters.getLast().getType(context);
+          PyCallableParameterVariadicType substituted = substitutions.getParamSpecs().get(kwargsType);
+
+          if (substituted instanceof PyCallableParameterListType listType) {
+            List<PyCallableParameter> newParams = listType.getParameters();
+            if (isSelfArgsKwargs) {
+              newParams = ContainerUtil.prepend(newParams, parameters.getFirst());
+            }
+            return new PyCallableParameterListTypeImpl(newParams);
+          }
+        }
+
+        List<PyCallableParameter> substitutedParams = StreamEx.of(parameters)
+          .mapToEntry(param -> param.getType(context))
+          .flatMapKeyValue((param, paramType) -> {
+            PyParameter paramPsi = param.getParameter();
+            return StreamEx.of(Collections.singletonList(param.getType(context)))
+              .flatCollection(t -> flattenUnpackedTuple(clone(t)))
+              .map(paramSubType -> paramPsi != null ?
+                                   PyCallableParameterImpl.psi(paramPsi, paramSubType) :
+                                   PyCallableParameterImpl.nonPsi(param.getName(), paramSubType, param.getDefaultValue()));
+          })
+          .toList();
+
+        return new PyCallableParameterListTypeImpl(substitutedParams);
       }
 
       @Override
