@@ -25,6 +25,7 @@ public class ReplaceShiftWithMultiplyIntentionTest extends IPPTestCase {
       assertIntentionNotAvailable("Replace '>>' with 'Math.floorDiv'");
     });
   }
+  public void testRightShiftPos() { doTest("Replace '>>' with '/'"); }
 
   @Override
   protected String getRelativePath() {

@@ -16,6 +16,8 @@
 package com.siyeh.ipp.shift;
 
 import com.intellij.codeInspection.CommonQuickFixBundle;
+import com.intellij.codeInspection.dataFlow.CommonDataflow;
+import com.intellij.codeInspection.dataFlow.rangeSet.LongRangeSet;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.pom.java.LanguageLevel;
 import com.intellij.psi.JavaTokenType;
@@ -48,18 +50,19 @@ public final class ReplaceShiftWithMultiplyIntention extends MCIntention impleme
 
   @Override
   protected @NotNull String getTextForElement(@NotNull PsiElement element) {
-    if (element instanceof PsiBinaryExpression exp) {
+    if (element instanceof PsiAssignmentExpression exp) {
       final PsiJavaToken sign = exp.getOperationSign();
       final IElementType tokenType = sign.getTokenType();
-      final String operatorString = tokenType.equals(JavaTokenType.LTLT) ? "*" : "Math.floorDiv";
-      return CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), operatorString);
-    }
-    else {
-      final PsiAssignmentExpression exp = (PsiAssignmentExpression)element;
-      final PsiJavaToken sign = exp.getOperationSign();
-      final IElementType tokenType = sign.getTokenType();
-      final String assignString = JavaTokenType.LTLTEQ.equals(tokenType) ? "*=" : "Math.floorDiv";
+      final String assignString = JavaTokenType.GTGTEQ.equals(tokenType) ?
+                                  (isSafelyDivisible(exp.getLExpression()) ? "/=" : "Math.floorDiv") : "*=";
       return CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), assignString);
+    } else {
+      final PsiBinaryExpression exp = (PsiBinaryExpression) element;
+      final PsiJavaToken sign = exp.getOperationSign();
+      final IElementType tokenType = sign.getTokenType();
+      final String operatorString = tokenType.equals(JavaTokenType.GTGT) ?
+                                    (isSafelyDivisible(exp.getLOperand()) ? "/" : "Math.floorDiv") : "*";
+      return CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), operatorString);
     }
   }
 
@@ -68,11 +71,19 @@ public final class ReplaceShiftWithMultiplyIntention extends MCIntention impleme
     return new ShiftByLiteralPredicate() {
       @Override
       public boolean satisfiedBy(PsiElement element) {
-        if ((element instanceof PsiAssignmentExpression aExpr && aExpr.getOperationTokenType().equals(JavaTokenType.GTGTEQ)) ||
-            (element instanceof PsiBinaryExpression bExpr && bExpr.getOperationTokenType().equals(JavaTokenType.GTGT))
+        if (element instanceof PsiAssignmentExpression expr
+            && expr.getOperationTokenType().equals(JavaTokenType.GTGTEQ)
+            && PsiUtil.getLanguageLevel(element).isLessThan(LanguageLevel.JDK_1_8)
+            && !isSafelyDivisible(expr.getLExpression())
         ) {
-          // Can't replace with Math.floorDiv because it was introduced in JDK 8
-          if (PsiUtil.getLanguageLevel(element).isLessThan(LanguageLevel.JDK_1_8)) return false;
+          return false;
+        }
+        if (element instanceof PsiBinaryExpression expr
+            && expr.getOperationTokenType().equals(JavaTokenType.GTGT)
+            && PsiUtil.getLanguageLevel(element).isLessThan(LanguageLevel.JDK_1_8)
+            && !isSafelyDivisible(expr.getLOperand())
+        ) {
+          return false;
         }
         return super.satisfiedBy(element);
       }
@@ -89,16 +100,25 @@ public final class ReplaceShiftWithMultiplyIntention extends MCIntention impleme
     }
   }
 
+  private static boolean isSafelyDivisible(@NotNull PsiExpression lhsExpr) {
+    LongRangeSet range = CommonDataflow.getExpressionRange(lhsExpr);
+    return range != null && range.min() >= 0;
+  }
+
   private static void replaceShiftAssignWithMultiplyOrDivideAssign(PsiAssignmentExpression exp) {
-    final PsiExpression lhs = exp.getLExpression();
+    final PsiExpression lhsExpr = exp.getLExpression();
     final PsiExpression rhsExpr = PsiUtil.skipParenthesizedExprDown(exp.getRExpression());
     if (!(rhsExpr instanceof PsiLiteralExpression rhsLiteral)) return;
     CommentTracker commentTracker = new CommentTracker();
-    final String lhsText = commentTracker.text(lhs, ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
-    final String rhsText = rhsReplacement(rhsLiteral, lhs.getType());
+    final String lhsText = commentTracker.text(lhsExpr, ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
+    final String rhsText = rhsReplacement(rhsLiteral, lhsExpr.getType());
     String expString;
     if (exp.getOperationTokenType().equals(JavaTokenType.GTGTEQ)) {
-      expString = lhsText + "=" + "Math.floorDiv(" + lhsText + ", " + rhsText + ")";
+      if (isSafelyDivisible(lhsExpr)) {
+        expString = lhsText + "/=" + rhsText;
+      } else {
+        expString = lhsText + "=" + "Math.floorDiv(" + lhsText + ", " + rhsText + ")";
+      }
     } else {
       expString = lhsText + "*=" + rhsText;
     }
@@ -106,15 +126,19 @@ public final class ReplaceShiftWithMultiplyIntention extends MCIntention impleme
   }
 
   private static void replaceShiftWithMultiplyOrDivide(PsiBinaryExpression expression) {
-    final PsiExpression lhs = expression.getLOperand();
+    final PsiExpression lhsExpr = expression.getLOperand();
     final PsiExpression rhsExpr = PsiUtil.skipParenthesizedExprDown(expression.getROperand());
     if (!(rhsExpr instanceof PsiLiteralExpression rhsLiteral)) return;
     CommentTracker commentTracker = new CommentTracker();
-    final String lhsText = commentTracker.text(lhs, ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
-    final String rhsText = rhsReplacement(rhsLiteral, lhs.getType());
+    final String lhsText = commentTracker.text(lhsExpr, ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
+    final String rhsText = rhsReplacement(rhsLiteral, lhsExpr.getType());
     String expString;
     if (expression.getOperationTokenType().equals(JavaTokenType.GTGT)) {
-      expString = "Math.floorDiv(" + lhsText + ", " + rhsText + ")";
+      if (isSafelyDivisible(lhsExpr)) {
+        expString = lhsText + "/" + rhsText;
+      } else {
+        expString = "Math.floorDiv(" + lhsText + ", " + rhsText + ")";
+      }
     } else {
       expString = lhsText + "*" + rhsText;
     }
