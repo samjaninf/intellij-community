@@ -6,7 +6,6 @@ import com.intellij.configurationStore.StoreReloadManager
 import com.intellij.diff.DiffManager
 import com.intellij.diff.DiffRequestFactory
 import com.intellij.diff.InvalidDiffRequestException
-import com.intellij.diff.merge.MergeRequest
 import com.intellij.diff.merge.MergeResult
 import com.intellij.diff.merge.MergeUtil
 import com.intellij.diff.statistics.MergeAction
@@ -19,6 +18,8 @@ import com.intellij.openapi.application.UiWithModelAccess
 import com.intellij.openapi.command.WriteCommandAction.writeCommandAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.getOrHandleException
+import com.intellij.openapi.diff.DiffBundle
+import com.intellij.openapi.editor.ReadOnlyModificationException
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
@@ -376,32 +377,25 @@ open class MultipleFileMergeDialog(
       return
     }
 
-    for (file in files) {
+    runForFilesWithErrorHandling(files) { file ->
       val filePath = VcsUtil.getFilePath(file)
 
-      val conflictData: ConflictData
-      try {
-        conflictData = ProgressManager.getInstance().runProcessWithProgressSynchronously(ThrowableComputable<ConflictData, VcsException> {
-          val mergeData = mergeProvider.loadRevisions(file)
+      val conflictData = ProgressManager.getInstance().runProcessWithProgressSynchronously(ThrowableComputable<ConflictData, VcsException> {
+        val mergeData = mergeProvider.loadRevisions(file)
 
-          val title = tryCompute { mergeDialogCustomizer.getMergeWindowTitle(file) }
+        val title = tryCompute { mergeDialogCustomizer.getMergeWindowTitle(file) }
 
-          val conflictTitles = listOf(
-            tryCompute { mergeDialogCustomizer.getLeftPanelTitle(file) },
-            tryCompute { mergeDialogCustomizer.getCenterPanelTitle(file) },
-            tryCompute { mergeDialogCustomizer.getRightPanelTitle(file, mergeData.LAST_REVISION_NUMBER) }
-          )
+        val conflictTitles = listOf(
+          tryCompute { mergeDialogCustomizer.getLeftPanelTitle(file) },
+          tryCompute { mergeDialogCustomizer.getCenterPanelTitle(file) },
+          tryCompute { mergeDialogCustomizer.getRightPanelTitle(file, mergeData.LAST_REVISION_NUMBER) }
+        )
 
-          val titleCustomizer = tryCompute { mergeDialogCustomizer.getTitleCustomizerList(filePath) }
-                                ?: MergeDialogCustomizer.DEFAULT_CUSTOMIZER_LIST
+        val titleCustomizer = tryCompute { mergeDialogCustomizer.getTitleCustomizerList(filePath) }
+                              ?: MergeDialogCustomizer.DEFAULT_CUSTOMIZER_LIST
 
-          ConflictData(mergeData, title, conflictTitles, titleCustomizer)
-        }, VcsBundle.message("multiple.file.merge.dialog.progress.title.loading.revisions"), true, project)
-      }
-      catch (ex: VcsException) {
-        Messages.showErrorDialog(contentPanel, VcsBundle.message("multiple.file.merge.dialog.error.loading.revisions.to.merge", ex.message))
-        break
-      }
+        ConflictData(mergeData, title, conflictTitles, titleCustomizer)
+      }, VcsBundle.message("multiple.file.merge.dialog.progress.title.loading.revisions"), true, project)
 
       val mergeData = conflictData.mergeData
       val byteContents = listOf(mergeData.CURRENT, mergeData.ORIGINAL, mergeData.LAST)
@@ -420,35 +414,49 @@ open class MultipleFileMergeDialog(
         }
       }
 
-      val request: MergeRequest
-      try {
-        if (mergeProvider.isBinary(file)) { // respect MIME-types in svn
-          request = requestFactory.createBinaryMergeRequest(project, file, byteContents, title, contentTitles, callback)
-        }
-        else {
-          request = requestFactory.createMergeRequest(project, file, byteContents, mergeData.CONFLICT_TYPE, title, contentTitles, callback)
-        }
 
-        MergeUtils.putRevisionInfos(request, mergeData)
+      val request = if (mergeProvider.isBinary(file)) { // respect MIME-types in svn
+        requestFactory.createBinaryMergeRequest(project, file, byteContents, title, contentTitles, callback)
       }
-      catch (e: InvalidDiffRequestException) {
-        if (e.cause is FileTooBigException) {
-          Messages.showErrorDialog(contentPanel,
-                                   VcsBundle.message("multiple.file.merge.dialog.message.file.too.big.to.be.loaded"),
-                                   VcsBundle.message("multiple.file.merge.dialog.title.can.t.show.merge.dialog"))
-        }
-        else {
-          LOG.error(e)
-          Messages.showErrorDialog(contentPanel, e.message, VcsBundle.message("multiple.file.merge.dialog.title.can.t.show.merge.dialog"))
-        }
-        break
+      else {
+        requestFactory.createMergeRequest(project, file, byteContents, mergeData.CONFLICT_TYPE, title, contentTitles, callback)
       }
+
+      MergeUtils.putRevisionInfos(request, mergeData)
       conflictData.contentTitleCustomizers.run {
         DiffUtil.addTitleCustomizers(request, listOf(leftTitleCustomizer, centerTitleCustomizer, rightTitleCustomizer))
       }
       DiffManager.getInstance().showMerge(project, request)
     }
     updateModelFromFiles()
+  }
+
+  private fun runForFilesWithErrorHandling(files: List<VirtualFile>, handler: (VirtualFile) -> Unit) {
+    try {
+      files.forEach(handler)
+    }
+    catch (ex: VcsException) {
+      Messages.showErrorDialog(contentPanel, VcsBundle.message("multiple.file.merge.dialog.error.loading.revisions.to.merge", ex.message))
+    }
+    catch (e: InvalidDiffRequestException) {
+      when (e.cause) {
+        is FileTooBigException -> {
+          Messages.showErrorDialog(contentPanel,
+                                   VcsBundle.message("multiple.file.merge.dialog.message.file.too.big.to.be.loaded"),
+                                   VcsBundle.message("multiple.file.merge.dialog.title.can.t.show.merge.dialog"))
+        }
+
+        is ReadOnlyModificationException -> {
+          Messages.showErrorDialog(contentPanel,
+                                   DiffBundle.message("error.cant.resolve.conflicts.in.a.read.only.file"),
+                                   VcsBundle.message("multiple.file.merge.dialog.title.can.t.show.merge.dialog"))
+        }
+        else -> {
+          LOG.error(e)
+          Messages.showErrorDialog(contentPanel, e.message, VcsBundle.message("multiple.file.merge.dialog.title.can.t.show.merge.dialog"))
+        }
+      }
+    }
   }
 
   override fun getPreferredFocusedComponent(): JComponent? = table
