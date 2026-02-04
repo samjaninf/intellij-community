@@ -346,10 +346,6 @@
               use-shortcut-of="Git.CreateNewBranch"/>
       <reference ref="Git.CreateNewTag"/>
       <separator/>
-      <reference ref="Git.Show.WorkingTrees"/>
-      <separator/>
-      <reference ref="Git.CreateNewWorkingTree"/>
-      <separator/>
       <add-to-group group-id="Vcs.Log.ContextMenu" relative-to-action="Vcs.Log.GoToChild" anchor="before"/>
     </group>
 
