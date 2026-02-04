@@ -8,6 +8,7 @@ import com.intellij.openapi.components.serviceAsync
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.platform.util.coroutines.childScope
+import com.intellij.util.containers.nullize
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.transformWhile
 import org.jetbrains.plugins.gitlab.api.GitLabApi
+import org.jetbrains.plugins.gitlab.api.GitLabGidData
 import org.jetbrains.plugins.gitlab.api.GitLabGraphQLMutationException
 import org.jetbrains.plugins.gitlab.api.GitLabId
 import org.jetbrains.plugins.gitlab.api.GitLabProjectCoordinates
@@ -47,7 +49,6 @@ import org.jetbrains.plugins.gitlab.api.request.getProjectUsersURI
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestDTO
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.createMergeRequest
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.loadMergeRequest
-import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestSetReviewers
 import org.jetbrains.plugins.gitlab.upload.markdownUploadFile
 import org.jetbrains.plugins.gitlab.util.GitLabProjectMapping
 import org.jetbrains.plugins.gitlab.util.GitLabRegistry
@@ -83,14 +84,18 @@ interface GitLabProject {
    * once the merge request was successfully initialized on server.
    * The reason for this wait is that GitLab might take a few moments to process the merge request
    * before returning one that can be displayed in the IDE in a useful way.
+   *
+   * @param reviewers List of reviewer user DTOs to assign to the merge request
+   * Note: this parameter has different behavior depending on [isMultipleReviewersAllowed] -
+   * either sets only one reviewer from the list (the last one) or sets all reviewers from the list
    */
   suspend fun createMergeRequestAndAwaitCompletion(
     sourceBranch: String,
     targetBranch: String,
     title: String,
     description: String?,
+    reviewers: List<GitLabUserDTO> = emptyList()
   ): GitLabMergeRequestDTO
-  suspend fun adjustReviewers(mrIid: String, reviewers: List<GitLabUserDTO>): GitLabMergeRequestDTO
 
   fun reloadData()
 
@@ -165,9 +170,18 @@ class GitLabLazyProject(
     targetBranch: String,
     title: String,
     description: String?,
+    reviewers: List<GitLabUserDTO>
   ): GitLabMergeRequestDTO {
     return cs.async(Dispatchers.IO) {
-      val iid = api.rest.createMergeRequest(projectCoordinates, sourceBranch, targetBranch, title, description).body().iid
+      val reviewerIds = reviewers.nullize()?.map { GitLabGidData(it.id).guessRestId() }
+      val iid = api.rest.createMergeRequest(
+        projectCoordinates,
+        sourceBranch,
+        targetBranch,
+        title,
+        description,
+        reviewerIds
+      ).body().iid
       val attempts = GitLabRegistry.getRequestPollingAttempts()
       repeat(attempts) {
         val data = api.graphQL.loadMergeRequest(projectCoordinates, iid).body()
@@ -177,19 +191,6 @@ class GitLabLazyProject(
         delay(GitLabRegistry.getRequestPollingIntervalMillis().toLong())
       }
       error("Merge request $iid was created but the data was not loaded within $attempts attempts.")
-    }.await()
-  }
-
-  @Throws(GitLabGraphQLMutationException::class, IllegalStateException::class)
-  override suspend fun adjustReviewers(mrIid: String, reviewers: List<GitLabUserDTO>): GitLabMergeRequestDTO {
-    return cs.async(Dispatchers.IO) {
-      if (GitLabVersion(15, 3) <= api.getMetadata().version) {
-        api.graphQL.mergeRequestSetReviewers(projectCoordinates, mrIid, reviewers).getResultOrThrow()
-      }
-      else {
-        api.rest.mergeRequestSetReviewers(projectCoordinates, mrIid, reviewers).body()
-        api.graphQL.loadMergeRequest(projectCoordinates, mrIid).body() ?: error("Merge request could not be loaded")
-      }
     }.await()
   }
 

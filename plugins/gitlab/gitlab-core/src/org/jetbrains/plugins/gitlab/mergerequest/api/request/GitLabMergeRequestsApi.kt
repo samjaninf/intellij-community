@@ -33,13 +33,21 @@ import java.net.URI
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
+/**
+ * Creates a merge request
+ *
+ * Note: reviewer_ids parameter has different behavior depending on the user's subscription plan
+ *  [org.jetbrains.plugins.gitlab.api.data.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
+ *  OTHER -- sets all reviewers from the list
+ */
 @SinceGitLab("14.0", note = "No exact version, but definitely exists in minimal")
 suspend fun GitLabApi.Rest.createMergeRequest(
   project: GitLabProjectCoordinates,
   sourceBranch: String,
   targetBranch: String,
   title: String,
-  description: String? = null
+  description: String? = null,
+  reviewerIds: List<String>? = null
 ): HttpResponse<out GitLabMergeRequestShortRestDTO> {
   val uri = project.restApiUri
     .resolveRelative("merge_requests")
@@ -48,6 +56,7 @@ suspend fun GitLabApi.Rest.createMergeRequest(
       "target_branch" eq targetBranch
       "title" eq title
       "description" eq description
+      "reviewer_ids" eq reviewerIds
     }
   val request = request(uri).POST(HttpRequest.BodyPublishers.noBody()).build()
   return withErrorStats(GitLabApiRequestName.REST_CREATE_MERGE_REQUEST) {

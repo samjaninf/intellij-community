@@ -275,9 +275,9 @@ internal class GitLabMergeRequestCreateViewModelImpl(
           sourceBranch = gitRemoteBranch.nameForRemoteOperations,
           targetBranch = baseBranch.nameForRemoteOperations,
           title = titleText.value.ifBlank { gitRemoteBranch.nameForRemoteOperations },
-          description = descriptionText.value.ifBlank { null }
+          description = descriptionText.value.ifBlank { null },
+          reviewers = adjustedReviewers.value
         )
-        projectData.adjustReviewers(mergeRequest.iid, adjustedReviewers.value)
         openReviewTabAction(mergeRequest.iid)
         onReviewCreated()
         GitLabStatistics.logMrCreationSucceeded(project)
