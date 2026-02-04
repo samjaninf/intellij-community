@@ -12,7 +12,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import java.io.File
 import kotlin.io.path.Path
-import kotlin.io.path.pathString
 
 class WindowsPathUtilsTest {
 
@@ -59,7 +58,7 @@ class WindowsPathUtilsTest {
       server.share/dir/tmp/nested/file,  \\server.share\dir,    tmp/nested/file"""
   )
   fun `test rootRelativeToEelPath with Path parameter`(relativePath: String, expectedRoot: String, expectedSubpath: String) {
-    assertEquals("$expectedRoot${if (expectedSubpath.isEmpty()) "" else "\\$expectedSubpath"}".replace("\\", File.separator), WindowsPathUtils.rootRelativeToEelPath(relativePath).replace("\\", File.separator))
-    assertEquals(expectedRoot to Path(expectedSubpath ?: ""), WindowsPathUtils.rootRelativeToEelPath(Path(relativePath)))
+    assertEquals("$expectedRoot${if (expectedSubpath.isEmpty()) "" else "\\$expectedSubpath"}".replace("\\", File.separator), WindowsPathUtils.rootRelativeToEelPath(relativePath.replace("/", File.separator)).replace("\\", File.separator))
+    assertEquals(expectedRoot to Path(expectedSubpath), WindowsPathUtils.rootRelativeToEelPath(Path(relativePath.replace("/", File.separator))))
   }
 }
