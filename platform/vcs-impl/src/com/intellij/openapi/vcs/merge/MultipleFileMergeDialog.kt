@@ -92,7 +92,7 @@ open class MultipleFileMergeDialog(
   private lateinit var acceptTheirsButton: JButton
   private lateinit var mergeButton: JButton
   private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(), createColumns())
-  private val table: TreeTable
+  private lateinit var table: TreeTable
 
   private var groupByDirectory: Boolean = false
     get() = when {
@@ -104,49 +104,47 @@ open class MultipleFileMergeDialog(
       else -> field = value
     }
 
-  private val virtualFileRenderer = object : ChangesBrowserNodeRenderer(project, { !groupByDirectory }, false) {
-    override fun calcFocusedState() = UIUtil.isAncestor(this@MultipleFileMergeDialog.peer.window,
-                                                        IdeFocusManager.getInstance(project).focusOwner)
-  }
-
   init {
     project?.let { StoreReloadManager.getInstance(project).blockReloadingProjectOnExternalChanges() }
     title = mergeDialogCustomizer.getMultipleFileDialogTitle()
-    virtualFileRenderer.font = UIUtil.getListFont()
-
-    table = MergeConflictsTreeTable(tableModel)
-    table.setTreeCellRenderer(virtualFileRenderer)
-    table.rowHeight = virtualFileRenderer.preferredSize.height
-    table.preferredScrollableViewportSize = JBUI.size(600, 300)
-
-    DataManager.registerDataProvider(table) { dataId ->
-      when {
-        PlatformDataKeys.TREE_EXPANDER.`is`(dataId) -> DefaultTreeTableExpander(table)
-        else -> null
-      }
-    }
-
     @Suppress("LeakingThis")
     init()
 
     updateTree(SetDefaultTreeStateStrategy())
-
-    table.tree.selectionModel.addTreeSelectionListener { updateButtonState() }
-    updateButtonState()
-
-    object : DoubleClickListener() {
-      override fun onDoubleClick(event: MouseEvent): Boolean {
-        if (EditSourceOnDoubleClickHandler.isToggleEvent(table.tree, event)) return false
-        showMergeDialog()
-        return true
-      }
-    }.installOn(table.tree)
-
-    TableSpeedSearch.installOn(table, Convertor { (it as? VirtualFile)?.name })
   }
 
   override fun createCenterPanel(): JComponent {
-    return panel {
+    table = MergeConflictsTreeTable(tableModel).apply {
+      val virtualFileRenderer = object : ChangesBrowserNodeRenderer(project, { !groupByDirectory }, false) {
+        override fun calcFocusedState() = UIUtil.isAncestor(this@MultipleFileMergeDialog.peer.window,
+                                                            IdeFocusManager.getInstance(project).focusOwner)
+      }.apply {
+        font = UIUtil.getListFont()
+      }
+
+      setTreeCellRenderer(virtualFileRenderer)
+      rowHeight = virtualFileRenderer.preferredSize.height
+      preferredScrollableViewportSize = JBUI.size(600, 300)
+
+      object : DoubleClickListener() {
+        override fun onDoubleClick(event: MouseEvent): Boolean {
+          if (EditSourceOnDoubleClickHandler.isToggleEvent(tree, event)) return false
+          showMergeDialog()
+          return true
+        }
+      }.installOn(this)
+    }.also { table ->
+      TableSpeedSearch.installOn(table, Convertor { (it as? VirtualFile)?.name })
+
+      DataManager.registerDataProvider(table) { dataId ->
+        when {
+          PlatformDataKeys.TREE_EXPANDER.`is`(dataId) -> DefaultTreeTableExpander(table)
+          else -> null
+        }
+      }
+    }
+
+    val panel = panel {
       row {
         label(VcsBundle.message("merge.loading.merge.details")).applyToComponent {
           initOnShow("MultipleFileMergeDialog - Load Label") {
@@ -201,6 +199,11 @@ open class MultipleFileMergeDialog(
         }
       }
     }
+
+    table.tree.selectionModel.addTreeSelectionListener { updateButtonState() }
+    updateButtonState()
+
+    return panel
   }
 
   private fun createColumns(): Array<ColumnInfo<*, *>> {
