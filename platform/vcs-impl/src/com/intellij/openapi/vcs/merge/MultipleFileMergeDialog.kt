@@ -15,14 +15,13 @@ import com.intellij.diff.util.DiffUtil
 import com.intellij.ide.DataManager
 import com.intellij.ide.util.treeView.TreeState
 import com.intellij.openapi.actionSystem.PlatformDataKeys
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.UiWithModelAccess
 import com.intellij.openapi.command.WriteCommandAction.writeCommandAction
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.getOrHandleException
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProcessCanceledException
-import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
@@ -36,12 +35,13 @@ import com.intellij.openapi.vcs.VcsException
 import com.intellij.openapi.vcs.changes.VcsDirtyScopeManager
 import com.intellij.openapi.vcs.changes.ui.ChangesBrowserNodeRenderer
 import com.intellij.openapi.vcs.changes.ui.ChangesGroupingSupport
-import com.intellij.openapi.vcs.changes.ui.ChangesTree
 import com.intellij.openapi.vcs.changes.ui.NoneChangesGroupingFactory
 import com.intellij.openapi.vcs.changes.ui.TreeModelBuilder
 import com.intellij.openapi.vcs.changes.ui.VcsTreeModelData
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.IdeFocusManager
+import com.intellij.platform.ide.progress.ModalTaskOwner
+import com.intellij.platform.ide.progress.runWithModalProgressBlocking
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.TableUtil
@@ -276,47 +276,39 @@ open class MultipleFileMergeDialog(
 
     FileDocumentManager.getInstance().saveAllDocuments()
 
-    ProgressManager.getInstance().run(object : Task.Modal(project,
-                                                          VcsBundle.message(
-                                                            "multiple.file.merge.dialog.progress.title.resolving.conflicts"), false) {
-      override fun run(indicator: ProgressIndicator) {
-        if (!beforeResolve(files)) {
-          return
-        }
+    runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel),
+                                 VcsBundle.message("multiple.file.merge.dialog.progress.title.resolving.conflicts")) {
+      if (!beforeResolve(files)) {
+        return@runWithModalProgressBlocking
+      }
 
-        try {
-          if (mergeSession is MergeSessionEx) {
-            mergeSession.acceptFilesRevisions(files, resolution)
-
-            for (file in files) {
-              checkMarkModifiedProject(project, file)
-            }
-
-            markFilesProcessed(files, resolution)
-          }
-          else {
-            for (file in files) {
-              val data = mergeProvider.loadRevisions(file)
-              ApplicationManager.getApplication().invokeAndWait({
-                                                                  resolveFileViaContent(file, resolution, data)
-                                                                }, indicator.modalityState)
-              checkMarkModifiedProject(project, file)
-              markFileProcessed(file, resolution)
-            }
+      runCatching {
+        if (mergeSession is MergeSessionEx) {
+          mergeSession.acceptFilesRevisions(files, resolution)
+          for (file in files) {
+            checkMarkModifiedProject(project, file)
           }
 
+          markFilesProcessed(files, resolution)
         }
-        catch (e: Exception) {
-          LOG.warn(e)
-          ApplicationManager.getApplication().invokeAndWait({
-                                                              Messages.showErrorDialog(contentPanel,
-                                                                                       VcsBundle.message(
-                                                                                         "multiple.file.merge.dialog.message.error.saving.merged.data",
-                                                                                         e.message))
-                                                            }, indicator.modalityState)
+        else {
+          for (file in files) {
+            val data = mergeProvider.loadRevisions(file)
+            withContext(Dispatchers.UiWithModelAccess) {
+              resolveFileViaContent(file, resolution, data)
+            }
+            checkMarkModifiedProject(project, file)
+            markFileProcessed(file, resolution)
+          }
+        }
+      }.getOrHandleException {
+        withContext(Dispatchers.UiWithModelAccess) {
+          Messages.showErrorDialog(contentPanel, VcsBundle.message(
+            "multiple.file.merge.dialog.message.error.saving.merged.data",
+            it.message))
         }
       }
-    })
+    }
 
     updateModelFromFiles()
   }
