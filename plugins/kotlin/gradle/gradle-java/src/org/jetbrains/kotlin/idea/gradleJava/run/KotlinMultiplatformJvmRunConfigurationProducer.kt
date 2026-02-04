@@ -60,7 +60,10 @@ class KotlinMultiplatformJvmRunConfigurationProducer : LazyRunConfigurationProdu
         val isDifferentMainFunction = function.containingKtFile.javaFileFacadeFqName.asString() != configuration.mainFunctionClassFqn
         if (isDifferentMainFunction) return false
 
-        return mainClassScriptParameter(function) in configuration.settings.scriptParameters
+        if (runTask.gradlePluginType == KotlinGradlePluginType.Multiplatform &&
+            mainClassScriptParameter(function) !in configuration.settings.scriptParameters) return false
+
+        return true
     }
 
     override fun setupConfigurationFromContext(
