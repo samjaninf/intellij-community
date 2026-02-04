@@ -5,11 +5,11 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 
-open class WhatsNewMultipageIdProvider(val project: Project) {
-  protected open suspend fun getMultipageId(): String? = null
+open class WhatsNewMultipageStartIdProvider(val project: Project) {
+  protected open suspend fun getId(): String? = null
 
-  internal suspend fun getMultipageIdIfSupported(multipageIds: List<String>): String? {
-    return getMultipageId()?.checkSupported(multipageIds)
+  internal suspend fun getIdIfSupported(multipageIds: List<String>): String? {
+    return getId()?.checkSupported(multipageIds)
   }
 
   private fun String.checkSupported(multipageIds: List<String>): String {
@@ -21,11 +21,11 @@ open class WhatsNewMultipageIdProvider(val project: Project) {
   }
 
   companion object {
-    fun getInstance(project: Project): WhatsNewMultipageIdProvider = project.service()
+    fun getInstance(project: Project): WhatsNewMultipageStartIdProvider = project.service()
   }
 }
 
-private val logger = logger<WhatsNewMultipageIdProvider>()
+private val logger = logger<WhatsNewMultipageStartIdProvider>()
 
 
 

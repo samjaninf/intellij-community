@@ -187,7 +187,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
   private val contentHash: String
   private val myActionWhiteList: Set<String>
   private val visionActionIds = setOf(GIF_VALUE, ZOOM_VALUE)
-  private val multipageIds: List<String>
+  internal val multipageIds: List<String>
 
   init {
     var html = page.html
@@ -288,7 +288,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     withContext(Dispatchers.EDT) {
       logger.info("Opening What's New in editor.")
       val disposable = Disposer.newDisposable(project)
-      val startPageId = WhatsNewMultipageIdProvider.getInstance(project).getMultipageIdIfSupported(multipageIds)
+      val startPageId = WhatsNewMultipageStartIdProvider.getInstance(project).getIdIfSupported(multipageIds)
       val request = getRequest(startPageId, dataContext)
       val editor = writeIntentReadAction { openEditor(project, title, request) }
 
@@ -318,8 +318,8 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     dataContext: DataContext?,
   ): HTMLEditorProvider.Request {
     val request = startPageId?.let {
-      html(content, "file:///jbcefbrowser#$it").withOnUrlChanged { oldUrl, newUrl ->
-        WhatsNewCounterUsageCollector.urlChanged(dataContext?.project, oldUrl, newUrl)
+      html(content, "file:///jbcefbrowser#/$it").withOnUrlChanged { oldUrl, newUrl ->
+        WhatsNewCounterUsageCollector.multipageIdChanged(dataContext?.project, oldUrl?.substringAfter("#/"), newUrl.substringAfter("#/"))
       }
     } ?: html(content)
     return request
