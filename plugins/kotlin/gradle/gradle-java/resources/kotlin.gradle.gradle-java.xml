@@ -65,6 +65,7 @@
     <orderEnumerationHandlerFactory implementation="org.jetbrains.kotlin.idea.gradleJava.execution.KotlinGradleOrderEnumerationHandler$Factory" order="first"/>
 
     <executionEnvironmentProvider implementation="org.jetbrains.kotlin.idea.gradleJava.execution.KotlinGradleAppEnvProvider"/>
+    <executionEnvironmentProvider implementation="org.jetbrains.kotlin.idea.gradleJava.execution.ComposeJvmGradleEnvProvider"/>
     <initScriptGenerator implementation="org.jetbrains.kotlin.idea.gradleJava.execution.KotlinMppGradleInitScriptGenerator"/>
     <buildTasksProvider implementation="org.jetbrains.kotlin.idea.gradleJava.execution.KotlinMPPBuildTasksProvider"/>
   </extensions>
