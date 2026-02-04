@@ -88,9 +88,6 @@ open class MultipleFileMergeDialog(
   private var unresolvedFiles = files.toMutableList()
   private val mergeSession = (mergeProvider as? MergeProvider2)?.createMergeSession(files)
   val processedFiles: MutableList<VirtualFile> = mutableListOf()
-  private lateinit var acceptYoursButton: JButton
-  private lateinit var acceptTheirsButton: JButton
-  private lateinit var mergeButton: JButton
   private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(), createColumns())
   private lateinit var table: TreeTable
 
@@ -114,6 +111,10 @@ open class MultipleFileMergeDialog(
   }
 
   override fun createCenterPanel(): JComponent {
+    lateinit var acceptYoursButton: JButton
+    lateinit var acceptTheirsButton: JButton
+    lateinit var mergeButton: JButton
+
     table = MergeConflictsTreeTable(tableModel).apply {
       val virtualFileRenderer = object : ChangesBrowserNodeRenderer(project, { !groupByDirectory }, false) {
         override fun calcFocusedState() = UIUtil.isAncestor(this@MultipleFileMergeDialog.peer.window,
@@ -200,8 +201,19 @@ open class MultipleFileMergeDialog(
       }
     }
 
+    fun updateButtonState() {
+      val selectedFiles = table.selectedFiles
+      val haveSelection = selectedFiles.any()
+      val haveUnmergeableFiles = selectedFiles.any { mergeSession?.canMerge(it) == false }
+      val haveUnacceptableFiles =
+        selectedFiles.any { mergeSession != null && mergeSession !is MergeSessionEx && !mergeSession.canMerge(it) }
+
+      acceptYoursButton.isEnabled = haveSelection && !haveUnacceptableFiles
+      acceptTheirsButton.isEnabled = haveSelection && !haveUnacceptableFiles
+      mergeButton.isEnabled = haveSelection && !haveUnmergeableFiles
+    }
+
     table.tree.selectionModel.addTreeSelectionListener { updateButtonState() }
-    updateButtonState()
 
     return panel
   }
@@ -256,17 +268,6 @@ open class MultipleFileMergeDialog(
     (table.model as? AbstractTableModel)?.fireTableDataChanged()
 
     TableUtil.scrollSelectionToVisible(table)
-  }
-
-  private fun updateButtonState() {
-    val selectedFiles = table.selectedFiles
-    val haveSelection = selectedFiles.any()
-    val haveUnmergeableFiles = selectedFiles.any { mergeSession?.canMerge(it) == false }
-    val haveUnacceptableFiles = selectedFiles.any { mergeSession != null && mergeSession !is MergeSessionEx && !mergeSession.canMerge(it) }
-
-    acceptYoursButton.isEnabled = haveSelection && !haveUnacceptableFiles
-    acceptTheirsButton.isEnabled = haveSelection && !haveUnacceptableFiles
-    mergeButton.isEnabled = haveSelection && !haveUnmergeableFiles
   }
 
   override fun createActions(): Array<Action> {
