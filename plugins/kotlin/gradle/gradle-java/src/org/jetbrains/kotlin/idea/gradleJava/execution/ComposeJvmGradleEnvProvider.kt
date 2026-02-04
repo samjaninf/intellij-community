@@ -3,7 +3,9 @@ package org.jetbrains.kotlin.idea.gradleJava.execution
 
 import com.intellij.execution.Executor
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiNameHelper
 import com.intellij.task.ExecuteRunConfigurationTask
 import org.jetbrains.kotlin.idea.gradleJava.run.isComposeJvm
 import org.jetbrains.kotlin.idea.gradleJava.run.mainFunctionClassFqn
@@ -24,10 +26,18 @@ internal class ComposeJvmGradleEnvProvider : GradleExecutionEnvironmentProvider 
     ): ExecutionEnvironment? {
         val gradleRunConfiguration = (task?.runProfile) as? GradleRunConfiguration ?: return null
         val mainClassFqn = gradleRunConfiguration.mainFunctionClassFqn
-        if (!gradleRunConfiguration.isComposeJvm || mainClassFqn.isNullOrBlank()) return null
+        if (!gradleRunConfiguration.isComposeJvm ||
+            mainClassFqn.isNullOrBlank() ||
+            project == null
+        ) return null
+
+        // Validate the main class FQN to prevent code injection
+        if (!PsiNameHelper.getInstance(project).isQualifiedName(mainClassFqn)) {
+            thisLogger().warn("Invalid main class FQN: $mainClassFqn")
+            return null
+        }
 
         val runAppTaskName = gradleRunConfiguration.name
-
         val initScript = generateInitScript(mainClassFqn)
         gradleRunConfiguration.putUserData<String>(GradleTaskManager.INIT_SCRIPT_KEY, initScript)
         gradleRunConfiguration.putUserData<String>(GradleTaskManager.INIT_SCRIPT_PREFIX_KEY, runAppTaskName)
