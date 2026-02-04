@@ -61,6 +61,8 @@ class MergeConflictModel(
   var precalculatedData: MergeDiffData? = null
     private set
 
+  var contentModified: Boolean = false
+
   @RequiresBlockingContext
   @Throws(DiffTooBigException::class, InvalidDiffRequestException::class)
   fun rediffBlocking(
@@ -93,6 +95,7 @@ class MergeConflictModel(
         throw InvalidDiffRequestException(ReadOnlyModificationException(document, null))
       }
       else {
+        contentModified = false
         precalculatedData = mergeDiffData
         initWithData(mergeDiffData)
       }
@@ -361,6 +364,7 @@ class MergeConflictModel(
     affectedIndexes: IntList?,
     task: () -> Unit,
   ): Boolean {
+    contentModified = true
     return resultModel.executeMergeCommand(commandName, commandGroupId, undoConfirmationPolicy, bulkUpdate, affectedIndexes, task)
   }
 

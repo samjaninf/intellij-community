@@ -9,13 +9,17 @@ import com.intellij.diff.InvalidDiffRequestException
 import com.intellij.diff.merge.MergeRequest
 import com.intellij.diff.merge.MergeResult
 import com.intellij.diff.merge.MergeUtil
+import com.intellij.diff.merge.TextMergeRequest
 import com.intellij.diff.statistics.MergeAction
 import com.intellij.diff.statistics.MergeStatisticsCollector
 import com.intellij.diff.util.DiffUtil
+import com.intellij.diff.util.Side
 import com.intellij.ide.DataManager
 import com.intellij.ide.util.treeView.TreeState
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.UiWithModelAccess
+import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.command.UndoConfirmationPolicy
 import com.intellij.openapi.command.WriteCommandAction.writeCommandAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.getOrHandleException
@@ -28,13 +32,17 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.NlsContexts.ColumnName
+import com.intellij.openapi.util.NlsSafe
 import com.intellij.openapi.util.io.FileTooBigException
 import com.intellij.openapi.vcs.VcsBundle
 import com.intellij.openapi.vcs.VcsConfiguration
 import com.intellij.openapi.vcs.VcsException
 import com.intellij.openapi.vcs.changes.VcsDirtyScopeManager
+import com.intellij.openapi.vcs.changes.ui.ChangesBrowserNode
 import com.intellij.openapi.vcs.changes.ui.ChangesBrowserNodeRenderer
+import com.intellij.openapi.vcs.changes.ui.ChangesGroupingPolicyFactory
 import com.intellij.openapi.vcs.changes.ui.ChangesGroupingSupport
+import com.intellij.openapi.vcs.changes.ui.ChangesTree
 import com.intellij.openapi.vcs.changes.ui.NoneChangesGroupingFactory
 import com.intellij.openapi.vcs.changes.ui.TreeModelBuilder
 import com.intellij.openapi.vcs.changes.ui.VcsTreeModelData
@@ -66,9 +74,11 @@ import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.initOnShow
 import com.intellij.util.ui.tree.TreeUtil
 import com.intellij.vcsUtil.VcsUtil
+import it.unimi.dsi.fastutil.ints.IntList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.NonNls
+import java.awt.Color
 import java.awt.event.ActionEvent
 import java.awt.event.MouseEvent
 import java.io.IOException
@@ -78,6 +88,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.table.AbstractTableModel
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeNode
 
 open class MultipleFileMergeDialog(
@@ -104,6 +115,9 @@ open class MultipleFileMergeDialog(
       else -> field = value
     }
 
+  private val iterativeDataHolder =
+    if (MergeConflictIterativeResolution.isEnabled()) MergeConflictIterativeDataHolder(project, disposable) else null
+
   init {
     project?.blockReloadingProjectOnExternalChanges()
     title = mergeDialogCustomizer.getMultipleFileDialogTitle()
@@ -122,6 +136,11 @@ open class MultipleFileMergeDialog(
       val virtualFileRenderer = object : ChangesBrowserNodeRenderer(project, { !groupByDirectory }, false) {
         override fun calcFocusedState() = UIUtil.isAncestor(this@MultipleFileMergeDialog.peer.window,
                                                             IdeFocusManager.getInstance(project).focusOwner)
+
+        override fun appendFileName(vFile: VirtualFile?, fileName: @NlsSafe String, color: Color?) {
+          val adjustedColor = if (MergeConflictIterativeResolution.isEnabled()) null else color
+          super.appendFileName(vFile, fileName, adjustedColor)
+        }
       }.apply {
         font = UIUtil.getListFont()
       }
@@ -216,7 +235,15 @@ open class MultipleFileMergeDialog(
 
       acceptYoursButton.isEnabled = haveSelection && !haveUnacceptableFiles
       acceptTheirsButton.isEnabled = haveSelection && !haveUnacceptableFiles
+
+      val onlyResolvedFiles = selectedFiles.all { iterativeDataHolder?.isFileResolved(it) ?: false }
       mergeButton.isEnabled = haveSelection && !haveUnmergeableFiles
+      mergeButton.text = if (!onlyResolvedFiles || selectedFiles.isEmpty()) {
+        VcsBundle.message("multiple.file.merge.merge")
+      }
+      else {
+        VcsBundle.message("multiple.file.merge.open")
+      }
     }
 
     table.tree.selectionModel.addTreeSelectionListener { updateButtonState() }
@@ -231,12 +258,16 @@ open class MultipleFileMergeDialog(
   }
 
   private fun <State> updateTree(treeStateStrategy: TreeTableStateStrategy<State>) {
+    val iterativelyResolved = iterativeDataHolder?.getResolvedFiles() ?: emptySet()
+    val allUnresolved = unresolvedFiles - iterativelyResolved
+    val allResolved = (processedFiles + iterativelyResolved).distinct()
+
     val factory = when {
       project != null && groupByDirectory -> ChangesGroupingSupport.findFactory(ChangesGroupingSupport.DIRECTORY_GROUPING)
                                              ?: NoneChangesGroupingFactory
       else -> NoneChangesGroupingFactory
     }
-    val model = TreeModelBuilder.buildFromVirtualFiles(project, factory, unresolvedFiles)
+    val model = buildTreeModel(project, factory, allUnresolved, allResolved)
 
     val savedState = treeStateStrategy.saveState(table)
     tableModel.setRoot(model.root as TreeNode)
@@ -268,7 +299,14 @@ open class MultipleFileMergeDialog(
   private fun acceptForResolution(resolution: MergeSession.Resolution, files: List<VirtualFile>) {
     val (binaryFiles, textFiles) = files.partition { mergeProvider.isBinary(it) }
     acceptRevision(resolution, binaryFiles)
-    acceptRevision(resolution, textFiles)
+
+    val iterativeDataHolder = this.iterativeDataHolder
+    if (iterativeDataHolder == null) {
+      acceptRevision(resolution, textFiles)
+    }
+    else {
+      acceptRevisionForIterativeResolution(textFiles, resolution, iterativeDataHolder)
+    }
   }
 
   private fun acceptRevision(resolution: MergeSession.Resolution, files: List<VirtualFile>) {
@@ -277,7 +315,7 @@ open class MultipleFileMergeDialog(
     val side = if (resolution == MergeSession.Resolution.AcceptedYours) MergeAction.LEFT else MergeAction.RIGHT
     MergeStatisticsCollector.logButtonClickOnTable(project, side)
 
-    FileDocumentManager.getInstance().saveAllDocuments()
+    runWriteAction { FileDocumentManager.getInstance().saveAllDocuments() }
 
     runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel),
                                  VcsBundle.message("multiple.file.merge.dialog.progress.title.resolving.conflicts")) {
@@ -314,6 +352,55 @@ open class MultipleFileMergeDialog(
     }
 
     updateModelFromFiles()
+  }
+
+  private fun acceptRevisionForIterativeResolution(
+    files: List<VirtualFile>,
+    resolution: MergeSession.Resolution,
+    iterativeDataHolder: MergeConflictIterativeDataHolder,
+  ) {
+    assert(resolution.yoursOrTheirs())
+
+    runWriteAction { FileDocumentManager.getInstance().saveAllDocuments() }
+
+    runForFilesWithErrorHandling(files) { file ->
+      acceptRevisionForFileIterativeResolution(file, resolution, iterativeDataHolder)
+    }
+
+    updateModelFromFiles()
+  }
+
+  @RequiresBlockingContext
+  @RequiresEdt
+  private fun acceptRevisionForFileIterativeResolution(
+    file: VirtualFile,
+    resolution: MergeSession.Resolution,
+    iterativeDataHolder: MergeConflictIterativeDataHolder,
+  ) {
+    assert(!mergeProvider.isBinary(file))
+
+    val request = createMergeRequest(file, null)
+    if (request !is TextMergeRequest) {
+      LOG.error("Incorrect merge request type: $request")
+      return
+    }
+
+    // TODO: Remove this and make everything coroutine-native
+    val model = runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel), "") {
+      iterativeDataHolder.prepareModel(file, request)
+    }
+    val affected = IntList.of(*model.getAllChanges().map { it.index }.toIntArray())
+
+    model.executeMergeCommand(DiffBundle.message("merge.dialog.resolve.conflict.command"), null,
+                              UndoConfirmationPolicy.DEFAULT,
+                              true,
+                              affected) {
+      val side = if (resolution == MergeSession.Resolution.AcceptedTheirs) Side.RIGHT else Side.LEFT
+      model.resetAllChanges()
+      model.replaceAllChanges(side)
+    }
+    saveDocument(file)
+    checkMarkModifiedProject(project, file)
   }
 
   @RequiresEdt
@@ -361,12 +448,32 @@ open class MultipleFileMergeDialog(
   }
 
   private fun updateModelFromFiles() {
-    if (unresolvedFiles.isEmpty()) {
+    val iterativelyResolved = iterativeDataHolder?.getResolvedFiles() ?: emptySet()
+    if ((unresolvedFiles - iterativelyResolved).isEmpty()) {
       doCancelAction()
     }
     else {
       updateTree(OnModelChangeTreeStateStrategy())
       table.requestFocusInWindow()
+    }
+  }
+
+  override fun doCancelAction() {
+    finishResolution()
+    super.doCancelAction()
+  }
+
+  private fun finishResolution() {
+    val iterativelyResolved = iterativeDataHolder?.getResolvedFiles() ?: return
+
+    iterativelyResolved.forEach { file ->
+      saveDocument(file)
+      checkMarkModifiedProject(project, file)
+
+      runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel),
+                                   VcsBundle.message("multiple.file.merge.dialog.progress.title.resolving.conflicts")) {
+        markFileProcessed(file, getSessionResolution(MergeResult.RESOLVED))
+      }
     }
   }
 
@@ -393,10 +500,20 @@ open class MultipleFileMergeDialog(
       checkMarkModifiedProject(project, file)
 
       if (result != MergeResult.CANCEL) {
-        runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel),
-                                     VcsBundle.message("multiple.file.merge.dialog.progress.title.resolving.conflicts")) {
-          markFileProcessed(file, getSessionResolution(result))
+        val iterativelyResolved = iterativeDataHolder?.isFileResolved(file) ?: false
+
+        if (!iterativelyResolved) {
+          runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel),
+                                       VcsBundle.message("multiple.file.merge.dialog.progress.title.resolving.conflicts")) {
+            markFileProcessed(file, getSessionResolution(result))
+          }
         }
+      }
+    }
+
+    if (request is TextMergeRequest && iterativeDataHolder != null) {
+      runWithModalProgressBlocking(ModalTaskOwner.component(contentPanel), "") {
+        iterativeDataHolder.prepareModel(file, request)
       }
     }
 
@@ -528,6 +645,46 @@ private fun getSessionResolution(result: MergeResult): MergeSession.Resolution =
   MergeResult.RIGHT -> MergeSession.Resolution.AcceptedTheirs
   MergeResult.RESOLVED -> MergeSession.Resolution.Merged
   MergeResult.CANCEL -> throw IllegalArgumentException(result.name)
+}
+
+private fun buildTreeModel(
+  project: Project?,
+  grouping: ChangesGroupingPolicyFactory,
+  unresolvedFiles: List<VirtualFile>,
+  resolvedFiles: List<VirtualFile>,
+): DefaultTreeModel {
+  if (!MergeConflictIterativeResolution.isEnabled()) {
+    return TreeModelBuilder.buildFromVirtualFiles(project, grouping, unresolvedFiles)
+  }
+
+  val unresolvedNode = ConflictsGroupNode(ConflictsNodeType.UNRESOLVED)
+  val resolvedNode = ConflictsGroupNode(ConflictsNodeType.RESOLVED)
+
+  return TreeModelBuilder(project, grouping).apply {
+    if (unresolvedFiles.isNotEmpty()) {
+      insertSubtreeRoot(unresolvedNode)
+      insertFilesIntoNode(unresolvedFiles, unresolvedNode)
+    }
+    if (resolvedFiles.isNotEmpty()) {
+      insertSubtreeRoot(resolvedNode)
+      insertFilesIntoNode(resolvedFiles, resolvedNode)
+
+    }
+  }.build()
+}
+
+private enum class ConflictsNodeType {
+  UNRESOLVED,
+  RESOLVED
+}
+
+private class ConflictsGroupNode(val type: ConflictsNodeType) : ChangesBrowserNode<ConflictsNodeType>(type) {
+  override fun getTextPresentation(): String = when (type) {
+    ConflictsNodeType.UNRESOLVED -> VcsBundle.message("changes.nodetitle.merge.dialog.unresolved")
+    ConflictsNodeType.RESOLVED -> VcsBundle.message("changes.nodetitle.merge.dialog.resolved")
+  }
+
+  override fun shouldExpandByDefault(): Boolean = true
 }
 
 private val TreeTable.selectedFiles: List<VirtualFile>

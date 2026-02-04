@@ -3240,6 +3240,7 @@ c:com.intellij.openapi.vcs.merge.MultipleFileMergeDialog
 - p:createActions():javax.swing.Action[]
 - p:createCenterPanel():javax.swing.JComponent
 - p:dispose():V
+- doCancelAction():V
 - p:getDimensionServiceKey():java.lang.String
 - getPreferredFocusedComponent():javax.swing.JComponent
 - f:getProcessedFiles():java.util.List
