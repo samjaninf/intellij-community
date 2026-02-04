@@ -4255,5 +4255,15 @@ public class Py3TypeCheckerInspectionTest extends PyInspectionTestCase {
                        serial_number = property(_get_serial_number)
                    """);
   }
+
+  // PY-86873
+  public void testNestedListUnpacking() {
+    doTestByText("""
+                   def f(edges: list[list[int]]):
+                       [[node_a], second_edge] = edges
+                       a: int = node_a
+                       c: list[int] = second_edge
+                   """);
+  }
 }
 
