@@ -90,11 +90,11 @@ open class MultipleFileMergeDialog(
   private var unresolvedFiles = files.toMutableList()
   private val mergeSession = (mergeProvider as? MergeProvider2)?.createMergeSession(files)
   val processedFiles: MutableList<VirtualFile> = mutableListOf()
-  private val table: TreeTable
   private lateinit var acceptYoursButton: JButton
   private lateinit var acceptTheirsButton: JButton
   private lateinit var mergeButton: JButton
   private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(), createColumns())
+  private val table: TreeTable
 
   private lateinit var descriptionLabel: JEditorPane
 
