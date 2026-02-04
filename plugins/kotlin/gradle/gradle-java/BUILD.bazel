@@ -93,6 +93,7 @@ jvm_library(
     "//platform/lang-api:lang",
     "//platform/execution",
     "//plugins/kotlin/base/indices",
+    "//platform/util/jdom",
   ]
 )
 
@@ -183,6 +184,7 @@ jvm_library(
     "//platform/lang-api:lang",
     "//platform/execution",
     "//plugins/kotlin/base/indices",
+    "//platform/util/jdom",
   ]
 )
 ### auto-generated section `build kotlin.gradle.gradle-java` end

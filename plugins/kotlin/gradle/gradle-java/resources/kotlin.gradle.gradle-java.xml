@@ -109,6 +109,8 @@
     <runConfigurationProducer implementation="org.jetbrains.kotlin.idea.gradleJava.testing.KotlinAllInPackageGradleConfigurationProducer"
                               order="before allInPackageGradleConfigurationProducer"/>
 
+    <externalSystem.runConfigurationEx implementation="org.jetbrains.kotlin.idea.gradleJava.run.ComposeJvmRunConfigurationExtension"/>
+
     <registryKey
             key="kotlin.gradle.testing.enabled"
             description="Import Kotlin Gradle test tasks and process test output"
