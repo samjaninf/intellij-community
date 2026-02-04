@@ -102,7 +102,7 @@ open class MultipleFileMergeDialog(
     }
 
   init {
-    project?.let { StoreReloadManager.getInstance(project).blockReloadingProjectOnExternalChanges() }
+    project?.blockReloadingProjectOnExternalChanges()
     title = mergeDialogCustomizer.getMultipleFileDialogTitle()
     @Suppress("LeakingThis")
     init()
@@ -276,7 +276,7 @@ open class MultipleFileMergeDialog(
   }
 
   override fun dispose() {
-    project?.let { StoreReloadManager.getInstance(project).unblockReloadingProjectOnExternalChanges() }
+    project?.unblockReloadingProjectOnExternalChanges()
     super.dispose()
   }
 
@@ -289,7 +289,7 @@ open class MultipleFileMergeDialog(
   }
 
   private fun acceptRevision(resolution: MergeSession.Resolution) {
-    assert(resolution == MergeSession.Resolution.AcceptedYours || resolution == MergeSession.Resolution.AcceptedTheirs)
+    assert(resolution.yoursOrTheirs())
 
     val side = if (resolution == MergeSession.Resolution.AcceptedYours) MergeAction.LEFT else MergeAction.RIGHT
     MergeStatisticsCollector.logButtonClickOnTable(project, side)
@@ -310,7 +310,7 @@ open class MultipleFileMergeDialog(
             mergeSession.acceptFilesRevisions(files, resolution)
 
             for (file in files) {
-              checkMarkModifiedProject(file)
+              checkMarkModifiedProject(project, file)
             }
 
             markFilesProcessed(files, resolution)
@@ -321,7 +321,7 @@ open class MultipleFileMergeDialog(
               ApplicationManager.getApplication().invokeAndWait({
                                                                   resolveFileViaContent(file, resolution, data)
                                                                 }, indicator.modalityState)
-              checkMarkModifiedProject(file)
+              checkMarkModifiedProject(project, file)
               markFileProcessed(file, resolution)
             }
           }
@@ -437,11 +437,8 @@ open class MultipleFileMergeDialog(
       val title = conflictData.title
 
       val callback = { result: MergeResult ->
-        val document = FileDocumentManager.getInstance().getCachedDocument(file)
-        if (document != null) {
-          application.runWriteAction { FileDocumentManager.getInstance().saveDocument(document) }
-        }
-        checkMarkModifiedProject(file)
+        saveDocument(file)
+        checkMarkModifiedProject(project, file)
 
         if (result != MergeResult.CANCEL) {
           ProgressManager.getInstance()
@@ -482,107 +479,124 @@ open class MultipleFileMergeDialog(
     updateModelFromFiles()
   }
 
-  private fun getSessionResolution(result: MergeResult): MergeSession.Resolution = when (result) {
-    MergeResult.LEFT -> MergeSession.Resolution.AcceptedYours
-    MergeResult.RIGHT -> MergeSession.Resolution.AcceptedTheirs
-    MergeResult.RESOLVED -> MergeSession.Resolution.Merged
-    else -> throw IllegalArgumentException(result.name)
-  }
-
-  private fun checkMarkModifiedProject(file: VirtualFile) {
-    MergeUtil.reportProjectFileChangeIfNeeded(project, file)
-  }
-
   override fun getPreferredFocusedComponent(): JComponent? = table
+}
 
-  private fun <T> tryCompute(task: () -> T): T? {
-    try {
-      return task()
-    }
-    catch (e: ProcessCanceledException) {
-      throw e
-    }
-    catch (e: VcsException) {
-      LOG.warn(e)
-    }
-    catch (e: Exception) {
-      LOG.error(e)
-    }
-    return null
+private fun <T> tryCompute(task: () -> T): T? {
+  try {
+    return task()
   }
-
-  companion object {
-    private val LOG = Logger.getInstance(MultipleFileMergeDialog::class.java)
+  catch (e: ProcessCanceledException) {
+    throw e
   }
-
-  private data class ConflictData(
-    val mergeData: MergeData,
-    val title: @NlsContexts.DialogTitle String?,
-    val contentTitles: List<@NlsContexts.Label String?>,
-    val contentTitleCustomizers: MergeDialogCustomizer.DiffEditorTitleCustomizerList
-  )
-
-  /**
-   * See [ChangesTree.TreeStateStrategy] that cannot be applied to [TreeTable]
-   */
-  private interface TreeTableStateStrategy<T> {
-    fun saveState(table: TreeTable): T
-
-    fun restoreState(table: TreeTable, state: T)
+  catch (e: VcsException) {
+    LOG.warn(e)
   }
-
-  private class SetDefaultTreeStateStrategy : TreeTableStateStrategy<Any?> {
-    override fun saveState(table: TreeTable): Any? = null
-
-    override fun restoreState(table: TreeTable, state: Any?) {
-      TreeUtil.expandAll(table.tree)
-      TreeUtil.promiseSelectFirstLeaf(table.tree)
-    }
+  catch (e: Exception) {
+    LOG.error(e)
   }
+  return null
+}
 
-  private class OnGroupingChangeTreeStateStrategy : TreeTableStateStrategy<OnGroupingChangeTreeStateStrategy.SelectionState> {
-    override fun saveState(table: TreeTable): SelectionState {
-      val selectedFiles = table.selectedFiles
-      return SelectionState(selectedFiles)
-    }
+private val LOG = Logger.getInstance(MultipleFileMergeDialog::class.java)
 
-    override fun restoreState(table: TreeTable, state: SelectionState) {
-      TreeUtil.expandAll(table.tree)
+private fun Project?.blockReloadingProjectOnExternalChanges() {
+  this ?: return
+  StoreReloadManager.getInstance(this).blockReloadingProjectOnExternalChanges()
+}
 
-      val newRoot = table.tree.model.root as DefaultMutableTreeNode
-      val treePaths = state.selectedFiles
-        .mapNotNull { file -> TreeUtil.findNodeWithObject(newRoot, file) }
-        .map { node -> TreeUtil.getPath(newRoot, node) }
-      TreeUtil.selectPaths(table.tree, treePaths)
+private fun Project?.unblockReloadingProjectOnExternalChanges() {
+  this ?: return
+  StoreReloadManager.getInstance(this).unblockReloadingProjectOnExternalChanges()
+}
 
-      if (table.tree.selectionCount == 0) {
-        TreeUtil.promiseSelectFirstLeaf(table.tree)
-      }
-    }
+private fun checkMarkModifiedProject(project: Project?, file: VirtualFile) {
+  MergeUtil.reportProjectFileChangeIfNeeded(project, file)
+}
 
-    private class SelectionState(val selectedFiles: List<VirtualFile>)
-  }
+private fun saveDocument(file: VirtualFile) {
+  val document = FileDocumentManager.getInstance().getCachedDocument(file) ?: return
+  application.runWriteAction { FileDocumentManager.getInstance().saveDocument(document) }
+}
 
-  private class OnModelChangeTreeStateStrategy : TreeTableStateStrategy<OnModelChangeTreeStateStrategy.SelectionState> {
-    override fun saveState(table: TreeTable): SelectionState {
-      val treeState = TreeState.createOn(table.tree, true, true)
-      val firstSelectedIndex = table.selectionModel.minSelectionIndex
-      return SelectionState(treeState, firstSelectedIndex)
-    }
+private fun MergeSession.Resolution.yoursOrTheirs(): Boolean = when (this) {
+  MergeSession.Resolution.AcceptedYours, MergeSession.Resolution.AcceptedTheirs -> true
+  MergeSession.Resolution.Merged -> false
+}
 
-    override fun restoreState(table: TreeTable, state: SelectionState) {
-      state.treeState.applyTo(table.tree)
-
-      if (table.tree.selectionCount == 0) {
-        val toSelect = state.firstSelectedIndex.coerceAtMost(table.rowCount - 1)
-        table.selectionModel.setSelectionInterval(toSelect, toSelect)
-      }
-    }
-
-    private class SelectionState(val treeState: TreeState,
-                                 val firstSelectedIndex: Int)
-  }
+private fun getSessionResolution(result: MergeResult): MergeSession.Resolution = when (result) {
+  MergeResult.LEFT -> MergeSession.Resolution.AcceptedYours
+  MergeResult.RIGHT -> MergeSession.Resolution.AcceptedTheirs
+  MergeResult.RESOLVED -> MergeSession.Resolution.Merged
+  MergeResult.CANCEL -> throw IllegalArgumentException(result.name)
 }
 
 private val TreeTable.selectedFiles: List<VirtualFile>
   get() = VcsTreeModelData.selected(tree).userObjects(VirtualFile::class.java)
+
+/**
+ * See [ChangesTree.TreeStateStrategy] that cannot be applied to [TreeTable]
+ */
+private interface TreeTableStateStrategy<T> {
+  fun saveState(table: TreeTable): T
+
+  fun restoreState(table: TreeTable, state: T)
+}
+
+private class SetDefaultTreeStateStrategy : TreeTableStateStrategy<Any?> {
+  override fun saveState(table: TreeTable): Any? = null
+
+  override fun restoreState(table: TreeTable, state: Any?) {
+    TreeUtil.expandAll(table.tree)
+    TreeUtil.promiseSelectFirstLeaf(table.tree)
+  }
+}
+
+private class OnGroupingChangeTreeStateStrategy : TreeTableStateStrategy<OnGroupingChangeTreeStateStrategy.SelectionState> {
+  override fun saveState(table: TreeTable): SelectionState {
+    val selectedFiles = table.selectedFiles
+    return SelectionState(selectedFiles)
+  }
+
+  override fun restoreState(table: TreeTable, state: SelectionState) {
+    TreeUtil.expandAll(table.tree)
+
+    val newRoot = table.tree.model.root as DefaultMutableTreeNode
+    val treePaths = state.selectedFiles
+      .mapNotNull { file -> TreeUtil.findNodeWithObject(newRoot, file) }
+      .map { node -> TreeUtil.getPath(newRoot, node) }
+    TreeUtil.selectPaths(table.tree, treePaths)
+
+    if (table.tree.selectionCount == 0) {
+      TreeUtil.promiseSelectFirstLeaf(table.tree)
+    }
+  }
+
+  class SelectionState(val selectedFiles: List<VirtualFile>)
+}
+
+private class OnModelChangeTreeStateStrategy : TreeTableStateStrategy<OnModelChangeTreeStateStrategy.SelectionState> {
+  override fun saveState(table: TreeTable): SelectionState {
+    val treeState = TreeState.createOn(table.tree, true, true)
+    val firstSelectedIndex = table.selectionModel.minSelectionIndex
+    return SelectionState(treeState, firstSelectedIndex)
+  }
+
+  override fun restoreState(table: TreeTable, state: SelectionState) {
+    state.treeState.applyTo(table.tree)
+
+    if (table.tree.selectionCount == 0) {
+      val toSelect = state.firstSelectedIndex.coerceAtMost(table.rowCount - 1)
+      table.selectionModel.setSelectionInterval(toSelect, toSelect)
+    }
+  }
+
+  class SelectionState(val treeState: TreeState, val firstSelectedIndex: Int)
+}
+
+private data class ConflictData(
+  val mergeData: MergeData,
+  val title: @NlsContexts.DialogTitle String?,
+  val contentTitles: List<@NlsContexts.Label String?>,
+  val contentTitleCustomizers: MergeDialogCustomizer.DiffEditorTitleCustomizerList,
+)
