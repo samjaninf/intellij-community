@@ -4,6 +4,9 @@ package com.intellij.platform.whatsNew.collectors
 import com.intellij.internal.statistic.collectors.fus.actions.persistence.ActionRuleValidator
 import com.intellij.internal.statistic.eventLog.EventLogGroup
 import com.intellij.internal.statistic.eventLog.events.EventFields
+import com.intellij.internal.statistic.eventLog.validator.ValidationResultType
+import com.intellij.internal.statistic.eventLog.validator.rules.EventContext
+import com.intellij.internal.statistic.eventLog.validator.rules.impl.CustomValidationRule
 import com.intellij.internal.statistic.service.fus.collectors.CounterUsagesCollector
 import com.intellij.openapi.project.Project
 import com.intellij.platform.whatsNew.WhatsNewMultipageIdsCache
@@ -11,9 +14,7 @@ import com.intellij.platform.whatsNew.WhatsNewMultipageIdsCache
 internal object WhatsNewCounterUsageCollector : CounterUsagesCollector() {
   private val eventLogGroup: EventLogGroup = EventLogGroup("whatsnew", 4, description = "What's New usage statistics")
 
-  val allowedMultipageIds = WhatsNewMultipageIdsCache.getInstance().cachedIds.toList()
-
-  private val pageId = EventFields.String("page_id", allowedMultipageIds)
+  private val pageId = EventFields.StringValidatedByCustomRule("page_id", WhatsNewMultipageIdValidationRule::class.java)
   private val opened =
     eventLogGroup.registerEvent("tab_opened", pageId, EventFields.Enum(("type"), OpenedType::class.java), "What's New tab was opened")
   private val duration = EventFields.Long("duration_seconds")
@@ -29,17 +30,17 @@ internal object WhatsNewCounterUsageCollector : CounterUsagesCollector() {
   private val visionAction =
     eventLogGroup.registerEvent("vision_action_performed", visionActionId, "A vision-related action was performed in the What's New tab")
 
-  private val oldId = EventFields.String("old_id", allowedMultipageIds)
-  private val newId = EventFields.String("new_id", allowedMultipageIds)
+  private val oldId = EventFields.StringValidatedByCustomRule("old_id", WhatsNewMultipageIdValidationRule::class.java)
+  private val newId = EventFields.StringValidatedByCustomRule("new_id", WhatsNewMultipageIdValidationRule::class.java)
   private val multipageIdChanged = eventLogGroup.registerEvent("multipage_id_changed", oldId, newId, "What's New multipage id has changed")
 
 
   fun openedPerformed(project: Project?, id: String?, byClient: Boolean) {
-    opened.log(project, id ?: "Default", if (byClient) OpenedType.ByClient else OpenedType.Auto)
+    opened.log(project, id ?: DEFAULT_ID, if (byClient) OpenedType.ByClient else OpenedType.Auto)
   }
 
   fun closedPerformed(project: Project?, id: String?, seconds: Long) {
-    closed.log(project, id ?: "Default", seconds)
+    closed.log(project, id ?: DEFAULT_ID, seconds)
   }
 
   fun actionPerformed(project: Project?, id: String) {
@@ -71,3 +72,21 @@ internal enum class OpenedType { Auto, ByClient }
 
 @Suppress("EnumEntryName")
 internal enum class ActionFailedReason { Not_Allowed, Not_Found }
+
+
+internal class WhatsNewMultipageIdValidationRule : CustomValidationRule() {
+  override fun getRuleId(): String = "whats_new_multipage_id_validation_rule"
+  override fun doValidate(
+    id: String,
+    context: EventContext,
+  ): ValidationResultType {
+    return if (WhatsNewMultipageIdsCache.getInstance().isValidId(id) || id == DEFAULT_ID) {
+      ValidationResultType.ACCEPTED
+    }
+    else {
+      ValidationResultType.REJECTED
+    }
+  }
+}
+
+private const val DEFAULT_ID = "Default"

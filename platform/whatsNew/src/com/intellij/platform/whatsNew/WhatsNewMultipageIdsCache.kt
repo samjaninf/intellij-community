@@ -34,6 +34,8 @@ internal class WhatsNewMultipageIdsCache(coroutineScope: CoroutineScope) {
     }
   }
 
+  fun isValidId(id: String): Boolean = id in cachedIds
+
   companion object {
     fun getInstance(): WhatsNewMultipageIdsCache = service()
   }
