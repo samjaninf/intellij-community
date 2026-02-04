@@ -16,8 +16,6 @@ import com.intellij.ide.DataManager
 import com.intellij.ide.util.treeView.TreeState
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.command.WriteCommandAction.writeCommandAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -25,7 +23,6 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import com.intellij.openapi.progress.util.BackgroundTaskUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
@@ -52,7 +49,6 @@ import com.intellij.ui.UIBundle
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.AlignY
-import com.intellij.ui.dsl.builder.impl.trimHtml
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.selected
 import com.intellij.ui.treeStructure.treetable.DefaultTreeTableExpander
@@ -66,8 +62,11 @@ import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.initOnShow
 import com.intellij.util.ui.tree.TreeUtil
 import com.intellij.vcsUtil.VcsUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.NonNls
 import java.awt.event.ActionEvent
 import java.awt.event.MouseEvent
@@ -76,7 +75,6 @@ import javax.swing.AbstractAction
 import javax.swing.Action
 import javax.swing.JButton
 import javax.swing.JComponent
-import javax.swing.JEditorPane
 import javax.swing.table.AbstractTableModel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeNode
@@ -95,8 +93,6 @@ open class MultipleFileMergeDialog(
   private lateinit var mergeButton: JButton
   private val tableModel = ListTreeTableModelOnColumns(DefaultMutableTreeNode(), createColumns())
   private val table: TreeTable
-
-  private lateinit var descriptionLabel: JEditorPane
 
   private var groupByDirectory: Boolean = false
     get() = when {
@@ -147,20 +143,20 @@ open class MultipleFileMergeDialog(
     }.installOn(table.tree)
 
     TableSpeedSearch.installOn(table, Convertor { (it as? VirtualFile)?.name })
-
-    val modalityState = ModalityState.stateForComponent(descriptionLabel)
-    BackgroundTaskUtil.executeOnPooledThread(disposable, Runnable {
-      val description = mergeDialogCustomizer.getMultipleFileMergeDescription(unresolvedFiles)
-      runInEdt(modalityState) {
-        descriptionLabel.text = description.trimHtml
-      }
-    })
   }
 
   override fun createCenterPanel(): JComponent {
     return panel {
       row {
-        descriptionLabel = text(VcsBundle.message("merge.loading.merge.details")).component
+        label(VcsBundle.message("merge.loading.merge.details")).applyToComponent {
+          initOnShow("MultipleFileMergeDialog - Load Label") {
+            @Suppress("HardCodedStringLiteral") // withContext loses the nls annotation
+            val title = withContext(Dispatchers.Default) {
+              mergeDialogCustomizer.getMultipleFileMergeDescription(unresolvedFiles)
+            }
+            text = title
+          }
+        }
       }
 
       row {
