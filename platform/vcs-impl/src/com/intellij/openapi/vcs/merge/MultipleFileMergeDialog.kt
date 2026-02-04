@@ -167,13 +167,13 @@ open class MultipleFileMergeDialog(
         panel {
           row {
             acceptYoursButton = button(VcsBundle.message("multiple.file.merge.accept.yours")) {
-              acceptRevision(MergeSession.Resolution.AcceptedYours, table.selectedFiles)
+              acceptForResolution(MergeSession.Resolution.AcceptedYours, table.selectedFiles)
             }.align(AlignX.FILL)
               .component
           }
           row {
             acceptTheirsButton = button(VcsBundle.message("multiple.file.merge.accept.theirs")) {
-              acceptRevision(MergeSession.Resolution.AcceptedTheirs, table.selectedFiles)
+              acceptForResolution(MergeSession.Resolution.AcceptedTheirs, table.selectedFiles)
             }.align(AlignX.FILL)
               .component
           }
@@ -287,6 +287,12 @@ open class MultipleFileMergeDialog(
   @JvmSuppressWildcards
   protected open fun beforeResolve(files: Collection<VirtualFile>): Boolean {
     return true
+  }
+
+  private fun acceptForResolution(resolution: MergeSession.Resolution, files: List<VirtualFile>) {
+    val (binaryFiles, textFiles) = files.partition { mergeProvider.isBinary(it) }
+    acceptRevision(resolution, binaryFiles)
+    acceptRevision(resolution, textFiles)
   }
 
   private fun acceptRevision(resolution: MergeSession.Resolution, files: List<VirtualFile>) {
