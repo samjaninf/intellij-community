@@ -2,6 +2,7 @@
 package git4idea.commands;
 
 import com.intellij.execution.process.ProcessOutputTypes;
+import com.intellij.externalProcessAuthHelper.AuthenticationMode;
 import com.intellij.openapi.application.AccessToken;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.PathManager;
@@ -127,6 +128,9 @@ public abstract class GitImplBase implements Git {
       if (isCredHelperUsed != GitVcsApplicationSettings.getInstance().isUseCredentialHelper()) {
         // do not spend attempt if the credential helper has been enabled
         continue;
+      }
+      if (handler.getIgnoreAuthenticationMode() != AuthenticationMode.FULL) {
+        break;
       }
       authAttempt++;
     }
