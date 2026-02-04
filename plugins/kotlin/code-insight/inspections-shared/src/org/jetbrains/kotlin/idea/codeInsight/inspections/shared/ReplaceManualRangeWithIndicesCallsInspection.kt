@@ -9,6 +9,9 @@ import com.intellij.psi.search.searches.ReferencesSearch
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.resolution.successfulVariableAccessCall
 import org.jetbrains.kotlin.analysis.api.types.KaType
+import org.jetbrains.kotlin.idea.base.codeInsight.KotlinDeclarationNameValidator
+import org.jetbrains.kotlin.idea.base.codeInsight.KotlinNameSuggester
+import org.jetbrains.kotlin.idea.base.codeInsight.KotlinNameSuggestionProvider
 import org.jetbrains.kotlin.idea.base.psi.replaced
 import org.jetbrains.kotlin.idea.base.psi.safeDeparenthesize
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
@@ -51,6 +54,7 @@ class ReplaceManualRangeWithIndicesCallsInspection : AbstractRangeInspection<Rep
         val explicitReceiver: KtExpression?,
         val suggestElementLoop: Boolean,
         val implicitReceiverInfo: ImplicitReceiverInfo?,
+        val suggestedElementName: String?,
     )
 
     override fun getProblemDescription(
@@ -79,7 +83,7 @@ class ReplaceManualRangeWithIndicesCallsInspection : AbstractRangeInspection<Rep
 
     override fun KaSession.prepareContext(range: RangeExpression): Context? {
         val (_, right) = range.arguments
-        
+
         // Must end with a size/length call
         val sizeCall = right?.let { rightBound(range.type, it) } ?: return null
         val explicitReceiver = (sizeCall as? KtQualifiedExpression)?.receiverExpression
@@ -87,7 +91,20 @@ class ReplaceManualRangeWithIndicesCallsInspection : AbstractRangeInspection<Rep
         val suggestElementLoop = shouldSuggestElementLoop(range, explicitReceiver)
         val implicitReceiverInfo = if (explicitReceiver == null) sizeCall.getImplicitReceiverInfo() else null
 
-        return Context(explicitReceiver, suggestElementLoop, implicitReceiverInfo)
+        // Pre-compute a unique element name for the loop transformation
+        val suggestedElementName = if (suggestElementLoop) {
+            val forExpression = findContainingForLoop(range)
+            forExpression?.loopParameter?.let { loopParameter ->
+                val nameValidator = KotlinDeclarationNameValidator(
+                    loopParameter,
+                    true,
+                    KotlinNameSuggestionProvider.ValidatorTarget.VARIABLE,
+                )
+                KotlinNameSuggester.suggestNameByName("element") { nameValidator.validate(it) }
+            }
+        } else null
+
+        return Context(explicitReceiver, suggestElementLoop, implicitReceiverInfo, suggestedElementName)
     }
 
     private fun KaSession.rightBound(type: RangeKtExpressionType, expression: KtExpression): KtExpression? {
@@ -245,13 +262,14 @@ class ReplaceManualRangeWithIndicesCallsInspection : AbstractRangeInspection<Rep
             val forExpression = element.getStrictParentOfType<KtForExpression>() ?: return
             val loopParameter = forExpression.loopParameter ?: return
             val loopRange = forExpression.loopRange ?: return
+            val elementName = context.suggestedElementName ?: return
 
             val collection = resolveCollectionExpression(project)
 
             // Try a single usage first
             val singleUsageInfo = LoopToCollectionTransformUtils.findSingleArrayAccessUsage(loopParameter)
             if (singleUsageInfo != null) {
-                LoopToCollectionTransformUtils.transformLoop(project, listOf(singleUsageInfo), loopParameter, loopRange, collection)
+                LoopToCollectionTransformUtils.transformLoop(project, listOf(singleUsageInfo), loopParameter, loopRange, collection, elementName)
                 return
             }
 
@@ -267,7 +285,7 @@ class ReplaceManualRangeWithIndicesCallsInspection : AbstractRangeInspection<Rep
             }
 
             if (usageInfos.isNotEmpty()) {
-                LoopToCollectionTransformUtils.transformLoop(project, usageInfos, loopParameter, loopRange, collection)
+                LoopToCollectionTransformUtils.transformLoop(project, usageInfos, loopParameter, loopRange, collection, elementName)
             }
         }
 

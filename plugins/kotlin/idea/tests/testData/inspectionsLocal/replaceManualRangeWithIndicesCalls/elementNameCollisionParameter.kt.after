@@ -1,0 +1,8 @@
+// WITH_STDLIB
+// IGNORE_K1
+fun test(element: String, list: List<String>) {
+    for (element1 in list) {
+        element1.length
+        element.length
+    }
+}
