@@ -1,6 +1,8 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package git4idea.inMemory.rebase
 
+import com.intellij.openapi.components.service
+import com.intellij.vcs.log.VcsFullCommitDetails
 import com.intellij.vcs.log.data.VcsLogData
 import git4idea.GitDisposable
 import git4idea.inMemory.MergeConflictException
@@ -8,14 +10,17 @@ import git4idea.inMemory.rebase.log.GitInMemoryOperationTest
 import git4idea.log.createLogDataIn
 import git4idea.log.refreshAndWait
 import git4idea.rebase.interactive.convertToModel
-import git4idea.rebase.interactive.getEntriesUsingLog
+import git4idea.rebase.log.GetEntriesUsingLogResult
 import git4idea.rebase.log.GitCommitEditingOperationResult
+import git4idea.rebase.log.GitInteractiveRebaseEntriesProvider
+import git4idea.rebase.log.GitRebaseEntryGeneratedUsingLog
 import git4idea.test.assertCommitted
 import git4idea.test.assertLatestHistory
 import git4idea.test.commit
 import git4idea.test.getHash
 import git4idea.test.last
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.assertThrows
 
 internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTest() {
@@ -38,7 +43,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     val newMessageForSecond = "Reworded second commit"
@@ -69,7 +74,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.exchangeIndices(1, 2) // Move "Add b" down, making it after "Add c"
@@ -100,7 +105,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.drop(listOf(1)) // Drop "Add b"
@@ -136,7 +141,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.exchangeIndices(1, 2)
@@ -171,7 +176,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     // Original: initial -> config+docs -> remove+add -> service
@@ -247,7 +252,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.exchangeIndices(1, 2)
@@ -289,7 +294,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     // Original: feature1 -> feature2 -> feature3 -> feature4
@@ -334,7 +339,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
     model.drop(listOf(0))
 
@@ -369,7 +374,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     // Original: Add -> Modify -> Move -> Update
@@ -405,7 +410,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     // Don't modify the model - just pick all commits in the same order
@@ -432,7 +437,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.reword(2, "Modified: Add c")
@@ -472,7 +477,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.drop(listOf(1)) // drop "Add b, c" commit
@@ -506,7 +511,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, firstCommit, logData)
+    val entries = getRebaseEntries(firstCommit)
     val model = convertToModel(entries)
 
     model.drop(listOf(1))
@@ -527,7 +532,7 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
     refresh()
     updateChangeListManager()
 
-    val entries = getEntriesUsingLog(repo, initialCommit, logData)
+    val entries = getRebaseEntries(initialCommit)
     val model = convertToModel(entries)
 
     model.exchangeIndices(0, 1)
@@ -547,5 +552,10 @@ internal class GitInMemoryInteractiveRebaseProcessTest : GitInMemoryOperationTes
       assertCommitted(2) { added("initial.txt") }
       assertCommitted(3) { added("a.txt") }
     }
+  }
+
+  private fun getRebaseEntries(firstCommit: VcsFullCommitDetails): List<GitRebaseEntryGeneratedUsingLog> = runBlocking {
+    val result = project.service<GitInteractiveRebaseEntriesProvider>().getEntriesUsingLog(repo, firstCommit, logData) as GetEntriesUsingLogResult.Success
+    result.entries
   }
 }

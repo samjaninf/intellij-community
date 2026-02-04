@@ -1,6 +1,7 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package git4idea.inMemory.rebase.log
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.vcs.log.VcsCommitMetadata
 import com.intellij.vcs.log.data.VcsLogData
@@ -9,8 +10,8 @@ import git4idea.inMemory.rebase.performInMemoryRebase
 import git4idea.rebase.GitRebaseEntry
 import git4idea.rebase.interactive.GitRebaseTodoModel
 import git4idea.rebase.interactive.convertToModel
-import git4idea.rebase.interactive.tryGetEntriesUsingLog
 import git4idea.rebase.log.GitCommitEditingOperationResult
+import git4idea.rebase.log.GitInteractiveRebaseEntriesProvider
 import git4idea.rebase.log.indicesByPredicate
 import git4idea.repo.GitRepository
 
@@ -53,7 +54,7 @@ internal object InMemoryRebaseOperations {
     val generatedEntries = when (entriesSource) {
                              is RebaseEntriesSource.Entries -> entriesSource.entries
                              is RebaseEntriesSource.LogData -> {
-                               tryGetEntriesUsingLog(repository, commits.last(), entriesSource.logData)
+                               repository.project.service<GitInteractiveRebaseEntriesProvider>().tryGetEntriesUsingLog(repository, commits.last(), entriesSource.logData)
                              }
                            } ?: return GitCommitEditingOperationResult.Incomplete
 
