@@ -327,7 +327,8 @@ private fun QualifiedRatedResolveResult.clarifyResolveResult(resolveContext: PyR
   else if (resolved is PyFunction) {
     val context = resolveContext.typeEvalContext
 
-    if (resolved.property != null && resolved.isQualifiedByInstance(qualifiers, context)) {
+    val property = resolved.property
+    if (property != null && property.getter.valueOrNull() == resolved && resolved.isQualifiedByInstance(qualifiers, context)) {
       val type = context.getReturnType(resolved)
 
       return if (type is PyFunctionType) ClarifiedResolveResult(this, type.callable, null, false) else null
