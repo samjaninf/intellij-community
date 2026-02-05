@@ -393,6 +393,9 @@
                     dynamic="true">
       <with attribute="implementationClass" implements="com.intellij.codeInsight.hints.declarative.InlayActionHandler"/>
     </extensionPoint>
+    <extensionPoint name="codeInsight.inlayInteractionHandler"
+                    interface="com.intellij.codeInsight.hints.declarative.impl.interaction.InlayInteractionHandler"
+                    dynamic="true"/>
 
     <extensionPoint qualifiedName="com.intellij.codeInsight.inlayProviderFactory"
                     interface="com.intellij.codeInsight.hints.InlayHintsProviderFactory"
