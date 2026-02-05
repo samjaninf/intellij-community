@@ -54,6 +54,7 @@ import com.intellij.internal.ui.sandbox.tests.dsl.CommentRightTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.ContextHelpTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrListTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrPerformanceTestPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.button.ButtonTypesPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -167,6 +168,12 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
         CommentRightTestPanel(),
         ContextHelpTestPanel(),
       )),
+    )),
+
+    Group("For Screenshots", children = listOf(
+      Group("Buttons", children = listOf(
+        ButtonTypesPanel()
+      ))
     ))
   )
 
