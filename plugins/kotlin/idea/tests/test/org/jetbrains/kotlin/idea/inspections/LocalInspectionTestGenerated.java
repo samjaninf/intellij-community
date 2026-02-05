@@ -14545,6 +14545,26 @@ public abstract class LocalInspectionTestGenerated extends AbstractK1LocalInspec
         public void testUsedForOtherArray() throws Exception {
             runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/usedForOtherArray.kt");
         }
+
+        @TestMetadata("withIndexBasic.kt")
+        public void testWithIndexBasic() throws Exception {
+            runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/withIndexBasic.kt");
+        }
+
+        @TestMetadata("withIndexElementNameCollision.kt")
+        public void testWithIndexElementNameCollision() throws Exception {
+            runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/withIndexElementNameCollision.kt");
+        }
+
+        @TestMetadata("withIndexMultipleArrayAccess.kt")
+        public void testWithIndexMultipleArrayAccess() throws Exception {
+            runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/withIndexMultipleArrayAccess.kt");
+        }
+
+        @TestMetadata("withIndexRangeTo.kt")
+        public void testWithIndexRangeTo() throws Exception {
+            runTest("testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/withIndexRangeTo.kt");
+        }
     }
 
     @RunWith(JUnit3RunnerWithInners.class)
