@@ -2936,6 +2936,7 @@ f:org.jetbrains.jewel.ui.icons.AllIconsKeys$General
 - sf:LinkDropTriangle:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:LocalizationSettings:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:Locate:org.jetbrains.jewel.ui.icon.IntelliJIconKey
+- sf:LockedUltimate:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:Menu:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:Modified:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:ModifiedSelected:org.jetbrains.jewel.ui.icon.IntelliJIconKey

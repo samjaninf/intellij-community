@@ -556,6 +556,7 @@ f:com.intellij.icons.AllIcons$General
 - sf:LinkDropTriangle:javax.swing.Icon
 - sf:LocalizationSettings:javax.swing.Icon
 - sf:Locate:javax.swing.Icon
+- sf:LockedUltimate:javax.swing.Icon
 - sf:Menu:javax.swing.Icon
 - sf:Modified:javax.swing.Icon
 - sf:ModifiedSelected:javax.swing.Icon

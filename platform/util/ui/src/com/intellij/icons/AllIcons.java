@@ -590,6 +590,7 @@ public class AllIcons {
     /** 16x16 */ public static final @NotNull Icon Learn = load("expui/general/learn.svg", 735868097, 2);
     /** 14x14 */ public static final @NotNull Icon LinkDropTriangle = load("expui/general/chevronDown.svg", "general/linkDropTriangle.svg", -2144062286, 2);
     /** 16x16 */ public static final @NotNull Icon Locate = load("expui/general/locate.svg", "general/locate.svg", 1990903521, 2);
+    /** 16x16 */ public static final @NotNull Icon LockedUltimate = load("expui/general/lockedUltimate.svg", 1559721955, 2);
     /** 16x16 */ public static final @NotNull Icon Menu = load("expui/general/menu.svg", -687974999, 2);
     /** 13x13 */ public static final @NotNull Icon Modified = load("expui/fileTypes/modified.svg", "general/modified.svg", 1281377481, 2);
     /** 13x13 */ public static final @NotNull Icon ModifiedSelected = load("general/modifiedSelected.svg", 251018616, 0);

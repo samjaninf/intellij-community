@@ -1669,6 +1669,9 @@ public final class AllIconsKeys {
     public static final @NotNull IntelliJIconKey Locate = new IntelliJIconKey("general/locate.svg", "expui/general/locate.svg", AllIconsKeys.class);
     /** 16x16 */ 
     @GeneratedFromIntelliJSources
+    public static final @NotNull IntelliJIconKey LockedUltimate = new IntelliJIconKey("expui/general/lockedUltimate.svg", "expui/general/lockedUltimate.svg", AllIconsKeys.class);
+    /** 16x16 */ 
+    @GeneratedFromIntelliJSources
     public static final @NotNull IntelliJIconKey Menu = new IntelliJIconKey("expui/general/menu.svg", "expui/general/menu.svg", AllIconsKeys.class);
     /** 13x13 */ 
     @GeneratedFromIntelliJSources
