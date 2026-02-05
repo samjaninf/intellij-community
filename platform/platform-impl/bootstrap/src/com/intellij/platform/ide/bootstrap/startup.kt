@@ -369,6 +369,7 @@ fun startApplication(
         }.getOrLogException(log)
       }
 
+      ClassicUiToIslandsMigration.migrateSchemeAndUiSettingsIfNeeded()
       applyIslandsTheme(afterImportSettings = false)
       executeApplicationStarter(starter, args)
     }
