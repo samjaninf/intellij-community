@@ -55,7 +55,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -591,19 +590,12 @@ internal class GHPRCreateViewModelImpl(
 }
 
 private class MetadataListViewModel<T>(cs: CoroutineScope, itemsLoader: suspend () -> List<T>) : LabeledListPanelViewModel<T> {
-  override val isEditingAllowed: Boolean = true
   override val items = MutableStateFlow(emptyList<T>())
 
   // Eagerly load the data on creation, so that the reviewer panel is populated immediately.
   override val selectableItems: StateFlow<ComputedResult<List<T>>> =
     computationStateFlow(flowOf(Unit)) { itemsLoader() }
       .stateIn(cs, SharingStarted.Eagerly, ComputedResult.loading())
-  override val adjustmentProcessState: StateFlow<ComputedResult<Unit>?> = MutableStateFlow(null)
-  override val editRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-  override fun requestEdit() {
-    editRequests.tryEmit(Unit)
-  }
 
   override fun adjustList(newList: List<T>) {
     items.value = newList

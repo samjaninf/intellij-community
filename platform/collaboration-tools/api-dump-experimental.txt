@@ -350,6 +350,11 @@ f:com.intellij.collaboration.api.json.JsonHttpApiHelperKt
 - <init>(java.awt.LayoutManager,Z):V
 - <init>(Z):V
 - p:paintComponent(java.awt.Graphics):V
+*f:com.intellij.collaboration.ui.LabeledListComponentsFactory
+- sf:INSTANCE:com.intellij.collaboration.ui.LabeledListComponentsFactory
+- f:createGrid(java.util.List):javax.swing.JPanel
+- f:createLabelPanel(kotlinx.coroutines.flow.StateFlow,java.lang.String,java.lang.String):javax.swing.JPanel
+- f:createListPanel(kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function3,kotlin.jvm.functions.Function1):javax.swing.JPanel
 *f:com.intellij.collaboration.ui.ListenableProgressIndicator
 - com.intellij.openapi.progress.util.ProgressIndicatorBase
 - <init>():V
