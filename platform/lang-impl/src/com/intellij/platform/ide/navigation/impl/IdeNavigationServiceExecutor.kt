@@ -1,7 +1,6 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.ide.navigation.impl
 
-import com.intellij.ide.projectView.impl.nodes.PsiFileNode
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.components.service
@@ -17,7 +16,7 @@ open class IdeNavigationServiceExecutor {
 
   open suspend fun navigate(request: RawNavigationRequest, requestFocus: Boolean) {
     val navigatable = request.navigatable
-    if (navigatable is PsiFileNode) {
+    if (navigatable is AsyncNavigatable) {
       navigatable.navigateAsync(requestFocus)
     }
     else {
