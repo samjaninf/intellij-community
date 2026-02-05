@@ -107,6 +107,82 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     createScreenshotsNode()
   )
 
+  private fun createComponentsNode() = Group("Components", children = listOf(
+    ComboBoxPanel(),
+    ComboBoxWithWidePopupPanel(),
+    JBIntSpinnerPanel(),
+    JButtonPanel(),
+    JBOptionButtonPanel(),
+    JBPasswordFieldPanel(),
+    JBTabsPanel(),
+    JBTextAreaPanel(),
+    JCheckBoxPanel(),
+    JComboBoxPanel(),
+    JProgressBarPanel(),
+    JRadioButtonPanel(),
+    JSpinnerPanel(),
+    JTextFieldPanel(),
+    OnOffButtonPanel(),
+    SearchTextFieldPanel(),
+    ThreeStateCheckBoxPanel(),
+    TreeWithComplexEditors(),
+  ))
+
+  private fun createKotlinUIDSLNode() = Group("Kotlin UI DSL", children = listOf(
+    Group("ListCellRenderer", children = listOf(
+      LcrListPanel(),
+      LcrComboBoxPanel(),
+      LcrSeparatorPanel(),
+      LcrOthersPanel()
+    )),
+    Group("Validation", children = listOf(
+      CrossValidationPanel(),
+      ValidationPanel(),
+      ValidationRefactoringPanel(),
+    )),
+
+    CellsWithSubPanelsPanel(),
+    CheckBoxRadioButtonPanel(),
+    CommentsPanel(),
+    DeprecatedApiPanel(),
+    GroupsPanel(),
+    LabelsPanel(),
+    LongTextsPanel(),
+    OnChangePanel(),
+    OthersPanel(),
+    PlaceholderPanel(),
+    ResizableRowsPanel(),
+    SegmentedButtonPanel(),
+    TextFieldsPanel(),
+    TextMaxLinePanel(),
+    VisibleEnabledPanel()
+  ))
+
+  private fun createTestsNode(): Group = Group("Tests", children = listOf(
+    Group("Accessibility", children = listOf(
+      AccessibilityFailedInspectionsPanel()
+    )),
+    Group("Components", children = listOf(
+      JEditorPaneCopyableTestPanel(),
+      JBTextAreaTestPanel(),
+    )),
+    Group("Kotlin UI DSL", children = listOf(
+      Group("ListCellRenderer", children = listOf(
+        LcrListTestPanel(),
+        LcrPerformanceTestPanel(),
+      )),
+      CommentRightTestPanel(),
+      ContextHelpTestPanel(),
+    )),
+  ))
+
+  private fun createScreenshotsNode(): Group = Group("For Screenshots", children = listOf(
+    Group("Buttons", children = listOf(
+      ButtonTypesPanel()
+    ))
+  ))
+
+
   private val filter = ElementFilter<SandboxTreeNodeBase> {
     it.title.contains(activeFilterText, true)
   }
@@ -351,81 +427,6 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     showSources(project, Module.INTERNAL, src)
   }
 }
-
-private fun createComponentsNode() = Group("Components", children = listOf(
-  ComboBoxPanel(),
-  ComboBoxWithWidePopupPanel(),
-  JBIntSpinnerPanel(),
-  JButtonPanel(),
-  JBOptionButtonPanel(),
-  JBPasswordFieldPanel(),
-  JBTabsPanel(),
-  JBTextAreaPanel(),
-  JCheckBoxPanel(),
-  JComboBoxPanel(),
-  JProgressBarPanel(),
-  JRadioButtonPanel(),
-  JSpinnerPanel(),
-  JTextFieldPanel(),
-  OnOffButtonPanel(),
-  SearchTextFieldPanel(),
-  ThreeStateCheckBoxPanel(),
-  TreeWithComplexEditors(),
-))
-
-private fun createKotlinUIDSLNode() = Group("Kotlin UI DSL", children = listOf(
-  Group("ListCellRenderer", children = listOf(
-    LcrListPanel(),
-    LcrComboBoxPanel(),
-    LcrSeparatorPanel(),
-    LcrOthersPanel()
-  )),
-  Group("Validation", children = listOf(
-    CrossValidationPanel(),
-    ValidationPanel(),
-    ValidationRefactoringPanel(),
-  )),
-
-  CellsWithSubPanelsPanel(),
-  CheckBoxRadioButtonPanel(),
-  CommentsPanel(),
-  DeprecatedApiPanel(),
-  GroupsPanel(),
-  LabelsPanel(),
-  LongTextsPanel(),
-  OnChangePanel(),
-  OthersPanel(),
-  PlaceholderPanel(),
-  ResizableRowsPanel(),
-  SegmentedButtonPanel(),
-  TextFieldsPanel(),
-  TextMaxLinePanel(),
-  VisibleEnabledPanel()
-))
-
-private fun createTestsNode(): Group = Group("Tests", children = listOf(
-  Group("Accessibility", children = listOf(
-    AccessibilityFailedInspectionsPanel()
-  )),
-  Group("Components", children = listOf(
-    JEditorPaneCopyableTestPanel(),
-    JBTextAreaTestPanel(),
-  )),
-  Group("Kotlin UI DSL", children = listOf(
-    Group("ListCellRenderer", children = listOf(
-      LcrListTestPanel(),
-      LcrPerformanceTestPanel(),
-    )),
-    CommentRightTestPanel(),
-    ContextHelpTestPanel(),
-  )),
-))
-
-private fun createScreenshotsNode(): Group = Group("For Screenshots", children = listOf(
-  Group("Buttons", children = listOf(
-    ButtonTypesPanel()
-  ))
-))
 
 private data class Group(val title: String, val children: List<Any>)
 
