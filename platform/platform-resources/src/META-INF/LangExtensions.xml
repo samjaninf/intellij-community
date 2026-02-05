@@ -247,7 +247,6 @@
                         serviceImplementation="com.intellij.lang.LocalizationStateServiceImpl"/>
     <projectService serviceInterface="com.intellij.platform.ide.navigation.NavigationService"
                     serviceImplementation="com.intellij.platform.ide.navigation.impl.IdeNavigationService"/>
-    <projectService serviceImplementation="com.intellij.platform.ide.navigation.impl.IdeNavigationServiceExecutor" open="true"/>
     <applicationService serviceInterface="com.intellij.ide.util.PsiNavigationSupport" open="true"
                         serviceImplementation="com.intellij.ide.util.PsiNavigationSupportImpl"/>
 
