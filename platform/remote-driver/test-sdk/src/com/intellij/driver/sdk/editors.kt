@@ -5,7 +5,7 @@ import com.intellij.driver.client.Remote
 import com.intellij.driver.client.service
 import com.intellij.driver.model.OnDispatcher
 import com.intellij.driver.model.RdTarget
-import com.intellij.driver.sdk.remoteDev.GuestNavigationService
+import com.intellij.driver.sdk.remoteDev.FrontendGuestNavigationService
 import com.intellij.driver.sdk.ui.remote.ColorRef
 import java.awt.Point
 import java.awt.Rectangle
@@ -213,7 +213,7 @@ fun Driver.openFile(relativePath: String, project: Project = singleProject(), wa
       fileToOpen
     }
     else {
-      val service = service(GuestNavigationService::class, project)
+      val service = service(FrontendGuestNavigationService::class, project)
       withContext(OnDispatcher.EDT) {
         service.navigateViaBackend(relativePath, 0)
         waitFor(message = "File is opened: $relativePath", timeout = 30.seconds,
