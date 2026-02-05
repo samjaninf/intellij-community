@@ -20,12 +20,6 @@ val annotatedLambda = @Composable <fold text='{...}'>{
       .adjust()</fold>
   }</fold>
 
-  val myModifier = remember <fold text='{...}'>{
-    <fold text='Modifier.(...)'>Modifier
-      .adjust()
-      .adjust()</fold>
-  }</fold>
-
   @Composable
   fun ComposableFunction() <fold text='{...}'>{
     <fold text='Modifier.(...)'>Modifier

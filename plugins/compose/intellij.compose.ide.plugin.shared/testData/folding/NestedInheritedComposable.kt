@@ -19,12 +19,6 @@ fun MyScreen() <fold text='{...}'>{
         .adjust()
         .adjust()
     }</fold>
-
-    val myModifier = remember <fold text='{...}'>{
-      <fold text='Modifier.(...)'>Modifier
-        .adjust()
-        .adjust()</fold>
-     }</fold>
   }</fold>
 }</fold>
 
@@ -34,13 +28,13 @@ fun Row(content: @Composable () -> Unit) {}
 @Composable
 fun NestedContainerCalls() <fold text='{...}'>{
   Container <fold text='{...}'>{
-  Row <fold text='{...}'>{
-    Container <fold text='{...}'>{
-      <fold text='Modifier.(...)'>Modifier
-        .adjust()
-        .adjust()</fold>
+    Row <fold text='{...}'>{
+      Container <fold text='{...}'>{
+        <fold text='Modifier.(...)'>Modifier
+          .adjust()
+          .adjust()</fold>
+        }</fold>
       }</fold>
-    }</fold>
   }</fold>
 }</fold>
 

@@ -26,3 +26,34 @@ val modifierType: @Composable Modifier.() -> Modifier = <fold text='{...}'>{
     .adjust()
     .adjust()</fold>
 }</fold>
+
+val ifElseLambda: @Composable () -> Unit = if (true) <fold text='{...}'>{
+  <fold text='{...}'>{
+    <fold text='Modifier.(...)'>Modifier
+      .adjust()
+      .adjust()</fold>
+  }</fold>
+}</fold> else <fold text='{...}'>{
+  <fold text='{...}'>{
+    <fold text='Modifier.(...)'>Modifier
+      .adjust()
+      .adjust()</fold>
+  }</fold>
+}</fold>
+
+val whenLambda: @Composable () -> Unit = when (1) <fold text='{...}'>{
+  1 -> <fold text='{...}'>{
+    <fold text='{...}'>{
+      <fold text='Modifier.(...)'>Modifier
+        .adjust()
+        .adjust()</fold>
+    }</fold>
+  }</fold>
+  else -> <fold text='{...}'>{
+    <fold text='{...}'>{
+      <fold text='Modifier.(...)'>Modifier
+        .adjust()
+        .adjust()</fold>
+    }</fold>
+  }</fold>
+}</fold>

@@ -20,13 +20,6 @@ val explicitUnit: @Composable () -> Unit = <fold text='{...}'>{
       .adjust()</fold>
   }</fold>
 
-  val blockGetter: Modifier
-  @Composable get() <fold text='{...}'>{
-    return <fold text='Modifier.(...)'>Modifier
-      .adjust()
-      .adjust()</fold>
-  }</fold>
-
   @Composable
   fun ComposableFunction() <fold text='{...}'>{
     <fold text='Modifier.(...)'>Modifier

@@ -43,9 +43,23 @@ abstract class ComposeFoldingBuilderTest : KotlinLightCodeInsightFixtureTestCase
       }
       """
     )
+
   }
+
+  fun `test basic composable arguments`() {
+    myFixture.testFolding("$testPath/BasicComposableArguments.kt")
+  }
+
+  fun `test basic composable return type`() {
+    myFixture.testFolding("$testPath/BasicComposableReturnType.kt")
+  }
+
   fun `test basic conditional expressions`() {
     myFixture.testFolding("$testPath/BasicConditionalExpressions.kt")
+  }
+
+  fun `test basic inline function`() {
+    myFixture.testFolding("$testPath/BasicInlineFunctions.kt")
   }
 
   fun `test basic modifier chain`() {
@@ -58,6 +72,18 @@ abstract class ComposeFoldingBuilderTest : KotlinLightCodeInsightFixtureTestCase
 
   fun `test basic scope functions`() {
     myFixture.testFolding("$testPath/BasicScopeFunctions.kt")
+  }
+
+  fun `test basic suspend function`() {
+    myFixture.testFolding("$testPath/BasicSuspendFunction.kt")
+  }
+
+  fun `test inline crossinline lambda`() {
+    myFixture.testFolding("$testPath/InlineCrossinlineLambda.kt")
+  }
+
+  fun `test inline noinline lambda`() {
+    myFixture.testFolding("$testPath/InlineNoinlineLambda.kt")
   }
 
   fun `test nested annotated lambdas`() {
@@ -88,6 +114,14 @@ abstract class ComposeFoldingBuilderTest : KotlinLightCodeInsightFixtureTestCase
     myFixture.testFolding("$testPath/NestedInheritedComposable.kt")
   }
 
+  fun `test nested no fold composable return type`() {
+    myFixture.testFolding("$testPath/NestedNoFoldComposableReturnType.kt")
+  }
+
+  fun `test nested no fold inline function`() {
+    myFixture.testFolding("$testPath/NestedNoFoldInlineFunction.kt")
+  }
+
   fun `test nested no fold inner function`() {
     myFixture.testFolding("$testPath/NestedNoFoldInnerFunction.kt")
   }
@@ -100,8 +134,12 @@ abstract class ComposeFoldingBuilderTest : KotlinLightCodeInsightFixtureTestCase
     myFixture.testFolding("$testPath/NoFoldBadEnding.kt")
   }
 
+  fun `test no fold composable return type`() {
+    myFixture.testFolding("$testPath/NoFoldComposableReturnType.kt")
+  }
+
   fun `test no fold lambdas`() {
-    myFixture.testFolding("$testPath/NoFoldLambdas.kt")
+    myFixture.testFolding("$testPath/NoFoldPropertyLambda.kt")
   }
 
   fun `test no fold non modifier`() {
@@ -113,7 +151,7 @@ abstract class ComposeFoldingBuilderTest : KotlinLightCodeInsightFixtureTestCase
   }
 
   fun `test no fold scope standard`() {
-    myFixture.testFolding("$testPath/NoFoldScopeStandard.kt")
+    myFixture.testFolding("$testPath/NoFoldNonComposableFunction.kt")
   }
 
   fun `test property getter`() {
@@ -122,9 +160,5 @@ abstract class ComposeFoldingBuilderTest : KotlinLightCodeInsightFixtureTestCase
 
   fun `test property lambda`() {
     myFixture.testFolding("$testPath/PropertyLambda.kt")
-  }
-
-  fun `test suspend function`() {
-    myFixture.testFolding("$testPath/SuspendFunction.kt")
   }
 }

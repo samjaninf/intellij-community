@@ -29,3 +29,17 @@ val standardLambda = <fold text='{...}'>{
     .adjust()
     .adjust()
 }</fold>
+
+val explicitLambdaIfElse: () -> Unit = if (true) <fold text='{...}'>{
+  <fold text='{...}'>{
+    Modifier
+      .adjust()
+      .adjust()
+  }</fold>
+}</fold> else <fold text='{...}'>{
+  <fold text='{...}'>{
+    Modifier
+      .adjust()
+      .adjust()
+  }</fold>
+}</fold>
