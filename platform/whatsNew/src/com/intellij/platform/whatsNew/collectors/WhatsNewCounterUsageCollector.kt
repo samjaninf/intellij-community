@@ -75,7 +75,7 @@ internal enum class ActionFailedReason { Not_Allowed, Not_Found }
 
 
 internal class WhatsNewMultipageIdValidationRule : CustomValidationRule() {
-  override fun getRuleId(): String = "whats_new_multipage_id_validation_rule"
+  override fun getRuleId(): String = "whats_new_multipage_id"
   override fun doValidate(
     id: String,
     context: EventContext,
