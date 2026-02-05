@@ -22,9 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.intellij.build.BuildContext
 import org.jetbrains.intellij.build.BuildOptions
-import org.jetbrains.intellij.build.BuildOptions.Companion.PROJECT_CLASSES_OUTPUT_DIRECTORY_PROPERTY
 import org.jetbrains.intellij.build.BuildPaths
-import org.jetbrains.intellij.build.BuildPaths.Companion.COMMUNITY_ROOT
 import org.jetbrains.intellij.build.CompilationContext
 import org.jetbrains.intellij.build.JvmArchitecture
 import org.jetbrains.intellij.build.LibcImpl
@@ -189,8 +187,11 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
         }
       }
 
-      val searchableOptionSet = getSearchableOptionSet(context)
+      val searchableOptionSetDeferred = async(CoroutineName("read searchable options")) {
+        getSearchableOptionSet(context)
+      }
       val platformLayoutResultDeferred = async(CoroutineName("platform distribution entries")) {
+        val searchableOptionSet = searchableOptionSetDeferred.await()
         launch(Dispatchers.IO) {
           // PathManager.getBinPath() is used as a working dir for maven
           val binDir = Files.createDirectories(runDir.resolve("bin"))
@@ -236,14 +237,14 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
           context = context,
           runDir = runDir,
           platformLayout = platformLayout,
-          searchableOptionSet = searchableOptionSet,
-          buildPlatformJob = async { platformLayoutResultDeferred.await().distributionEntries },
+          searchableOptionSet = searchableOptionSetDeferred.await(),
+          platformEntriesProvider = { platformLayoutResultDeferred.await().distributionEntries },
           moduleOutputPatcher = moduleOutputPatcher,
         )
       }
 
       // write and update core classpath from platform and plugins distribution
-      launch {
+      launch(CoroutineName("compute core classpath")) {
         val platformClasspath = platformLayoutResultDeferred.await().coreClassPath
         val pluginDistributionEntities = pluginDistributionEntriesDeferred.await().pluginEntries
         val platformLayoutAwaited = platformLayout.await()
@@ -261,7 +262,7 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
       }
 
       if (context.generateRuntimeModuleRepository) {
-        launch {
+        launch(CoroutineName("generate runtime repository")) {
           val allDistributionEntries = platformLayoutResultDeferred.await().distributionEntries.asSequence() +
                                        pluginDistributionEntriesDeferred.await().pluginEntries.asSequence().flatMap { it.distribution }
           spanBuilder("generate runtime repository").use(Dispatchers.IO) {
@@ -270,7 +271,7 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
         }
       }
 
-      launch {
+      launch(CoroutineName("compute IDE fingerprint")) {
         computeIdeFingerprint(
           platformDistributionEntriesDeferred = platformLayoutResultDeferred,
           pluginDistributionEntriesDeferred = pluginDistributionEntriesDeferred,
@@ -279,7 +280,7 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
         )
       }
 
-      launch {
+      launch(CoroutineName("post-process distribution")) {
         // ensure platform dist files added to the list
         val platformFileEntries = platformLayoutResultDeferred.await().distributionEntries
         // ensure plugin dist files added to the list
@@ -343,7 +344,7 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
   return runDir
 }
 
-private suspend fun getSearchableOptionSet(context: BuildContext): SearchableOptionSetDescriptor? {
+private suspend fun getSearchableOptionSet(context: CompilationContext): SearchableOptionSetDescriptor? {
   return withContext(Dispatchers.IO) {
     try {
       readSearchableOptionIndex(context.paths.searchableOptionDir)
@@ -361,7 +362,7 @@ private suspend fun computeIdeFingerprint(
   homePath: Path,
 ) {
   val hasher = Hashing.xxh3_64().hashStream()
-  val debug = StringBuilder()
+  val debug = if (System.getProperty("intellij.build.fingerprint.debug").toBoolean()) StringBuilder() else null
 
   fun relativePath(path: Path): Path = when {
     path.startsWith(runDir) -> runDir.relativize(path)
@@ -371,10 +372,10 @@ private suspend fun computeIdeFingerprint(
 
   val distributionFileEntries = platformDistributionEntriesDeferred.await().distributionEntries
   hasher.putInt(distributionFileEntries.size)
-  debug.append(distributionFileEntries.size).append('\n')
+  debug?.append(distributionFileEntries.size)?.append('\n')
   for (entry in distributionFileEntries) {
     hasher.putLong(entry.hash)
-    debug.append(java.lang.Long.toUnsignedString(entry.hash, Character.MAX_RADIX)).append(" ").append(relativePath(entry.path)).append('\n')
+    debug?.append(java.lang.Long.toUnsignedString(entry.hash, Character.MAX_RADIX))?.append(" ")?.append(relativePath(entry.path))?.append('\n')
   }
 
   val pluginDistributionEntries = pluginDistributionEntriesDeferred.await().pluginEntries
@@ -382,17 +383,17 @@ private suspend fun computeIdeFingerprint(
   for (plugin in pluginDistributionEntries) {
     hasher.putInt(plugin.distribution.size)
 
-    debug.append('\n').append(plugin.layout.mainModule).append('\n')
+    debug?.append('\n')?.append(plugin.layout.mainModule)?.append('\n')
     for (entry in plugin.distribution) {
       hasher.putLong(entry.hash)
-      debug.append("  ").append(java.lang.Long.toUnsignedString(entry.hash, Character.MAX_RADIX)).append(" ").append(relativePath(entry.path)).append('\n')
+      debug?.append("  ")?.append(java.lang.Long.toUnsignedString(entry.hash, Character.MAX_RADIX))?.append(" ")?.append(relativePath(entry.path))?.append('\n')
     }
   }
 
   val fingerprint = java.lang.Long.toUnsignedString(hasher.asLong, Character.MAX_RADIX)
   withContext(Dispatchers.IO) {
     Files.writeString(runDir.resolve("fingerprint.txt"), fingerprint)
-    Files.writeString(runDir.resolve("fingerprint-debug.txt"), debug)
+    debug?.let { Files.writeString(runDir.resolve("fingerprint-debug.txt"), it) }
   }
   Span.current().addEvent("IDE fingerprint: $fingerprint")
 }
@@ -414,7 +415,7 @@ private suspend fun createBuildContext(
     }
     else {
       buildOptionsTemplate.classOutDir?.let { Path.of(it) }
-      ?: System.getProperty(PROJECT_CLASSES_OUTPUT_DIRECTORY_PROPERTY)?.let { Path.of(it) }
+      ?: System.getProperty(BuildOptions.PROJECT_CLASSES_OUTPUT_DIRECTORY_PROPERTY)?.let { Path.of(it) }
       ?: request.productionClassOutput.parent
     }
 
@@ -428,6 +429,7 @@ private suspend fun createBuildContext(
           printFreeSpace = false,
           validateImplicitPlatformModule = false,
           skipDependencySetup = true,
+          skipCheckOutputOfPluginModules = true,
 
           useCompiledClassesFromProjectOutput = useCompiledClassesFromProjectOutput,
           pathToCompiledClassesArchivesMetadata = buildOptionsTemplate?.pathToCompiledClassesArchivesMetadata?.takeIf { !useCompiledClassesFromProjectOutput },
@@ -465,7 +467,7 @@ private suspend fun createBuildContext(
 
         val tempDir = buildDir.resolve("temp")
         val result = BuildPaths(
-          communityHomeDirRoot = COMMUNITY_ROOT,
+          communityHomeDirRoot = BuildPaths.COMMUNITY_ROOT,
           buildOutputDir = runDir,
           logDir = options.logDir!!,
           projectHome = request.projectDir,
@@ -490,7 +492,7 @@ private suspend fun createBuildContext(
     }
 
     val jarCacheManager = LocalDiskJarCacheManager(cacheDir = request.jarCacheDir, productionClassOutDir = classOutDir.resolve("production"))
-    launch {
+    launch(Dispatchers.IO + CoroutineName("cleanup jar cache")) {
       jarCacheManager.cleanup()
     }
 
@@ -612,7 +614,7 @@ private suspend fun layoutPlatform(
       Files.writeString(runDir.resolve("build.txt"), context.fullBuildNumber)
     }
 
-    // todo - we cannot for now skip nio-fs.jar, probably `-Xbootclasspath/a` is not correctly set for dev-mode based tests
+    // todo - we cannot for now skip nio-fs.jar, probably `-Xbootclasspath/a` is not correctly set for dev-mode-based tests
     generateClassPathByLayoutReport(
       libDir = runDir.resolve("lib"),
       entries = entries,

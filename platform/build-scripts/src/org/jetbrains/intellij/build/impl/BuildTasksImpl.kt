@@ -488,11 +488,17 @@ suspend fun buildDistributions(context: BuildContext): Unit = block("build distr
       val pluginsToPublish = getPluginLayoutsByJpsModuleNames(
         modules = context.productProperties.productLayout.pluginModulesToPublish,
         productLayout = context.productProperties.productLayout,
-        toPublish = true
+        toPublish = true,
       )
       buildNonBundledPlugins(
-        pluginsToPublish, context.options.compressZipFiles, buildPlatformLibJob = null, distributionState, buildSearchableOptions(context), isUpdateFromSources = false,
-        distributionState.platformLayout.descriptorCacheContainer, context
+        pluginsToPublish = pluginsToPublish,
+        compressPluginArchive = context.options.compressZipFiles,
+        buildPlatformLibJob = null,
+        state = distributionState,
+        searchableOptionSet = buildSearchableOptions(context),
+        isUpdateFromSources = false,
+        descriptorCacheContainer = distributionState.platformLayout.descriptorCacheContainer,
+        context = context,
       )
       return@coroutineScope
     }
@@ -924,7 +930,7 @@ private suspend fun buildCrossPlatformOnlyPlugins(context: BuildContext): Pair<P
         arch = null,
         targetDir = targetDir,
         state = state,
-        buildPlatformJob = null,
+        platformEntriesProvider = null,
         searchableOptionSet = null,
         descriptorCacheContainer = state.platformLayout.descriptorCacheContainer,
         context = context,

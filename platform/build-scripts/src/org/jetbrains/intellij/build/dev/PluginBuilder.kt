@@ -41,7 +41,7 @@ internal suspend fun buildPluginsForDevMode(
   runDir: Path,
   platformLayout: Deferred<PlatformLayout>,
   searchableOptionSet: SearchableOptionSetDescriptor?,
-  buildPlatformJob: Deferred<List<DistributionFileEntry>>,
+  platformEntriesProvider: suspend () -> List<DistributionFileEntry>,
   moduleOutputPatcher: ModuleOutputPatcher,
 ): PluginsLayoutResult {
   val bundledMainModuleNames = getBundledMainModuleNames(context, request.additionalModules)
@@ -65,7 +65,7 @@ internal suspend fun buildPluginsForDevMode(
       arch = null,
       targetDir = pluginRootDir,
       state = DistributionBuilderState(platformLayout = platform, pluginsToPublish = emptySet(), context = context),
-      buildPlatformJob = buildPlatformJob,
+      platformEntriesProvider = platformEntriesProvider,
       searchableOptionSet = searchableOptionSet,
       descriptorCacheContainer = platform.descriptorCacheContainer,
       context = context,

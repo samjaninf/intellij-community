@@ -54,6 +54,7 @@ import org.jetbrains.intellij.build.io.archiveDir
 import org.jetbrains.intellij.build.io.writeNewFile
 import org.jetbrains.intellij.build.io.writeNewZipWithoutIndex
 import org.jetbrains.intellij.build.io.zipWithCompression
+import org.jetbrains.intellij.build.productLayout.util.mapConcurrent
 import org.jetbrains.intellij.build.telemetry.TraceManager.spanBuilder
 import org.jetbrains.intellij.build.telemetry.use
 import java.nio.ByteBuffer
@@ -73,7 +74,15 @@ internal suspend fun buildNonBundledPlugins(
 ): List<PluginBuildDescriptor> {
   return context.executeStep(spanBuilder("build non-bundled plugins").setAttribute("count", state.pluginsToPublish.size.toLong()), BuildOptions.NON_BUNDLED_PLUGINS_STEP) {
     buildNonBundledPlugins(
-      scope = this, pluginsToPublish, compressPluginArchive, buildPlatformLibJob, state, searchableOptionSet, isUpdateFromSources, descriptorCacheContainer, context
+      scope = this,
+      pluginsToPublish = pluginsToPublish,
+      compressPluginArchive = compressPluginArchive,
+      buildPlatformLibJob = buildPlatformLibJob,
+      state = state,
+      searchableOptionSet = searchableOptionSet,
+      isUpdateFromSources = isUpdateFromSources,
+      descriptorCacheContainer = descriptorCacheContainer,
+      context = context,
     )
   } ?: emptyList()
 }
@@ -98,7 +107,7 @@ private suspend fun buildNonBundledPlugins(
   }
   else {
     scope.async(CoroutineName("build keymap plugins")) {
-      buildKeymapPlugins(targetDir = context.nonBundledPluginsToBePublished, context)
+      buildKeymapPlugins(targetDir = context.nonBundledPluginsToBePublished, context = context)
     }
   }
 
@@ -135,7 +144,7 @@ private suspend fun buildNonBundledPlugins(
       arch = arch,
       targetDir = targetDir,
       state = state,
-      buildPlatformJob = buildPlatformLibJob,
+      platformEntriesProvider = buildPlatformLibJob?.let { it::await },
       searchableOptionSet = searchableOptionSet,
       descriptorCacheContainer = descriptorCacheContainer,
       context = context,
@@ -344,12 +353,12 @@ private suspend fun buildKeymapPlugins(targetDir: Path, context: BuildContext): 
       arrayOf("Default for XWin"),
       arrayOf("Emacs"),
       arrayOf("Sublime Text", "Sublime Text (Mac OS X)"),
-    ).map {
-      async(CoroutineName("build keymap plugin for ${it[0]}")) {
-        buildKeymapPlugin(keymaps = it, buildNumber = context.buildNumber, targetDir = targetDir, keymapDir = keymapDir)
+    ).mapConcurrent { keymaps ->
+      withContext(CoroutineName("build keymap plugin for ${keymaps[0]}")) {
+        buildKeymapPlugin(keymaps = keymaps, buildNumber = context.buildNumber, targetDir = targetDir, keymapDir = keymapDir)
       }
     }
-  }.map { it.getCompleted() }
+  }
 }
 
 /**
@@ -420,7 +429,7 @@ private suspend fun buildHelpPlugin(
       arch = null,
       targetDir = targetDir,
       state = state,
-      buildPlatformJob = null,
+      platformEntriesProvider = null,
       searchableOptionSet = searchableOptionSetDescriptor,
       descriptorCacheContainer = descriptorCacheContainer,
       context = context
