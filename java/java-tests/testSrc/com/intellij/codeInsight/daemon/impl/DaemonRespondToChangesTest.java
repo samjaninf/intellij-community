@@ -38,7 +38,7 @@ import com.intellij.ide.GeneralSettings;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.idea.IJIgnore;
-import com.intellij.javaee.ExternalResourceManagerExImpl;
+import com.intellij.javaee.ExternalResourceManagerExBase;
 import com.intellij.lang.LanguageFilter;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.HighlightSeverity;
@@ -165,15 +165,12 @@ import java.util.stream.Collectors;
 @DaemonAnalyzerTestCase.CanChangeDocumentDuringHighlighting
 public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
   public static final String BASE_PATH = "/codeInsight/daemonCodeAnalyzer/typing/";
-
-  private DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
   private TestDaemonCodeAnalyzerImpl myTestDaemonCodeAnalyzer;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     enableInspectionTool(new UnusedDeclarationInspection());
-    myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
     myTestDaemonCodeAnalyzer = new TestDaemonCodeAnalyzerImpl(getProject());
     UndoManager.getInstance(myProject);
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(true);
@@ -195,7 +192,6 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
       addSuppressedException(e);
     }
     finally {
-      myDaemonCodeAnalyzer = null;
       super.tearDown();
     }
   }
@@ -307,7 +303,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
     Document document = getDocument(getFile());
     List<HighlightInfo> infos = waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.WARNING);
     assertSize(1, infos);
-    assertEquals("Private field 'ffff' is never used", infos.get(0).getDescription());
+    assertEquals("Private field 'ffff' is never used", infos.getFirst().getDescription());
 
     type("  foo(ffff++);");
     assertEmpty(highlightErrors());
@@ -335,7 +331,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
     infos = waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.WARNING);
 
     assertSize(1, infos);
-    assertEquals("Method 'ffff()' is never used", infos.get(0).getDescription());
+    assertEquals("Method 'ffff()' is never used", infos.getFirst().getDescription());
   }
 
 
@@ -343,7 +339,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
     configureByFile(BASE_PATH + "AssignedButUnreadField.java");
     List<HighlightInfo> infos = waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.WARNING);
     assertSize(1, infos);
-    assertEquals("Private field 'text' is assigned but never accessed", infos.get(0).getDescription());
+    assertEquals("Private field 'text' is assigned but never accessed", infos.getFirst().getDescription());
 
     ctrlW();
     WriteCommandAction.runWriteCommandAction(getProject(), () -> EditorModificationUtilEx.deleteSelectedText(getEditor()));
@@ -489,7 +485,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
 
     String location = getTestName(false) + ".xsd";
     final String url = "http://myschema/";
-    ExternalResourceManagerExImpl.registerResourceTemporarily(url, location, getTestRootDisposable());
+    ExternalResourceManagerExBase.registerResourceTemporarily(url, location, getTestRootDisposable());
 
     configureByFiles(null, BASE_PATH + getTestName(false) + ".xml", BASE_PATH + getTestName(false) + ".xsd");
 
@@ -609,13 +605,13 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
 
     List<HighlightInfo> infos = waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.WARNING);
     assertSize(1, infos);
-    assertEquals("Variable 'local' is never used", infos.get(0).getDescription());
+    assertEquals("Variable 'local' is never used", infos.getFirst().getDescription());
 
     type("local");
 
     infos = waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.WARNING);
     assertSize(1, infos);
-    assertEquals("Field 'cons' is never used", infos.get(0).getDescription());
+    assertEquals("Field 'cons' is never used", infos.getFirst().getDescription());
   }
 
   public void testOverrideMethodsHighlightingPersistWhenTypeInsideMethodBody() {
@@ -819,7 +815,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
 
     List<HighlightInfo> errs = highlightErrors();
     assertSize(2, errs);
-    assertEquals("'}' expected", errs.get(0).getDescription());
+    assertEquals("'}' expected", errs.getFirst().getDescription());
 
     undo();
     assertEmpty(highlightErrors());
@@ -876,6 +872,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
 
 
   public void testApplyErrorInTheMiddle() {
+    @Language("JAVA")
     String text = "class <caret>X { " + """
       
           {
@@ -1000,8 +997,9 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
         TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(getEditor());
         AtomicBoolean checked = new AtomicBoolean();
         Runnable callbackWhileWaiting = () -> {
-          if (checked.getAndSet(true)) return;
-          typeInAlienEditor(alienEditor, 'x');
+          if (!checked.getAndSet(true)) {
+            typeInAlienEditor(alienEditor, 'x');
+          }
         };
         myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, callbackWhileWaiting);
       }

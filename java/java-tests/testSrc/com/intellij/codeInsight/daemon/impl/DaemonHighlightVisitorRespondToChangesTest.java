@@ -38,6 +38,7 @@ import com.intellij.util.TestTimeOut;
 import com.intellij.util.ThrowableRunnable;
 import com.intellij.util.TimeoutUtil;
 import com.intellij.util.containers.ContainerUtil;
+import com.intellij.util.ui.UIUtil;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,12 +63,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @SkipSlowTestLocally
 @DaemonAnalyzerTestCase.CanChangeDocumentDuringHighlighting
 public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTestCase {
-  private DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
-
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
     UndoManager.getInstance(myProject);
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(true);
     PlatformTestUtil.assumeEnoughParallelism();
@@ -89,7 +87,6 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
       addSuppressedException(e);
     }
     finally {
-      myDaemonCodeAnalyzer = null;
       super.tearDown();
     }
   }
@@ -320,12 +317,11 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
     log.clear();
     INTERRUPT.set(true);
     COMMENT_HIGHLIGHTED.set(false);
-    HighlightVisitor visitor = new MyInterruptingVisitor();
-    myProject.getExtensionArea().getExtensionPoint(HighlightVisitor.EP_HIGHLIGHT_VISITOR).registerExtension(visitor, getTestRootDisposable());
+    myProject.getExtensionArea().getExtensionPoint(HighlightVisitor.EP_HIGHLIGHT_VISITOR).registerExtension(new MyInterruptingVisitor(), getTestRootDisposable());
 
     PsiDocumentManager.getInstance(myProject).commitAllDocuments();
     CodeInsightTestFixtureImpl.ensureIndexesUpToDate(getProject());
-
+    UIUtil.dispatchAllInvocationEvents();
     myDaemonCodeAnalyzer.restart(getTestName(false));
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(false);
     try {
@@ -371,7 +367,7 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
         COMMENT_HIGHLIGHTED.set(true);
       }
       else if (COMMENT_HIGHLIGHTED.get() && INTERRUPT.get()) { // throw interrupt after the comment was highlighted because visit() should complete
-          throw new ProcessCanceledException();
+        throw new ProcessCanceledException();
       }
     }
 

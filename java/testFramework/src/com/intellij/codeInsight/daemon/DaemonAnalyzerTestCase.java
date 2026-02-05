@@ -81,6 +81,7 @@ import java.util.List;
 
 public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
   private VirtualFileFilter myVirtualFileFilter = new FileTreeAccessFilter();
+  protected DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
 
   @Override
   protected void setUp() throws Exception {
@@ -92,6 +93,7 @@ public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
 
     new TestDaemonCodeAnalyzerImpl(getProject()).prepareForTest();
     DaemonCodeAnalyzerSettings.getInstance().setImportHintEnabled(false);
+    myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
 
     if (isStressTest()) {
       IntentionManager.getInstance().getAvailableIntentions();  // hack to avoid slowdowns in PyExtensionFactory
@@ -132,7 +134,12 @@ public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
       addSuppressedException(e);
     }
     finally {
-      super.tearDown();
+      try {
+        super.tearDown();
+      }
+      finally {
+        myDaemonCodeAnalyzer = null;
+      }
     }
   }
 

@@ -2,7 +2,6 @@
 package com.intellij.codeInsight.daemon.impl;
 
 import com.intellij.codeInsight.daemon.DaemonAnalyzerTestCase;
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzerSettings;
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInspection.LocalInspectionTool;
@@ -102,13 +101,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @SkipSlowTestLocally
 @DaemonAnalyzerTestCase.CanChangeDocumentDuringHighlighting
 public class DaemonInspectionsRespondToChangesTest extends DaemonAnalyzerTestCase {
-  private DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
-
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     enableInspectionTool(new UnusedDeclarationInspection());
-    myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
     UndoManager.getInstance(myProject);
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(true);
     PlatformTestUtil.assumeEnoughParallelism();
@@ -130,7 +126,6 @@ public class DaemonInspectionsRespondToChangesTest extends DaemonAnalyzerTestCas
       addSuppressedException(e);
     }
     finally {
-      myDaemonCodeAnalyzer = null;
       super.tearDown();
     }
   }
@@ -731,7 +726,7 @@ public class DaemonInspectionsRespondToChangesTest extends DaemonAnalyzerTestCas
       assertEmpty(highlightErrors());
       PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue();
       assertOneElement(myDaemonCodeAnalyzer.getFileLevelHighlights(getProject(), getFile()));
-      
+
       LOG.debug("i = " + i);
 
       FileEditorManager.getInstance(myProject).closeFile(psiFile.getVirtualFile());

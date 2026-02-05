@@ -93,13 +93,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @SkipSlowTestLocally
 @DaemonAnalyzerTestCase.CanChangeDocumentDuringHighlighting
 public class DaemonAnnotatorsRespondToChangesTest extends DaemonAnalyzerTestCase {
-  private DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
-
   @Override
   protected void setUp() throws Exception {
     PlatformTestUtil.assumeEnoughParallelism();
     super.setUp();
-    myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
     UndoManager.getInstance(myProject);
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(true);
   }
@@ -121,7 +118,6 @@ public class DaemonAnnotatorsRespondToChangesTest extends DaemonAnalyzerTestCase
       addSuppressedException(e);
     }
     finally {
-      myDaemonCodeAnalyzer = null;
       super.tearDown();
     }
   }
@@ -402,7 +398,6 @@ public class DaemonAnnotatorsRespondToChangesTest extends DaemonAnalyzerTestCase
       if (highlighted != 0) {
         toSleepMs.set(0);
         success.set(true);
-        //throw new DebugException(); // sorry for that, had to differentiate from failure
       }
       if (n.timedOut()) {
         toSleepMs.set(0);

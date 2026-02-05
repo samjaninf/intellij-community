@@ -6,7 +6,6 @@ import com.intellij.codeHighlighting.TextEditorHighlightingPass;
 import com.intellij.codeHighlighting.TextEditorHighlightingPassFactory;
 import com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar;
 import com.intellij.codeInsight.daemon.DaemonAnalyzerTestCase;
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzerSettings;
 import com.intellij.codeInsight.hint.EditorHintListener;
 import com.intellij.codeInsight.intention.AbstractIntentionAction;
@@ -85,12 +84,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SkipSlowTestLocally
 @DaemonAnalyzerTestCase.CanChangeDocumentDuringHighlighting
 public class LightBulbTest extends DaemonAnalyzerTestCase {
-  private DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(true);
   }
 
@@ -110,7 +107,6 @@ public class LightBulbTest extends DaemonAnalyzerTestCase {
       addSuppressedException(e);
     }
     finally {
-      myDaemonCodeAnalyzer = null;
       super.tearDown();
     }
   }
@@ -286,7 +282,8 @@ public class LightBulbTest extends DaemonAnalyzerTestCase {
         }
         long finish = System.currentTimeMillis();
         LOG.debug("start: "+(daemonStartDeadline-5000)+"; started: "+start+"; finished: "+finish+"; updateCount:"+updateCount);
-        assertTrue("updateCount0: "+updateCount0+"; updateCount:"+updateCount, updateCount.get() > updateCount0);
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue(); // wait for a bit more until ShowIntentionsPass.doApplyInformationToEditor() called
+        assertNotSame("updateCount0: "+updateCount0+"; updateCount:"+updateCount, updateCount.get(), updateCount0);
       }
     });
   }

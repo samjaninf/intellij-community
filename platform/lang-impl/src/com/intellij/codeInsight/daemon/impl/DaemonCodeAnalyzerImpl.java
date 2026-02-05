@@ -145,7 +145,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
   private FileEditorManager fileEditorManager;
   private final Map<FileEditor, DaemonProgressIndicator> myUpdateProgress = new HashMap<>(); // guarded by `this` lock
 
-  private final UpdateRunnable myUpdateRunnable;
+  private final UpdateRunnable myUpdateRunnable = new UpdateRunnable(this);
   private volatile @NotNull Future<?> myUpdateRunnableFuture = CompletableFuture.completedFuture(null);
   private boolean myUpdateByTimerEnabled = true; // guarded by this
   private final Collection<VirtualFile> myDisabledHintsFiles = new HashSet<>();
@@ -187,7 +187,6 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
 
     myDisposed = false;
     myFileStatusMap.markAllFilesDirty("DaemonCodeAnalyzer init");
-    myUpdateRunnable = new UpdateRunnable(this);
     Disposer.register(this, () -> {
       assert !myDisposed : "Double dispose";
       myUpdateRunnable.clearFieldsOnDispose();
@@ -576,7 +575,8 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
     });
   }
 
-  synchronized boolean isUpdateByTimerEnabled() {
+  @ApiStatus.Internal
+  public synchronized boolean isUpdateByTimerEnabled() {
     return myUpdateByTimerEnabled;
   }
 
@@ -863,7 +863,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
                                       @Nullable Throwable cause,
                                       @NonNls @NotNull String reason) {
     if (!indicator.isCanceled()) {
-      PassExecutorService.log(indicator, null, "Cancel (reason:'", reason, "')", toRestartAlarm);
+      PassExecutorService.log(indicator, null, "Cancel (reason: '", reason, "')", toRestartAlarm);
       if (cause == null) {
         indicator.cancel(reason);
       }
@@ -1193,12 +1193,10 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
     if (documentManager.hasEventSystemEnabledUncommittedDocuments()) {
       // restart when everything committed
       documentManager.performLaterWhenAllCommitted(() -> {
-        synchronized (this) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Rescheduled after commit");
-          }
-          scheduleIfNotRunning();
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Rescheduled after commit");
         }
+        scheduleIfNotRunning();
       });
       return "wasn't run because uncommitted docs found: "+Arrays.toString(documentManager.getUncommittedDocuments())+"; delayed until commit";
     }
