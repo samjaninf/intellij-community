@@ -76,10 +76,8 @@ suspend fun <T> JBPopup.showAndAwaitSubmission(
   list: JList<T>,
   point: RelativePoint,
   showDirection: ShowDirection,
-  afterShow: () -> Unit = { },
 ): T? {
   showPopup(point, showDirection)
-  afterShow()
   return waitForChoiceAsync(list)
 }
 
