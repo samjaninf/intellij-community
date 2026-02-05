@@ -12,12 +12,13 @@ import org.jetbrains.kotlin.idea.compilerPlugin.modifyCompilerArgumentsForPlugin
 import org.jetbrains.kotlin.idea.maven.KotlinMavenImporter.Companion.KOTLIN_PLUGIN_ARTIFACT_ID
 import org.jetbrains.kotlin.idea.maven.KotlinMavenImporter.Companion.KOTLIN_PLUGIN_GROUP_ID
 import org.jetbrains.kotlin.idea.maven.MavenProjectImportHandler
+import java.nio.file.Path
 
 abstract class AbstractMavenImportHandler : MavenProjectImportHandler {
     abstract val compilerPluginId: String
     abstract val pluginName: String
     abstract val mavenPluginArtifactName: String
-    abstract val pluginJarFileFromIdea: String
+    abstract val pluginJarFileFromIdea: Path
 
     override fun invoke(facetSettings: IKotlinFacetSettings, mavenProject: MavenProject) {
         modifyCompilerArgumentsForPluginWithFacetSettings(
