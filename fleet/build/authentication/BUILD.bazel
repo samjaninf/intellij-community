@@ -26,7 +26,7 @@ jvm_library(
     "@lib//:kotlinx-serialization-json",
     "@lib//:slf4j-api",
     "@lib//:fleet-io-github-pdvrieze-xmlutil-serialization-jvm",
-    "@lib//:fleet-io-github-pdvrieze-xmlutil-core-jvm",
+    "@lib//:fleet-io-github-pdvrieze-xmlutil-core",
   ]
 )
 ### auto-generated section `build fleet.build.authentication` end

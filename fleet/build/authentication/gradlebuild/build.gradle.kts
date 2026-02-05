@@ -59,12 +59,10 @@ kotlin {
       isTransitive = false
       exclude(group = "org.slf4j", module = "slf4j-jdk14")
     }
-  }
-  sourceSets.jvmMain.dependencies {
-    implementation(jps.io.github.pdvrieze.xmlutil.serialization.jvm796850685.get().let { "${it.group}:${it.name}:${it.version}" }) {
+    implementation(jps.io.github.pdvrieze.xmlutil.serialization.jvm796850685.get().let { "${it.group}:serialization:${it.version}" }) {
       isTransitive = false
     }
-    implementation(jps.io.github.pdvrieze.xmlutil.core.jvm535986330.get().let { "${it.group}:${it.name}:${it.version}" }) {
+    implementation(jps.io.github.pdvrieze.xmlutil.core514653626.get().let { "${it.group}:${it.name}:${it.version}" }) {
       isTransitive = false
     }
   }

@@ -34,6 +34,6 @@
     <orderEntry type="library" name="kotlinx-serialization-json" level="project" />
     <orderEntry type="library" name="slf4j-api" level="project" />
     <orderEntry type="library" name="fleet:io.github.pdvrieze.xmlutil.serialization.jvm" level="project" />
-    <orderEntry type="library" name="fleet:io.github.pdvrieze.xmlutil.core.jvm" level="project" />
+    <orderEntry type="library" name="fleet:io.github.pdvrieze.xmlutil.core" level="project" />
   </component>
 </module>
