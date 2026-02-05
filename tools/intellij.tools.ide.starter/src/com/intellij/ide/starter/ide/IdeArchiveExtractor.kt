@@ -24,7 +24,7 @@ object IdeArchiveExtractor {
     logOutput("Extracting application into $unpackDir")
     when {
       ideInstallerFile.extension == "dmg" -> unpackDmg(ideInstallerFile, unpackDir.toPath())
-      ideInstallerFile.extension == "exe" -> SevenZipWindowsArchiver.unpackWinMsi(ideInstallerFile, unpackDir)
+      ideInstallerFile.extension == "exe" -> SevenZipWindowsArchiver.unpackWinMsi(ideInstallerFile.toPath(), unpackDir.toPath())
       ideInstallerFile.extension == "zip" -> FileSystem.unpack(ideInstallerFile.toPath(), unpackDir.toPath())
       ideInstallerFile.name.endsWith(".tar.gz") -> FileSystem.unpackTarGz(ideInstallerFile, unpackDir)
       else -> error("Unsupported build file: $ideInstallerFile")
