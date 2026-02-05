@@ -354,10 +354,6 @@ internal open class FrontendXBreakpointProxy(
     return !cs.isActive
   }
 
-  override fun updateIcon() {
-    // TODO IJPL-185322 should we cache icon like in Monolith?
-  }
-
   override fun createGutterIconRenderer(): GutterIconRenderer? {
     return BreakpointGutterIconRenderer(this)
   }

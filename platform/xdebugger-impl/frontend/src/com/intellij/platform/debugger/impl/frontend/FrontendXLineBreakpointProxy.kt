@@ -258,6 +258,10 @@ internal class FrontendXLineBreakpointProxy(
     return visualRepresentation.createBreakpointDraggableObject()
   }
 
+  override fun updateIcon() {
+    // TODO IJPL-185322 should we cache icon like in Monolith?
+  }
+
   override fun toString(): String {
     return this::class.simpleName + "(id=$id, type=${type.id}, line=${getLine()}, file=${getFileUrl()})"
   }
