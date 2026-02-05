@@ -2,6 +2,7 @@
 package com.intellij.util.io;
 
 import com.intellij.util.io.pagecache.Page;
+import com.intellij.util.io.pagecache.PagedStorageWithPageUnalignedAccess;
 import com.intellij.util.io.pagecache.impl.PageContentLockingStrategy;
 import org.assertj.core.description.TextDescription;
 import org.jetbrains.annotations.NotNull;

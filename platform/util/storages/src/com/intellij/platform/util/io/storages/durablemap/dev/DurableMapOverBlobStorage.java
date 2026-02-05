@@ -19,6 +19,7 @@ import com.intellij.platform.util.io.storages.intmultimaps.extendiblehashmap.Ext
 import com.intellij.util.ExceptionUtil;
 import com.intellij.util.Processor;
 import com.intellij.util.containers.hash.EqualityPolicy;
+import com.intellij.util.io.AppendablePersistentMap;
 import com.intellij.util.io.IOUtil;
 import com.intellij.util.io.Unmappable;
 import com.intellij.util.io.blobstorage.StreamlinedBlobStorage;
