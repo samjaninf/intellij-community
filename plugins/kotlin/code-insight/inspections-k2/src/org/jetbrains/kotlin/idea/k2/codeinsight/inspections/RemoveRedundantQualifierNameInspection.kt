@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.analysis.api.symbols.KaEnumEntrySymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaNamedClassSymbol
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.ShortenCommandForIde
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.collectPossibleReferenceShorteningsInElementForIde
+import org.jetbrains.kotlin.idea.base.codeInsight.ShortenOptionsForIde
 import org.jetbrains.kotlin.idea.base.psi.textRangeIn
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
@@ -58,6 +59,9 @@ internal class RemoveRedundantQualifierNameInspection : AbstractKotlinInspection
     private fun collectShortenings(declaration: KtElement): ShortenCommandForIde =
         collectPossibleReferenceShorteningsInElementForIde(
             declaration,
+            shortenOptions = ShortenOptionsForIde.DEFAULT.copy(
+                removeExplicitCompanionReferences = false,
+            ),
             classShortenStrategy = { classSymbol ->
                 if (classSymbol.isEnumCompanionObject()) {
                     ShortenStrategy.DO_NOT_SHORTEN
