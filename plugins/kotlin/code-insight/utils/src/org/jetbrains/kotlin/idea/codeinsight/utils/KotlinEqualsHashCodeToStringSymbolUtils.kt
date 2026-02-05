@@ -2,10 +2,12 @@
 
 package org.jetbrains.kotlin.idea.codeinsight.utils
 
+import com.intellij.util.containers.addIfNotNull
 import org.jetbrains.kotlin.analysis.api.KaContextParameterApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.components.allSupertypes
 import org.jetbrains.kotlin.analysis.api.components.containingDeclaration
+import org.jetbrains.kotlin.analysis.api.components.declaredMemberScope
 import org.jetbrains.kotlin.analysis.api.components.defaultType
 import org.jetbrains.kotlin.analysis.api.components.isAnyType
 import org.jetbrains.kotlin.analysis.api.components.isIntType
@@ -55,15 +57,38 @@ object KotlinEqualsHashCodeToStringSymbolUtils {
         }
 
     context(_: KaSession)
-    fun getPropertiesToUseInGeneratedMember(classOrObject: KtClassOrObject): List<KtNamedDeclaration> =
-        buildList<KtNamedDeclaration> {
-            classOrObject.primaryConstructorParameters.filterTo(this) { it.hasValOrVar() }
-            classOrObject.declarations.asSequence().filterIsInstance<KtProperty>().filterTo(this) {
-                it.symbol is KaPropertySymbol
+    fun getPropertiesToUseInGeneratedMember(classOrObject: KtClassOrObject, searchInSuper: Boolean = false): List<KtNamedDeclaration> {
+        return buildList {
+            collectOwnDeclaredProperties(classOrObject)
+            if (searchInSuper) {
+                collectPropertiesFromSuperclasses(classOrObject)
             }
         }.filter {
             it.name?.quoteIfNeeded().isIdentifier()
         }
+    }
+
+    context(_: KaSession)
+    private fun MutableList<KtNamedDeclaration>.collectOwnDeclaredProperties(classOrObject: KtClassOrObject) {
+        classOrObject.primaryConstructorParameters.filterTo(this) { it.hasValOrVar() }
+        classOrObject.declarations.asSequence().filterIsInstance<KtProperty>().filterTo(this) {
+            it.symbol is KaPropertySymbol
+        }
+    }
+
+    context(_: KaSession)
+    private fun MutableList<KtNamedDeclaration>.collectPropertiesFromSuperclasses(classOrObject: KtClassOrObject) {
+        val symbol = classOrObject.symbol
+        if (symbol !is KaClassSymbol) return
+
+        for (supertype in symbol.defaultType.allSupertypes) {
+            val classSymbol = supertype.symbol as? KaClassSymbol ?: continue
+            for (member in classSymbol.declaredMemberScope.declarations) {
+                val propertySymbol = member as? KaPropertySymbol ?: continue
+                addIfNotNull(propertySymbol.psi as? KtNamedDeclaration)
+            }
+        }
+    }
 
     /**
      * Searches for a callable member symbol with the given [methodName] that matches the [signatureFilter].

@@ -3,6 +3,14 @@
     <module name="intellij.kotlin.refactorings"/>
     <module name="intellij.kotlin.searching"/>
   </dependencies>
+
+  <extensionPoints>
+    <extensionPoint
+            qualifiedName="org.jetbrains.kotlin.equalsHashCodeGeneratorExtension"
+            interface="org.jetbrains.kotlin.idea.k2.codeinsight.generate.KotlinEqualsHashCodeGeneratorExtension"
+            dynamic="true"/>
+  </extensionPoints>
+
   <extensions defaultExtensionNs="org.jetbrains.kotlin">
     <smartEnterProcessorFixer
             language="kotlin"

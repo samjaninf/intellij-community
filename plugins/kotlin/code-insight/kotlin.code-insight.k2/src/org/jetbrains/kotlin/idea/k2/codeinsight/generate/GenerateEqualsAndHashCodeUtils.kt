@@ -33,11 +33,11 @@ import org.jetbrains.kotlin.psi.psiUtil.hasActualModifier
 import org.jetbrains.kotlin.psi.psiUtil.hasExpectModifier
 
 object GenerateEqualsAndHashCodeUtils {
-    private const val BASE_PARAM_NAME = "baseParamName"
-    private const val SUPER_HAS_EQUALS = "superHasEquals"
-    private const val SUPER_HAS_HASHCODE = "superHasHashCode"
-    private const val SUPER_PARAM_NAME = "superParamName"
-    private const val CHECK_PARAMETER_WITH_INSTANCEOF = "checkParameterWithInstanceof"
+    const val BASE_PARAM_NAME: String = "baseParamName"
+    const val SUPER_HAS_EQUALS: String = "superHasEquals"
+    const val SUPER_HAS_HASHCODE: String = "superHasHashCode"
+    const val SUPER_PARAM_NAME: String = "superParamName"
+    const val CHECK_PARAMETER_WITH_INSTANCEOF: String = "checkParameterWithInstanceof"
 
     /**
      * @param tryToFindEqualsMethodForClass Pass `true` to attempt to find an existing `equals()` implementation in
@@ -73,14 +73,16 @@ object GenerateEqualsAndHashCodeUtils {
         contextMap[SUPER_HAS_EQUALS] = equalsFunction != null && (equalsFunction.containingSymbol as? KaClassSymbol)?.classId != StandardClassIds.Any
         contextMap[CHECK_PARAMETER_WITH_INSTANCEOF] = CodeInsightSettings.getInstance().USE_INSTANCEOF_ON_EQUALS_PARAMETER
 
+        collectEqualsContextFromExtensions(contextMap, info)
+
         val sortedVariables = info.variablesForEquals.sortedWithPrimitiveFirst()
         val methodText = VelocityGeneratorHelper
-            .velocityGenerateCode(klass, sortedVariables, contextMap,
-                                  KotlinEqualsHashCodeTemplatesManager.getInstance().defaultEqualsTemplate.template, false) ?: return null
-
+            .velocityGenerateCode(
+                klass, sortedVariables, contextMap,
+                KotlinEqualsHashCodeTemplatesManager.getInstance().defaultEqualsTemplate.template, false
+            ) ?: return null
 
         val function = KtPsiFactory.contextual(klass).createFunction(methodText)
-
         setupExpectActualFunction(klass, function)
         return function
     }
@@ -108,14 +110,31 @@ object GenerateEqualsAndHashCodeUtils {
 
         // Sort variables in `hashCode()` to preserve the same order as in `equals()`
         val sortedVariables = info.variablesForHashCode.sortedWithPrimitiveFirst()
+
+        collectHashCodeContextFromExtensions(contextMap, info)
+
         val methodText = VelocityGeneratorHelper
             .velocityGenerateCode(klass, sortedVariables,
-                                  contextMap, KotlinEqualsHashCodeTemplatesManager.getInstance().defaultHashcodeTemplate.template, false) ?: return null
-
+                contextMap, KotlinEqualsHashCodeTemplatesManager.getInstance().defaultHashcodeTemplate.template, false)
+            ?: return null
 
         val function = KtPsiFactory.contextual(klass).createFunction(methodText)
         setupExpectActualFunction(klass, function)
         return function
+    }
+
+    context(_: KaSession)
+    private fun collectEqualsContextFromExtensions(contextMap: MutableMap<String, Any?>, info: Info) {
+        KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(info.klass)?.let { ext ->
+            contextMap.putAll(ext.extraEqualsContext(info))
+        }
+    }
+
+    context(_: KaSession)
+    private fun collectHashCodeContextFromExtensions(contextMap: MutableMap<String, Any?>, info: Info) {
+        KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(info.klass)?.let { ext ->
+            contextMap.putAll(ext.extraHashCodeContext(info))
+        }
     }
 
     context(_: KaSession)
@@ -160,16 +179,24 @@ object GenerateEqualsAndHashCodeUtils {
 
     fun generateHashCode(klass: KtClass): String {
         return analyze(klass) {
-            val variablesForEquals = getPropertiesToUseInGeneratedMember(klass)
-            val hashCode = generateHashCode(Info(klass, variablesForEquals, variablesForEquals, null, null))!!
+            val unfilteredVariables = getPropertiesToUseInGeneratedMember(klass, searchInSuper = true)
+            val filters = KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(klass)?.memberFilters ?: DefaultMemberFilters
+            val variablesForHashCode = unfilteredVariables.filter { filters.isApplicableForHashCodeInClass(it, klass) }
+            val hashCode = KotlinEqualsHashCodeTemplatesManager.getInstance().runWithExtensionTemplatesFor(klass) {
+                generateHashCode(Info(klass, emptyList(), variablesForHashCode, null, null))!!
+            }
             hashCode.text
         }
     }
 
     fun generateEquals(klass: KtClass): String {
         return analyze(klass) {
-            val variablesForEquals = getPropertiesToUseInGeneratedMember(klass)
-            val equals = generateEquals(Info(klass, variablesForEquals, variablesForEquals, null, null))!!
+            val unfilteredVariables = getPropertiesToUseInGeneratedMember(klass, searchInSuper = true)
+            val filters = KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(klass)?.memberFilters ?: DefaultMemberFilters
+            val variablesForEquals = unfilteredVariables.filter { filters.isApplicableForEqualsInClass(it, klass) }
+            val equals = KotlinEqualsHashCodeTemplatesManager.getInstance().runWithExtensionTemplatesFor(klass) {
+                generateEquals(Info(klass, variablesForEquals, emptyList(), null, null))!!
+            }
             equals.text
         }
     }

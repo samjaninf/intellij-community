@@ -18,8 +18,8 @@ class KotlinGenerateEqualsAndHashCodeWizard(
     properties: List<KtNamedDeclaration>,
     needEquals: Boolean,
     needHashCode: Boolean,
-    memberInfos: List<KotlinMemberInfo>,
-    membersToHashCode: HashMap<KtNamedDeclaration, KotlinMemberInfo>
+    private val memberInfos: List<KotlinMemberInfo>,
+    private val membersToHashCode: HashMap<KtNamedDeclaration, KotlinMemberInfo>
 ) : KotlinGenerateEqualsWizard(project, klass, properties, needEquals, needHashCode, memberInfos, membersToHashCode) {
     override fun addSteps() {
         addStep(object : TemplateChooserStep(myClass, KotlinEqualsHashCodeTemplatesManager.getInstance()) {
@@ -39,7 +39,46 @@ class KotlinGenerateEqualsAndHashCodeWizard(
             }
 
             override fun createUseGettersInsteadOfFieldsCheckbox(): JCheckBox? = null
+
+            override fun _commit(finishChosen: Boolean) {
+                val selectedTemplate = this.selectedTemplate
+                val ext = KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(myClass)
+
+                if (ext == null || !ext.isExtensionTemplate(selectedTemplate)) {
+                    enableTables()
+                    updateMemberInfos(myClass, DefaultMemberFilters)
+                } else {
+                    disableTables()
+                    updateMemberInfos(myClass, ext.memberFilters)
+                }
+                super._commit(finishChosen)
+            }
+
+            private fun updateMemberInfos(ktClass: KtClass, memberFilters: MemberFilters) {
+                myEqualsPanel.table.setMemberInfos(
+                    memberInfos.filter { memberFilters.isApplicableForEqualsInClass(it.member, ktClass) }
+                )
+                membersToHashCode.values.forEach { memberInfo ->
+                    if (!memberFilters.isApplicableForHashCodeInClass(memberInfo.member, ktClass)) {
+                        memberInfo.isChecked = false
+                    }
+                }
+
+            }
         })
         chooserSteps() //skip options step
+    }
+
+    private fun enableTables() {
+        setTableState(true)
+    }
+
+    private fun disableTables() {
+        setTableState(false)
+    }
+
+    private fun setTableState(isEnabled: Boolean) {
+        myEqualsPanel.table.isEnabled = isEnabled
+        myHashCodePanel.table.isEnabled = isEnabled
     }
 }
