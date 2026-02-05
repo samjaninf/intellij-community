@@ -50,7 +50,7 @@ internal class LocalDiskJarCacheManager(
   }
 
   override suspend fun cleanup() {
-    val cacheDirCleanup = CacheDirCleanup(cacheDir = cacheDir, maxAccessTimeAge = 7.days)
+    val cacheDirCleanup = CacheDirCleanup(cacheDir = cacheDir, maxAccessTimeAge = 3.days)
     withContext(Dispatchers.IO) {
       cacheDirCleanup.runCleanupIfRequired()
     }
