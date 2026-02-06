@@ -4,7 +4,6 @@ package com.intellij.internal.ui.sandbox.tests.screenshots.checkbox
 import com.intellij.internal.ui.sandbox.UISandboxScreenshotPanel
 import com.intellij.openapi.Disposable
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.util.ui.ThreeStateCheckBox
 import javax.swing.JComponent
 
 /**
@@ -15,6 +14,7 @@ internal class WhenToUseCheckboxesPanel : UISandboxScreenshotPanel() {
 
   override fun createContentForScreenshot(disposable: Disposable): JComponent {
     return panel {
+      @Suppress("DialogTitleCapitalization")
       buttonsGroup("UI Options:") {
         row { checkBox("Smooth scrolling").apply { component.isSelected = true } }
         row { checkBox("Display icons in menu items").apply { component.isSelected = true } }
