@@ -11,7 +11,6 @@ import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.project.Project
 import com.intellij.xdebugger.XDebuggerBundle
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl
 import com.intellij.xdebugger.impl.pinned.items.PinToTopMemberValue
 import com.intellij.xdebugger.impl.pinned.items.XDebuggerPinToTopManager
 import com.intellij.xdebugger.impl.pinned.items.canBePinned
