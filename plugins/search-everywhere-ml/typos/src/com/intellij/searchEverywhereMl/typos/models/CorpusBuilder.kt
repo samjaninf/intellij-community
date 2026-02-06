@@ -123,7 +123,7 @@ internal class CorpusBuilder(coroutineScope: CoroutineScope) {
 
     if (configurable is ConfigurableWrapper) {
       configurable.extensionPoint.pluginDescriptor.description
-        ?.replace(Regex("<[^>]*>"), "") // matches everything enclosed in < and > and removes any HTML-like tags.
+        ?.replace(HTML_TAGS_REGEX, "") // matches everything enclosed in < and > and removes any HTML-like tags.
         ?.split('.', '\n')
         ?.mapNotNull { tokenizeText(it) }
         ?.let { collectedTokens.addAll(it) }
@@ -139,6 +139,7 @@ internal class CorpusBuilder(coroutineScope: CoroutineScope) {
   }
 
   private val alphabeticPattern = Pattern.compile("^[a-zA-Z]+$")
+  private val HTML_TAGS_REGEX = Regex("<[^>]*>")
 
   private fun tokenizeText(text: String): List<String>? =
     splitText(text)
