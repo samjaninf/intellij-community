@@ -71,6 +71,7 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.moveTo
+import kotlin.time.Duration.Companion.days
 
 data class BuildRequest(
   @JvmField val platformPrefix: String,
@@ -491,7 +492,13 @@ private suspend fun createBuildContext(
       }
     }
 
-    val jarCacheManager = LocalDiskJarCacheManager(cacheDir = request.jarCacheDir, productionClassOutDir = classOutDir.resolve("production"))
+    val jarCacheManager = LocalDiskJarCacheManager(
+      cacheDir = request.jarCacheDir,
+      productionClassOutDir = classOutDir.resolve("production"),
+      maxAccessTimeAge = buildOptionsTemplate?.jarCacheMaxAccessAge
+                         ?: (System.getProperty(BuildOptions.JAR_CACHE_MAX_ACCESS_AGE_DAYS_PROPERTY)?.toLong()?.days ?: 3.days),
+      scope = scope,
+    )
     launch(Dispatchers.IO + CoroutineName("cleanup jar cache")) {
       jarCacheManager.cleanup()
     }

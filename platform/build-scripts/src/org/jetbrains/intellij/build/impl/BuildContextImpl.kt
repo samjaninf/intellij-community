@@ -87,12 +87,15 @@ suspend fun createBuildContext(
     options = options,
     setupTracer = setupTracer,
   ).toBazelIfNeeded(scope).toArchivedIfNeeded(scope)
-  return createBuildContext(
+  val context = createBuildContext(
     compilationContext = compilationContext,
     projectHome = projectHome,
     productProperties = productProperties,
     proprietaryBuildTools = proprietaryBuildTools,
+    scope = scope,
   )
+  context.cleanupJarCache()
+  return context
 }
 
 @Experimental
@@ -117,10 +120,16 @@ fun createBuildContext(
   projectHome: Path,
   productProperties: ProductProperties,
   proprietaryBuildTools: ProprietaryBuildTools = ProprietaryBuildTools.DUMMY,
+  scope: CoroutineScope? = null,
 ): BuildContextImpl {
   val projectHomeAsString = projectHome.invariantSeparatorsPathString
   val jarCacheManager = compilationContext.options.jarCacheDir?.let {
-    LocalDiskJarCacheManager(cacheDir = it, productionClassOutDir = compilationContext.classesOutputDirectory.resolve("production"))
+    LocalDiskJarCacheManager(
+      cacheDir = it,
+      productionClassOutDir = compilationContext.classesOutputDirectory.resolve("production"),
+      maxAccessTimeAge = compilationContext.options.jarCacheMaxAccessAge,
+      scope = scope,
+    )
   } ?: NonCachingJarCacheManager
   return BuildContextImpl(
     compilationContext = compilationContext.asArchivedIfNeeded,

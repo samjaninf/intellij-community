@@ -24,10 +24,13 @@ import java.util.GregorianCalendar
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 data class BuildOptions(
   @Internal @JvmField val jarCacheDir: Path? = null,
+  @Internal val jarCacheMaxAccessAge: Duration =
+    System.getProperty(JAR_CACHE_MAX_ACCESS_AGE_DAYS_PROPERTY)?.toLong()?.days ?: 3.days,
   @Internal @JvmField var compressZipFiles: Boolean = true,
   /** See [GlobalOptions.BUILD_DATE_IN_SECONDS]. */
   @JvmField val buildDateInSeconds: Long = computeBuildDateInSeconds(),
@@ -271,6 +274,11 @@ data class BuildOptions(
      * By default, if the incremental compilation fails, a clean rebuild is attempted.
      */
     const val INCREMENTAL_COMPILATION_FALLBACK_REBUILD_PROPERTY: String = "intellij.build.incremental.compilation.fallback.rebuild"
+
+    /**
+     * Maximum age in days after which unused entries in local jar cache are eligible for cleanup.
+     */
+    const val JAR_CACHE_MAX_ACCESS_AGE_DAYS_PROPERTY: String = "intellij.build.jar.cache.max.access.age.days"
 
     /**
      * If `true` then the compiled classes will be rebuilt from scratch
