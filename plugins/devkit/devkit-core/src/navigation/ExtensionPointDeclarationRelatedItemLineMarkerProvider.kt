@@ -2,133 +2,84 @@
 package org.jetbrains.idea.devkit.navigation
 
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerInfo
-import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.extensions.ProjectExtensionPointName
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.KeyedExtensionCollector
+import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPointerManager
-import com.intellij.psi.util.InheritanceUtil
-import com.intellij.psi.util.PsiTypesUtil
-import org.jetbrains.annotations.NonNls
-import org.jetbrains.idea.devkit.dom.index.ExtensionPointIndex
+import org.jetbrains.idea.devkit.dom.ExtensionPoint
+import org.jetbrains.idea.devkit.dom.index.ExtensionPointClassIndex
 import org.jetbrains.idea.devkit.util.ExtensionPointCandidate
 import org.jetbrains.idea.devkit.util.PluginRelatedLocatorsUtils
-import org.jetbrains.uast.UCallExpression
-import org.jetbrains.uast.UDeclaration
-import org.jetbrains.uast.UExpression
-import org.jetbrains.uast.UField
-import org.jetbrains.uast.UQualifiedReferenceExpression
-import org.jetbrains.uast.UastCallKind
-import org.jetbrains.uast.evaluateString
-import org.jetbrains.uast.expressions.UInjectionHost
-import org.jetbrains.uast.getParentOfType
-import org.jetbrains.uast.getUParentForIdentifier
-import org.jetbrains.uast.sourcePsiElement
+import org.jetbrains.uast.UClass
+import org.jetbrains.uast.toUElement
 
 /**
- * Provides gutter icon for EP code declaration to matching `<extensionPoint>` in `plugin.xml`.
+ * Provides gutter icon for EP interface class to matching `<extensionPoint>` in `plugin.xml`.
  */
 internal class ExtensionPointDeclarationRelatedItemLineMarkerProvider : DevkitRelatedLineMarkerProviderBase() {
+
   override fun collectNavigationMarkers(element: PsiElement, result: MutableCollection<in RelatedItemLineMarkerInfo<*>?>) {
-    val uElement = getUParentForIdentifier(element)
-    if (uElement is UField) {
-      if (!isExtensionPointNameDeclarationField(uElement)) return
-      process(resolveEpFqn(uElement), uElement, element.getProject(), result)
-    } else if (uElement is UCallExpression) {
-      if (!isExtensionPointNameDeclarationViaSuperCall(uElement)) return
+    val uClass = element.toUElement(UClass::class.java) ?: return
+    val psiClass = uClass.javaPsi
+    val project = psiClass.project
+    val scope = PluginRelatedLocatorsUtils.getCandidatesScope(project)
 
-      val uDeclaration = checkNotNull(uElement.getParentOfType(UDeclaration::class.java)) { uElement.asSourceString() }
-      process(resolveEpFqn(uElement), uDeclaration, element.getProject(), result)
-    }
-  }
+    val extensionPoints = ExtensionPointClassIndex.getExtensionPointsByClass(project, psiClass, scope)
+    if (extensionPoints.isEmpty()) return
 
-  private fun process(
-    @NonNls epFqn: @NonNls String?,
-    uDeclaration: UDeclaration,
-    project: Project,
-    result: MutableCollection<in RelatedItemLineMarkerInfo<*>?>
-  ) {
-    if (epFqn == null) return
+    // Filter to only include EPs where this class is the interface or with.implements, not just the beanClass
+    val relevantEps = filterRelevantExtensionPoints(psiClass, extensionPoints)
+    if (relevantEps.isEmpty()) return
 
-    val point = ExtensionPointIndex.findExtensionPoint(project, PluginRelatedLocatorsUtils.getCandidatesScope(project), epFqn)
-    if (point == null) return
+    val classIdentifier = uClass.uastAnchor?.sourcePsi ?: return
 
-    val identifier = uDeclaration.uastAnchor.sourcePsiElement
-    if (identifier == null) return
-
-    val candidate = ExtensionPointCandidate(SmartPointerManager.createPointer(point.getXmlTag()), epFqn)
-    val info = LineMarkerInfoHelper.createExtensionPointLineMarkerInfo(mutableListOf<ExtensionPointCandidate?>(candidate), identifier)
+    val targets = relevantEps.map { ExtensionPointCandidate(SmartPointerManager.createPointer(it.xmlTag), it.effectiveQualifiedName) }
+    val info = LineMarkerInfoHelper.createExtensionPointLineMarkerInfo(targets, classIdentifier)
     result.add(info)
   }
 
-  private fun isExtensionPointNameDeclarationViaSuperCall(uCallExpression: UCallExpression): Boolean {
-    if (uCallExpression.valueArgumentCount != 1) return false
-    if (uCallExpression.kind !== UastCallKind.CONSTRUCTOR_CALL) {
-      if (uCallExpression.kind !== UastCallKind.METHOD_CALL && uCallExpression.methodName != "super") {
-        return false
+  /**
+   * Filters extension points to only include those where the class is referenced as
+   * `interface` or `with.implements`, excluding those where it's only `beanClass`
+   * (it would show hundreds of inlay hints for classes like `LanguageExtensionPoint`).
+   */
+  private fun filterRelevantExtensionPoints(psiClass: PsiClass, extensionPoints: List<ExtensionPoint>): List<ExtensionPoint> {
+    val classQualifiedName = psiClass.qualifiedName ?: return emptyList()
+
+    val relevantEps = extensionPoints.filter { ep ->
+      // include if class is the EP interface
+      if (ep.`interface`.stringValue == classQualifiedName) {
+        return@filter true
       }
+      // include if class is the implementationClass of EP's `with`
+      for (withElement in ep.withElements) {
+        if (withElement.attribute.stringValue == "implementationClass" && withElement.implements.stringValue == classQualifiedName) {
+          return@filter true
+        }
+      }
+      false
     }
 
-    // Kotlin EP_NAME field with CTOR call -> handled by UField branch
-    if (uCallExpression.getParentOfType(UField::class.java) != null) {
-      return false
+    // handle duplications from Kotlin compiler frontend (OSIP-191)
+    val epsByQualifiedName = relevantEps.groupBy { it.effectiveQualifiedName }
+    return epsByQualifiedName.values.flatMap {
+      if (it.size > 1) {
+        val epsWithoutLibs = extensionPointsWithoutLibs(psiClass, it)
+        if (epsWithoutLibs.any()) {
+          return@flatMap epsWithoutLibs
+        }
+      }
+      it
     }
-
-    val resolvedMethod = uCallExpression.resolve()
-    if (resolvedMethod == null) return false
-    if (!resolvedMethod.isConstructor()) return false
-    return InheritanceUtil.isInheritor(resolvedMethod.getContainingClass(), KeyedExtensionCollector::class.java.name)
   }
 
-
-  @NonNls
-  private fun resolveEpFqn(uCallExpression: UCallExpression): @NonNls String? {
-    val uParameter = uCallExpression.getArgumentForParameter(0)
-    if (uParameter == null) return null
-    return uParameter.evaluateString()
-  }
-
-  @NonNls
-  private fun resolveEpFqn(uField: UField): @NonNls String? {
-    val initializer = uField.uastInitializer
-
-    var epNameExpression: UExpression? = null
-    if (initializer is UCallExpression) {
-      epNameExpression = initializer.getArgumentForParameter(0)
-    } else if (initializer is UQualifiedReferenceExpression) {
-      val selector = initializer.selector
-
-      if (selector !is UCallExpression) return null
-      epNameExpression = selector.getArgumentForParameter(0)
+  private fun extensionPointsWithoutLibs(psiClass: PsiClass, relevantEps: List<ExtensionPoint>): List<ExtensionPoint> {
+    val project = psiClass.project
+    val projectFileIndex = ProjectFileIndex.getInstance(project)
+    val epsWithoutLibs = relevantEps.filter {
+      val virtualFile = it.xmlElement?.containingFile?.virtualFile ?: return@filter false
+      !projectFileIndex.isInLibrary(virtualFile)
     }
-    if (epNameExpression == null) return null
-
-    if (epNameExpression is UInjectionHost) {
-      return epNameExpression.evaluateToString()
-    }
-    // constants
-    return epNameExpression.evaluateString()
-  }
-
-  private fun isExtensionPointNameDeclarationField(uField: UField): Boolean {
-    if (!uField.isFinal) {
-      return false
-    }
-
-    val initializer = uField.uastInitializer
-    if (initializer !is UCallExpression && initializer !is UQualifiedReferenceExpression) {
-      return false
-    }
-
-    val fieldClass = PsiTypesUtil.getPsiClass(uField.getType())
-    if (fieldClass == null) {
-      return false
-    }
-
-    val qualifiedClassName = fieldClass.getQualifiedName()
-    return ExtensionPointName::class.java.name == qualifiedClassName ||
-      ProjectExtensionPointName::class.java.name == qualifiedClassName ||
-      InheritanceUtil.isInheritor(fieldClass, false, KeyedExtensionCollector::class.java.name)
+    return epsWithoutLibs
   }
 }
