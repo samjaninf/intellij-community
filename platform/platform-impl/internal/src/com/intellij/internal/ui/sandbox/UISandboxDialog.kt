@@ -55,6 +55,12 @@ import com.intellij.internal.ui.sandbox.tests.dsl.ContextHelpTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrListTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrPerformanceTestPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.button.ButtonTypesPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxTypesPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1CorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1IncorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes2CorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes2IncorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenToUseCheckboxesPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -179,6 +185,20 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
   private fun createScreenshotsNode(): Group = Group("For Screenshots", children = listOf(
     Group("Buttons", children = listOf(
       ButtonTypesPanel()
+    )),
+    Group("Checkboxes", children = listOf(
+      CheckboxTypesPanel(),
+      WhenToUseCheckboxesPanel(),
+      Group("When to use", children = listOf(
+        Group("Example 1", children = listOf(
+          WhenNotToUseCheckboxes1IncorrectPanel(),
+          WhenNotToUseCheckboxes1CorrectPanel(),
+        )),
+        Group("Example 2", children = listOf(
+          WhenNotToUseCheckboxes2IncorrectPanel(),
+          WhenNotToUseCheckboxes2CorrectPanel(),
+        ))
+      ))
     ))
   ))
 
