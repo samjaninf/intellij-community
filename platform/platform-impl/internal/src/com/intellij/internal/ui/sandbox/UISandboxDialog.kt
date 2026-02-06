@@ -55,6 +55,8 @@ import com.intellij.internal.ui.sandbox.tests.dsl.ContextHelpTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrListTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrPerformanceTestPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.button.ButtonTypesPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxLongLabelCorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxLongLabelIncorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxTypesPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightCorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightIncorrectPanel
@@ -207,6 +209,10 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
         Group("Label on the right", children = listOf(
           LabelOnTheRightIncorrectPanel(),
           LabelOnTheRightCorrectPanel(),
+        )),
+        Group("Long labels", children = listOf(
+          CheckboxLongLabelIncorrectPanel(),
+          CheckboxLongLabelCorrectPanel(),
         )),
       )),
     )),
