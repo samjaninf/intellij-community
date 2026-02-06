@@ -122,7 +122,11 @@ internal class GitLabFiltersPanelFactory(
   ): GitLabUserDTO? = ChooserPopupUtil.showAsyncChooserPopup(
     point, itemsLoader = participantsLoader,
     presenter = { user ->
-      PopupItemPresentation.Simple(shortText = user.name, icon = vm.avatarIconsProvider.getIcon(user, Avatar.Sizes.BASE))
+      PopupItemPresentation.Simple(
+        user.username,
+        vm.avatarIconsProvider.getIcon(user, Avatar.Sizes.BASE),
+        user.name
+      )
     },
     popupConfig = PopupConfig(errorPresenter = ErrorStatusPresenter.simple(
       GitLabBundle.message("merge.request.list.filter.error"),
