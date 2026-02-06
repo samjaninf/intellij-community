@@ -74,10 +74,7 @@ internal fun KaSession.markElements(
                     implicitThis.classKind == KaClassKind.COMPANION_OBJECT &&
                     sourceClass.isAncestor(implicitThisElement, strict = true)
                 ) {
-                    // Get the containing class FqName instead of the companion object's FqName.
-                    // This is a workaround until KT-64842 is fixed.
-                    val containingClass = implicitThis.containingDeclaration
-                    val qualifierFqName = containingClass?.importableFqName ?: return
+                    val qualifierFqName = implicitThis.importableFqName ?: return
 
                     expression.newFqName = FqName("${qualifierFqName.asString()}.${expression.getReferencedName()}")
                     affectedElements.add(expression)
