@@ -56,6 +56,8 @@ import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrListTestPa
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrPerformanceTestPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.button.ButtonTypesPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxTypesPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightCorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightIncorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1CorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1IncorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes2CorrectPanel
@@ -189,6 +191,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     Group("Checkboxes", children = listOf(
       CheckboxTypesPanel(),
       WhenToUseCheckboxesPanel(),
+
       Group("When to use", children = listOf(
         Group("Example 1", children = listOf(
           WhenNotToUseCheckboxes1IncorrectPanel(),
@@ -197,9 +200,16 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
         Group("Example 2", children = listOf(
           WhenNotToUseCheckboxes2IncorrectPanel(),
           WhenNotToUseCheckboxes2CorrectPanel(),
-        ))
-      ))
-    ))
+        )),
+      )),
+
+      Group("How to use", children = listOf(
+        Group("Label on the right", children = listOf(
+          LabelOnTheRightIncorrectPanel(),
+          LabelOnTheRightCorrectPanel(),
+        )),
+      )),
+    )),
   ))
 
 
@@ -207,7 +217,10 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     it.title.contains(activeFilterText, true)
   }
 
-  private val treeModel = FilteringTreeModel.createModel(SimpleTreeStructure.Impl(SandboxTreeGroup(null, myDisposable, "", treeContent)), filter, Invoker.forEventDispatchThread(myDisposable), myDisposable)
+  private val treeModel = FilteringTreeModel.createModel(SimpleTreeStructure.Impl(SandboxTreeGroup(null, myDisposable, "", treeContent)),
+                                                         filter,
+                                                         Invoker.forEventDispatchThread(myDisposable),
+                                                         myDisposable)
 
   private val tree = SimpleTree().apply {
     selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
