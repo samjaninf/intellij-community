@@ -4,11 +4,22 @@ package com.intellij.codeInsight.template.impl;
 
 import com.intellij.codeInsight.template.Expression;
 import com.intellij.codeInsight.template.Template;
+import com.intellij.modcommand.ActionContext;
+import com.intellij.modcommand.ModCommand;
+import com.intellij.modcommand.ModTemplateBuilder;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.RangeMarker;
 import com.intellij.openapi.options.SchemeElement;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.NlsSafe;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.psi.PsiDocumentManager;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.SmartList;
+import com.intellij.util.containers.ContainerUtil;
+import one.util.streamex.StreamEx;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 public class TemplateImpl extends TemplateBase implements SchemeElement {
   private @NlsSafe String myKey;
@@ -382,6 +394,71 @@ public class TemplateImpl extends TemplateBase implements SchemeElement {
   //used is cases when building templates without PSI and TemplateBuilder
   public void setPrimarySegment(int segmentNumber) {
     Collections.swap(getSegments(), 0, segmentNumber);
+  }
+
+  /**
+   * @param context context where the template should be executed
+   * @return the {@link ModCommand}, which when executed will show the template like the current one.
+   */
+  @ApiStatus.Internal
+  public void update(@NotNull ModPsiUpdater updater, @NotNull TemplateStateProcessor processor) {
+    parseSegments();
+    int start = updater.getCaretOffset();
+    String text = getTemplateText();
+    Document document = updater.getDocument();
+    document.insertString(start, text);
+    RangeMarker wholeTemplate = document.createRangeMarker(start, start + text.length());
+    Map<String, Variable> variableMap = StreamEx.of(getVariables()).toMap(Variable::getName, Function.identity());
+    PsiDocumentManager manager = PsiDocumentManager.getInstance(updater.getProject());
+    List<Segment> segments = getSegments();
+    record MarkerInfo(Segment segment, RangeMarker marker) {}
+    List<MarkerInfo> markers = ContainerUtil.map(segments, segment -> {
+      RangeMarker marker = document.createRangeMarker(start + segment.offset, start + segment.offset);
+      marker.setGreedyToRight(true);
+      return new MarkerInfo(segment, marker);
+    });
+    ModTemplateBuilder builder = null;
+    RangeMarker endMarker = null;
+    for (MarkerInfo info : markers) {
+      Segment segment = info.segment;
+      if (segment.name.equals("END")) {
+        TextRange range = processor.insertNewLineIndentMarker(updater.getPsiFile(), document, info.marker.getStartOffset());
+        if (range != null) {
+          endMarker = document.createRangeMarker(range);
+        } else {
+          endMarker = info.marker;
+        }
+        continue;
+      }
+      Variable variable = variableMap.get(segment.name);
+      if (variable != null) {
+        manager.commitDocument(document);
+        PsiElement element = updater.getPsiFile().findElementAt(start + segment.offset);
+        if (element != null) {
+          if (builder == null) builder = updater.templateBuilder();
+          builder.field(element, info.marker.getTextRange().shiftLeft(element.getTextRange().getStartOffset()), segment.name,
+                        variable.getExpression());
+        }
+      }
+    }
+    if (isToReformat()) {
+      manager.commitDocument(document);
+      CodeStyleManager.getInstance(updater.getProject())
+        .reformatText(updater.getPsiFile(), wholeTemplate.getStartOffset(), wholeTemplate.getEndOffset());
+    }
+    if (endMarker != null) {
+      document.deleteString(endMarker.getStartOffset(), endMarker.getEndOffset());
+      if (builder != null) {
+        builder.finishAt(endMarker.getStartOffset());
+      } else {
+        updater.moveCaretTo(endMarker.getStartOffset());
+      }
+      endMarker.dispose();
+    }
+    for (MarkerInfo info : markers) {
+      info.marker.dispose();
+    }
+    wholeTemplate.dispose();
   }
 
   @Override

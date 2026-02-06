@@ -409,6 +409,7 @@ com.intellij.codeInsight.template.impl.DefaultLiveTemplatesProvider
 - a:getDefaultLiveTemplateFiles():java.lang.String[]
 - a:getHiddenLiveTemplateFiles():java.lang.String[]
 f:com.intellij.codeInsight.template.impl.TemplateManagerImpl
+- s:updateTemplate(com.intellij.codeInsight.template.impl.TemplateImpl,com.intellij.modcommand.ModPsiUpdater):V
 com.intellij.codeInsight.template.postfix.templates.PostfixTemplateExpressionSelector
 - a:getExpressions(com.intellij.psi.PsiElement,com.intellij.openapi.editor.Document,I):java.util.List
 - a:getRenderer():com.intellij.util.Function

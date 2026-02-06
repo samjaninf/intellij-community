@@ -255,6 +255,7 @@ com.intellij.codeInsight.template.TemplateEditingListener
 com.intellij.codeInsight.template.TemplateManagerListener
 - java.util.EventListener
 - a:templateStarted(com.intellij.codeInsight.template.impl.TemplateState):V
+c:com.intellij.codeInsight.template.impl.TemplateImpl
 com.intellij.codeInsight.template.impl.TemplateOptionalProcessor
 - com.intellij.openapi.project.PossiblyDumbAware
 - sf:EP_NAME:com.intellij.openapi.extensions.ExtensionPointName

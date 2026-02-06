@@ -17,6 +17,8 @@ import com.intellij.codeInsight.template.TemplateEditingListener;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.TemplateSubstitutor;
 import com.intellij.lang.Language;
+import com.intellij.modcommand.ModCommand;
+import com.intellij.modcommand.ModPsiUpdater;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.CommandProcessor;
@@ -681,5 +683,16 @@ public final class TemplateManagerImpl extends TemplateManager implements Dispos
     OffsetsInFile hostOffsets = offsetMap.toTopLevelFile();
     OffsetsInFile hostCopy = hostOffsets.copyWithReplacement(getStartOffset(hostOffsets), getEndOffset(hostOffsets), replacement);
     return hostCopy.toInjectedIfAny(getStartOffset(hostCopy));
+  }
+
+  /**
+   * Performs a template execution within ModCommand context. The template is not actually executed, but
+   * contributes to {@link ModPsiUpdater} to form the final {@link ModCommand}.
+   *
+   * @param template template to execute.
+   * @param updater {@link ModPsiUpdater} to use.
+   */
+  public static void updateTemplate(@NotNull TemplateImpl template, @NotNull ModPsiUpdater updater) {
+    template.update(updater, new InteractiveTemplateStateProcessor());
   }
 }

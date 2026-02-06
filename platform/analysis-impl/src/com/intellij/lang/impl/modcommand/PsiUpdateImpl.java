@@ -521,12 +521,14 @@ final class PsiUpdateImpl {
           }
           TextRange rangeForTemplate = templateRange(elementRange, rangeInElement);
           TextRange range = mapRange(rangeForTemplate);
-          Result result = expression.calculateResult(new DummyContext(range, element));
-          myTemplateFields.add(new ModStartTemplate.ExpressionField(range, varName, expression));
+          Result result = expression.calculateResult(new DummyContext(range, element, getPsiFile()));
           if (result != null) {
             FileTracker tracker = requireNonNull(myTracker); // guarded by getRange call
-            tracker.myDocument.replaceString(rangeForTemplate.getStartOffset(), rangeForTemplate.getEndOffset(), result.toString());
+            String fieldValue = result.toString();
+            tracker.myDocument.replaceString(rangeForTemplate.getStartOffset(), rangeForTemplate.getEndOffset(), fieldValue);
+            range = TextRange.from(range.getStartOffset(), fieldValue.length());
           }
+          myTemplateFields.add(new ModStartTemplate.ExpressionField(range, varName, expression));
           return this;
         }
 
@@ -827,14 +829,21 @@ final class PsiUpdateImpl {
     private class DummyContext implements ExpressionContext {
       private final TextRange myRange;
       private final @NotNull PsiElement myElement;
+      private final @NotNull PsiFile myFile;
 
-      private DummyContext(TextRange range, @NotNull PsiElement element) {
+      private DummyContext(TextRange range, @NotNull PsiElement element, @NotNull PsiFile file) {
         myRange = range;
         myElement = element;
+        myFile = file;
       }
 
       @Override
       public Project getProject() { return myActionContext.project(); }
+
+      @Override
+      public @Nullable PsiFile getPsiFile() {
+        return myFile;
+      }
 
       @Override
       public @Nullable Editor getEditor() { return null; }
