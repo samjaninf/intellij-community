@@ -24,6 +24,17 @@ import org.jetbrains.intellij.build.productLayout.xml.withEditorFold
 import java.nio.file.Files
 import java.nio.file.Path
 
+internal fun appendDefaultProductPluginMetadata(sb: StringBuilder, spec: ProductModulesContentSpec) {
+  // Add id/name/vendor if NOT getting them from xi:include (e.g., PlatformLangPlugin.xml)
+  if (!spec.includesPlatformLangPlugin()) {
+    sb.append("  <id>com.intellij</id>\n")
+    sb.append("  <name>IDEA CORE</name>\n")
+    if (spec.vendor != null) {
+      sb.append("  <vendor>${spec.vendor}</vendor>\n")
+    }
+  }
+}
+
 /**
  * Main entry point for generating XML files for both module sets and products.
  * This file orchestrates the generation process by calling specialized components for:
@@ -86,14 +97,7 @@ internal fun generateProductXml(
       sb.appendXmlHeader(generatorCommand, productPropertiesClass)
     },
     metadataBuilder = { sb ->
-      // Add id/name/vendor if NOT getting from xi:include (e.g., PlatformLangPlugin.xml)
-      if (!spec.includesPlatformLangPlugin()) {
-        sb.append("  <id>com.intellij</id>\n")
-        sb.append("  <name>IDEA CORE</name>\n")
-        if (spec.vendor != null) {
-          sb.append("  <vendor>${spec.vendor}</vendor>\n")
-        }
-      }
+      appendDefaultProductPluginMetadata(sb = sb, spec = spec)
     },
     isUltimateBuild = isUltimateBuild
   )

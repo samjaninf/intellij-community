@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import org.jetbrains.intellij.build.ModuleOutputProvider
 import org.jetbrains.intellij.build.productLayout.discovery.PluginContentInfo
 import org.jetbrains.intellij.build.productLayout.discovery.PluginSource
+import org.jetbrains.intellij.build.productLayout.discovery.PluginXmlOverride
 import org.jetbrains.intellij.build.productLayout.discovery.extractPluginContent
 import org.jetbrains.intellij.build.productLayout.model.ErrorSink
 import org.jetbrains.intellij.build.productLayout.util.AsyncCache
@@ -47,6 +48,7 @@ internal class PluginContentCache(
   private val xIncludeCache: AsyncCache<String, ByteArray?>,
   private val skipXIncludePaths: Set<String>,
   private val xIncludePrefixFilter: (String) -> String?,
+  private val pluginXmlOverrides: Map<TargetName, PluginXmlOverride> = emptyMap(),
   scope: CoroutineScope,
   private val errorSink: ErrorSink,
 ) : PluginContentProvider {
@@ -60,7 +62,12 @@ internal class PluginContentCache(
    * @param isTest Whether this is a test plugin (determines source and production-only flag)
    * @return PluginContentInfo if module has META-INF/plugin.xml, null otherwise
    */
-  suspend fun extract(plugin: TargetName, isTest: Boolean): PluginContentInfo? {
+  suspend fun extract(
+    plugin: TargetName,
+    isTest: Boolean,
+    pluginXmlOverride: PluginXmlOverride? = null,
+  ): PluginContentInfo? {
+    val effectiveOverride = pluginXmlOverride ?: pluginXmlOverrides[plugin]
     return cache.getOrPut(plugin) {
       val source = if (isTest) PluginSource.TEST else PluginSource.BUNDLED
       extractPluginContent(
@@ -71,6 +78,7 @@ internal class PluginContentCache(
         prefixFilter = xIncludePrefixFilter,
         onlyProductionSources = !isTest,
         source = source,
+        pluginXmlOverride = effectiveOverride,
         errorSink = errorSink,
       )
     }
@@ -103,6 +111,7 @@ internal class PluginContentCache(
         prefixFilter = xIncludePrefixFilter,
         onlyProductionSources = true,
         source = PluginSource.DISCOVERED,
+        pluginXmlOverride = pluginXmlOverrides[pluginModule],
         errorSink = errorSink,
       )
     }

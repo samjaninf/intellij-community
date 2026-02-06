@@ -2,10 +2,15 @@
 package org.jetbrains.intellij.build.productLayout.pipeline
 
 import com.intellij.platform.pluginGraph.TargetName
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.intellij.build.productLayout.TestFailureLogger
 import org.jetbrains.intellij.build.productLayout.dependency.createTestModuleOutputProvider
 import org.jetbrains.intellij.build.productLayout.dependency.jpsProject
+import org.jetbrains.intellij.build.productLayout.discovery.DiscoveredProduct
+import org.jetbrains.intellij.build.productLayout.discovery.ProductConfiguration
+import org.jetbrains.intellij.build.productLayout.productModules
 import org.jetbrains.jps.model.java.JavaResourceRootType
 import org.jetbrains.jps.util.JpsPathUtil
 import org.junit.jupiter.api.Test
@@ -40,5 +45,110 @@ class ModelBuildingStageTest {
 
     assertThat(descriptors.testPluginModules).containsExactly(TargetName("intellij.test.plugin"))
     assertThat(descriptors.pluginModules).containsExactly(TargetName("intellij.content.plugin"))
+  }
+
+  @Test
+  fun `buildProductPluginXmlOverrides uses generated descriptor for discovered product module`(@TempDir tempDir: Path) {
+    runBlocking(Dispatchers.Default) {
+      val jps = jpsProject(tempDir) {
+        module("intellij.product.plugin") {
+          resourceRoot = "resources"
+        }
+        module("generated.module")
+      }
+
+      val stalePluginXmlPath = tempDir.resolve("intellij/product/plugin/resources/META-INF/plugin.xml")
+      Files.createDirectories(stalePluginXmlPath.parent)
+      Files.writeString(
+        stalePluginXmlPath,
+        """
+        <idea-plugin>
+          <content namespace="jetbrains">
+            <module name="stale.module"/>
+          </content>
+        </idea-plugin>
+        """.trimIndent(),
+      )
+
+      val relativePluginXmlPath = "intellij/product/plugin/resources/META-INF/plugin.xml"
+      val overrides = ModelBuildingStage.buildProductPluginXmlOverrides(
+        products = listOf(
+          DiscoveredProduct(
+            name = "Idea",
+            config = ProductConfiguration(
+              modules = emptyList(),
+              className = "IdeaProperties",
+              pluginXmlPath = relativePluginXmlPath,
+            ),
+            properties = null,
+            spec = productModules {
+              requiredModule("generated.module")
+            },
+            pluginXmlPath = relativePluginXmlPath,
+          )
+        ),
+        outputProvider = createTestModuleOutputProvider(jps.project),
+        projectRoot = tempDir,
+        isUltimateBuild = false,
+        skipXIncludePaths = emptySet(),
+        xIncludePrefixFilter = { null },
+      )
+
+      assertThat(overrides.keys).containsExactly(TargetName("intellij.product.plugin"))
+      val generatedXml = overrides.getValue(TargetName("intellij.product.plugin")).pluginXmlContent
+      assertThat(generatedXml).contains("generated.module")
+      assertThat(generatedXml).doesNotContain("stale.module")
+    }
+  }
+
+  @Test
+  fun `buildProductPluginXmlOverrides skips valid source descriptor`(@TempDir tempDir: Path) {
+    runBlocking(Dispatchers.Default) {
+      val jps = jpsProject(tempDir) {
+        module("intellij.product.plugin") {
+          resourceRoot = "resources"
+        }
+        module("generated.module")
+      }
+
+      val sourcePluginXmlPath = tempDir.resolve("intellij/product/plugin/resources/META-INF/plugin.xml")
+      Files.createDirectories(sourcePluginXmlPath.parent)
+      Files.writeString(
+        sourcePluginXmlPath,
+        """
+        <idea-plugin>
+          <content namespace="jetbrains">
+            <module name="generated.module"/>
+          </content>
+        </idea-plugin>
+        """.trimIndent(),
+      )
+
+      val relativePluginXmlPath = "intellij/product/plugin/resources/META-INF/plugin.xml"
+      val overrides = ModelBuildingStage.buildProductPluginXmlOverrides(
+        products = listOf(
+          DiscoveredProduct(
+            name = "Idea",
+            config = ProductConfiguration(
+              modules = emptyList(),
+              className = "IdeaProperties",
+              pluginXmlPath = relativePluginXmlPath,
+            ),
+            properties = null,
+            spec = productModules {
+              requiredModule("generated.module")
+            },
+            pluginXmlPath = relativePluginXmlPath,
+          )
+        ),
+        outputProvider = createTestModuleOutputProvider(jps.project),
+        projectRoot = tempDir,
+        isUltimateBuild = false,
+        skipXIncludePaths = emptySet(),
+        xIncludePrefixFilter = { null },
+      )
+
+      assertThat(overrides).isEmpty()
+    }
   }
 }

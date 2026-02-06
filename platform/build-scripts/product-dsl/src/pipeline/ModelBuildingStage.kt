@@ -15,9 +15,11 @@ import com.intellij.platform.pluginGraph.isTestDescriptor
 import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 import com.intellij.platform.pluginSystem.parser.impl.parseContentAndXIncludes
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import org.jetbrains.intellij.build.ModuleOutputProvider
 import org.jetbrains.intellij.build.PLUGIN_XML_RELATIVE_PATH
 import org.jetbrains.intellij.build.findFileInModuleDependenciesRecursive
@@ -27,15 +29,19 @@ import org.jetbrains.intellij.build.productLayout.ContentModule
 import org.jetbrains.intellij.build.productLayout.DeprecatedXmlInclude
 import org.jetbrains.intellij.build.productLayout.ProductModulesContentSpec
 import org.jetbrains.intellij.build.productLayout.TestPluginSpec
+import org.jetbrains.intellij.build.productLayout.appendDefaultProductPluginMetadata
 import org.jetbrains.intellij.build.productLayout.buildContentBlocksAndChainMapping
+import org.jetbrains.intellij.build.productLayout.buildProductContentXml
 import org.jetbrains.intellij.build.productLayout.collectAndValidateAliases
 import org.jetbrains.intellij.build.productLayout.config.SuppressionConfig
 import org.jetbrains.intellij.build.productLayout.debug
 import org.jetbrains.intellij.build.productLayout.dependency.ModuleDescriptorCache
 import org.jetbrains.intellij.build.productLayout.dependency.PluginContentCache
 import org.jetbrains.intellij.build.productLayout.deps.collectResolvableModules
+import org.jetbrains.intellij.build.productLayout.discovery.DiscoveredProduct
 import org.jetbrains.intellij.build.productLayout.discovery.ModuleSetGenerationConfig
 import org.jetbrains.intellij.build.productLayout.discovery.PluginContentInfo
+import org.jetbrains.intellij.build.productLayout.discovery.PluginXmlOverride
 import org.jetbrains.intellij.build.productLayout.discovery.computePluginContentFromDslSpec
 import org.jetbrains.intellij.build.productLayout.graph.PluginGraphBuilder
 import org.jetbrains.intellij.build.productLayout.model.ErrorSink
@@ -46,6 +52,8 @@ import org.jetbrains.intellij.build.productLayout.traversal.collectProductModule
 import org.jetbrains.intellij.build.productLayout.util.AsyncCache
 import org.jetbrains.intellij.build.productLayout.util.DeferredFileUpdater
 import org.jetbrains.intellij.build.productLayout.util.XmlWritePolicy
+import org.jetbrains.jps.model.java.JavaResourceRootType
+import org.jetbrains.jps.model.java.JavaSourceRootType
 import org.jetbrains.jps.model.module.JpsModule
 import org.jetbrains.jps.util.JpsPathUtil
 import java.nio.file.Files
@@ -97,6 +105,14 @@ internal object ModelBuildingStage {
     val projectRoot = config.projectRoot
     val outputProvider = config.outputProvider
     val isUltimateBuild = Files.exists(projectRoot.resolve("community"))
+    val productPluginXmlOverrides = buildProductPluginXmlOverrides(
+      products = discovery.products,
+      outputProvider = outputProvider,
+      projectRoot = projectRoot,
+      isUltimateBuild = isUltimateBuild,
+      skipXIncludePaths = config.skipXIncludePaths,
+      xIncludePrefixFilter = config.xIncludePrefixFilter,
+    )
 
     // Load suppression config from path (single source of truth)
     val suppressionConfig = SuppressionConfig.load(config.suppressionConfigPath)
@@ -120,6 +136,7 @@ internal object ModelBuildingStage {
       xIncludeCache = xIncludeCache,
       skipXIncludePaths = config.skipXIncludePaths,
       xIncludePrefixFilter = config.xIncludePrefixFilter,
+      pluginXmlOverrides = productPluginXmlOverrides,
       scope = scope,
       errorSink = errorSink,
     )
@@ -300,6 +317,255 @@ internal object ModelBuildingStage {
       builder.addPluginWithContent(pluginModule = pluginModule, content = info, testFrameworkContentModules = testFrameworkContentModules)
       pluginInfos[pluginModule] = info
     }
+  }
+
+  /**
+   * Precomputes in-memory product plugin.xml content from DSL specs.
+   *
+   * This allows extraction/validation to use canonical generated descriptors for discovered
+   * product plugins even when on-disk product plugin.xml files are stale.
+   */
+  internal suspend fun buildProductPluginXmlOverrides(
+    products: List<DiscoveredProduct>,
+    outputProvider: ModuleOutputProvider,
+    projectRoot: Path,
+    isUltimateBuild: Boolean,
+    skipXIncludePaths: Set<String>,
+    xIncludePrefixFilter: (String) -> String?,
+  ): Map<TargetName, PluginXmlOverride> {
+    val moduleByPluginXmlPath = LinkedHashMap<Path, TargetName>()
+    val productionSourceRootsByModule = LinkedHashMap<TargetName, List<Path>>()
+    for (module in outputProvider.getAllModules()) {
+      val moduleName = TargetName(module.name)
+      val productionSourceRoots = module.sourceRoots
+        .asSequence()
+        .filter { root ->
+          root.rootType == JavaSourceRootType.SOURCE || root.rootType == JavaResourceRootType.RESOURCE
+        }
+        .map { root -> JpsPathUtil.urlToNioPath(root.url).normalize() }
+        .toList()
+      if (productionSourceRoots.isNotEmpty()) {
+        productionSourceRootsByModule[moduleName] = productionSourceRoots
+      }
+
+      val pluginXmlPath = findFileInModuleSources(module = module, relativePath = PLUGIN_XML_RELATIVE_PATH, onlyProductionSources = true)
+      if (pluginXmlPath != null) {
+        moduleByPluginXmlPath[pluginXmlPath.normalize()] = moduleName
+      }
+    }
+
+    val result = LinkedHashMap<TargetName, PluginXmlOverride>()
+    val ownerByModule = LinkedHashMap<TargetName, String>()
+    for (product in products) {
+      val spec = product.spec ?: continue
+      val relativePluginXmlPath = product.pluginXmlPath ?: continue
+      val pluginXmlPath = projectRoot.resolve(relativePluginXmlPath).normalize()
+      val pluginModule = resolveProductPluginModule(
+        productName = product.name,
+        pluginXmlPath = pluginXmlPath,
+        relativePluginXmlPath = relativePluginXmlPath,
+        moduleByPluginXmlPath = moduleByPluginXmlPath,
+        productionSourceRootsByModule = productionSourceRootsByModule,
+      )
+
+      // Keep non-IntelliJ product plugin descriptors untouched for now: some products
+      // (e.g. fleet.*) intentionally maintain handcrafted descriptors that may differ from DSL output.
+      if (!pluginModule.value.startsWith("intellij.")) {
+        continue
+      }
+
+      val module = outputProvider.findModule(pluginModule.value)
+        ?: error("Cannot find module '${pluginModule.value}' for product plugin.xml '$relativePluginXmlPath'")
+      if (Files.notExists(pluginXmlPath)) {
+        error("Product '${product.name}' plugin.xml '$relativePluginXmlPath' does not exist at '$pluginXmlPath'")
+      }
+
+      val pluginXmlData = withContext(Dispatchers.IO) { Files.readAllBytes(pluginXmlPath) }
+      val unresolvedXInclude = findFirstUnresolvedXIncludePath(
+        pluginXmlData = pluginXmlData,
+        module = module,
+        outputProvider = outputProvider,
+        prefix = xIncludePrefixFilter(pluginModule.value),
+        skipXIncludePaths = skipXIncludePaths,
+      )
+      val missingBackingContentModule = if (unresolvedXInclude == null) {
+        findFirstMissingBackingContentModuleInDescriptor(
+          pluginXmlData = pluginXmlData,
+          module = module,
+          outputProvider = outputProvider,
+          prefix = xIncludePrefixFilter(pluginModule.value),
+          skipXIncludePaths = skipXIncludePaths,
+        )
+      }
+      else {
+        null
+      }
+      if (unresolvedXInclude == null && missingBackingContentModule == null) {
+        continue
+      }
+
+      val generatedPluginXml = buildProductContentXml(
+        spec = spec,
+        outputProvider = outputProvider,
+        inlineXmlIncludes = false,
+        inlineModuleSets = false,
+        metadataBuilder = { sb ->
+          appendDefaultProductPluginMetadata(sb = sb, spec = spec)
+        },
+        isUltimateBuild = isUltimateBuild,
+      ).xml
+      val unresolvedXIncludeInGenerated = findFirstUnresolvedXIncludePath(
+        pluginXmlData = generatedPluginXml.toByteArray(),
+        module = module,
+        outputProvider = outputProvider,
+        prefix = xIncludePrefixFilter(pluginModule.value),
+        skipXIncludePaths = skipXIncludePaths,
+      )
+      if (unresolvedXIncludeInGenerated != null) {
+        debug("productPluginOverride") {
+          "skipping generated override for ${pluginModule.value}: unresolved xi:include '$unresolvedXIncludeInGenerated' remains in generated descriptor"
+        }
+        continue
+      }
+      val reason = unresolvedXInclude?.let {
+        "unresolved xi:include '$it' in source plugin.xml"
+      }
+        ?: "content module '$missingBackingContentModule' has no backing JPS module in source plugin.xml"
+      debug("productPluginOverride") {
+        "using generated override for ${pluginModule.value} due to $reason"
+      }
+
+      val override = PluginXmlOverride(
+        pluginXmlPath = pluginXmlPath,
+        pluginXmlContent = generatedPluginXml,
+      )
+      val existing = result[pluginModule]
+      if (existing != null && existing.pluginXmlContent != override.pluginXmlContent) {
+        val owner = ownerByModule[pluginModule] ?: "<unknown>"
+        error(
+          "Conflicting generated product plugin.xml content for module '${pluginModule.value}': products '$owner' and '${product.name}'"
+        )
+      }
+      if (existing == null) {
+        result[pluginModule] = override
+        ownerByModule[pluginModule] = product.name
+      }
+    }
+
+    return result
+  }
+
+  private fun resolveProductPluginModule(
+    productName: String,
+    pluginXmlPath: Path,
+    relativePluginXmlPath: String,
+    moduleByPluginXmlPath: Map<Path, TargetName>,
+    productionSourceRootsByModule: Map<TargetName, List<Path>>,
+  ): TargetName {
+    moduleByPluginXmlPath[pluginXmlPath]?.let { return it }
+
+    val candidates = productionSourceRootsByModule
+      .asSequence()
+      .filter { (_, roots) -> roots.any { root -> pluginXmlPath.startsWith(root) } }
+      .map { (module, _) -> module }
+      .toList()
+
+    if (candidates.size == 1) {
+      return candidates.single()
+    }
+
+    if (candidates.size > 1) {
+      error(
+        "Cannot uniquely map product '$productName' plugin.xml '$relativePluginXmlPath' to a module; candidates=" +
+        candidates.joinToString { it.value }
+      )
+    }
+
+    error("Cannot map product '$productName' plugin.xml '$relativePluginXmlPath' to a module with production sources")
+  }
+
+  private suspend fun findFirstUnresolvedXIncludePath(
+    pluginXmlData: ByteArray,
+    module: JpsModule,
+    outputProvider: ModuleOutputProvider,
+    prefix: String?,
+    skipXIncludePaths: Set<String>,
+  ): String? {
+    val processedPaths = HashSet<String>()
+    var pending: List<Pair<String, ByteArray>> = listOf(PLUGIN_XML_RELATIVE_PATH to pluginXmlData)
+
+    while (pending.isNotEmpty()) {
+      val next = ArrayList<Pair<String, ByteArray>>()
+      for ((_, data) in pending) {
+        val parseResult = parseContentAndXIncludes(input = data, locationSource = null)
+        for (xIncludePath in parseResult.xIncludePaths) {
+          if (xIncludePath in skipXIncludePaths) continue
+          if (!processedPaths.add(xIncludePath)) continue
+
+          val includeData = resolveXIncludeBytes(
+            path = xIncludePath,
+            module = module,
+            outputProvider = outputProvider,
+            prefix = prefix,
+          )
+          if (includeData == null) {
+            return xIncludePath
+          }
+          next.add(xIncludePath to includeData)
+        }
+      }
+      pending = next
+    }
+
+    return null
+  }
+
+  private suspend fun findFirstMissingBackingContentModuleInDescriptor(
+    pluginXmlData: ByteArray,
+    module: JpsModule,
+    outputProvider: ModuleOutputProvider,
+    prefix: String?,
+    skipXIncludePaths: Set<String>,
+  ): String? {
+    val processedPaths = HashSet<String>()
+    var pending: List<Pair<String, ByteArray>> = listOf(PLUGIN_XML_RELATIVE_PATH to pluginXmlData)
+
+    while (pending.isNotEmpty()) {
+      val next = ArrayList<Pair<String, ByteArray>>()
+      for ((_, data) in pending) {
+        val parseResult = parseContentAndXIncludes(input = data, locationSource = null)
+        for (contentModule in parseResult.contentModules) {
+          val moduleName = ContentModuleName(contentModule.name)
+          if (moduleName.isSlashNotation()) {
+            continue
+          }
+
+          val expectedTarget = moduleName.baseModuleName().value
+          if (outputProvider.findModule(expectedTarget) == null) {
+            return moduleName.value
+          }
+        }
+
+        for (xIncludePath in parseResult.xIncludePaths) {
+          if (xIncludePath in skipXIncludePaths) continue
+          if (!processedPaths.add(xIncludePath)) continue
+
+          val includeData = resolveXIncludeBytes(
+            path = xIncludePath,
+            module = module,
+            outputProvider = outputProvider,
+            prefix = prefix,
+          )
+          if (includeData == null) {
+            continue
+          }
+          next.add(xIncludePath to includeData)
+        }
+      }
+      pending = next
+    }
+
+    return null
   }
 
   private fun linkProductsAndBundledPlugins(

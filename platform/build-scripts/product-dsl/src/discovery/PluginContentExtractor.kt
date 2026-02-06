@@ -127,6 +127,15 @@ internal data class PluginContentInfo(
   val isTestPlugin: Boolean get() = source == PluginSource.TEST || source == PluginSource.DSL_TEST
 }
 
+/**
+ * Optional in-memory override for plugin.xml used during extraction.
+ * Allows callers to validate/parse generated descriptors before they are written to disk.
+ */
+internal data class PluginXmlOverride(
+  @JvmField val pluginXmlPath: Path,
+  @JvmField val pluginXmlContent: String,
+)
+
 private val PLUGIN_ID_PATTERN = Regex("""<id>([^<]+)</id>""")
 private val XML_COMMENT_PATTERN = Regex("<!--.*?-->", setOf(RegexOption.DOT_MATCHES_ALL))
 
@@ -173,11 +182,20 @@ internal suspend fun extractPluginContent(
   prefixFilter: (moduleName: String) -> String? = { null },
   onlyProductionSources: Boolean = true,
   source: PluginSource = PluginSource.BUNDLED,
+  pluginXmlOverride: PluginXmlOverride? = null,
   errorSink: ErrorSink,
 ): PluginContentInfo? {
   val jpsModule = outputProvider.findModule(pluginName) ?: return null
-  val pluginXmlPath = findFileInModuleSources(module = jpsModule, relativePath = PLUGIN_XML_RELATIVE_PATH, onlyProductionSources = onlyProductionSources) ?: return null
-  val content = withContext(Dispatchers.IO) { Files.readString(pluginXmlPath) }
+  val pluginXmlPath: Path
+  val content: String
+  if (pluginXmlOverride != null) {
+    pluginXmlPath = pluginXmlOverride.pluginXmlPath
+    content = pluginXmlOverride.pluginXmlContent
+  }
+  else {
+    pluginXmlPath = findFileInModuleSources(module = jpsModule, relativePath = PLUGIN_XML_RELATIVE_PATH, onlyProductionSources = onlyProductionSources) ?: return null
+    content = withContext(Dispatchers.IO) { Files.readString(pluginXmlPath) }
+  }
 
   val prefix = prefixFilter(pluginName)
 
