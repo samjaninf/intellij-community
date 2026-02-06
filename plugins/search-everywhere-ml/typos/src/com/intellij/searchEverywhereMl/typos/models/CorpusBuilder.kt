@@ -3,9 +3,9 @@ package com.intellij.searchEverywhereMl.typos.models
 import com.intellij.ide.actions.ShowSettingsUtilImpl.Companion.getConfigurables
 import com.intellij.ide.ui.search.SearchableOptionsRegistrar
 import com.intellij.ide.ui.search.SearchableOptionsRegistrarImpl
+import com.intellij.ide.util.gotoByName.getAnActionText
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.impl.ActionManagerImpl
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -78,9 +78,8 @@ internal class CorpusBuilder(coroutineScope: CoroutineScope) {
     return actionManager.actionsOrStubs()
       .filterNot { it is ActionGroup && !it.isSearchable }
       .mapNotNull { action ->
-        val presentation = action.templatePresentation
-        action.applyTextOverride(ActionPlaces.ACTION_SEARCH, presentation)
-        presentation.text?.let { tokenizeText(it) }
+        val text = getAnActionText(action)
+        text?.let { tokenizeText(it) }
       }
       .toSet()
   }
