@@ -68,7 +68,7 @@ object ChooserPopupUtil {
     showChooserPopup(
       point = point,
       items = items,
-      filteringMapper = { presenter(it).shortText },
+      filteringMapper = filterByNamesFromPresentation(presenter),
       renderer = SimplePopupItemRenderer.create(presenter),
       popupConfig = popupConfig,
     )
@@ -139,7 +139,7 @@ object ChooserPopupUtil {
     showAsyncChooserPopup(
       point = point,
       itemsLoader = itemsLoader,
-      filteringMapper = { presenter(it).shortText },
+      filteringMapper = filterByNamesFromPresentation(presenter),
       renderer = SimplePopupItemRenderer.create(presenter),
       popupConfig = popupConfig,
     )
@@ -440,6 +440,16 @@ object ChooserPopupUtil {
     builder.setAutoPackHeightOnFiltering(popupConfig.isAutoPackHeightOnFiltering)
 
     return builder
+  }
+
+  private fun <T> filterByNamesFromPresentation(presenter: (T) -> PopupItemPresentation): (T) -> String = {
+    buildString {
+      val presentation = presenter(it)
+      append(presentation.shortText)
+      if (presentation.fullText != null) {
+        append(" ${presentation.fullText}")
+      }
+    }
   }
 }
 
