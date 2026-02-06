@@ -10,6 +10,7 @@ import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerImpl;
 import com.intellij.codeInsight.daemon.impl.HighlightInfo;
 import com.intellij.codeInsight.daemon.impl.HighlightInfoType;
 import com.intellij.codeInsight.daemon.impl.HighlightVisitorBasedInspection;
+import com.intellij.codeInsight.daemon.impl.TestDaemonCodeAnalyzerImpl;
 import com.intellij.codeInsight.daemon.impl.quickfix.DeleteElementFix;
 import com.intellij.codeInsight.intention.EmptyIntentionAction;
 import com.intellij.codeInsight.intention.IntentionAction;
@@ -159,8 +160,8 @@ public class LightAnnotatorHighlightingTest extends LightDaemonAnalyzerTestCase 
     TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(getEditor());
     PsiDocumentManager.getInstance(getProject()).commitAllDocuments();
     try {
-      ((DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject()))
-        .runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, null);
+      new TestDaemonCodeAnalyzerImpl(getProject())
+        .runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, true,null);
     }
     catch (Exception e) {
       throw new RuntimeException(e);

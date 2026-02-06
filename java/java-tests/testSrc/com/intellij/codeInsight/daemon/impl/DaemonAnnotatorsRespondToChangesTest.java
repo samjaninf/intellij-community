@@ -409,7 +409,7 @@ public class DaemonAnnotatorsRespondToChangesTest extends DaemonAnalyzerTestCase
     PsiDocumentManager.getInstance(myProject).commitAllDocuments();
     long start = System.currentTimeMillis();
     try {
-      myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, checkHighlighted);
+      myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, true, checkHighlighted);
     }
     catch (Exception e) {
       throw new RuntimeException(e);

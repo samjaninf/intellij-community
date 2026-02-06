@@ -186,7 +186,7 @@ public class DaemonRespondToChangesPerfTest extends DaemonAnalyzerTestCase {
           throw new ProcessCanceledException();
         };
         long hiStart = System.currentTimeMillis();
-        codeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, interrupt);
+        myTestDaemonCodeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, true,interrupt);
         long hiEnd = System.currentTimeMillis();
         DaemonProgressIndicator progress = ContainerUtil.getFirstItem(new ArrayList<>(codeAnalyzer.getUpdateProgress().values()));
         String message = "Should have been interrupted: " + progress + "; Elapsed: " + (hiEnd - hiStart) + "ms";
@@ -277,7 +277,7 @@ public class DaemonRespondToChangesPerfTest extends DaemonAnalyzerTestCase {
         CodeInsightTestFixtureImpl.ensureIndexesUpToDate(project);
         TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(editor);
         PsiDocumentManager.getInstance(myProject).commitAllDocuments();
-        codeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, interrupt);
+        myTestDaemonCodeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, true,interrupt);
 
         throw new RuntimeException("should have been interrupted");
       }
@@ -322,7 +322,7 @@ public class DaemonRespondToChangesPerfTest extends DaemonAnalyzerTestCase {
         CodeInsightTestFixtureImpl.ensureIndexesUpToDate(project);
         TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(editor);
         Runnable callbackWhileWaiting = () -> type(' ');
-        codeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, callbackWhileWaiting);
+        myTestDaemonCodeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, true,callbackWhileWaiting);
       }
       catch (ProcessCanceledException ignored) {
         myTestDaemonCodeAnalyzer.waitForTermination();

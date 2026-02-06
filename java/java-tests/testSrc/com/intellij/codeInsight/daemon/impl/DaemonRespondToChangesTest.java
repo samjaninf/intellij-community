@@ -456,7 +456,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
               action.run();
             }
           };
-          myDaemonCodeAnalyzer.runPasses(getFile(), getDocument(getFile()), textEditor, toIgnore, true, callbackWhileWaiting);
+          myTestDaemonCodeAnalyzer.runPasses(getFile(), getDocument(getFile()), textEditor, toIgnore, true, true,callbackWhileWaiting);
           break;
         }
         catch (ProcessCanceledException ignored) { }
@@ -999,7 +999,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
             typeInAlienEditor(alienEditor, 'x');
           }
         };
-        myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, callbackWhileWaiting);
+        myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, true,callbackWhileWaiting);
       }
       catch (ProcessCanceledException ignored) {
         return;
@@ -1155,7 +1155,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
       CodeInsightTestFixtureImpl.ensureIndexesUpToDate(project);
       TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(editor);
       Runnable callbackWhileWaiting = () -> type(' ');
-      myDaemonCodeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, callbackWhileWaiting);
+      myTestDaemonCodeAnalyzer.runPasses(psiFile, editor.getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, true, true,callbackWhileWaiting);
     }
     catch (Exception ignored) {
       return;
@@ -1230,8 +1230,8 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
     TextEditor textEditor1 = new PsiAwareTextEditorProvider().getTextEditor(editor1);
     TextEditor textEditor2 = new PsiAwareTextEditorProvider().getTextEditor(editor2);
 
-    myDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor1, new int[0], false, null);
-    myDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor2, new int[0], false, null);
+    myTestDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor1, new int[0], false, true,null);
+    myTestDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor2, new int[0], false, true,null);
     List<HighlightInfo> errors = DaemonCodeAnalyzerImpl.getHighlights(editor1.getDocument(), null, myProject);
     assertEmpty(errors);
 
@@ -1324,8 +1324,8 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
       TextEditor textEditor2 = new PsiAwareTextEditorProvider().getTextEditor(editor2);
       setActiveEditors(editor1, editor2);
 
-      myDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor1, new int[0], false, null);
-      myDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor2, new int[0], false, null);
+      myTestDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor1, new int[0], false, true,null);
+      myTestDaemonCodeAnalyzer.runPasses(myFile, editor1.getDocument(), textEditor2, new int[0], false, true,null);
 
       assertSameElements(collected, Arrays.asList(editor1, editor2));
       assertSameElements(applied, Arrays.asList(editor1, editor2));
@@ -2109,7 +2109,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
       };
       TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(getEditor());
       try {
-        myDaemonCodeAnalyzer.runPasses(myFile, myEditor.getDocument(), textEditor, new int[0], false, checkHighlighted);
+        myTestDaemonCodeAnalyzer.runPasses(myFile, myEditor.getDocument(), textEditor, new int[0], false, true,checkHighlighted);
       }
       catch (Exception e) {
         MyVerySlowAnnotator.wait.set(false);

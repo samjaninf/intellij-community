@@ -154,7 +154,7 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
         assertNotEmpty(myInfos);
       }
     };
-    myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, callbackWhileWaiting);
+    myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, true, callbackWhileWaiting);
 
     List<HighlightInfo> myWarns = filterMy(
       DaemonRespondToChangesTest.waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.INFORMATION));
@@ -325,7 +325,7 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
     myDaemonCodeAnalyzer.restart(getTestName(false));
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(false);
     try {
-      myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), TextEditorProvider.getInstance().getTextEditor(getEditor()), ArrayUtilRt.EMPTY_INT_ARRAY, true, () -> {});
+      myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), TextEditorProvider.getInstance().getTextEditor(getEditor()), ArrayUtilRt.EMPTY_INT_ARRAY, true, true, () -> {});
     }
     catch (ProcessCanceledException ignored) {
     }
@@ -338,7 +338,7 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
     COMMENT_HIGHLIGHTED.set(false);
     log.clear();
     try {
-      myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), TextEditorProvider.getInstance().getTextEditor(getEditor()), ArrayUtilRt.EMPTY_INT_ARRAY, true, () -> { });
+      myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), TextEditorProvider.getInstance().getTextEditor(getEditor()), ArrayUtilRt.EMPTY_INT_ARRAY, true, true, () -> { });
     }
     catch (ProcessCanceledException ignored) {
     }
@@ -413,7 +413,7 @@ public class DaemonHighlightVisitorRespondToChangesTest extends DaemonAnalyzerTe
     myDaemonCodeAnalyzer.restart(getTestName(false));
     myDaemonCodeAnalyzer.setUpdateByTimerEnabled(false);
     TestTimeOut timeOut = TestTimeOut.setTimeout(1, TimeUnit.MINUTES);
-    myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), TextEditorProvider.getInstance().getTextEditor(getEditor()), ArrayUtilRt.EMPTY_INT_ARRAY, true, () -> {
+    myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), TextEditorProvider.getInstance().getTextEditor(getEditor()), ArrayUtilRt.EMPTY_INT_ARRAY, true, true,() -> {
       if (timeOut.isTimedOut()) {
         String dump = ThreadDumper.dumpThreadsToString();
         List<HighlightInfo> infos = DaemonCodeAnalyzerImpl.getHighlights(getEditor().getDocument(), HighlightSeverity.WARNING, getProject());

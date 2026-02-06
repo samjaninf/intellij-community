@@ -493,7 +493,7 @@ public class DaemonInspectionsRespondToChangesTest extends DaemonAnalyzerTestCas
       TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(getEditor());
       PsiDocumentManager.getInstance(myProject).commitAllDocuments();
       long start = System.currentTimeMillis();
-      myDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, checkHighlighted);
+      myTestDaemonCodeAnalyzer.runPasses(getFile(), getEditor().getDocument(), textEditor, ArrayUtilRt.EMPTY_INT_ARRAY, false, true,checkHighlighted);
       List<RangeHighlighter> errors = ContainerUtil.filter(markupModel.getAllHighlighters(), highlighter -> HighlightInfo.fromRangeHighlighter(highlighter) != null && HighlightInfo.fromRangeHighlighter(highlighter).getSeverity() == HighlightSeverity.ERROR);
       long elapsed = System.currentTimeMillis() - start;
 

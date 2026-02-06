@@ -611,10 +611,10 @@ public final class PassExecutorService implements Disposable {
       Document document = pass instanceof TextEditorHighlightingPass text ? text.getDocument() : null;
       CharSequence docText = document == null ? "" : ": '" + StringUtil.first(document.getCharsSequence(), 10, true)+ "'";
       String message = StringUtil.repeatSymbol(' ', IdeaForkJoinWorkerThreadFactory.getThreadNum() * 4)
-                       + " " + (pass == null ? "" : pass + " ")
+                       + (pass == null ? "" : pass + " ")
                        + StringUtil.join(info, Functions.TO_STRING(), " ")
                        + "; progress=" + progressIndicator
-                       + (docText.isEmpty() ? "" : " " + docText);
+                       + docText;
       LOG.debug(message);
     }
   }
