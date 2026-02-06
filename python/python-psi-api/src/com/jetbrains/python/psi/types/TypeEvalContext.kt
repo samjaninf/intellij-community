@@ -266,6 +266,9 @@ sealed class TypeEvalContext(
   val origin: PsiFile?
     get() = constraints.myOrigin
 
+  val usesExternalTypeProvider: Boolean
+    get() = externalTypeResolver != null
+
   @ApiStatus.Internal
   fun getContextTypeCache(): MutableMap<Pair<PyExpression?, Any?>, PyType?> {
     return contextTypeCache
