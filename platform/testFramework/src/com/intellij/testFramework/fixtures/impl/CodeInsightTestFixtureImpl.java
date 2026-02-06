@@ -217,6 +217,7 @@ import com.intellij.util.Processor;
 import com.intellij.util.Processors;
 import com.intellij.util.SmartList;
 import com.intellij.util.concurrency.AppExecutorUtil;
+import com.intellij.util.concurrency.ThreadingAssertions;
 import com.intellij.util.concurrency.annotations.RequiresEdt;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.indexing.FileBasedIndex;
@@ -389,12 +390,14 @@ public class CodeInsightTestFixtureImpl extends BaseFixture implements CodeInsig
     int retries = 1000;
     for (int i = 0; i < retries; i++) {
       try {
-        settings.forceUseZeroAutoReparseDelay(true);
         List<HighlightInfo> infos = new ArrayList<>();
         EdtTestUtil.runInEdtAndWait(() -> {
           PsiFile file = filePointer.getElement();
           assertNotNull(file);
-          codeAnalyzer.runPasses(file, editor.getDocument(), textEditor, toIgnore, canChangeDocument, null);
+          ThreadingAssertions.assertEventDispatchThread();
+          settings.forceUseZeroAutoReparseDelayIn(() -> {
+            codeAnalyzer.runPasses(file, editor.getDocument(), textEditor, toIgnore, canChangeDocument, null);
+          });
           IdeaTestExecutionPolicy policy = IdeaTestExecutionPolicy.current();
           if (policy != null) {
             policy.waitForHighlighting(project, editor);
@@ -439,9 +442,6 @@ public class CodeInsightTestFixtureImpl extends BaseFixture implements CodeInsig
       }
       catch (Exception e) {
         exception = e;
-      }
-      finally {
-        settings.forceUseZeroAutoReparseDelay(false);
       }
     }
     ExceptionUtil.rethrow(exception);
