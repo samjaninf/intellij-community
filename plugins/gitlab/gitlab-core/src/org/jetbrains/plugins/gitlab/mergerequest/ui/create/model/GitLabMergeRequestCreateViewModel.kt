@@ -252,11 +252,12 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   override fun adjustReviewer(point: RelativePoint) {
     cs.launchNow(Dispatchers.Main) {
       val allowsMultipleReviewers = allowsMultipleReviewers.first()
-      val originalReviewersIds = adjustedReviewers.value.mapTo(mutableSetOf<String>(), GitLabUserDTO::id)
-      val updatedReviewers = if (allowsMultipleReviewers)
-        GitLabMergeRequestReviewersUtil.selectReviewers(point, originalReviewersIds, potentialReviewers, avatarIconProvider)
-      else
-        GitLabMergeRequestReviewersUtil.selectReviewer(point, originalReviewersIds, potentialReviewers, avatarIconProvider)
+      val updatedReviewers = if (allowsMultipleReviewers) {
+        GitLabMergeRequestReviewersUtil.selectReviewers(point, adjustedReviewers.value, potentialReviewers, avatarIconProvider)
+      }
+      else {
+        GitLabMergeRequestReviewersUtil.selectReviewer(point, potentialReviewers, avatarIconProvider)?.let { listOfNotNull(it) }
+      }
 
       updatedReviewers ?: return@launchNow
       _adjustedReviewers.value = updatedReviewers

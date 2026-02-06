@@ -274,11 +274,12 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
   override fun adjustReviewers(point: RelativePoint) {
     scope.launchNow(Dispatchers.Main) {
       val allowsMultipleReviewers = allowsMultipleReviewers.first()
-      val originalReviewersIds = reviewers.value.mapTo(mutableSetOf<String>(), GitLabUserDTO::id)
-      val updatedReviewers = if (allowsMultipleReviewers == true)
-        GitLabMergeRequestReviewersUtil.selectReviewers(point, originalReviewersIds, potentialReviewers, avatarIconsProvider)
-      else
-        GitLabMergeRequestReviewersUtil.selectReviewer(point, originalReviewersIds, potentialReviewers, avatarIconsProvider)
+      val updatedReviewers = if (allowsMultipleReviewers) {
+        GitLabMergeRequestReviewersUtil.selectReviewers(point, reviewers.value, potentialReviewers, avatarIconsProvider)
+      }
+      else {
+        GitLabMergeRequestReviewersUtil.selectReviewer(point, potentialReviewers, avatarIconsProvider)?.let { listOfNotNull(it) }
+      }
 
       updatedReviewers ?: return@launchNow
       setReviewers(updatedReviewers)

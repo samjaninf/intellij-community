@@ -544,12 +544,11 @@ private suspend fun <T : Any> editList(
   vm: LabeledListPanelViewModel<T>,
   getItemPresentation: (T) -> PopupItemPresentation,
 ) {
-  val currentSet = vm.items.value.toSet()
   val newList = ChooserPopupUtil.showAsyncMultipleChooserPopup(
     RelativePoint.getNorthEastOf(parentComponent),
+    vm.items.value,
     vm.getSelectableItemsFlow(),
     getItemPresentation,
-    currentSet::contains,
     PopupConfig(showDirection = ShowDirection.ABOVE)
   )
   vm.adjustList(newList)

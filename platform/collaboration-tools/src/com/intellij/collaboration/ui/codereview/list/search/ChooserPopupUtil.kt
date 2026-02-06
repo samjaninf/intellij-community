@@ -2,12 +2,11 @@
 package com.intellij.collaboration.ui.codereview.list.search
 
 import com.intellij.collaboration.messages.CollaborationToolsBundle
-import com.intellij.collaboration.ui.codereview.details.SelectableWrapper
 import com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter
 import com.intellij.collaboration.ui.util.name
 import com.intellij.collaboration.ui.util.popup.CollaborationToolsPopupUtil
 import com.intellij.collaboration.ui.util.popup.PopupItemPresentation
-import com.intellij.collaboration.ui.util.popup.SelectablePopupItemPresentation
+import com.intellij.collaboration.ui.util.popup.SelectablePopupItemPresentation.Simple
 import com.intellij.collaboration.ui.util.popup.SimplePopupItemRenderer
 import com.intellij.collaboration.ui.util.popup.SimpleSelectablePopupItemRenderer
 import com.intellij.collaboration.ui.util.popup.showAndAwaitSubmission
@@ -23,6 +22,7 @@ import com.intellij.ui.CollectionListModel
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBList
+import com.intellij.util.ui.JBDimension
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.StatusText
 import com.intellij.util.ui.UIUtil
@@ -31,15 +31,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import org.jetbrains.annotations.ApiStatus
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import javax.swing.JList
 import javax.swing.JScrollPane
 import javax.swing.ListCellRenderer
+import javax.swing.ListModel
 import javax.swing.ListSelectionModel
 
 /**
@@ -175,7 +174,32 @@ object ChooserPopupUtil {
   ): T? {
     val listModel = CollectionListModel<T>()
     val list = createList(listModel, renderer)
-    populateListOnShowFromResult(itemsLoader, list, listModel, popupConfig.errorPresenter)
+    list.launchOnShow("List items loader") {
+      list.setPaintBusy(true)
+      list.emptyText.clear()
+      try {
+        itemsLoader.collect { resultedItems ->
+          resultedItems.fold(
+            onSuccess = { items ->
+              val selected = list.selectedIndex
+              if (items.size > listModel.size) {
+                val newList = items.subList(listModel.size, items.size)
+                listModel.addAll(listModel.size, newList)
+              }
+              if (selected != -1) {
+                list.selectedIndex = selected
+              }
+            },
+            onFailure = { exception ->
+              list.emptyText.showError(exception, popupConfig.errorPresenter)
+            }
+          )
+        }
+      }
+      finally {
+        list.setPaintBusy(false)
+      }
+    }
 
     @Suppress("UNCHECKED_CAST")
     val popup = PopupChooserBuilder(list)
@@ -286,37 +310,69 @@ object ChooserPopupUtil {
 
   // Multiple options:
 
+  /**
+   * Displays an asynchronous popup allowing users to select multiple items from a dynamically loaded list.
+   *
+   * @param T The type of the items in the popup.
+   * @param point The screen coordinate where the popup will be displayed.
+   * @param selectedItems A list of items that will be pre-selected when the popup is shown.
+   * @param loadedBatchesFlow A flow providing results of item batches to be displayed in the list.
+   * @param presenter A function that maps each item to its presentation details, such as text and icon.
+   * @param popupConfig Configuration options for the popup, including dimensions, behavior, and error handling. Defaults to `PopupConfig.DEFAULT`.
+   * @return A list of items the user has selected.
+   */
   @ApiStatus.Internal
   @JvmOverloads
   suspend fun <T : Any> showAsyncMultipleChooserPopup(
     point: RelativePoint,
+    selectedItems: List<T>,
     loadedBatchesFlow: Flow<Result<List<T>>>,
     presenter: (T) -> PopupItemPresentation,
-    isOriginallySelected: (T) -> Boolean,
     popupConfig: PopupConfig = PopupConfig.DEFAULT,
   ): List<T> {
-    val listModel = CollectionListModel<SelectableWrapper<T>>()
-    val list = createSelectableList(listModel, SimpleSelectablePopupItemRenderer.create { item ->
-      SelectablePopupItemPresentation.fromPresenter(presenter, item)
-    })
-    val selectableBatchesFlow = loadedBatchesFlow.map { result ->
-      result.map { list ->
-        list.map {
-          SelectableWrapper(it, isOriginallySelected(it))
+    val listModel = MultiChooserListModel<T>().apply {
+      add(selectedItems)
+      setChosen(selectedItems)
+    }
+    val list = createSelectableList(listModel, presenter)
+    list.launchOnShow("List items loader") {
+      list.setPaintBusy(true)
+      list.emptyText.clear()
+      try {
+        loadedBatchesFlow.collect { resultedItems ->
+          resultedItems.fold(
+            onSuccess = { items ->
+              val selected = list.selectedIndex
+              if (items.size > listModel.size) {
+                val newList = items.subList(listModel.size, items.size)
+                listModel.add(newList)
+              }
+              if (selected != -1) {
+                list.selectedIndex = selected
+              }
+            },
+            onFailure = { exception ->
+              list.emptyText.showError(exception, popupConfig.errorPresenter)
+            }
+          )
         }
       }
+      finally {
+        list.setPaintBusy(false)
+      }
     }
-    populateListOnShowFromResult(selectableBatchesFlow, list, listModel, popupConfig.errorPresenter)
 
     @Suppress("UNCHECKED_CAST")
     val popup = PopupChooserBuilder(list)
       .setFilteringEnabled { selectableItem ->
-        selectableItem as SelectableWrapper<T>
-        presenter(selectableItem.value).shortText
+        presenter(selectableItem as T).shortText
       }
       .setCloseOnEnter(false)
       .configure(popupConfig)
-      .createPopup()
+      .createPopup().apply {
+        // non-empty list returns pref size without considering "visibleRowCount"
+        content.preferredSize = JBDimension(250, 300)
+      }
 
     CollaborationToolsPopupUtil.configureSearchField(popup, popupConfig)
     PopupUtil.setPopupToggleComponent(popup, point.component)
@@ -324,7 +380,7 @@ object ChooserPopupUtil {
     return popup.showAndAwaitSubmissions(listModel, point, popupConfig.showDirection)
   }
 
-  private fun <T> createList(listModel: CollectionListModel<T>, renderer: ListCellRenderer<T>): JBList<T> =
+  private fun <T> createList(listModel: ListModel<T>, renderer: ListCellRenderer<T>): JBList<T> =
     JBList(listModel).apply {
       visibleRowCount = 7
       selectionMode = ListSelectionModel.SINGLE_SELECTION
@@ -333,33 +389,42 @@ object ChooserPopupUtil {
     }
 
   private fun <T> createSelectableList(
-    listModel: CollectionListModel<SelectableWrapper<T>>,
-    renderer: ListCellRenderer<SelectableWrapper<T>>,
-  ): JBList<SelectableWrapper<T>> = JBList(listModel).apply {
-    visibleRowCount = 7
-    selectionMode = ListSelectionModel.SINGLE_SELECTION
-    cellRenderer = renderer
-    background = JBUI.CurrentTheme.Popup.BACKGROUND
-    addMouseListener(object : MouseAdapter() {
-      override fun mouseReleased(e: MouseEvent) {
-        if (UIUtil.isActionClick(e, MouseEvent.MOUSE_RELEASED) && !UIUtil.isSelectionButtonDown(e) && !e.isConsumed)
-          toggleSelection()
-      }
-    })
-    addKeyListener(object : KeyAdapter() {
-      override fun keyPressed(e: KeyEvent?) {
-        if (e != null && e.keyCode == KeyEvent.VK_ENTER) {
-          toggleSelection()
+    model: MultiChooserListModel<T>,
+    presenter: (T) -> PopupItemPresentation,
+  ): JBList<T> {
+    val rendererWithChooser = SimpleSelectablePopupItemRenderer.create<T> { item ->
+      val presentation = presenter(item)
+      Simple(
+        presentation.shortText,
+        presentation.icon,
+        presentation.fullText,
+        model.isChosen(item),
+      )
+    }
+    return createList(model, rendererWithChooser).apply {
+      fun toggleSelectedChosen() {
+        selectedIndex.takeIf { it >= 0 }?.let { idx ->
+          model.toggleChosen(idx)
+          // due to a bug in FilteringListModel the changed item is not redrawn on change, so we have to do it manually
+          getCellBounds(idx, idx)?.let { repaint(it) }
         }
       }
-    })
-  }
 
-  private fun <T> JList<SelectableWrapper<T>>.toggleSelection() {
-    for (item in selectedValuesList) {
-      item.isSelected = !item.isSelected
+      addMouseListener(object : MouseAdapter() {
+        override fun mouseReleased(e: MouseEvent) {
+          if (UIUtil.isActionClick(e, MouseEvent.MOUSE_RELEASED) && !UIUtil.isSelectionButtonDown(e) && !e.isConsumed) {
+            toggleSelectedChosen()
+          }
+        }
+      })
+      addKeyListener(object : KeyAdapter() {
+        override fun keyPressed(e: KeyEvent?) {
+          if (e != null && e.keyCode == KeyEvent.VK_ENTER) {
+            toggleSelectedChosen()
+          }
+        }
+      })
     }
-    repaint()
   }
 
   private fun <T> PopupChooserBuilder<T>.configure(popupConfig: PopupConfig): PopupChooserBuilder<T> {
@@ -401,40 +466,6 @@ data class PopupConfig(
 enum class ShowDirection {
   ABOVE,
   BELOW
-}
-
-private fun <T : Any> populateListOnShowFromResult(
-  itemsFlow: Flow<Result<List<T>>>,
-  list: JBList<T>,
-  listModel: CollectionListModel<T>,
-  errorPresenter: ErrorStatusPresenter.Text<Throwable>?,
-) {
-  list.launchOnShow("List items loader") {
-    list.setPaintBusy(true)
-    list.emptyText.clear()
-    try {
-      itemsFlow.collect { resultedItems ->
-        resultedItems.fold(
-          onSuccess = { items ->
-            val selected = list.selectedIndex
-            if (items.size > listModel.size) {
-              val newList = items.subList(listModel.size, items.size)
-              listModel.addAll(listModel.size, newList)
-            }
-            if (selected != -1) {
-              list.selectedIndex = selected
-            }
-          },
-          onFailure = { exception ->
-            list.emptyText.showError(exception, errorPresenter)
-          }
-        )
-      }
-    }
-    finally {
-      list.setPaintBusy(false)
-    }
-  }
 }
 
 private fun StatusText.showError(e: Throwable, errorPresenter: ErrorStatusPresenter.Text<Throwable>?) {

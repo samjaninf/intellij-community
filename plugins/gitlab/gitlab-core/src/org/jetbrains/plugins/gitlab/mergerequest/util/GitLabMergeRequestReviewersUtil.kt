@@ -5,8 +5,6 @@ import com.intellij.collaboration.ui.codereview.avatar.Avatar
 import com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil
 import com.intellij.collaboration.ui.icon.IconsProvider
 import com.intellij.collaboration.ui.util.popup.PopupItemPresentation
-import com.intellij.collaboration.ui.util.popup.SelectablePopupItemPresentation
-import com.intellij.collaboration.ui.util.popup.SimpleSelectablePopupItemRenderer
 import com.intellij.ui.awt.RelativePoint
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -16,32 +14,27 @@ import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 internal object GitLabMergeRequestReviewersUtil {
   suspend fun selectReviewer(
     point: RelativePoint,
-    originalReviewersIds: Set<String>,
     potentialReviewers: Flow<Result<List<GitLabUserDTO>>>,
-    avatarIconsProvider: IconsProvider<GitLabUserDTO>
-  ): List<GitLabUserDTO>? {
-    val selectedReviewer = ChooserPopupUtil.showAsyncChooserPopup(
+    avatarIconsProvider: IconsProvider<GitLabUserDTO>,
+  ): GitLabUserDTO? {
+    return ChooserPopupUtil.showAsyncChooserPopup(
       point,
       potentialReviewers,
-      filteringMapper = { user -> user.username },
-      renderer = SimpleSelectablePopupItemRenderer.create { reviewer ->
-        SelectablePopupItemPresentation.Simple(
+      presenter = { reviewer ->
+        PopupItemPresentation.Simple(
           reviewer.username,
           avatarIconsProvider.getIcon(reviewer, Avatar.Sizes.BASE),
-          null,
-          isSelected = originalReviewersIds.contains(reviewer.id)
+          reviewer.name,
         )
       }
-    ) ?: return null
-
-    return if (originalReviewersIds.contains(selectedReviewer.id)) emptyList() else listOf(selectedReviewer)
+    )
   }
 
   suspend fun selectReviewers(
     point: RelativePoint,
-    originalReviewersIds: Set<String>,
+    originalReviewers: List<GitLabUserDTO>,
     potentialReviewers: Flow<Result<List<GitLabUserDTO>>>,
-    avatarIconsProvider: IconsProvider<GitLabUserDTO>
+    avatarIconsProvider: IconsProvider<GitLabUserDTO>,
   ): List<GitLabUserDTO> {
     val potentialReviewersBatch = flow {
       val batch = potentialReviewers.first()
@@ -49,15 +42,15 @@ internal object GitLabMergeRequestReviewersUtil {
     }
     return ChooserPopupUtil.showAsyncMultipleChooserPopup(
       point,
+      originalReviewers,
       potentialReviewersBatch,
       presenter = { reviewer ->
         PopupItemPresentation.Simple(
           reviewer.username,
           avatarIconsProvider.getIcon(reviewer, Avatar.Sizes.BASE),
-          null,
+          reviewer.name,
         )
-      },
-      isOriginallySelected = { selectedReviewer -> originalReviewersIds.contains(selectedReviewer.id) }
+      }
     )
   }
 }
