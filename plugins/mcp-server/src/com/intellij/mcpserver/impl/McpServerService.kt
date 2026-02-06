@@ -320,6 +320,33 @@ class McpServerService(val cs: CoroutineScope) {
       }
     })
 
+    val filterFlowJobs = mutableListOf<Job>()
+    fun subscribeToFilterProviders() {
+      filterFlowJobs.forEach { it.cancel() }
+      filterFlowJobs.clear()
+      McpToolFilterProvider.EP.extensionList.forEach { provider ->
+        val job = cs.launch {
+          provider.getFilters(null).collectLatest {
+            mcpTools.tryEmit(getMcpTools())
+          }
+        }
+        filterFlowJobs.add(job)
+      }
+    }
+    subscribeToFilterProviders()
+
+    McpToolFilterProvider.EP.addExtensionPointListener(cs, object : ExtensionPointListener<McpToolFilterProvider> {
+      override fun extensionAdded(extension: McpToolFilterProvider, pluginDescriptor: PluginDescriptor) {
+        subscribeToFilterProviders()
+        mcpTools.tryEmit(getMcpTools())
+      }
+
+      override fun extensionRemoved(extension: McpToolFilterProvider, pluginDescriptor: PluginDescriptor) {
+        subscribeToFilterProviders()
+        mcpTools.tryEmit(getMcpTools())
+      }
+    })
+
     return cs.embeddedServer(CIO, host = "127.0.0.1", port = freePort) {
       installHostValidation()
       installHttpRequestPropagation()
@@ -421,7 +448,7 @@ class McpServerService(val cs: CoroutineScope) {
     }.start(wait = false)
   }
 
-  private fun getMcpTools(filter: McpToolFilter = McpToolFilter.AllowAll): List<McpTool> {
+  internal fun getMcpTools(filter: McpToolFilter = McpToolFilter.AllowAll, useFiltersFromEP: Boolean = true): List<McpTool> {
     val allTools = McpToolsProvider.EP.extensionList.flatMap {
       try {
         it.getTools()
@@ -431,7 +458,19 @@ class McpServerService(val cs: CoroutineScope) {
         emptyList()
       }
     }
-    return allTools.filter { filter.shouldInclude(it.descriptor.name) }
+    val filteredByName = allTools.filter { filter.shouldInclude(it.descriptor.name) }
+    if (!useFiltersFromEP) {
+      return filteredByName
+    }
+    val filters = McpToolFilterProvider.EP.extensionList.flatMap { it.getFilters(null).value }
+    var context = McpToolFilterProvider.McpToolFilterContext(
+      disallowedTools = emptySet(),
+      allowedTools = filteredByName.toSet()
+    )
+    for (filterItem in filters) {
+      context = filterItem.modify(context).apply(context)
+    }
+    return context.allowedTools.toList()
   }
 
   private fun McpTool.mcpToolToRegisteredTool(

@@ -3,6 +3,7 @@
 package com.intellij.mcpserver.toolsets
 
 import com.intellij.mcpserver.McpToolsetTestBase
+import com.intellij.mcpserver.impl.McpServerService
 import com.intellij.mcpserver.toolsets.Constants.MAX_USAGE_TEXT_CHARS
 import com.intellij.mcpserver.toolsets.general.TextToolset
 import com.intellij.mcpserver.util.relativizeIfPossible
@@ -156,5 +157,23 @@ class TextToolsetTest : McpToolsetTestBase() {
       },
       "[success]"
     )
+  }
+
+  @Test
+  fun test_parameter_schema() = runBlocking {
+    val mcpServerService = McpServerService.getInstance()
+    val tools = mcpServerService.getMcpTools()
+    val tool = tools.find { it.descriptor.name == "replace_text_in_file" }
+               ?: tools.find { it.descriptor.name == "replace_file_text_by_path" }
+               ?: error("Tool not found")
+
+    val parameters = tool.descriptor.inputSchema.getParameters()
+    val oldTextParam = parameters.find { it.name == "oldText" } ?: error("Parameter 'oldText' not found")
+    kotlin.test.assertEquals("Text to be replaced", oldTextParam.description)
+
+    val tool1 = tools.find { it.descriptor.name == "get_file_text_by_path" } ?: error("Tool not found")
+    val parameters1 = tool1.descriptor.inputSchema.getParameters()
+    val truncateParameter = parameters1.find { it.name == "truncateMode" } ?: error("Parameter 'truncateMode' not found")
+    kotlin.test.assertEquals("START | MIDDLE | END | NONE", truncateParameter.type)
   }
 }

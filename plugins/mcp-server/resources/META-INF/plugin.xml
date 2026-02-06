@@ -35,6 +35,7 @@
 
   <extensionPoints>
     <extensionPoint name="mcpToolsProvider" interface="com.intellij.mcpserver.McpToolsProvider" dynamic="true" />
+    <extensionPoint name="mcpToolFilterProvider" interface="com.intellij.mcpserver.McpToolFilterProvider" dynamic="true" />
     <extensionPoint name="mcpToolset" interface="com.intellij.mcpserver.McpToolset" dynamic="true" />
   </extensionPoints>
 
@@ -50,6 +51,8 @@
       notificationIds="mcp.client.detected;mcp.client.autoconfigured;mcp.client.error.autoconfigured;mcp.client.wrong.port.detected"/>
 
     <mcpServer.mcpToolsProvider implementation="com.intellij.mcpserver.impl.ReflectionToolsProvider" />
+    <mcpServer.mcpToolFilterProvider implementation="com.intellij.mcpserver.impl.RegistryKeyMcpToolFilterProvider" />
+    <mcpServer.mcpToolFilterProvider implementation="com.intellij.mcpserver.impl.SettingsBasedMcpToolFilterProvider" />
 
     <mcpServer.mcpToolset implementation="com.intellij.mcpserver.toolsets.general.ExecutionToolset" />
     <mcpServer.mcpToolset implementation="com.intellij.mcpserver.toolsets.general.AnalysisToolset" />
@@ -73,6 +76,9 @@
     <registryKey defaultValue="true"
                  description="Enable OT tracer for MCP tool calls"
                  key="mcp.server.ot.trace"/>
+    <registryKey defaultValue="*"
+                 description="Filter for MCP tools, like -*,+com.intellij.mcpserver.toolsets.general.*,-*.get_file_text_by_path"
+                 key="mcp.server.tools.filter"/>
 
     <applicationConfigurable
       instance="com.intellij.mcpserver.settings.McpServerSettingsConfigurable"
@@ -83,4 +89,12 @@
       parentId="tools"/>
 
   </extensions>
+
+  <resource-bundle>messages.McpServerBundle</resource-bundle>
+
+  <actions>
+    <action id="com.intellij.mcpserver.actions.ShowMcpToolsAction" class="com.intellij.mcpserver.actions.ShowMcpToolsAction">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+  </actions>
 </idea-plugin>
