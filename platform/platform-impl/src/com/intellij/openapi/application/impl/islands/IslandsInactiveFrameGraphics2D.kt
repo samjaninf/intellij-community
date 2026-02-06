@@ -31,10 +31,14 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
     return if (SwingUtilities.getWindowAncestor(component)?.isActive == false) islandsInactiveAlpha else 1f
   }
 
+  private fun shouldSkipAlphaBlending(alpha: Float): Boolean {
+    return alpha == 1f || preserveComposite || isIslandsGradientColor(paint)
+  }
+
   private fun <R> wrapPaint(runnable: () -> R): R {
     val alpha = getAlpha()
 
-    if (alpha == 1f || preserveComposite || isIslandsGradientColor(paint)) {
+    if (shouldSkipAlphaBlending(alpha)) {
       return runnable.invoke()
     }
 
@@ -59,7 +63,7 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
   private fun <R> wrapPaintText(runnable: () -> R): R {
     val alpha = getAlpha()
 
-    if (alpha == 1f || preserveComposite || isIslandsGradientColor(paint)) {
+    if (shouldSkipAlphaBlending(alpha)) {
       return runnable.invoke()
     }
 
