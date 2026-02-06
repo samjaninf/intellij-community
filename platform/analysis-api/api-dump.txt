@@ -242,6 +242,7 @@ com.intellij.codeInsight.template.ExpressionContext
 - a:getProject():com.intellij.openapi.project.Project
 - a:getProperty(com.intellij.openapi.util.Key):java.lang.Object
 - a:getPsiElementAtStartOffset():com.intellij.psi.PsiElement
+- getPsiFile():com.intellij.psi.PsiFile
 - a:getStartOffset():I
 - a:getTemplateEndOffset():I
 - a:getTemplateStartOffset():I

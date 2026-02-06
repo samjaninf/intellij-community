@@ -7,11 +7,9 @@ import com.intellij.codeInsight.template.Macro;
 import com.intellij.codeInsight.template.Result;
 import com.intellij.codeInsight.template.TextResult;
 import com.intellij.ide.actions.FqnUtil;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -23,14 +21,11 @@ public abstract class FilePathMacroBase extends Macro {
   @Override
   public Result calculateResult(Expression @NotNull [] params, ExpressionContext context) {
     Project project = context.getProject();
-    Editor editor = context.getEditor();
-    if (editor != null) {
-      PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
-      if (file != null) {
-        VirtualFile virtualFile = file.getVirtualFile();
-        if (virtualFile != null) {
-          return calculateResult(virtualFile, project);
-        }
+    PsiFile file = context.getPsiFile();
+    if (file != null) {
+      VirtualFile virtualFile = file.getVirtualFile();
+      if (virtualFile != null) {
+        return calculateResult(virtualFile, project);
       }
     }
     return null;

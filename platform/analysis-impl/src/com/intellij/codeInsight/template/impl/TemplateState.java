@@ -917,6 +917,11 @@ public final class TemplateState extends TemplateStateBase implements Disposable
       }
 
       @Override
+      public @Nullable PsiFile getPsiFile() {
+        return TemplateState.this.getPsiFile();
+      }
+
+      @Override
       public int getStartOffset() {
         return start;
       }
@@ -949,15 +954,10 @@ public final class TemplateState extends TemplateStateBase implements Disposable
         int templateStartOffset = getTemplateStartOffset();
         int offset = templateStartOffset > 0 ? getTemplateStartOffset() - 1 : getTemplateStartOffset();
 
-        Editor editor = getEditor();
-        if (editor == null) {
-          return null;
-        }
-
-        PsiDocumentManager.getInstance(project).commitDocument(editor.getDocument());
-
-        PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
-        return file == null ? null : file.findElementAt(offset);
+        PsiFile file = getPsiFile();
+        if (file == null) return null;
+        PsiDocumentManager.getInstance(project).commitDocument(file.getFileDocument());
+        return file.findElementAt(offset);
       }
 
       @Override
