@@ -15,15 +15,19 @@
  */
 package com.siyeh.ipp.shift;
 
+import com.intellij.codeInsight.daemon.QuickFixBundle;
 import com.intellij.codeInspection.CommonQuickFixBundle;
 import com.intellij.codeInspection.dataFlow.CommonDataflow;
+import com.intellij.modcommand.ActionContext;
+import com.intellij.modcommand.ModCommand;
+import com.intellij.modcommand.Presentation;
+import com.intellij.modcommand.PsiBasedModCommandAction;
 import com.intellij.codeInspection.dataFlow.rangeSet.LongRangeSet;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.pom.java.LanguageLevel;
 import com.intellij.psi.JavaTokenType;
 import com.intellij.psi.PsiAssignmentExpression;
 import com.intellij.psi.PsiBinaryExpression;
-import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiJavaToken;
 import com.intellij.psi.PsiLiteralExpression;
@@ -36,12 +40,14 @@ import com.siyeh.IntentionPowerPackBundle;
 import com.siyeh.ig.PsiReplacementUtil;
 import com.siyeh.ig.psiutils.CommentTracker;
 import com.siyeh.ig.psiutils.ParenthesesUtils;
-import com.siyeh.ipp.base.MCIntention;
-import com.siyeh.ipp.base.PsiElementPredicate;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class ReplaceShiftWithMultiplyIntention extends MCIntention implements DumbAware {
+public final class ReplaceShiftWithMultiplyIntention extends PsiBasedModCommandAction<PsiExpression> implements DumbAware {
+  ReplaceShiftWithMultiplyIntention() {
+    super(PsiExpression.class);
+  }
 
   @Override
   public @NotNull String getFamilyName() {
@@ -49,54 +55,52 @@ public final class ReplaceShiftWithMultiplyIntention extends MCIntention impleme
   }
 
   @Override
-  protected @NotNull String getTextForElement(@NotNull PsiElement element) {
+  protected boolean isElementApplicable(@NotNull PsiExpression element, @NotNull ActionContext context) {
+    return new ShiftByLiteralPredicate().satisfiedBy(element);
+  }
+
+  @Override
+  protected @NotNull Presentation getPresentation(@NotNull ActionContext context, @NotNull PsiExpression element) {
     if (element instanceof PsiAssignmentExpression exp) {
-      final PsiJavaToken sign = exp.getOperationSign();
-      final IElementType tokenType = sign.getTokenType();
-      final String assignString = JavaTokenType.GTGTEQ.equals(tokenType) ?
-                                  (isSafelyDivisible(exp.getLExpression()) ? "/=" : "Math.floorDiv") : "*=";
-      return CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), assignString);
+      return getPresentation(exp.getOperationSign(), JavaTokenType.GTGTEQ, exp.getLExpression(), "/=", "*=");
     } else {
       final PsiBinaryExpression exp = (PsiBinaryExpression) element;
-      final PsiJavaToken sign = exp.getOperationSign();
-      final IElementType tokenType = sign.getTokenType();
-      final String operatorString = tokenType.equals(JavaTokenType.GTGT) ?
-                                    (isSafelyDivisible(exp.getLOperand()) ? "/" : "Math.floorDiv") : "*";
-      return CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), operatorString);
+      return getPresentation(exp.getOperationSign(), JavaTokenType.GTGT, exp.getLOperand(), "/", "*");
     }
   }
 
-  @Override
-  public @NotNull PsiElementPredicate getElementPredicate() {
-    return new ShiftByLiteralPredicate() {
-      @Override
-      public boolean satisfiedBy(PsiElement element) {
-        if (element instanceof PsiAssignmentExpression expr
-            && expr.getOperationTokenType().equals(JavaTokenType.GTGTEQ)
-            && PsiUtil.getLanguageLevel(element).isLessThan(LanguageLevel.JDK_1_8)
-            && !isSafelyDivisible(expr.getLExpression())
-        ) {
-          return false;
+  private static @Nls @NotNull Presentation getPresentation(
+    @NotNull PsiJavaToken sign,
+    @NotNull IElementType tokenType,
+    @NotNull PsiExpression lExpr,
+    @NotNull String divOperator,
+    @NotNull String mulOperator
+  ) {
+    String message;
+    if (sign.getTokenType().equals(tokenType)) {
+      if (PsiUtil.getLanguageLevel(lExpr).isLessThan(LanguageLevel.JDK_1_8)) {
+        message = CommonQuickFixBundle.message("fix.replace.x.with.y.may.change.semantics", sign.getText(), divOperator);
+      } else {
+        if (isSafelyDivisible(lExpr)) {
+          message = CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), divOperator);
+        } else {
+          message = QuickFixBundle.message("fix.replace.x.with.division", sign.getText());
         }
-        if (element instanceof PsiBinaryExpression expr
-            && expr.getOperationTokenType().equals(JavaTokenType.GTGT)
-            && PsiUtil.getLanguageLevel(element).isLessThan(LanguageLevel.JDK_1_8)
-            && !isSafelyDivisible(expr.getLOperand())
-        ) {
-          return false;
-        }
-        return super.satisfiedBy(element);
       }
-    };
+    } else {
+      message = CommonQuickFixBundle.message("fix.replace.x.with.y", sign.getText(), mulOperator);
+    }
+    return Presentation.of(message);
   }
 
   @Override
-  public void invoke(@NotNull PsiElement element) {
+  protected @NotNull ModCommand perform(@NotNull ActionContext context, @NotNull PsiExpression element) {
     if (element instanceof PsiBinaryExpression expr) {
-      replaceShiftWithMultiplyOrDivide(expr);
+      return replaceShiftWithMultiplyOrDivide(expr);
     }
-    else if (element instanceof PsiAssignmentExpression expr) {
-      replaceShiftAssignWithMultiplyOrDivideAssign(expr);
+    else {
+      PsiAssignmentExpression expr = (PsiAssignmentExpression)element;
+      return replaceShiftAssignWithMultiplyOrDivideAssign(expr);
     }
   }
 
@@ -105,49 +109,84 @@ public final class ReplaceShiftWithMultiplyIntention extends MCIntention impleme
     return range != null && range.min() >= 0;
   }
 
-  private static void replaceShiftAssignWithMultiplyOrDivideAssign(PsiAssignmentExpression exp) {
-    final PsiExpression lhsExpr = exp.getLExpression();
-    final PsiExpression rhsExpr = PsiUtil.skipParenthesizedExprDown(exp.getRExpression());
-    if (!(rhsExpr instanceof PsiLiteralExpression rhsLiteral)) return;
-    CommentTracker commentTracker = new CommentTracker();
-    final String lhsText = commentTracker.text(lhsExpr, ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
-    final String rhsText = rhsReplacement(rhsLiteral, lhsExpr.getType());
-    String expString;
-    if (exp.getOperationTokenType().equals(JavaTokenType.GTGTEQ)) {
-      if (isSafelyDivisible(lhsExpr)) {
-        expString = lhsText + "/=" + rhsText;
+  private static ModCommand replaceShiftAssignWithMultiplyOrDivideAssign(@NotNull PsiAssignmentExpression expr) {
+    final PsiExpression rhsExpr = PsiUtil.skipParenthesizedExprDown(expr.getRExpression());
+    if (!(rhsExpr instanceof PsiLiteralExpression rhsLiteral)) return ModCommand.nop();
+    final String rhsText = rhsReplacement(rhsLiteral, expr.getLExpression().getType());
+    if (expr.getOperationTokenType().equals(JavaTokenType.GTGTEQ)) {
+      if (isSafelyDivisible(expr.getLExpression()) || PsiUtil.getLanguageLevel(expr).isLessThan(LanguageLevel.JDK_1_8)) {
+        return ModCommand.psiUpdate(expr, e -> replaceAssignmentExprOperator(e, "/=", rhsText));
       } else {
-        expString = lhsText + "=" + "Math.floorDiv(" + lhsText + ", " + rhsText + ")";
+        return ModCommand.chooseAction(
+          CommonQuickFixBundle.message("fix.replace.with"),
+          ModCommand.psiUpdateStep(
+            expr,
+            CommonQuickFixBundle.message("fix.replace.x.with.y", ">>=", "Math.floorDiv"),
+            (e, updater) -> {
+              CommentTracker commentTracker = new CommentTracker();
+              final String lhsText = commentTracker.text(e.getLExpression(), ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
+              PsiReplacementUtil.replaceExpression(e, lhsText + "=" + "Math.floorDiv(" + lhsText + ", " + rhsText + ")");
+            }),
+          ModCommand.psiUpdateStep(
+            expr,
+            CommonQuickFixBundle.message("fix.replace.x.with.y.may.change.semantics", ">>=", "/="),
+            (e, updater) -> replaceAssignmentExprOperator(e, "/=", rhsText)
+          )
+        );
       }
     } else {
-      expString = lhsText + "*=" + rhsText;
+      return ModCommand.psiUpdate(expr, e -> replaceAssignmentExprOperator(e, "*=", rhsText));
     }
-    PsiReplacementUtil.replaceExpression(exp, expString, commentTracker);
   }
 
-  private static void replaceShiftWithMultiplyOrDivide(PsiBinaryExpression expression) {
-    final PsiExpression lhsExpr = expression.getLOperand();
-    final PsiExpression rhsExpr = PsiUtil.skipParenthesizedExprDown(expression.getROperand());
-    if (!(rhsExpr instanceof PsiLiteralExpression rhsLiteral)) return;
+  private static void replaceAssignmentExprOperator(PsiAssignmentExpression e, String x, String rhsText) {
     CommentTracker commentTracker = new CommentTracker();
-    final String lhsText = commentTracker.text(lhsExpr, ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
-    final String rhsText = rhsReplacement(rhsLiteral, lhsExpr.getType());
-    String expString;
-    if (expression.getOperationTokenType().equals(JavaTokenType.GTGT)) {
-      if (isSafelyDivisible(lhsExpr)) {
-        expString = lhsText + "/" + rhsText;
+    final String lhsText = commentTracker.text(e.getLExpression(), ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
+    PsiReplacementUtil.replaceExpression(e, lhsText + x + rhsText, commentTracker);
+  }
+
+  private static ModCommand replaceShiftWithMultiplyOrDivide(@NotNull PsiBinaryExpression expr) {
+    final PsiExpression rhsExpr = PsiUtil.skipParenthesizedExprDown(expr.getROperand());
+    if (!(rhsExpr instanceof PsiLiteralExpression rhsLiteral)) return ModCommand.nop();
+    final String rhsText = rhsReplacement(rhsLiteral, expr.getLOperand().getType());
+    if (expr.getOperationTokenType().equals(JavaTokenType.GTGT)) {
+      if (isSafelyDivisible(expr.getLOperand()) || PsiUtil.getLanguageLevel(expr).isLessThan(LanguageLevel.JDK_1_8)) {
+        return ModCommand.psiUpdate(expr, e -> replaceBinaryExprOperator(e, "/", rhsText));
       } else {
-        expString = "Math.floorDiv(" + lhsText + ", " + rhsText + ")";
+        return ModCommand.chooseAction(
+          CommonQuickFixBundle.message("fix.replace.with"),
+          ModCommand.psiUpdateStep(
+            expr,
+            CommonQuickFixBundle.message("fix.replace.x.with.y", ">>", "Math.floorDiv"),
+            (e, updater) -> {
+              CommentTracker commentTracker = new CommentTracker();
+              final String lhsText = commentTracker.text(e.getLOperand(), ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
+              PsiReplacementUtil.replaceExpression(e, parenthesizeIfRequired(e, "Math.floorDiv(" + lhsText + ", " + rhsText + ")"), commentTracker);
+            }),
+          ModCommand.psiUpdateStep(
+            expr,
+            CommonQuickFixBundle.message("fix.replace.x.with.y.may.change.semantics", ">>", "/"),
+            (e, updater) -> replaceBinaryExprOperator(e, "/", rhsText)
+          )
+        );
       }
     } else {
-      expString = lhsText + "*" + rhsText;
+      return ModCommand.psiUpdate(expr, e -> replaceBinaryExprOperator(e, "*", rhsText));
     }
+  }
+
+  private static void replaceBinaryExprOperator(PsiBinaryExpression e, String x, String rhsText) {
+    CommentTracker commentTracker = new CommentTracker();
+    final String lhsText = commentTracker.text(e.getLOperand(), ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE);
+    PsiReplacementUtil.replaceExpression(e, parenthesizeIfRequired(e, lhsText + x + rhsText), commentTracker);
+  }
+
+  private static String parenthesizeIfRequired(@NotNull PsiExpression expression, @NotNull String replacement) {
     if (expression.getParent() instanceof PsiExpression parent && !(parent instanceof PsiParenthesizedExpression) &&
         ParenthesesUtils.getPrecedence(parent) < ParenthesesUtils.MULTIPLICATIVE_PRECEDENCE) {
-      expString = '(' + expString + ')';
+      return '(' + replacement + ')';
     }
-
-    PsiReplacementUtil.replaceExpression(expression, expString, commentTracker);
+    return replacement;
   }
 
   private static String rhsReplacement(@NotNull PsiLiteralExpression rhs, @Nullable PsiType type) {
