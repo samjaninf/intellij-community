@@ -20,7 +20,6 @@
     <orderEntry type="module" module-name="intellij.kotlin.base.plugin" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.analysis.platform" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.util.test-generator-api" scope="TEST" />
-    <orderEntry type="module" module-name="kotlin.jvm-debugger.test" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.fir.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.maven.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.projectWizard.cli" scope="TEST" />
@@ -39,7 +38,7 @@
     <orderEntry type="module" module-name="intellij.kotlin.codeInsight.postfixTemplates" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.codeInsight.lineMarkers" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.navigation.tests" scope="TEST" />
-    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test" scope="TEST" />
+    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.testFramework" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.refactorings.rename" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.codeInsight" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.highlighting" scope="TEST" />
@@ -54,10 +53,10 @@
     <orderEntry type="module" module-name="intellij.gradle.toolingExtension.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.gradle.java" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.base.analysis.analysis-api.k2.tests" scope="TEST" />
-    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.compose" scope="TEST" />
+    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.compose.testFramework" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.injection.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.projectStructure" scope="TEST" />
-    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.parcelize" scope="TEST" />
+    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.parcelize.testFramework" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.gradle.codeInsight.groovy.tests" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.completion.tests.shared" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.base.test" scope="TEST" />

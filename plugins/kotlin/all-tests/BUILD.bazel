@@ -71,6 +71,11 @@ jvm_library(
     "//jvm/jvm-analysis-kotlin-tests-k1:analysis-kotlin-tests-k1",
     "//plugins/kotlin/uast/uast-kotlin-idea-base/tests",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test",
+    "//plugins/kotlin/jvm-debugger/test/compose/testFramework",
+    "//plugins/kotlin/jvm-debugger/test/parcelize/testFramework",
+    "//plugins/kotlin/jvm-debugger/test/k2/testFramework",
+    "//plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1/testFramework",
+    "//plugins/kotlin/jvm-debugger/testFramework",
   ]
 )
 ### auto-generated section `build kotlin.all-tests` end

@@ -92,6 +92,8 @@ jvm_library(
     "//plugins/kotlin/base/scripting/scripting.shared",
     "//java/debugger/shared",
     "//java/debugger/backend",
+    "//plugins/kotlin/jvm-debugger/testFramework:testFramework_test_lib",
+    "//plugins/kotlin/jvm-debugger/test/k2/testFramework:testFramework_test_lib",
   ],
   runtime_deps = [":kotlin-jvm-debugger-test"]
 )

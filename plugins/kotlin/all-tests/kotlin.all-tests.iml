@@ -71,5 +71,10 @@
     <orderEntry type="module" module-name="intellij.jvm.analysis.kotlin.tests.k1" scope="RUNTIME" />
     <orderEntry type="module" module-name="kotlin.uast.uast-kotlin-idea-base.tests" scope="RUNTIME" />
     <orderEntry type="module" module-name="intellij.kotlin.base.test" scope="RUNTIME" />
+    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.compose.testFramework" scope="RUNTIME" />
+    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.parcelize.testFramework" scope="RUNTIME" />
+    <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.testFramework" scope="RUNTIME" />
+    <orderEntry type="module" module-name="kotlin.jvm-debugger.test.k1.testFramework" scope="RUNTIME" />
+    <orderEntry type="module" module-name="kotlin.jvm-debugger.testFramework" scope="RUNTIME" />
   </component>
 </module>

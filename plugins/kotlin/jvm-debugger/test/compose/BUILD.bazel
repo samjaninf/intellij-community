@@ -38,8 +38,8 @@ jvm_library(
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "@lib//:kotlinc-kotlin-compiler-tests",
-    "//plugins/kotlin/jvm-debugger/test/k2:kotlin-jvm-debugger-test_test_lib",
-    "//plugins/kotlin/jvm-debugger/test:test_test_lib",
+    "//plugins/kotlin/jvm-debugger/test/k2/testFramework:testFramework_test_lib",
+    "//plugins/kotlin/jvm-debugger/testFramework:testFramework_test_lib",
     "//plugins/kotlin/tests-common:common-tests_test_lib",
     "//java/openapi:java",
     "//platform/lang-core",
@@ -55,6 +55,7 @@ jvm_library(
     "//plugins/kotlin/tests-compose:tests-compose_test_lib",
     "//android/adt-ui",
     "//android/adt-ui:adt-ui_test_lib",
+    "//plugins/kotlin/jvm-debugger/test/compose/testFramework:testFramework_test_lib",
   ],
   runtime_deps = [":compose"]
 )

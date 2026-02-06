@@ -1262,9 +1262,14 @@ plugins/kotlin/jvm-debugger/evaluation/k2
 plugins/kotlin/jvm-debugger/sequence
 plugins/kotlin/jvm-debugger/test
 plugins/kotlin/jvm-debugger/test/compose
+plugins/kotlin/jvm-debugger/test/compose/testFramework
 plugins/kotlin/jvm-debugger/test/k2
+plugins/kotlin/jvm-debugger/test/k2/testFramework
 plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1
+plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1/testFramework
 plugins/kotlin/jvm-debugger/test/parcelize
+plugins/kotlin/jvm-debugger/test/parcelize/testFramework
+plugins/kotlin/jvm-debugger/testFramework
 plugins/kotlin/jvm-decompiler
 plugins/kotlin/jvm/k1
 plugins/kotlin/jvm/k2

@@ -33,11 +33,11 @@ jvm_library(
   visibility = ["//visibility:public"],
   srcs = glob([], allow_empty = True),
   runtime_deps = [
-    "//plugins/kotlin/jvm-debugger/test",
     "//platform/core-api:core",
     "//java/debugger/openapi:java-debugger",
     "//plugins/kotlin/uast/uast-kotlin",
     "//plugins/kotlin/gradle/gradle",
+    "//plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1/testFramework",
   ]
 )
 
@@ -48,8 +48,7 @@ jvm_library(
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
   kotlinc_opts = ":custom_kotlin-jvm-debugger-test-k1",
   deps = [
-    "//plugins/kotlin/jvm-debugger/test",
-    "//plugins/kotlin/jvm-debugger/test:test_test_lib",
+    "//plugins/kotlin/jvm-debugger/testFramework:testFramework_test_lib",
     "//platform/analysis-api:analysis",
     "//platform/util/concurrency",
     "//platform/util/concurrency:concurrency_test_lib",
@@ -126,6 +125,8 @@ jvm_library(
     "//plugins/kotlin/base/scripting/scripting.k1:scripting.k1_test_lib",
     "//plugins/kotlin/idea/tests:tests_test_lib",
     "//platform/execution",
+    "//plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1/testFramework",
+    "//plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1/testFramework:testFramework_test_lib",
   ],
   runtime_deps = [":kotlin-jvm-debugger-test-k1"]
 )
