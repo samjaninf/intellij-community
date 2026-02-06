@@ -4,7 +4,6 @@ package com.intellij.collaboration.ui.codereview.list.search
 import com.intellij.collaboration.messages.CollaborationToolsBundle
 import com.intellij.collaboration.ui.codereview.details.SelectableWrapper
 import com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter
-import com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil.showAsyncChooserPopup
 import com.intellij.collaboration.ui.util.name
 import com.intellij.collaboration.ui.util.popup.CollaborationToolsPopupUtil
 import com.intellij.collaboration.ui.util.popup.PopupItemPresentation
@@ -13,8 +12,9 @@ import com.intellij.collaboration.ui.util.popup.SimplePopupItemRenderer
 import com.intellij.collaboration.ui.util.popup.SimpleSelectablePopupItemRenderer
 import com.intellij.collaboration.ui.util.popup.showAndAwaitSubmission
 import com.intellij.collaboration.ui.util.popup.showAndAwaitSubmissions
-import com.intellij.collaboration.util.ComputedResult
-import com.intellij.collaboration.util.fold
+import com.intellij.collaboration.util.IncrementallyComputedValue
+import com.intellij.collaboration.util.onNoValue
+import com.intellij.collaboration.util.onValueAvailable
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.PopupChooserBuilder
 import com.intellij.openapi.ui.popup.util.PopupUtil
@@ -24,6 +24,7 @@ import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBList
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.StatusText
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.launchOnShow
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +42,12 @@ import javax.swing.JScrollPane
 import javax.swing.ListCellRenderer
 import javax.swing.ListSelectionModel
 
+/**
+ * Utility object for displaying chooser popups with various loading mechanisms.
+ *
+ * This utility supports both preloaded item display and dynamically loaded item display,
+ * with options for customization in appearance and filtering behavior.
+ */
 object ChooserPopupUtil {
 
   /**
@@ -227,95 +234,54 @@ object ChooserPopupUtil {
   }
 
   /**
-   * Shows a chooser popup that displays items from a [ComputedResult] state flow.
+   * Displays a chooser popup with incremental loading of items, allowing the user to select an item
+   * from a dynamically updated list. The list is managed via a state flow, and supports filtering and custom rendering.
    *
-   * The [itemsState] flow emits [ComputedResult] values representing the current loading state:
-   * - [ComputedResult.loading]: Shows a loading indicator
-   * - [ComputedResult.success]: Replaces the entire list with the new items
-   * - [ComputedResult.failure]: Shows an error message
-   *
-   * Unlike [showAsyncChooserPopup], this method **replaces** the entire
-   * list model on each successful emission rather than appending items.
-   *
-   * @param point the point at which to show the popup
-   * @param itemsState a state flow that emits [ComputedResult] with the complete list of items
-   * @param presenter a function that creates a [PopupItemPresentation] for each item
-   * @param popupConfig configuration options for the popup appearance and behavior
-   * @return the selected item, or `null` if the popup was cancelled
+   * @param point A reference to the relative point where the popup will be displayed.
+   * @param listState A [StateFlow] containing the state of the incrementally computed list of items.
+   * @param presenter A function that takes a list item and returns its presentation details,
+   *                  such as a short text, an icon, or a full description.
+   * @param popupConfig Configuration options for the popup, including its behavior, appearance, and additional features.
+   *                    Defaults to [PopupConfig.DEFAULT].
+   * @return The user-selected item from the list, or null if no item is selected.
    */
   @JvmOverloads
-  suspend fun <T : Any> showComputedResultChooserPopup(
+  suspend fun <T : Any> showChooserPopupWithIncrementalLoading(
     point: RelativePoint,
-    itemsState: StateFlow<ComputedResult<List<T>>>,
+    listState: StateFlow<IncrementallyComputedValue<List<T>>>,
     presenter: (T) -> PopupItemPresentation,
-    popupConfig: PopupConfig = PopupConfig.DEFAULT,
-  ): T? =
-    showComputedResultChooserPopup(
-      point = point,
-      itemsState = itemsState,
-      filteringMapper = { presenter(it).shortText },
-      renderer = SimplePopupItemRenderer.create(presenter),
-      popupConfig = popupConfig,
-    )
-
-  /**
-   * Shows a chooser popup that displays items from a [ComputedResult] state flow.
-   *
-   * The [itemsState] flow emits [ComputedResult] values representing the current loading state:
-   * - [ComputedResult.loading]: Shows a loading indicator
-   * - [ComputedResult.success]: Replaces the entire list with the new items
-   * - [ComputedResult.failure]: Shows an error message
-   *
-   * Unlike [showAsyncChooserPopup], this method **replaces** the entire
-   * list model on each successful emission rather than appending items.
-   *
-   * @param point the point at which to show the popup
-   * @param itemsState a state flow that emits [ComputedResult] with the complete list of items
-   * @param filteringMapper a function that extracts a filterable string from each item
-   * @param renderer the cell renderer for displaying items in the list
-   * @param popupConfig configuration options for the popup appearance and behavior
-   * @return the selected item, or `null` if the popup was cancelled
-   */
-  @JvmOverloads
-  suspend fun <T : Any> showComputedResultChooserPopup(
-    point: RelativePoint,
-    itemsState: StateFlow<ComputedResult<List<T>>>,
-    filteringMapper: (T) -> String,
-    renderer: ListCellRenderer<T>,
     popupConfig: PopupConfig = PopupConfig.DEFAULT,
   ): T? {
     val listModel = CollectionListModel<T>()
-    val list = createList(listModel, renderer)
+    val list = createList(listModel, SimplePopupItemRenderer.create(presenter))
     list.launchOnShow("List items loader") {
-      itemsState.collect { computedResult ->
-        computedResult.fold(
-          onInProgress = {
-            list.setPaintBusy(true)
-            list.emptyText.clear()
-          },
-          onSuccess = { items ->
-            val selected = list.selectedValue
-            listModel.replaceAll(items)
-            list.setSelectedValue(selected, true)
-          },
-          onFailure = { exception ->
-            list.setPaintBusy(false)
-            showErrorOnPopupFailure(exception, popupConfig.errorPresenter, list)
-          }
-        )
+      listState.collect { state ->
+        list.setPaintBusy(state.isLoading)
+
+        state.exceptionOrNull?.let { exception ->
+          list.emptyText.showError(exception, popupConfig.errorPresenter) // TODO: show error even when list is not empty
+        } ?: run {
+          list.emptyText.clear()
+        }
+
+        state.onNoValue {
+          listModel.removeAll()
+        }.onValueAvailable { newList ->
+          val selected = list.selectedValue
+          listModel.replaceAll(newList) // TODO: optimal update via com.intellij.util.diff.Diff.buildChanges
+          list.setSelectedValue(selected, true)
+        }
       }
     }
-
     @Suppress("UNCHECKED_CAST")
     val popup = PopupChooserBuilder(list)
-      .setFilteringEnabled { filteringMapper(it as T) }
+      .setFilteringEnabled { presenter(it as T).shortText }
       .configure(popupConfig)
       .createPopup()
 
     CollaborationToolsPopupUtil.configureSearchField(popup, popupConfig)
     PopupUtil.setPopupToggleComponent(popup, point.component)
-
-    return popup.showAndAwaitSubmission<T>(list, point, popupConfig.showDirection)
+    return popup.showAndAwaitSubmission(list, point, popupConfig.showDirection)
   }
 
   // Multiple options:
@@ -460,7 +426,7 @@ private fun <T : Any> populateListOnShowFromResult(
             }
           },
           onFailure = { exception ->
-            showErrorOnPopupFailure(exception, errorPresenter, list)
+            list.emptyText.showError(exception, errorPresenter)
           }
         )
       }
@@ -471,14 +437,14 @@ private fun <T : Any> populateListOnShowFromResult(
   }
 }
 
-private fun showErrorOnPopupFailure(e: Throwable, errorPresenter: ErrorStatusPresenter.Text<Throwable>?, list: JBList<*>) {
+private fun StatusText.showError(e: Throwable, errorPresenter: ErrorStatusPresenter.Text<Throwable>?) {
   if (errorPresenter == null) {
     val errorMessage = e.localizedMessage ?: CollaborationToolsBundle.message("popup.data.loading.error")
-    list.emptyText.setText(errorMessage, SimpleTextAttributes.ERROR_ATTRIBUTES)
+    setText(errorMessage, SimpleTextAttributes.ERROR_ATTRIBUTES)
   }
   else {
     val errorAction = errorPresenter.getErrorAction(e)!!
-    list.emptyText.appendText(errorPresenter.getErrorTitle(e), SimpleTextAttributes.ERROR_ATTRIBUTES)
-    list.emptyText.appendSecondaryText(errorAction.name!!, SimpleTextAttributes.LINK_ATTRIBUTES, errorAction)
+    appendText(errorPresenter.getErrorTitle(e), SimpleTextAttributes.ERROR_ATTRIBUTES)
+    appendSecondaryText(errorAction.name!!, SimpleTextAttributes.LINK_ATTRIBUTES, errorAction)
   }
 }

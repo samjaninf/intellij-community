@@ -1239,12 +1239,9 @@ f:com.intellij.collaboration.ui.codereview.diff.viewer.DiffViewerUtilKt
 - f:showChooserPopup(com.intellij.ui.awt.RelativePoint,java.util.List,kotlin.jvm.functions.Function1,kotlin.coroutines.Continuation):java.lang.Object
 - bs:showChooserPopup$default(com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil,com.intellij.ui.awt.RelativePoint,java.util.List,kotlin.jvm.functions.Function1,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation,I,java.lang.Object):java.lang.Object
 - bs:showChooserPopup$default(com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil,com.intellij.ui.awt.RelativePoint,java.util.List,kotlin.jvm.functions.Function1,javax.swing.ListCellRenderer,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation,I,java.lang.Object):java.lang.Object
-- f:showComputedResultChooserPopup(com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation):java.lang.Object
-- f:showComputedResultChooserPopup(com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,javax.swing.ListCellRenderer,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation):java.lang.Object
-- f:showComputedResultChooserPopup(com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,javax.swing.ListCellRenderer,kotlin.coroutines.Continuation):java.lang.Object
-- f:showComputedResultChooserPopup(com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,kotlin.coroutines.Continuation):java.lang.Object
-- bs:showComputedResultChooserPopup$default(com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil,com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation,I,java.lang.Object):java.lang.Object
-- bs:showComputedResultChooserPopup$default(com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil,com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,javax.swing.ListCellRenderer,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation,I,java.lang.Object):java.lang.Object
+- f:showChooserPopupWithIncrementalLoading(com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation):java.lang.Object
+- f:showChooserPopupWithIncrementalLoading(com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,kotlin.coroutines.Continuation):java.lang.Object
+- bs:showChooserPopupWithIncrementalLoading$default(com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil,com.intellij.ui.awt.RelativePoint,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function1,com.intellij.collaboration.ui.codereview.list.search.PopupConfig,kotlin.coroutines.Continuation,I,java.lang.Object):java.lang.Object
 *f:com.intellij.collaboration.ui.codereview.list.search.DropDownComponentFactory
 - <init>(kotlinx.coroutines.flow.MutableStateFlow):V
 - f:create(kotlinx.coroutines.CoroutineScope,java.lang.String,java.util.List,kotlin.jvm.functions.Function0,kotlin.jvm.functions.Function1):javax.swing.JComponent
@@ -1735,6 +1732,10 @@ f:com.intellij.collaboration.util.CodeReviewFilesUtil
 *:com.intellij.collaboration.util.Hideable
 - a:getHiddenState():kotlinx.coroutines.flow.StateFlow
 - a:setHidden(Z):V
+*f:com.intellij.collaboration.util.IncrementallyComputedValueKt
+- sf:collectIncrementallyTo(kotlinx.coroutines.flow.Flow,kotlinx.coroutines.flow.FlowCollector,kotlin.coroutines.Continuation):java.lang.Object
+- sf:onNoValue(com.intellij.collaboration.util.IncrementallyComputedValue,kotlin.jvm.functions.Function0):com.intellij.collaboration.util.IncrementallyComputedValue
+- sf:onValueAvailable(com.intellij.collaboration.util.IncrementallyComputedValue,kotlin.jvm.functions.Function1):com.intellij.collaboration.util.IncrementallyComputedValue
 *f:com.intellij.collaboration.util.KeyValuePair
 - <init>(com.intellij.openapi.util.Key,java.lang.Object):V
 - f:component1():com.intellij.openapi.util.Key
