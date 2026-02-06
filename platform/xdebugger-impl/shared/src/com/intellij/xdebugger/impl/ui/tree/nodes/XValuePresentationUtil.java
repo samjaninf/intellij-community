@@ -2,6 +2,7 @@
 package com.intellij.xdebugger.impl.ui.tree.nodes;
 
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
+import com.intellij.openapi.editor.colors.EditorColorsUtil;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.util.NlsSafe;
@@ -9,7 +10,6 @@ import com.intellij.ui.ColoredTextContainer;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.xdebugger.frame.presentation.XValuePresentation;
-import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +23,7 @@ public final class XValuePresentationUtil {
                                  int maxLength,
                                  @Nullable String additionalSpecialCharsToHighlight) {
     renderValue(value, text, attributes, maxLength, additionalSpecialCharsToHighlight,
-                DebuggerUIUtil.getColorScheme().getAttributes(DefaultLanguageHighlighterColors.VALID_STRING_ESCAPE));
+                EditorColorsUtil.getGlobalOrDefaultColorScheme().getAttributes(DefaultLanguageHighlighterColors.VALID_STRING_ESCAPE));
   }
 
   @ApiStatus.Internal

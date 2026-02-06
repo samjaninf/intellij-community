@@ -1,8 +1,7 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl.ui.tree.nodes
 
 import com.intellij.xdebugger.frame.XDebuggerTreeNodeHyperlink
-import com.intellij.xdebugger.frame.XFullValueEvaluator
 import com.intellij.xdebugger.frame.XValue
 import com.intellij.xdebugger.frame.XValueNode
 import org.jetbrains.annotations.ApiStatus
@@ -16,7 +15,7 @@ interface XValueNodeEx : XValueNode {
   fun getXValue(): XValue
 
   /**
-   * Removes attached by [setFullValueEvaluator] [XFullValueEvaluator]
+   * Removes attached by [setFullValueEvaluator] [com.intellij.xdebugger.frame.XFullValueEvaluator]
    */
   fun clearFullValueEvaluator()
 
