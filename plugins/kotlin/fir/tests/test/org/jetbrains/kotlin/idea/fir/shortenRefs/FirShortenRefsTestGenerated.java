@@ -268,6 +268,16 @@ public abstract class FirShortenRefsTestGenerated extends AbstractFirShortenRefs
                 runTest("../../idea/tests/testData/shortenRefsFir/companionReference/classObject.kt");
             }
 
+            @TestMetadata("companionReferenceInsideOfClass.kt")
+            public void testCompanionReferenceInsideOfClass() throws Exception {
+                runTest("../../idea/tests/testData/shortenRefsFir/companionReference/companionReferenceInsideOfClass.kt");
+            }
+
+            @TestMetadata("companionReferenceInsideOfClass_conflict.kt")
+            public void testCompanionReferenceInsideOfClass_conflict() throws Exception {
+                runTest("../../idea/tests/testData/shortenRefsFir/companionReference/companionReferenceInsideOfClass_conflict.kt");
+            }
+
             @TestMetadata("removeCompanionRefInCalleeExpression.kt")
             public void testRemoveCompanionRefInCalleeExpression() throws Exception {
                 runTest("../../idea/tests/testData/shortenRefsFir/companionReference/removeCompanionRefInCalleeExpression.kt");

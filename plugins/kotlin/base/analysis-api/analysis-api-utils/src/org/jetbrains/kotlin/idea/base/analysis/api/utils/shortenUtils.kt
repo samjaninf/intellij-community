@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.psiUtil.allChildren
+import org.jetbrains.kotlin.psi.psiUtil.getReceiverExpression
 import org.jetbrains.kotlin.resolve.calls.util.getCalleeExpressionIfAny
 
 /**
@@ -209,6 +210,12 @@ fun ShortenCommandForIde.invokeShortening(): List<SmartPsiElementPointer<KtEleme
 
     for ((companionReference) in companionReferencesToShorten) {
         val companionReferenceElement = companionReference.element ?: continue
+
+        if (companionReferenceElement.getReceiverExpression() == null) {
+            // if the explicit receiver of the companion was removed,
+            // we cannot safely remove the companion reference anymore
+            continue
+        }
 
         companionReferenceElement.deleteReferenceFromQualifiedExpression()
         // N.B. `shorteningResults` are not updated for now

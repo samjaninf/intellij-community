@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
+import org.jetbrains.kotlin.psi.psiUtil.getReceiverExpression
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 context(_: KaSession)
@@ -53,7 +54,15 @@ internal fun collectPossibleCompanionReferenceShorteningsInElement(
 
 context(_: KaSession)
 private fun KtSimpleNameExpression.isCompanionReferenceToShorten(): Boolean {
-    return canBeRedundantCompanionReference() && isRedundantCompanionReference()
+    val candidate = this
+
+    if (candidate.getReceiverExpression() == null) {
+        // we filter out non-qualified companion references here (like `Companion.foo()`),
+        // because regular reference shortener can take care of them on its own
+        return false
+    }
+
+    return candidate.canBeRedundantCompanionReference() && candidate.isRedundantCompanionReference()
 }
 
 @ApiStatus.Internal

@@ -46,6 +46,10 @@ abstract class AbstractFirShortenRefsTest : AbstractImportsTest() {
             { _: KaClassLikeSymbol -> ShortenStrategy.valueOf(strategyName) } to { _: KaCallableSymbol -> ShortenStrategy.valueOf(strategyName) }
         }
 
+        val shortenCompanionReferences =
+            InTextDirectivesUtils.findStringWithPrefixes(file.text, SHORTEN_COMPANION_REFERENCES)?.toBoolean() ?: true
+        val shortenOptions = ShortenOptionsForIde.ALL_ENABLED.copy(removeExplicitCompanionReferences = shortenCompanionReferences)
+
         if (InTextDirectivesUtils.isDirectiveDefined(file.text, BULK_DIRECTIVE)) {
             val declarations = findDeclarationsToShorten(file)
             val references = declarations.flatMap { declaration ->
@@ -55,7 +59,7 @@ abstract class AbstractFirShortenRefsTest : AbstractImportsTest() {
                     .toSet()
             }
             project.executeWriteCommand("") {
-                shortenReferences(references, ShortenOptionsForIde.ALL_ENABLED, classShortenStrategy, callableShortenStrategy)
+                shortenReferences(references, shortenOptions, classShortenStrategy, callableShortenStrategy)
             }
         } else {
             val selectionModel = myFixture.editor.selectionModel
@@ -67,7 +71,7 @@ abstract class AbstractFirShortenRefsTest : AbstractImportsTest() {
                     collectPossibleReferenceShorteningsForIde(
                         file,
                         selection,
-                        ShortenOptionsForIde.ALL_ENABLED,
+                        shortenOptions,
                         classShortenStrategy,
                         callableShortenStrategy
                     )
@@ -120,6 +124,7 @@ abstract class AbstractFirShortenRefsTest : AbstractImportsTest() {
 
     private companion object {
         const val STRATEGY_DIRECTIVE = "STRATEGY:"
+        const val SHORTEN_COMPANION_REFERENCES = "SHORTEN_COMPANION_REFERENCES:"
         const val BULK_DIRECTIVE = "BULK"
         const val SHORTEN_DIRECTIVE = "SHORTEN:"
     }
