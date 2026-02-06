@@ -63,6 +63,7 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
       return runnable.invoke()
     }
 
+    // todo Workaround of JBR-9949, should be removed when the bug is fixed
     // IJPL-230775: Use alpha blending for text on macOS Islands Light at high zoom
     // to avoid inconsistent dimming in inactive state
     val useAlphaBlending = OS.CURRENT == OS.macOS && isManyIslandEnabled &&
