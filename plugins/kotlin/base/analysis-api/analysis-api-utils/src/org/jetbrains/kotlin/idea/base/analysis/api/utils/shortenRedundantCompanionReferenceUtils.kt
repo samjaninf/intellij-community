@@ -34,9 +34,8 @@ internal fun collectPossibleCompanionReferenceShortenings(
     if (!shortenOptions.removeExplicitCompanionReferences) return emptyList()
 
     return file.descendantsOfType<KtSimpleNameExpression>()
-        .filter { it.canBeRedundantCompanionReference() }
         .filter { it.textRange.intersects(selection) }
-        .filter { it.isRedundantCompanionReference() }
+        .filter { it.isCompanionReferenceToShorten() }
         .toList()
 }
 
@@ -48,9 +47,13 @@ internal fun collectPossibleCompanionReferenceShorteningsInElement(
     if (!shortenOptions.removeExplicitCompanionReferences) return emptyList()
 
     return element.descendantsOfType<KtSimpleNameExpression>()
-        .filter { it.canBeRedundantCompanionReference() }
-        .filter { it.isRedundantCompanionReference() }
+        .filter { it.isCompanionReferenceToShorten() }
         .toList()
+}
+
+context(_: KaSession)
+private fun KtSimpleNameExpression.isCompanionReferenceToShorten(): Boolean {
+    return canBeRedundantCompanionReference() && isRedundantCompanionReference()
 }
 
 @ApiStatus.Internal
