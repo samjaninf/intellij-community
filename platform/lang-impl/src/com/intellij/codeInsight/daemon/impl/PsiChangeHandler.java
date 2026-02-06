@@ -73,8 +73,6 @@ final class PsiChangeHandler extends PsiTreeChangeAdapter implements Runnable {
   }
 
   private void updateChangesForDocument(@NotNull Document document) {
-    Application application = ApplicationManager.getApplication();
-    application.assertIsDispatchThread();// to prevent changedElements corruption
     if (myProject.isDisposed()) {
       return;
     }
@@ -102,6 +100,7 @@ final class PsiChangeHandler extends PsiTreeChangeAdapter implements Runnable {
     else {
       selectedPsiFile = getRawCachedPsiFile(selectedEditor.getDocument());
     }
+    Application application = ApplicationManager.getApplication();
     if (selectedPsiFile != null && !application.isUnitTestMode()) {
       application.invokeLater(() -> {
         if (!selectedEditor.isDisposed() &&
