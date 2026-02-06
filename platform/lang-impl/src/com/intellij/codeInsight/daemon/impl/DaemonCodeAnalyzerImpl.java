@@ -614,7 +614,9 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
 
   @Override
   public boolean isAutohintsAvailable(@NotNull PsiFile psiFile) {
-    return isHighlightingAvailable(psiFile) && !(psiFile instanceof PsiCompiledElement);
+    return isHighlightingAvailable(psiFile)
+           && !(psiFile instanceof PsiCompiledElement)
+           && !AutoHintsSuppressor.Companion.areAutoHintsSuppressedFor(psiFile);
   }
 
   @NotNull
