@@ -55,11 +55,9 @@ import com.intellij.internal.ui.sandbox.tests.dsl.ContextHelpTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrListTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrPerformanceTestPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.button.ButtonTypesPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxLongLabelCorrectPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxLongLabelIncorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxTypesPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightCorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightIncorrectPanel
+import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.OneSelectedCheckboxPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1CorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1IncorrectPanel
 import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes2CorrectPanel
@@ -208,11 +206,11 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
       Group("How to use", children = listOf(
         Group("Label on the right", children = listOf(
           LabelOnTheRightIncorrectPanel(),
-          LabelOnTheRightCorrectPanel(),
+          OneSelectedCheckboxPanel(true, "Use secure connection"),
         )),
         Group("Long labels", children = listOf(
-          CheckboxLongLabelIncorrectPanel(),
-          CheckboxLongLabelCorrectPanel(),
+          OneSelectedCheckboxPanel(false, """<html>Insert selected suggestion by pressing<br/>space, dot, or other context-dependent<br/>keys. Suggestions will appear as you type<br/>and can help you complete words and<br/>phrases more quickly</html>"""),
+          OneSelectedCheckboxPanel(true, """<html>Insert selected suggestion by pressing<br/>space, dot, or other context-dependent keys</html>"""),
         )),
       )),
     )),

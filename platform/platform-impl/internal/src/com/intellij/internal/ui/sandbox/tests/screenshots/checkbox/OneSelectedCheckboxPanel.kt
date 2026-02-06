@@ -9,16 +9,12 @@ import javax.swing.JComponent
 /**
  * @author Konstantin Bulenkov
  */
-internal class CheckboxLongLabelIncorrectPanel : UISandboxScreenshotPanel() {
-  override val title: String = "Incorrect"
+internal open class OneSelectedCheckboxPanel(val correct: Boolean, val text: String) : UISandboxScreenshotPanel() {
+  override val title: String = if (correct) "Correct" else "Incorrect"
 
   override fun createContentForScreenshot(disposable: Disposable): JComponent {
     return panel {
-      row {
-        checkBox("""<html>Insert selected suggestion by pressing<br/>space, dot, or other context-dependent<br/>keys. Suggestions will appear as you type<br/>and can help you complete words and<br/>phrases more quickly</html>""").apply {
-          component.isSelected = true
-        }
-      }
+      row { checkBox(text).apply { component.isSelected = true } }
     }
   }
 }
