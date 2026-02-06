@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 context(_: KaSession)
@@ -30,10 +30,10 @@ internal fun collectPossibleCompanionReferenceShortenings(
     file: KtFile,
     selection: TextRange,
     shortenOptions: ShortenOptionsForIde,
-): List<KtReferenceExpression> {
+): List<KtSimpleNameExpression> {
     if (!shortenOptions.removeExplicitCompanionReferences) return emptyList()
 
-    return file.descendantsOfType<KtReferenceExpression>()
+    return file.descendantsOfType<KtSimpleNameExpression>()
         .filter { it.canBeRedundantCompanionReference() }
         .filter { it.textRange.intersects(selection) }
         .filter { it.isRedundantCompanionReference() }
@@ -44,17 +44,17 @@ context(_: KaSession)
 internal fun collectPossibleCompanionReferenceShorteningsInElement(
     element: KtElement,
     shortenOptions: ShortenOptionsForIde,
-): List<KtReferenceExpression> {
+): List<KtSimpleNameExpression> {
     if (!shortenOptions.removeExplicitCompanionReferences) return emptyList()
 
-    return element.descendantsOfType<KtReferenceExpression>()
+    return element.descendantsOfType<KtSimpleNameExpression>()
         .filter { it.canBeRedundantCompanionReference() }
         .filter { it.isRedundantCompanionReference() }
         .toList()
 }
 
 @ApiStatus.Internal
-fun KtReferenceExpression.canBeRedundantCompanionReference(): Boolean {
+fun KtSimpleNameExpression.canBeRedundantCompanionReference(): Boolean {
     val element = this
 
     val parent = element.parent as? KtDotQualifiedExpression ?: return false
@@ -67,7 +67,7 @@ fun KtReferenceExpression.canBeRedundantCompanionReference(): Boolean {
 
 context(_: KaSession)
 @ApiStatus.Internal
-fun KtReferenceExpression.isRedundantCompanionReference(): Boolean {
+fun KtSimpleNameExpression.isRedundantCompanionReference(): Boolean {
     val parent = this.parent as? KtDotQualifiedExpression ?: return false
 
     val referenceName = this.text
@@ -105,7 +105,7 @@ fun KtReferenceExpression.isRedundantCompanionReference(): Boolean {
 }
 
 @ApiStatus.Internal
-fun KtReferenceExpression.deleteReferenceFromQualifiedExpression() {
+fun KtSimpleNameExpression.deleteReferenceFromQualifiedExpression() {
     val parent = this.parent as? KtDotQualifiedExpression ?: return
     val selector = parent.selectorExpression ?: return
     val receiver = parent.receiverExpression

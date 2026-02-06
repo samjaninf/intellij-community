@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.analysis.api.components.TypeToShortenInfo
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocName
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 
 /**
  * An IDE-specific version of [ShortenCommand] with a possibility to extend and add aditional properties.
@@ -23,7 +23,7 @@ interface ShortenCommandForIde : ShortenCommand {
 }
 
 @ApiStatus.Internal
-data class CompanionReferenceToShorten(val companionReferenceToShorten: SmartPsiElementPointer<KtReferenceExpression>)
+data class CompanionReferenceToShorten(val companionReferenceToShorten: SmartPsiElementPointer<KtSimpleNameExpression>)
 
 @OptIn(KaImplementationDetail::class)
 internal class ShortenCommandForIdeImpl(

@@ -15,22 +15,22 @@ import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.asUnit
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.inspections.KotlinApplicableInspectionBase
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.inspections.KotlinModCommandQuickFix
-import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.KtVisitorVoid
 
-class RedundantCompanionReferenceInspection : KotlinApplicableInspectionBase.Simple<KtReferenceExpression, Unit>(), CleanupLocalInspectionTool {
+class RedundantCompanionReferenceInspection : KotlinApplicableInspectionBase.Simple<KtSimpleNameExpression, Unit>(), CleanupLocalInspectionTool {
     override fun getProblemDescription(
-        element: KtReferenceExpression,
+        element: KtSimpleNameExpression,
         context: Unit
     ): @InspectionMessage String = KotlinBundle.message("redundant.companion.reference")
 
     override fun createQuickFix(
-        element: KtReferenceExpression,
+        element: KtSimpleNameExpression,
         context: Unit
-    ): KotlinModCommandQuickFix<KtReferenceExpression> = RemoveRedundantCompanionReferenceFix()
+    ): KotlinModCommandQuickFix<KtSimpleNameExpression> = RemoveRedundantCompanionReferenceFix()
 
-    override fun KaSession.prepareContext(element: KtReferenceExpression): Unit? {
+    override fun KaSession.prepareContext(element: KtSimpleNameExpression): Unit? {
         return element.isRedundantCompanionReference().asUnit
     }
 
@@ -39,22 +39,22 @@ class RedundantCompanionReferenceInspection : KotlinApplicableInspectionBase.Sim
         isOnTheFly: Boolean
     ): KtVisitor<*, *> = object : KtVisitorVoid() {
 
-        override fun visitReferenceExpression(expression: KtReferenceExpression) {
+        override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
             visitTargetElement(expression, holder, isOnTheFly)
         }
     }
 
-    override fun isApplicableByPsi(element: KtReferenceExpression): Boolean {
+    override fun isApplicableByPsi(element: KtSimpleNameExpression): Boolean {
         return element.canBeRedundantCompanionReference()
     }
 
-    private class RemoveRedundantCompanionReferenceFix : KotlinModCommandQuickFix<KtReferenceExpression>() {
+    private class RemoveRedundantCompanionReferenceFix : KotlinModCommandQuickFix<KtSimpleNameExpression>() {
 
         override fun getFamilyName() = KotlinBundle.message("remove.redundant.companion.reference.fix.text")
 
         override fun applyFix(
             project: Project,
-            element: KtReferenceExpression,
+            element: KtSimpleNameExpression,
             updater: ModPsiUpdater
         ) {
             element.deleteReferenceFromQualifiedExpression()
