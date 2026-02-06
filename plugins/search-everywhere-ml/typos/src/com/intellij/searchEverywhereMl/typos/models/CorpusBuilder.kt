@@ -122,7 +122,7 @@ internal class CorpusBuilder(coroutineScope: CoroutineScope) {
     }
 
     if (configurable is ConfigurableWrapper) {
-      configurable.extensionPoint.pluginDescriptor.description
+      configurable.extensionPoint.pluginDescriptor?.description
         ?.replace(HTML_TAGS_REGEX, "") // matches everything enclosed in < and > and removes any HTML-like tags.
         ?.split('.', '\n')
         ?.mapNotNull { tokenizeText(it) }
