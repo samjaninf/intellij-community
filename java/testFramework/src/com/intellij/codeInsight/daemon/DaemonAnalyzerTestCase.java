@@ -82,6 +82,7 @@ import java.util.List;
 public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
   private VirtualFileFilter myVirtualFileFilter = new FileTreeAccessFilter();
   protected DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
+  protected TestDaemonCodeAnalyzerImpl myTestDaemonCodeAnalyzer;
 
   @Override
   protected void setUp() throws Exception {
@@ -91,7 +92,8 @@ public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
 
     InspectionsKt.configureInspections(tools, getProject(), getTestRootDisposable());
 
-    new TestDaemonCodeAnalyzerImpl(getProject()).prepareForTest();
+    myTestDaemonCodeAnalyzer = new TestDaemonCodeAnalyzerImpl(getProject());
+    myTestDaemonCodeAnalyzer.prepareForTest();
     DaemonCodeAnalyzerSettings.getInstance().setImportHintEnabled(false);
     myDaemonCodeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(getProject());
 
@@ -127,7 +129,7 @@ public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
 
           ((StartupManagerImpl)startupManager).checkCleared();
         }
-        new TestDaemonCodeAnalyzerImpl(getProject()).cleanupAfterTest();
+        myTestDaemonCodeAnalyzer.cleanupAfterTest();
       }
     }
     catch (Throwable e) {
@@ -139,6 +141,7 @@ public abstract class DaemonAnalyzerTestCase extends JavaCodeInsightTestCase {
       }
       finally {
         myDaemonCodeAnalyzer = null;
+        myTestDaemonCodeAnalyzer = null;
       }
     }
   }
