@@ -577,9 +577,6 @@ object CommunityLibraryLicenses {
       .apache("https://svn.apache.org/repos/asf/jakarta/oro/trunk/LICENSE")
       .suppliedByPersons("Daniel Savarese", "Jon S. Stevens", "Takashi Okamoto", "Mark Murphy", "Michael Davey", "Harald Kuhn"),
 
-    LibraryLicense("Jarchivelib", libraryName = "rauschig.jarchivelib", url = "https://github.com/thrau/jarchivelib")
-      .apache("https://github.com/thrau/jarchivelib/blob/master/LICENSE"),
-
     LibraryLicense("Java-WebSocket", libraryName = "Java-WebSocket", url = "https://github.com/TooTallNate/Java-WebSocket")
       .mit("https://github.com/TooTallNate/Java-WebSocket/blob/master/LICENSE"),
 

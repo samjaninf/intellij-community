@@ -15729,13 +15729,6 @@ http_file(
 )
 
 http_file(
-  name = "org_rauschig-jarchivelib-1_2_0_http",
-  url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/org/rauschig/jarchivelib/1.2.0/jarchivelib-1.2.0.jar",
-  sha256 = "524142e431fc739120d961457c29ac1f9d384ab03265aaef2d6aa39677c9ad93",
-  downloaded_file_path = "jarchivelib-1.2.0.jar"
-)
-
-http_file(
   name = "com_google_truth-truth-0_42_http",
   url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/com/google/truth/truth/0.42/truth-0.42.jar",
   sha256 = "dd652bdf0c4427c59848ac0340fd6b6d20c2cbfaa3c569a8366604dbcda5214c",

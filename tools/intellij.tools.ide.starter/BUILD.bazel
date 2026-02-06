@@ -33,7 +33,6 @@ jvm_library(
     "//platform/eel",
     "@lib//:gradle",
     "@lib//:kodein-di-jvm",
-    "@lib//:tools-ide-starter-rauschig-jarchivelib",
     "@lib//:qodana-sarif",
     "//platform/lang-impl",
     "//plugins/performanceTesting/commands-model:tools-ide-performanceTesting-commands",
@@ -45,6 +44,8 @@ jvm_library(
     "@lib//:opentelemetry",
     "@lib//:github-oshi-core",
     "//platform/runtime/repository",
+    "//libraries/commons/compress",
+    "//libraries/commons/io",
   ],
   exports = [
     "//plugins/performanceTesting/commands-model:tools-ide-performanceTesting-commands",
