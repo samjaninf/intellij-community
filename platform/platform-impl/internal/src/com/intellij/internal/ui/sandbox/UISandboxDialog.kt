@@ -213,6 +213,25 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
           OneSelectedCheckboxPanel(true, """<html>Insert selected suggestion by pressing<br/>space, dot, or other context-dependent keys</html>"""),
         )),
       )),
+
+      Group("Writing guidelines", children = listOf(
+        Group("Sentence-style capitalization", children = listOf(
+          OneSelectedCheckboxPanel(true, "Display icons in menu items"),
+          OneSelectedCheckboxPanel(false, "Display icons in Menu Items"),
+        )),
+        Group("Ending punctuation", children = listOf(
+          OneSelectedCheckboxPanel(true, "Sync theme with OS"),
+          OneSelectedCheckboxPanel(false, "Sync theme with OS."),
+        )),
+        Group("Imperative form of verbs", children = listOf(
+          OneSelectedCheckboxPanel(true, """<html>Use 'Next Error' action for high<br/>priority problems only</html>"""),
+          OneSelectedCheckboxPanel(false, """<html>'Next Error' action goes to high<br/>priority problems only</html>"""),
+        )),
+        Group("Negation in labels", children = listOf(
+          OneSelectedCheckboxPanel(true, "Show mnemonics in menu"),
+          OneSelectedCheckboxPanel(false, "Do not show mnemonics in menu"),
+        )),
+      )),
     )),
   ))
 
@@ -352,7 +371,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
       firstComponent = leftPanel
       secondComponent = rightPanel
       minimumSize = JBDimension(400, 300)
-      preferredSize = JBDimension(800, 600)
+      preferredSize = JBDimension(1200, 800)
     }
 
     getPropertyComponent().getValue(SELECTED_TREE_ITEM)?.let {
