@@ -54,39 +54,27 @@ object GitLabStatistics {
   //endregion
 
   //region Project
-  private val PROJECT_METRICS_GROUP = EventLogGroup(
-    "vcs.gitlab.project", 1,
-    recorder = "FUS",
-    description = "Collects metrics about GitLab merge requests in a project."
-  )
+  private val PROJECT_METRICS_GROUP = EventLogGroup("vcs.gitlab.project", 1)
 
   private val PROJECT_METRICS_MR_STATISTICS_ALL = PROJECT_METRICS_GROUP.registerEvent(
     "mr.statistics.all",
-    EventFields.RoundedInt("value", description = "Total number of MRs in project (rounded up to the first power of 2)."),
-    description = "#MR statistics: open."
+    EventFields.RoundedInt("value", description = "Total number of MRs in project (rounded up to the first power of 2).")
   )
   private val PROJECT_METRICS_MR_STATISTICS_OPEN = PROJECT_METRICS_GROUP.registerEvent(
     "mr.statistics.open",
     EventFields.RoundedInt("value", description = "Total number of open MRs in project (rounded up to the first power of 2)."),
-    description = "#MR statistics: open."
   )
   private val PROJECT_METRICS_MR_STATISTICS_OPEN_AUTHOR = PROJECT_METRICS_GROUP.registerEvent(
     "mr.statistics.open.author",
-    EventFields.RoundedInt("value",
-                    description = "Total number of open MRs in project authored by the current user (rounded up to the first power of 2)."),
-    description = "#MR statistics: open > author."
+    EventFields.RoundedInt("value", description = "Total number of open MRs in project authored by the current user (rounded up to the first power of 2)."),
   )
   private val PROJECT_METRICS_MR_STATISTICS_OPEN_ASSIGNEE = PROJECT_METRICS_GROUP.registerEvent(
     "mr.statistics.open.assignee",
-    EventFields.RoundedInt("value",
-                    description = "Total number of open MRs in project assigned to the current user (rounded up to the first power of 2)."),
-    description = "#MR statistics: open > assignee."
+    EventFields.RoundedInt("value", description = "Total number of open MRs in project assigned to the current user (rounded up to the first power of 2)."),
   )
   private val PROJECT_METRICS_MR_STATISTICS_OPEN_REVIEW_ASSIGNED = PROJECT_METRICS_GROUP.registerEvent(
     "mr.statistics.open.reviewer",
-    EventFields.RoundedInt("value",
-                    description = "Total number of open MRs in project assigned to the current user as reviewer (rounded up to the first power of 2)."),
-    description = "#MR statistics: open > reviewer."
+    EventFields.RoundedInt("value", description = "Total number of open MRs in project assigned to the current user as reviewer (rounded up to the first power of 2)."),
   )
 
   internal class GitLabProjectMetricsCollector : ProjectUsagesCollector() {
@@ -297,14 +285,11 @@ object GitLabStatistics {
   /**
    * A file was uploaded via Markdown uploads API
    */
-  private val PROJECT_FILE_UPLOAD = COUNTERS_GROUP.registerEvent("project.markdown.file.uploaded",
-                                                                 "Triggered when a file was uploaded to the project to be used in Markdown text"
-  )
+  private val PROJECT_FILE_UPLOAD = COUNTERS_GROUP.registerEvent("project.markdown.file.uploaded")
 
   fun logFileUploadActionExecuted(project: Project): Unit = PROJECT_FILE_UPLOAD.log(project)
 
-  private val DISCUSSIONS_TOGGLED = COUNTERS_GROUP.registerEvent("comments.toggled",
-                                                                 "The user toggled visibility of discussions on given line in code review")
+  private val DISCUSSIONS_TOGGLED = COUNTERS_GROUP.registerEvent("comments.toggled")
 
   fun logToggledComments(project: Project) {
     DISCUSSIONS_TOGGLED.log(project)
@@ -484,5 +469,3 @@ internal class GitLabMetricsLoader(private val project: Project) {
     }
   }
 }
-
-

@@ -49,7 +49,6 @@ import git4idea.statistics.GitCommitterCounter
 import git4idea.statistics.RepositoryAvailability
 import git4idea.ui.branch.dashboard.CHANGE_LOG_FILTER_ON_BRANCH_SELECTION_PROPERTY
 import git4idea.ui.branch.dashboard.SHOW_GIT_BRANCHES_LOG_PROPERTY
-import org.jetbrains.annotations.NonNls
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Period
@@ -430,12 +429,7 @@ private fun GitRepository.detectRefFormat(): RefFormat {
   return RefFormat.UNKNOWN
 }
 
-
-private data class RoundedUserCountEventField(
-  override val name: String,
-  @NonNls override val description: String? = null,
-) : PrimitiveEventField<Int>() {
-
+private data class RoundedUserCountEventField(override val name: String) : PrimitiveEventField<Int>() {
   override val validationRule: List<String>
     get() = listOf("{regexp#integer}")
 

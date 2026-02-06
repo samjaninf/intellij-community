@@ -46,12 +46,10 @@ internal object GHPRStatisticsCollector : CounterUsagesCollector() {
   //endregion
 
   //region: Comments
-  private val COMMENTS_RESIZED_EVENT = COUNTERS_GROUP.registerEvent("comments.resized",
-                                                                    "The user resized range of a new comment by dragging its outline across the text")
-  private val MULTILINE_COMMENTS_CREATED = COUNTERS_GROUP.registerEvent("multiline.comments.created",
-                                                                        "The user created a new comment that spans multiple lines")
-  private val TOGGLED_COMMENTS_EVENT = COUNTERS_GROUP.registerEvent("comments.toggled",
-                                                                    "The user toggled visibility of comments on given line in code review")
+  private val COMMENTS_RESIZED_EVENT = COUNTERS_GROUP.registerEvent("comments.resized")
+  private val MULTILINE_COMMENTS_CREATED = COUNTERS_GROUP.registerEvent("multiline.comments.created")
+  private val TOGGLED_COMMENTS_EVENT = COUNTERS_GROUP.registerEvent("comments.toggled")
+
   fun logResizedComments(project: Project) {
     COMMENTS_RESIZED_EVENT.log(project)
   }
@@ -253,8 +251,7 @@ internal object GHPRStatisticsCollector : CounterUsagesCollector() {
     "api.rates",
     API_REQUEST_OPERATION_FIELD,
     API_REQUEST_RATELIMIT_USED_FIELD,
-    API_REQUEST_RATELIMIT_GUESSED_FIELD,
-    description = "Event that happens internally after we have tried to determine the rates used for a request."
+    API_REQUEST_RATELIMIT_GUESSED_FIELD
   )
 
   fun logApiRequestStart(operation: GithubApiRequestOperation): StructuredIdeActivity =
