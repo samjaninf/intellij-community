@@ -158,7 +158,7 @@ public final class EditorCaretTestUtil {
     return new CaretAndSelectionState(Arrays.asList(carets.toArray(new CaretInfo[0])), blockSelection);
   }
 
-  public static void setCaretsAndSelection(Editor editor, CaretAndSelectionState caretsState) {
+  public static void setCaretsAndSelection(@NotNull Editor editor, @NotNull CaretAndSelectionState caretsState) {
     CaretModel caretModel = editor.getCaretModel();
     List<CaretState> states = new ArrayList<>(caretsState.carets().size());
     for (CaretInfo caret : caretsState.carets()) {

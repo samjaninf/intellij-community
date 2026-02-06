@@ -377,13 +377,13 @@ public final class EditorTestUtil {
     });
   }
 
-  public static void setEditorVisibleSize(Editor editor, int widthInChars, int heightInChars) {
+  public static void setEditorVisibleSize(@NotNull Editor editor, int widthInChars, int heightInChars) {
     setEditorVisibleSizeInPixels(editor,
                                  widthInChars * EditorUtil.getSpaceWidth(Font.PLAIN, editor),
                                  heightInChars * editor.getLineHeight());
   }
 
-  public static void setEditorVisibleSizeInPixels(Editor editor, int widthInPixels, int heightInPixels) {
+  public static void setEditorVisibleSizeInPixels(@NotNull Editor editor, int widthInPixels, int heightInPixels) {
     Dimension size = new Dimension(widthInPixels, heightInPixels);
     ((EditorEx)editor).getScrollPane().getViewport().setExtentSize(size);
   }
@@ -414,19 +414,19 @@ public final class EditorTestUtil {
   /**
    * Applies given caret/selection state to the editor. Editor text must have been set up previously.
    */
-  public static void setCaretsAndSelection(Editor editor, CaretAndSelectionState caretsState) {
+  public static void setCaretsAndSelection(@NotNull Editor editor, @NotNull CaretAndSelectionState caretsState) {
     EditorCaretTestUtil.setCaretsAndSelection(editor, caretsState);
   }
 
-  public static void verifyCaretAndSelectionState(Editor editor, CaretAndSelectionState caretState) {
+  public static void verifyCaretAndSelectionState(Editor editor, @NotNull CaretAndSelectionState caretState) {
     verifyCaretAndSelectionState(editor, caretState, null);
   }
 
-  public static void verifyCaretAndSelectionState(Editor editor, CaretAndSelectionState caretState, String message) {
+  public static void verifyCaretAndSelectionState(Editor editor, @NotNull CaretAndSelectionState caretState, @Nullable String message) {
     verifyCaretAndSelectionState(editor, caretState, message, null);
   }
 
-  public static void verifyCaretAndSelectionState(Editor editor, CaretAndSelectionState caretState, String message, String expectedFilePath) {
+  public static void verifyCaretAndSelectionState(Editor editor, @NotNull CaretAndSelectionState caretState, @Nullable String message, String expectedFilePath) {
     boolean hasChecks = false;
     for (int i = 0; i < caretState.carets().size(); i++) {
       CaretInfo expected = caretState.carets().get(i);
@@ -462,7 +462,7 @@ public final class EditorTestUtil {
     }
   }
 
-  private static void doVerifyCaretAndSelectionState(Editor editor, CaretAndSelectionState caretState, String message) {
+  private static void doVerifyCaretAndSelectionState(@NotNull Editor editor, @NotNull CaretAndSelectionState caretState, @Nullable String message) {
     String messageSuffix = message == null ? "" : (message + ": ");
     CaretModel caretModel = editor.getCaretModel();
     List<Caret> allCarets = new ArrayList<>(caretModel.getAllCarets());
