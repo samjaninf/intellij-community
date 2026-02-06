@@ -36,6 +36,7 @@ import com.jetbrains.python.psi.PyExpressionStatement
 import com.jetbrains.python.psi.PyForStatement
 import com.jetbrains.python.psi.PyFunction
 import com.jetbrains.python.psi.PyGlobalStatement
+import com.jetbrains.python.psi.PyImportStatementBase
 import com.jetbrains.python.psi.PyKnownDecoratorUtil
 import com.jetbrains.python.psi.PyLoopStatement
 import com.jetbrains.python.psi.PyNamedParameter
@@ -157,6 +158,8 @@ class PyFinalInspection : PyInspection() {
       super.visitPyTargetExpression(node)
 
       val parent = PsiTreeUtil.getParentOfType(node, PyStatement::class.java)
+      if (parent is PyImportStatementBase) return
+
       if (parent is PyTypeDeclarationStatement || parent is PyGlobalStatement || parent is PyNonlocalStatement) {
         node.annotation?.value?.let {
           if (PyiUtil.isInsideStub(node) || ScopeUtil.getScopeOwner(node) is PyClass) {
@@ -355,7 +358,7 @@ class PyFinalInspection : PyInspection() {
         else -> PyUtil.multiResolveTopPriority(target, resolveContext)
       }.toMutableList()
 
-      val scopeOwner = ScopeUtil.getScopeOwner(target);
+      val scopeOwner = ScopeUtil.getScopeOwner(target)
       if (!target.isQualified && scopeOwner != null) {
         // multiResolve finds last assignments, but we need all earlier assignments
         val scope = ControlFlowCache.getScope(scopeOwner)
