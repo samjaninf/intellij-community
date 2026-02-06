@@ -65,8 +65,8 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
 
     // IJPL-230775: Use alpha blending for text on macOS Islands Light at high zoom
     // to avoid inconsistent dimming in inactive state
-    val useAlphaBlending = OS.CURRENT == OS.macOS &&
-                           LafManager.getInstance().currentUIThemeLookAndFeel?.id == ISLANDS_LIGHT_THEME_ID
+    val useAlphaBlending = OS.CURRENT == OS.macOS && isManyIslandEnabled &&
+                           LafManager.getInstance().currentUIThemeLookAndFeel?.isDark == false
     if (!useAlphaBlending) {
       return wrapPaint(runnable)
     }
@@ -223,9 +223,5 @@ internal class IslandsInactiveFrameGraphics2D(g: Graphics2D, private val compone
 
   override fun create(): Graphics {
     return IslandsInactiveFrameGraphics2D(super.create() as Graphics2D, component)
-  }
-
-  companion object {
-    private const val ISLANDS_LIGHT_THEME_ID = "Islands Light"
   }
 }

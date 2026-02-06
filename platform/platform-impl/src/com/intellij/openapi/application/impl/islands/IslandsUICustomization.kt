@@ -110,12 +110,33 @@ private data class WindowBackgroundComponentData(val origOpaque: Boolean, val or
 
 private val WINDOW_BACKGROUND_COMPONENT_KEY: Key<WindowBackgroundComponentData> = Key.create("Islands.WINDOW_BACKGROUND_COMPONENT_KEY")
 
+private val DEFAULT_THEME_IDS = setOf(
+  "ExperimentalDark",
+  "ExperimentalLight",
+  "ExperimentalLightWithLightHeader",
+  "JetBrainsHighContrastTheme",
+  "Darcula",
+)
+
 internal val islandsInactiveAlpha: Float
   get() = JBUI.getFloat("Island.inactiveAlpha", 0.5f)
 
-internal class IslandsUICustomization : InternalUICustomization() {
+internal val isManyIslandEnabled: Boolean
+  get() {
+    if (!ExperimentalUI.isNewUI()) return false
 
-  private val isIslandsAvailable = ExperimentalUI.isNewUI()
+    return when (JBUI.getInt("Islands", 0)) {
+      1 -> true
+      0 -> {
+        val id = LafManager.getInstance().currentUIThemeLookAndFeel?.id ?: return false
+        val isDefaultTheme = id in DEFAULT_THEME_IDS
+        !isDefaultTheme && AdvancedSettings.getBoolean("ide.ui.theme.custom.islands")
+      }
+      else -> false
+    }
+  }
+
+internal class IslandsUICustomization : InternalUICustomization() {
 
   private var isManyIslandEnabledCache: Boolean? = null
 
@@ -125,15 +146,7 @@ internal class IslandsUICustomization : InternalUICustomization() {
     get() {
       var value = isManyIslandEnabledCache
       if (value == null) {
-        if (isIslandsAvailable) {
-          val themeValue = JBUI.getInt("Islands", 0)
-          isManyIslandCustomTheme = themeValue == 0 && !isDefaultTheme() && AdvancedSettings.getBoolean("ide.ui.theme.custom.islands")
-          value = isManyIslandCustomTheme || themeValue == 1
-        }
-        else {
-          value = false
-          isManyIslandCustomTheme = false
-        }
+        value = com.intellij.openapi.application.impl.islands.isManyIslandEnabled
         isManyIslandEnabledCache = value
       }
       return value
@@ -147,13 +160,6 @@ internal class IslandsUICustomization : InternalUICustomization() {
 
   private val searchReplaceEmptyTopSpace: Int
     get() = if (UISettings.getInstance().editorTabPlacement == SwingConstants.TOP && !isBreadcrumbsAbove) 0 else 6
-
-  private fun isDefaultTheme(): Boolean {
-    val id = LafManager.getInstance().currentUIThemeLookAndFeel?.id ?: return false
-
-    return id == "ExperimentalDark" || id == "ExperimentalLight" || id == "ExperimentalLightWithLightHeader" ||
-           id == "JetBrainsHighContrastTheme" || id == "Darcula"
-  }
 
   private var isIslandsGradientEnabledCache: Boolean? = null
 
