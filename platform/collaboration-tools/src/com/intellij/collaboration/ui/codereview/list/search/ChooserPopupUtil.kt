@@ -311,6 +311,69 @@ object ChooserPopupUtil {
   // Multiple options:
 
   /**
+   * Displays a chooser popup that allows selecting multiple items from a list, with support for incremental loading.
+   *
+   * @param point The location where the popup will be shown as a relative point.
+   * @param currentItems The list of currently available items that should be initially displayed in the chooser.
+   * @param listState A [StateFlow] representing the state of incrementally loaded values for the items in the popup.
+   *                  It provides new items, tracks loading status, and contains any exceptions encountered.
+   * @param presenter A function that maps each item in the list to a [PopupItemPresentation], which determines how the
+   *                  item will appear in the popup (e.g., text, icon).
+   * @param popupConfig A [PopupConfig] to configure the popup's behavior and appearance, with a default
+   *                    configuration provided if not specified.
+   * @return A list of items selected by the user from the popup.
+   */
+  @ApiStatus.Internal
+  @JvmOverloads
+  suspend fun <T : Any> showMultipleChooserPopupWithIncrementalLoading(
+    point: RelativePoint,
+    currentItems: List<T>,
+    listState: StateFlow<IncrementallyComputedValue<List<T>>>,
+    presenter: (T) -> PopupItemPresentation,
+    popupConfig: PopupConfig = PopupConfig.DEFAULT,
+  ): List<T> {
+    val listModel = MultiChooserListModel<T>().apply {
+      add(currentItems)
+      setChosen(currentItems)
+    }
+    val list = createSelectableList(listModel, presenter)
+
+    list.launchOnShow("List items loader") {
+      listState.collect { state ->
+        list.setPaintBusy(state.isLoading)
+
+        state.exceptionOrNull?.let { exception ->
+          list.emptyText.showError(exception, popupConfig.errorPresenter) // TODO: show error even when list is not empty
+        } ?: run {
+          list.emptyText.clear()
+        }
+
+        state.onNoValue {
+          listModel.removeAllExceptChosen()
+        }.onValueAvailable { newList ->
+          val selected = list.selectedValue
+          listModel.retainChosenAndUpdate(newList)
+          list.setSelectedValue(selected, true)
+        }
+      }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    val popup = PopupChooserBuilder(list)
+      .setFilteringEnabled {
+        filterByNamesFromPresentation(presenter)(it as T)
+      }
+      .setCloseOnEnter(false)
+      .configure(popupConfig)
+      .createPopup()
+
+    CollaborationToolsPopupUtil.configureSearchField(popup, popupConfig)
+    PopupUtil.setPopupToggleComponent(popup, point.component)
+
+    return popup.showAndAwaitSubmissions(listModel, point, popupConfig.showDirection)
+  }
+
+  /**
    * Displays an asynchronous popup allowing users to select multiple items from a dynamically loaded list.
    *
    * @param T The type of the items in the popup.

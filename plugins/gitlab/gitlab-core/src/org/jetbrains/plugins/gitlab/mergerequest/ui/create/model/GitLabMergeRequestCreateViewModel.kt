@@ -5,7 +5,6 @@ import com.intellij.collaboration.api.HttpStatusErrorException
 import com.intellij.collaboration.async.childScope
 import com.intellij.collaboration.async.combineAndCollect
 import com.intellij.collaboration.async.extensionListFlow
-import com.intellij.collaboration.async.launchNow
 import com.intellij.collaboration.async.mapNullableScoped
 import com.intellij.collaboration.async.modelFlow
 import com.intellij.collaboration.async.stateInNow
@@ -13,12 +12,13 @@ import com.intellij.collaboration.async.withInitial
 import com.intellij.collaboration.ui.ListenableProgressIndicator
 import com.intellij.collaboration.ui.codereview.create.CodeReviewTitleDescriptionViewModel
 import com.intellij.collaboration.ui.icon.IconsProvider
+import com.intellij.collaboration.util.IncrementallyComputedValue
 import com.intellij.collaboration.util.ResultUtil.runCatchingUser
 import com.intellij.collaboration.util.SingleCoroutineLauncher
+import com.intellij.collaboration.util.collectIncrementallyTo
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import com.intellij.ui.awt.RelativePoint
 import com.intellij.vcs.log.Hash
 import com.intellij.vcs.log.VcsCommitMetadata
 import git4idea.GitBranch
@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.first
+
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
@@ -55,9 +55,7 @@ import org.jetbrains.plugins.gitlab.GitLabProjectsManager
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequestState
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProject
-import org.jetbrains.plugins.gitlab.mergerequest.util.GitLabMergeRequestReviewersUtil
 import org.jetbrains.plugins.gitlab.util.GitLabBundle
-import org.jetbrains.plugins.gitlab.util.GitLabCoroutineUtil
 import org.jetbrains.plugins.gitlab.util.GitLabProjectMapping
 import org.jetbrains.plugins.gitlab.util.GitLabStatistics
 
@@ -70,7 +68,7 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
 
   val isBusy: Flow<Boolean>
 
-  val allowsMultipleReviewers: Flow<Boolean>
+  val allowsMultipleReviewers: StateFlow<Boolean>
   val branchState: Flow<BranchState?>
 
   val existingMergeRequest: Flow<String?>
@@ -80,14 +78,14 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   val reviewRequirementsErrorState: Flow<MergeRequestRequirementsErrorType?>
   val reviewCreatingError: Flow<Throwable?>
 
-  val potentialReviewers: Flow<Result<List<GitLabUserDTO>>>
-  val adjustedReviewers: StateFlow<List<GitLabUserDTO>>
+  val projectMembers: StateFlow<IncrementallyComputedValue<List<GitLabUserDTO>>>
+  val reviewers: StateFlow<List<GitLabUserDTO>>
 
   val openReviewTabAction: suspend (mrIid: String) -> Unit
 
   fun updateBranchState(state: BranchState?)
 
-  fun adjustReviewer(point: RelativePoint)
+  fun setReviewers(reviewers: List<GitLabUserDTO>)
 
   fun createMergeRequest()
 }
@@ -107,14 +105,14 @@ internal class GitLabMergeRequestCreateViewModelImpl(
 
   override val isBusy: Flow<Boolean> = taskLauncher.busy
 
-  override val allowsMultipleReviewers: Flow<Boolean> = suspend {
+  override val allowsMultipleReviewers: StateFlow<Boolean> = suspend {
     try {
       projectData.isMultipleReviewersAllowed()
     }
-    catch (e: Exception) {
+    catch (_: Exception) {
       false
     }
-  }.asFlow()
+  }.asFlow().stateIn(cs, SharingStarted.Eagerly, false)
 
   private val listenableProgressIndicator = ListenableProgressIndicator()
   override val creatingProgressText: Flow<String?> = callbackFlow {
@@ -183,11 +181,13 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   private val _reviewCreatingError: MutableStateFlow<Throwable?> = MutableStateFlow(null)
   override val reviewCreatingError: StateFlow<Throwable?> = _reviewCreatingError.asStateFlow()
 
-  override val potentialReviewers: Flow<Result<List<GitLabUserDTO>>> =
-    GitLabCoroutineUtil.batchesResultsFlow(projectData.dataReloadSignal, projectData::getMembersBatches)
+  override val projectMembers: StateFlow<IncrementallyComputedValue<List<GitLabUserDTO>>> =
+    projectData.dataReloadSignal.withInitial(Unit).transformLatest {
+      projectData.getMembersBatches().collectIncrementallyTo(this)
+    }.stateIn(cs, SharingStarted.Lazily, IncrementallyComputedValue.loading())
 
-  private val _adjustedReviewers: MutableStateFlow<List<GitLabUserDTO>> = MutableStateFlow(listOf())
-  override val adjustedReviewers: StateFlow<List<GitLabUserDTO>> = _adjustedReviewers.asStateFlow()
+  private val _reviewers: MutableStateFlow<List<GitLabUserDTO>> = MutableStateFlow(listOf())
+  override val reviewers: StateFlow<List<GitLabUserDTO>> = _reviewers.asStateFlow()
 
   private val _title: MutableStateFlow<String> = MutableStateFlow("")
   override val titleText: StateFlow<String> = _title.asStateFlow()
@@ -249,20 +249,9 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     _branchState.value = state
   }
 
-  override fun adjustReviewer(point: RelativePoint) {
-    cs.launchNow(Dispatchers.Main) {
-      val allowsMultipleReviewers = allowsMultipleReviewers.first()
-      val updatedReviewers = if (allowsMultipleReviewers) {
-        GitLabMergeRequestReviewersUtil.selectReviewers(point, adjustedReviewers.value, potentialReviewers, avatarIconProvider)
-      }
-      else {
-        GitLabMergeRequestReviewersUtil.selectReviewer(point, potentialReviewers, avatarIconProvider)?.let { listOfNotNull(it) }
-      }
-
-      updatedReviewers ?: return@launchNow
-      _adjustedReviewers.value = updatedReviewers
-      GitLabStatistics.logMrCreationReviewersAdjusted(project)
-    }
+  override fun setReviewers(reviewers: List<GitLabUserDTO>) {
+    _reviewers.value = reviewers
+    GitLabStatistics.logMrCreationReviewersAdjusted(project)
   }
 
   override fun createMergeRequest() {
@@ -277,7 +266,7 @@ internal class GitLabMergeRequestCreateViewModelImpl(
           targetBranch = baseBranch.nameForRemoteOperations,
           title = titleText.value.ifBlank { gitRemoteBranch.nameForRemoteOperations },
           description = descriptionText.value.ifBlank { null },
-          reviewers = adjustedReviewers.value
+          reviewers = reviewers.value
         )
         openReviewTabAction(mergeRequest.iid)
         onReviewCreated()

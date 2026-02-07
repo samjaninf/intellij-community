@@ -45,7 +45,7 @@ import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSub
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSubmitReviewViewModel.SubmittableReview
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSubmitReviewViewModelImpl
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.getSubmittableReview
-import org.jetbrains.plugins.gitlab.mergerequest.util.GitLabMergeRequestReviewersUtil
+import org.jetbrains.plugins.gitlab.mergerequest.util.GitLabMergeRequestChoosersUtil
 import org.jetbrains.plugins.gitlab.util.GitLabBundle
 import org.jetbrains.plugins.gitlab.util.GitLabCoroutineUtil
 
@@ -275,10 +275,10 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
     scope.launchNow(Dispatchers.Main) {
       val allowsMultipleReviewers = allowsMultipleReviewers.first()
       val updatedReviewers = if (allowsMultipleReviewers) {
-        GitLabMergeRequestReviewersUtil.selectReviewers(point, reviewers.value, potentialReviewers, avatarIconsProvider)
+        GitLabMergeRequestChoosersUtil.chooseUsers(point, reviewers.value, potentialReviewers, avatarIconsProvider)
       }
       else {
-        GitLabMergeRequestReviewersUtil.selectReviewer(point, potentialReviewers, avatarIconsProvider)?.let { listOfNotNull(it) }
+        GitLabMergeRequestChoosersUtil.chooseUser(point, potentialReviewers, avatarIconsProvider)?.let { listOfNotNull(it) }
       }
 
       updatedReviewers ?: return@launchNow

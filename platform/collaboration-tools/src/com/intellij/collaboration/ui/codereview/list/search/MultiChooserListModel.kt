@@ -57,4 +57,67 @@ internal class MultiChooserListModel<T> : AbstractListModel<T>() {
       fireIntervalAdded(this, 0, lastIndex + count)
     }
   }
+
+  /**
+   * Updates the list of items, ensuring that chosen items stay in the list
+   */
+  fun retainChosenAndUpdate(newList: List<T>) {
+    val oldSize = items.size
+
+    items.clear()
+    itemsSet.clear()
+
+    chosenItems.forEach { chosen ->
+      items.add(chosen)
+      itemsSet.add(chosen)
+    }
+
+    newList.forEach { item ->
+      if (itemsSet.add(item)) {
+        items.add(item)
+      }
+    }
+
+    val newSize = items.size
+    when {
+      oldSize == 0 && newSize > 0 -> {
+        fireIntervalAdded(this, 0, newSize - 1)
+      }
+      newSize == 0 && oldSize > 0 -> {
+        fireIntervalRemoved(this, 0, oldSize - 1)
+      }
+      oldSize != newSize -> {
+        val minSize = minOf(oldSize, newSize)
+        if (minSize > 0) {
+          fireContentsChanged(this, 0, minSize - 1)
+        }
+        if (newSize > oldSize) {
+          fireIntervalAdded(this, oldSize, newSize - 1)
+        }
+        else {
+          fireIntervalRemoved(this, newSize, oldSize - 1)
+        }
+      }
+      else -> {
+        fireContentsChanged(this, 0, newSize - 1)
+      }
+    }
+  }
+
+  fun removeAllExceptChosen() {
+    val oldSize = items.size
+    items.clear()
+    itemsSet.clear()
+    if (oldSize != 0) {
+      fireIntervalRemoved(this, 0, oldSize - 1)
+    }
+
+    chosenItems.forEach { chosen ->
+      items.add(chosen)
+      itemsSet.add(chosen)
+    }
+    if (items.isNotEmpty()) {
+      fireIntervalAdded(this, 0, items.lastIndex)
+    }
+  }
 }
