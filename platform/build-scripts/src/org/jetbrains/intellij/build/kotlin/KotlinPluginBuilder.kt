@@ -66,7 +66,7 @@ abstract class KotlinPluginBuilder(val kind : KotlinPluginKind = System.getPrope
       "intellij.kotlin.jvm",
       "kotlin.jvm.k1",
       "intellij.kotlin.compilerReferenceIndex",
-      "kotlin.compiler-plugins.parcelize.common",
+      "intellij.kotlin.compilerPlugins.parcelize.common",
       "kotlin.compiler-plugins.parcelize.k1",
       "intellij.kotlin.compilerPlugins.parcelize",
       "kotlin.compiler-plugins.parcelize.gradle",

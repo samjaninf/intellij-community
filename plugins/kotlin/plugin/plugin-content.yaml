@@ -135,7 +135,7 @@
   - name: intellij.kotlin.jvm
   - name: kotlin.jvm.k1
   - name: intellij.kotlin.compilerReferenceIndex
-  - name: kotlin.compiler-plugins.parcelize.common
+  - name: intellij.kotlin.compilerPlugins.parcelize.common
   - name: kotlin.compiler-plugins.parcelize.k1
   - name: intellij.kotlin.compilerPlugins.parcelize
   - name: kotlin.compiler-plugins.parcelize.gradle
