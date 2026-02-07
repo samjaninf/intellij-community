@@ -21,6 +21,8 @@ import java.nio.file.attribute.FileTime
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 
 internal class LocalDiskJarCacheManagerTest {
   @TempDir
@@ -30,7 +32,11 @@ internal class LocalDiskJarCacheManagerTest {
   fun `cache deduplicates payload and refreshes metadata last access time`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val manager = createManager(
+        cacheDir = cacheDir,
+        maxAccessTimeAge = 30.days,
+        metadataTouchInterval = 1.milliseconds,
+      )
 
       val produceCalls = AtomicInteger()
       val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
@@ -48,6 +54,7 @@ internal class LocalDiskJarCacheManagerTest {
       val metadataFile = entryPaths.metadataFile
       val staleAccessTime = System.currentTimeMillis() - 10.days.inWholeMilliseconds
       Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(staleAccessTime))
+      delay(5)
 
       val secondResult = manager.computeIfAbsent(
         sources = sources,
@@ -105,7 +112,11 @@ internal class LocalDiskJarCacheManagerTest {
   fun `cache hit refreshes metadata last access time after touch interval`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val manager = createManager(
+        cacheDir = cacheDir,
+        maxAccessTimeAge = 30.days,
+        metadataTouchInterval = 1.milliseconds,
+      )
 
       val produceCalls = AtomicInteger()
       val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
@@ -123,11 +134,12 @@ internal class LocalDiskJarCacheManagerTest {
       val staleAccessTime = System.currentTimeMillis() - 1.days.inWholeMilliseconds
       Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(staleAccessTime))
       val expectedOldAccessTime = Files.getLastModifiedTime(metadataFile).toMillis()
+      delay(5)
 
       manager.computeIfAbsent(
         sources = sources,
         targetFile = tempDir.resolve("out2/first.jar"),
-        nativeFiles = null,
+        nativeFiles = mutableMapOf(),
         span = Span.getInvalid(),
         producer = builder,
       )
@@ -162,84 +174,13 @@ internal class LocalDiskJarCacheManagerTest {
 
     createManager(cacheDir = cacheDir, maxAccessTimeAge = 3.days)
 
-    assertThat(Files.exists(legacyJar)).isFalse()
-    assertThat(Files.exists(legacyMetadata)).isFalse()
-    assertThat(Files.exists(legacyCleanupMarker)).isFalse()
-    assertThat(Files.exists(oldVersionDir)).isFalse()
-    assertThat(Files.exists(unrelatedFile)).isTrue()
-    assertThat(Files.exists(nonLegacyVersionDir)).isTrue()
-    assertThat(Files.exists(unrelatedDir)).isTrue()
-  }
-
-  @Test
-  fun `cleanup marks and then removes stale entries`() {
-    runBlocking {
-      val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
-
-      val builder = TestSourceBuilder(produceCalls = AtomicInteger(), useCacheAsTargetFile = true)
-      val sources = createSources()
-      manager.computeIfAbsent(
-        sources = sources,
-        targetFile = tempDir.resolve("out/first.jar"),
-        nativeFiles = null,
-        span = Span.getInvalid(),
-        producer = builder,
-      )
-
-      val versionDir = findVersionDir(cacheDir)
-      val entryPaths = findSingleEntryPaths(cacheDir)
-      val metadataFile = entryPaths.metadataFile
-      val markFile = entryPaths.markFile
-      val cleanupMarkerFile = versionDir.resolve(".last.cleanup.marker")
-      val lockFile = getStripedLockFile(versionDir)
-
-      assertThat(Files.exists(lockFile)).isTrue()
-
-      Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
-
-      manager.cleanup()
-
-      assertThat(Files.exists(entryPaths.metadataFile)).isTrue()
-      assertThat(Files.exists(markFile)).isTrue()
-
-      Files.setLastModifiedTime(cleanupMarkerFile, FileTime.fromMillis(System.currentTimeMillis() - 2.days.inWholeMilliseconds))
-      manager.cleanup()
-
-      assertThat(Files.exists(entryPaths.metadataFile)).isFalse()
-      assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
-      assertThat(Files.exists(lockFile)).isTrue()
-    }
-  }
-
-  @Test
-  fun `cleanup removes entry files when entry metadata is missing`() {
-    runBlocking {
-      val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
-
-      val builder = TestSourceBuilder(produceCalls = AtomicInteger(), useCacheAsTargetFile = true)
-      val sources = createSources()
-      manager.computeIfAbsent(
-        sources = sources,
-        targetFile = tempDir.resolve("out/first.jar"),
-        nativeFiles = null,
-        span = Span.getInvalid(),
-        producer = builder,
-      )
-
-      val versionDir = findVersionDir(cacheDir)
-      val entryPaths = findSingleEntryPaths(cacheDir)
-      val metadataFile = entryPaths.metadataFile
-      val lockFile = getStripedLockFile(versionDir)
-      assertThat(Files.exists(lockFile)).isTrue()
-
-      Files.delete(metadataFile)
-      manager.cleanup()
-
-      assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
-      assertThat(Files.exists(lockFile)).isTrue()
-    }
+    assertThat(legacyJar).doesNotExist()
+    assertThat(legacyMetadata).doesNotExist()
+    assertThat(legacyCleanupMarker).doesNotExist()
+    assertThat(oldVersionDir).doesNotExist()
+    assertThat(unrelatedFile).exists()
+    assertThat(nonLegacyVersionDir).exists()
+    assertThat(unrelatedDir).exists()
   }
 
   @Test
@@ -406,6 +347,89 @@ internal class LocalDiskJarCacheManagerTest {
   }
 
   @Test
+  fun `metadata source count overflow triggers cache rebuild`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val produceCalls = AtomicInteger()
+      val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val metadataFile = findSingleEntryPaths(cacheDir).metadataFile
+      val metadataBuffer = ByteBuffer.wrap(Files.readAllBytes(metadataFile))
+      metadataBuffer.putInt(Int.SIZE_BYTES * 2, Int.MAX_VALUE)
+      Files.write(metadataFile, metadataBuffer.array())
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out2/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      assertThat(produceCalls.get()).isEqualTo(2)
+    }
+  }
+
+  @Test
+  fun `native metadata for non-zip source triggers cache rebuild`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val produceCalls = AtomicInteger()
+      val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val metadataFile = findSingleEntryPaths(cacheDir).metadataFile
+      val originalMetadata = ByteBuffer.wrap(Files.readAllBytes(metadataFile))
+      val metadataWithNativeFiles = ByteBuffer.allocate(
+        Int.SIZE_BYTES * 3 +
+        Int.SIZE_BYTES +
+        Long.SIZE_BYTES +
+        Int.SIZE_BYTES +
+        Int.SIZE_BYTES +
+        1,
+      )
+      metadataWithNativeFiles.putInt(originalMetadata.int)
+      metadataWithNativeFiles.putInt(originalMetadata.int)
+      metadataWithNativeFiles.putInt(originalMetadata.int)
+      metadataWithNativeFiles.putInt(originalMetadata.int)
+      metadataWithNativeFiles.putLong(originalMetadata.long)
+      metadataWithNativeFiles.putInt(1)
+      metadataWithNativeFiles.putInt(1)
+      metadataWithNativeFiles.put('x'.code.toByte())
+      Files.write(metadataFile, metadataWithNativeFiles.array())
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out2/first.jar"),
+        nativeFiles = mutableMapOf(),
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      assertThat(produceCalls.get()).isEqualTo(2)
+    }
+  }
+
+  @Test
   fun `metadata schema mismatch triggers cache rebuild`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
@@ -447,6 +471,84 @@ internal class LocalDiskJarCacheManagerTest {
   }
 
   @Test
+  fun `metadata size mismatch triggers cache rebuild`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val produceCalls = AtomicInteger()
+      val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val metadataFile = findSingleEntryPaths(cacheDir).metadataFile
+      val metadataBuffer = ByteBuffer.wrap(Files.readAllBytes(metadataFile))
+      metadataBuffer.int
+      metadataBuffer.int
+      metadataBuffer.int
+      val sourceSizeOffset = metadataBuffer.position()
+      val sourceSize = metadataBuffer.int
+      val mismatchedSize = if (sourceSize == Int.MAX_VALUE) sourceSize - 1 else sourceSize + 1
+      metadataBuffer.putInt(sourceSizeOffset, mismatchedSize)
+      Files.write(metadataFile, metadataBuffer.array())
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out2/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      assertThat(produceCalls.get()).isEqualTo(2)
+    }
+  }
+
+  @Test
+  fun `negative metadata source size triggers cache rebuild`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val produceCalls = AtomicInteger()
+      val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val metadataFile = findSingleEntryPaths(cacheDir).metadataFile
+      val metadataBuffer = ByteBuffer.wrap(Files.readAllBytes(metadataFile))
+      metadataBuffer.int
+      metadataBuffer.int
+      metadataBuffer.int
+      val sourceSizeOffset = metadataBuffer.position()
+      metadataBuffer.putInt(sourceSizeOffset, -1)
+      Files.write(metadataFile, metadataBuffer.array())
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out2/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      assertThat(produceCalls.get()).isEqualTo(2)
+    }
+  }
+
+  @Test
   fun `malformed native blob size triggers cache rebuild`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
@@ -475,6 +577,47 @@ internal class LocalDiskJarCacheManagerTest {
       metadataBuffer.putInt(nativeBlobSizeOffset, 1)
       val metadataBytes = metadataBuffer.array()
       Files.write(metadataFile, metadataBytes)
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out2/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      assertThat(produceCalls.get()).isEqualTo(2)
+    }
+  }
+
+  @Test
+  fun `oversized native blob size triggers cache rebuild`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 30.days)
+      val produceCalls = AtomicInteger()
+      val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val metadataFile = findSingleEntryPaths(cacheDir).metadataFile
+      val metadataBuffer = ByteBuffer.wrap(Files.readAllBytes(metadataFile))
+      metadataBuffer.int
+      metadataBuffer.int
+      metadataBuffer.int
+      metadataBuffer.int
+      metadataBuffer.long
+      metadataBuffer.int
+      val nativeBlobSizeOffset = metadataBuffer.position()
+      metadataBuffer.putInt(nativeBlobSizeOffset, Int.MAX_VALUE)
+      Files.write(metadataFile, metadataBuffer.array())
 
       manager.computeIfAbsent(
         sources = sources,
@@ -555,7 +698,7 @@ internal class LocalDiskJarCacheManagerTest {
       )
 
       assertThat(produceCalls.get()).isEqualTo(2)
-      assertThat(Files.exists(payloadFile)).isTrue()
+      assertThat(payloadFile).exists()
     }
   }
 
@@ -588,110 +731,25 @@ internal class LocalDiskJarCacheManagerTest {
       )
 
       assertThat(produceCalls.get()).isEqualTo(2)
-      assertThat(Files.exists(metadataFile)).isTrue()
+      assertThat(metadataFile).exists()
     }
   }
 
   @Test
-  fun `cleanup keeps reaccessed stale entry and clears mark`() {
-    runBlocking {
-      val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
-      val produceCalls = AtomicInteger()
-      val builder = TestSourceBuilder(produceCalls = produceCalls, useCacheAsTargetFile = true)
-      val sources = createSources()
+  fun `legacy purge io error is ignored`() {
+    val missingCacheDir = tempDir.resolve("missing-cache")
+    val legacyPurgeMarkerFile = missingCacheDir.resolve(".legacy-format-purged.0")
 
-      manager.computeIfAbsent(
-        sources = sources,
-        targetFile = tempDir.resolve("out/first.jar"),
-        nativeFiles = null,
-        span = Span.getInvalid(),
-        producer = builder,
+    val result = runCatching {
+      invokePurgeLegacyCacheIfRequired(
+        cacheDir = missingCacheDir,
+        versionedCacheDir = missingCacheDir.resolve("v0"),
+        legacyPurgeMarkerFile = legacyPurgeMarkerFile,
       )
-
-      val versionDir = findVersionDir(cacheDir)
-      val cleanupMarkerFile = versionDir.resolve(".last.cleanup.marker")
-      val entryPaths = findSingleEntryPaths(cacheDir)
-      val metadataFile = entryPaths.metadataFile
-      val markFile = entryPaths.markFile
-
-      Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
-      manager.cleanup()
-      assertThat(Files.exists(markFile)).isTrue()
-
-      manager.computeIfAbsent(
-        sources = sources,
-        targetFile = tempDir.resolve("out2/first.jar"),
-        nativeFiles = null,
-        span = Span.getInvalid(),
-        producer = builder,
-      )
-
-      Files.setLastModifiedTime(cleanupMarkerFile, FileTime.fromMillis(System.currentTimeMillis() - 2.days.inWholeMilliseconds))
-      manager.cleanup()
-
-      assertThat(Files.exists(entryPaths.payloadFile)).isTrue()
-      assertThat(Files.exists(markFile)).isFalse()
-      assertThat(produceCalls.get()).isEqualTo(1)
     }
-  }
 
-  @Test
-  fun `cleanup cadence prevents immediate second-pass deletion`() {
-    runBlocking {
-      val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
-      val builder = TestSourceBuilder(produceCalls = AtomicInteger(), useCacheAsTargetFile = true)
-      val sources = createSources()
-
-      manager.computeIfAbsent(
-        sources = sources,
-        targetFile = tempDir.resolve("out/first.jar"),
-        nativeFiles = null,
-        span = Span.getInvalid(),
-        producer = builder,
-      )
-
-      val entryPaths = findSingleEntryPaths(cacheDir)
-      val metadataFile = entryPaths.metadataFile
-      val markFile = entryPaths.markFile
-      Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
-
-      manager.cleanup()
-      assertThat(Files.exists(markFile)).isTrue()
-
-      manager.cleanup()
-      assertThat(Files.exists(entryPaths.payloadFile)).isTrue()
-      assertThat(Files.exists(markFile)).isTrue()
-    }
-  }
-
-  @Test
-  fun `cleanup skips lock acquisition for fresh unmarked entries`() {
-    runBlocking {
-      val cacheDir = tempDir.resolve("cache")
-      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
-      val versionDir = findVersionDir(cacheDir)
-      val key = "ab-key"
-      val entryPaths = buildEntryPathsFromStem(
-        shardDir = versionDir.resolve("entries").resolve("ab"),
-        entryStem = "$key${entryNameSeparatorForTests}first.jar",
-      )
-      val metadataFile = entryPaths.metadataFile
-      val markFile = entryPaths.markFile
-      val lockFile = getStripedLockFile(versionDir)
-
-      Files.createDirectories(entryPaths.payloadFile.parent)
-      Files.writeString(entryPaths.payloadFile, "payload")
-      Files.write(metadataFile, byteArrayOf(1))
-      Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(System.currentTimeMillis()))
-
-      manager.cleanup()
-
-      assertThat(Files.exists(lockFile)).isFalse()
-      assertThat(Files.exists(entryPaths.payloadFile)).isTrue()
-      assertThat(Files.exists(markFile)).isFalse()
-    }
+    assertThat(result.isSuccess).isTrue()
+    assertThat(legacyPurgeMarkerFile).doesNotExist()
   }
 
   @Test
@@ -726,7 +784,7 @@ internal class LocalDiskJarCacheManagerTest {
       assertThat(Files.readString(firstTarget)).isEqualTo("payload")
       assertThat(Files.readString(secondTarget)).isEqualTo("payload")
       assertThat(Files.readString(payloadFile)).isEqualTo("payload")
-      assertThat(Files.exists(payloadFile)).isTrue()
+      assertThat(payloadFile).exists()
       assertThat(produceCalls.get()).isEqualTo(1)
     }
   }
@@ -786,7 +844,7 @@ internal class LocalDiskJarCacheManagerTest {
       )
 
       assertThat(produceCalls.get()).isEqualTo(1)
-      assertThat(Files.exists(payloadFile)).isTrue()
+      assertThat(payloadFile).exists()
       assertThat(payloadFile.fileName.toString()).contains("__first.jar")
     }
   }
@@ -816,11 +874,16 @@ internal class LocalDiskJarCacheManagerTest {
     }
   }
 
-  private fun createManager(cacheDir: Path, maxAccessTimeAge: Duration): LocalDiskJarCacheManager {
+  private fun createManager(
+    cacheDir: Path,
+    maxAccessTimeAge: Duration,
+    metadataTouchInterval: Duration = 15.minutes,
+  ): LocalDiskJarCacheManager {
     return LocalDiskJarCacheManager(
       cacheDir = cacheDir,
       productionClassOutDir = tempDir.resolve("classes/production"),
       maxAccessTimeAge = maxAccessTimeAge,
+      metadataTouchInterval = metadataTouchInterval,
     )
   }
 
@@ -891,8 +954,14 @@ internal class LocalDiskJarCacheManagerTest {
     return entryStem.substring(0, separatorIndex)
   }
 
-  private fun getStripedLockFile(versionDir: Path): Path {
-    return versionDir.resolve("striped-lock-slots.lck")
+  private fun invokePurgeLegacyCacheIfRequired(cacheDir: Path, versionedCacheDir: Path, legacyPurgeMarkerFile: Path) {
+    val method = Class.forName("org.jetbrains.intellij.build.jarCache.LocalDiskJarCacheMaintenanceKt").getDeclaredMethod(
+      "purgeLegacyCacheIfRequired",
+      Path::class.java,
+      Path::class.java,
+      Path::class.java,
+    )
+    method.invoke(null, cacheDir, versionedCacheDir, legacyPurgeMarkerFile)
   }
 
   private fun findVersionDir(cacheDir: Path): Path {

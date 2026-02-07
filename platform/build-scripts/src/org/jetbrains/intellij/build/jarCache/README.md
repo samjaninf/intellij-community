@@ -43,6 +43,7 @@ LocalDiskJarCacheCommon.kt
         <key>__<target-file-name>.jar.mark     (optional)
     striped-lock-slots.lck
     .last.cleanup.marker
+    .cleanup.scan.cursor
 
   .legacy-format-purged.0
 ```
@@ -93,7 +94,7 @@ computeIfAbsent
   |     - skipped if `<key>__<name>.jar.mark` exists
   |     - validate metadata + payload
   |     - materialize target (link/copy)
-  |     - touch metadata mtime
+  |     - touch metadata mtime (throttled in-memory, no read-before-touch)
   |
   +-- fallback under per-key lock
         - re-check hit path (strict, delete invalid)
@@ -107,7 +108,7 @@ Per key, two layers are used:
 1. In-process striped mutex (`StripedMutex`)
 2. Cross-process byte-range lock (`FileChannel.lock(position = keySlot, size = 1)`) on `striped-lock-slots.lck`
 
-`keySlot = xxh3_64(key) mod 4096`. This keeps locking centralized while serializing operations per key slot across processes.
+`keySlot = leastSignificantBits(hash128) mod 4096`. This keeps locking centralized while serializing operations per key slot across processes.
 When a manager scope is available, the lock file channel is reused for the manager lifetime; otherwise lock operations open and close a channel per use.
 
 ## Metadata Semantics
@@ -121,16 +122,43 @@ When a manager scope is available, the lock file channel is reused for the manag
 
 Metadata file modification time is treated as last access timestamp for retention.
 
+## Architecture Decisions
+
+### Mtime Contract And Touch Throttle
+
+- Metadata file `mtime` is the authoritative access-time signal for stale cleanup and external cache retention.
+- Cache hits never read `mtime` before touching; they use in-memory throttling and periodic `setLastModifiedTime`.
+- Marked entries bypass throttle to make reaccess visible immediately and avoid stale second-pass deletion.
+
+### Cleanup Candidate Queue Plus Reserved Scan
+
+- Cleanup consumes a bounded in-memory candidate queue for hot entries.
+- Every cleanup run also reserves scan capacity for shard-window traversal (`.cleanup.scan.cursor`) so cold or misplaced entries are still discovered.
+
+### Metadata Safety Limits
+
+- Native metadata decode is guarded by hard limits to prevent large allocations from corrupted files:
+  - `maxNativeFileCount = 65_536`
+  - `maxNativeFilesBlobSizeBytes = 8 MiB`
+- Source count is validated against remaining metadata size before source-record array allocation.
+- Violations are treated as invalid metadata and the cache entry is rebuilt.
+
+### Temp File Name Cap
+
+- Final entry names are capped to common filesystem limits.
+- Temporary payload/metadata sibling file names are also capped to avoid miss-path failures on long target names.
+
 ## Cleanup Algorithm
 
 Cleanup runs at most once per day (`.last.cleanup.marker`):
 
-1. Iterate all entry stems under shard directories.
-2. Lock each key.
-3. If metadata is missing, delete sibling entry files.
-4. If stale and not marked, create `.mark`.
-5. If stale and already marked, delete sibling entry files.
-6. If fresh, remove mark file.
+1. Drain a bounded queue of recently touched entry stems.
+2. Always reserve a slice of each run for bounded shard-window scan (`.cleanup.scan.cursor`).
+3. Lock each candidate key.
+4. If metadata is missing, delete sibling entry files.
+5. If stale and not marked, create `.mark`.
+6. If stale and already marked, delete sibling entry files.
+7. If fresh, remove mark file.
 
 This is a two-pass stale deletion to avoid removing entries that become active again.
 

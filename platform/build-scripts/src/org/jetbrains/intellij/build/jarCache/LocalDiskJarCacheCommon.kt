@@ -1,7 +1,6 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.intellij.build.jarCache
 
-import com.dynatrace.hash4j.hashing.Hashing
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
@@ -19,6 +18,7 @@ internal const val metadataFileSuffix = ".meta"
 internal const val markedForCleanupFileSuffix = ".mark"
 internal const val entryNameSeparator = "__"
 internal const val cleanupMarkerFileName = ".last.cleanup.marker"
+internal const val cleanupScanCursorFileName = ".cleanup.scan.cursor"
 internal const val lockSlotCount = 4096
 internal const val legacyJarSuffix = ".jar"
 internal const val legacyMetadataSuffix = ".m"
@@ -31,6 +31,7 @@ internal val legacyFlatMetadataPattern = Regex(".+-\\d+-[0-9a-z]+-[0-9a-z]+\\.m"
 internal val legacyVersionDirectoryPattern = Regex("v\\d+")
 private const val maxTargetFileNameLengthInEntryName = 80
 private const val maxCacheFileNameLength = 255
+private const val lockSlotMask = lockSlotCount - 1L
 private val maxEntryStemLength = maxCacheFileNameLength - maxOf(metadataFileSuffix.length, markedForCleanupFileSuffix.length)
 private val allowedCacheFileNameChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-".toSet()
 
@@ -70,8 +71,21 @@ internal fun getStripedLockFile(versionedCacheDir: Path): Path {
   return versionedCacheDir.resolve(stripedLockFileName)
 }
 
-internal fun getLockSlot(key: String): Long {
-  return Hashing.xxh3_64().hashCharsToLong(key) and (lockSlotCount - 1).toLong()
+internal fun getLockSlot(leastSignificantBits: Long): Long {
+  return leastSignificantBits and lockSlotMask
+}
+
+internal fun parseLockSlotFromKey(key: String): Long? {
+  // Keys are persisted as "<lsb>-<msb>" with unsigned radix-36 numbers.
+  // Cleanup does not have original hashValue128, so it must decode the stored lsb prefix.
+  // Re-hashing the entire key string selects a different stripe than computeIfAbsent.
+  val separatorIndex = key.indexOf('-')
+  if (separatorIndex <= 0) {
+    return null
+  }
+
+  val leastSignificantBits = key.substring(0, separatorIndex).toULongOrNull(Character.MAX_RADIX)?.toLong() ?: return null
+  return getLockSlot(leastSignificantBits)
 }
 
 internal fun longToString(v: Long): String = java.lang.Long.toUnsignedString(v, Character.MAX_RADIX)
@@ -114,6 +128,14 @@ internal fun sanitizeTargetFileNameForCache(fileName: String, maxLength: Int = m
   }
 
   return sanitized.toString().trim('_').ifEmpty { "u" }
+}
+
+internal fun buildTempSiblingFileName(baseFileName: String, tempFilePrefix: String, randomSuffix: Long): String {
+  // See README.md: "Temp File Name Cap".
+  val suffix = ".tmp.$tempFilePrefix-${longToString(randomSuffix)}"
+  val maxBaseNameLength = (maxCacheFileNameLength - suffix.length).coerceAtLeast(1)
+  val safeBaseName = if (baseFileName.length <= maxBaseNameLength) baseFileName else baseFileName.take(maxBaseNameLength)
+  return safeBaseName + suffix
 }
 
 internal fun moveReplacing(from: Path, to: Path) {

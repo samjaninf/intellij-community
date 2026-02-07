@@ -10,22 +10,26 @@ import org.jetbrains.intellij.build.ZipSource
 import org.jetbrains.intellij.build.io.W_OVERWRITE
 import org.jetbrains.intellij.build.io.writeToFileChannelFully
 import java.nio.ByteBuffer
-import java.nio.ByteBuffer.wrap
 import java.nio.channels.FileChannel
 import java.nio.file.Files
-import java.nio.file.Files.readAllBytes
 import java.nio.file.NoSuchFileException
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import kotlin.random.Random
 import kotlin.text.Charsets.UTF_8
 
 private const val metadataHeaderSizeBytes = Int.SIZE_BYTES * 3
 private const val sourceRecordFixedSizeBytes = Int.SIZE_BYTES + Long.SIZE_BYTES + Int.SIZE_BYTES + Int.SIZE_BYTES
 private const val nativeFileSeparator: Byte = 0
+// See README.md: "Metadata Safety Limits".
+private const val maxNativeFileCount = 65_536
+private const val maxNativeFilesBlobSizeBytes = 8 * 1024 * 1024
 
 internal fun readValidCacheMetadata(
   paths: CacheEntryPaths,
   sources: Collection<Source>,
   items: List<SourceAndCacheStrategy>,
+  decodeNativeFiles: Boolean,
   span: Span,
   onInvalidEntry: (() -> Unit)?,
 ): Array<SourceCacheItem>? {
@@ -34,8 +38,7 @@ internal fun readValidCacheMetadata(
   }
 
   val savedSources = try {
-    val buffer = wrap(readAllBytes(paths.metadataFile))
-    readSourcesFrom(buffer)
+    readSourcesFrom(metadataFile = paths.metadataFile, decodeNativeFileNames = decodeNativeFiles)
   }
   catch (_: NoSuchFileException) {
     return null
@@ -79,6 +82,9 @@ internal fun notifyAboutMetadata(
 internal fun writeSourcesToMetadata(paths: CacheEntryPaths, sources: Array<SourceCacheItem>, tempFilePrefix: String) {
   val serializedSources = Array(sources.size) { index ->
     val source = sources[index]
+    check(source.nativeFiles.size <= maxNativeFileCount) {
+      "Too many native files: ${source.nativeFiles.size}"
+    }
     val nativeFilesBlob = encodeNativeFiles(source.nativeFiles)
     SerializedSourceCacheItem(
       size = source.size,
@@ -94,7 +100,12 @@ internal fun writeSourcesToMetadata(paths: CacheEntryPaths, sources: Array<Sourc
     "Metadata is too large: $metadataSize bytes"
   }
 
-  val tempMetadataFile = paths.entryShardDir.resolve("${paths.metadataFile.fileName}.tmp.$tempFilePrefix-${longToString(Random.nextLong())}")
+  val tempMetadataFileName = buildTempSiblingFileName(
+    baseFileName = paths.metadataFile.fileName.toString(),
+    tempFilePrefix = tempFilePrefix,
+    randomSuffix = Random.nextLong(),
+  )
+  val tempMetadataFile = paths.entryShardDir.resolve(tempMetadataFileName)
   var metadataMoved = false
   try {
     val buffer = ByteBuffer.allocate(metadataSize.toInt())
@@ -119,25 +130,97 @@ private fun checkSavedAndActualSources(savedSources: Array<SourceCacheItem>, ite
   }
 
   for ((index, metadataItem) in savedSources.withIndex()) {
-    if (items[index].getHash() != metadataItem.hash) {
+    val item = items[index]
+    val actualSize = item.getSize()
+    if (actualSize !in 0..Int.MAX_VALUE.toLong()) {
+      return false
+    }
+
+    if (metadataItem.size != actualSize.toInt()) {
+      return false
+    }
+
+    if (item.getHash() != metadataItem.hash) {
+      return false
+    }
+
+    if (metadataItem.nativeFiles.isNotEmpty() && item.source !is ZipSource) {
       return false
     }
   }
   return true
 }
 
-private fun readSourcesFrom(buffer: ByteBuffer): Array<SourceCacheItem> {
-  check(buffer.remaining() >= metadataHeaderSizeBytes) { "Metadata is too short" }
-  check(buffer.getInt() == metadataMagic) { "Unknown metadata magic" }
-  check(buffer.getInt() == metadataSchemaVersion) { "Unsupported metadata schema version" }
+private fun readSourcesFrom(metadataFile: Path, decodeNativeFileNames: Boolean): Array<SourceCacheItem> {
+  FileChannel.open(metadataFile, StandardOpenOption.READ).use { channel ->
+    val metadataSize = channel.size()
+    check(metadataSize >= metadataHeaderSizeBytes.toLong()) { "Metadata is too short" }
 
-  val sourceCount = buffer.getInt()
-  check(sourceCount >= 0) { "Negative source count: $sourceCount" }
-  val sources = Array(sourceCount) {
-    SourceCacheItem.readFrom(buffer)
+    val headerBuffer = ByteBuffer.allocate(metadataHeaderSizeBytes)
+    readBufferFully(channel = channel, buffer = headerBuffer, errorMessage = "Metadata is too short")
+    headerBuffer.flip()
+
+    check(headerBuffer.int == metadataMagic) { "Unknown metadata magic" }
+    check(headerBuffer.int == metadataSchemaVersion) { "Unsupported metadata schema version" }
+
+    val sourceCount = headerBuffer.int
+    check(sourceCount >= 0) { "Negative source count: $sourceCount" }
+
+    var remainingBytes = metadataSize - metadataHeaderSizeBytes
+    val maxSourceCountBySize = remainingBytes / sourceRecordFixedSizeBytes
+    check(sourceCount.toLong() <= maxSourceCountBySize) {
+      "Source count is too large for metadata size: $sourceCount"
+    }
+
+    val fixedRecordBuffer = ByteBuffer.allocate(sourceRecordFixedSizeBytes)
+    val sources = Array(sourceCount) {
+      check(remainingBytes >= sourceRecordFixedSizeBytes.toLong()) { "Not enough bytes for source metadata" }
+
+      fixedRecordBuffer.clear()
+      readBufferFully(channel = channel, buffer = fixedRecordBuffer, errorMessage = "Not enough bytes for source metadata")
+      fixedRecordBuffer.flip()
+      remainingBytes -= sourceRecordFixedSizeBytes.toLong()
+
+      val size = fixedRecordBuffer.int
+      check(size >= 0) { "Negative source size: $size" }
+      val hash = fixedRecordBuffer.long
+
+      val nativeFileCount = fixedRecordBuffer.int
+      check(nativeFileCount >= 0) { "Negative native file count: $nativeFileCount" }
+      check(nativeFileCount <= maxNativeFileCount) { "Too many native files: $nativeFileCount" }
+      val nativeFilesBlobSize = fixedRecordBuffer.int
+      check(nativeFilesBlobSize >= 0) { "Negative native files blob size: $nativeFilesBlobSize" }
+      check(nativeFilesBlobSize <= maxNativeFilesBlobSizeBytes) { "Native files blob is too large: $nativeFilesBlobSize" }
+      check(remainingBytes >= nativeFilesBlobSize.toLong()) { "Not enough bytes for native files blob" }
+
+      val nativeFiles = if (decodeNativeFileNames) {
+        val nativeFilesBlob = ByteArray(nativeFilesBlobSize)
+        if (nativeFilesBlob.isNotEmpty()) {
+          readBufferFully(channel = channel, buffer = ByteBuffer.wrap(nativeFilesBlob), errorMessage = "Not enough bytes for native files blob")
+        }
+        remainingBytes -= nativeFilesBlobSize.toLong()
+        decodeNativeFiles(nativeFilesBlob = nativeFilesBlob, nativeFileCount = nativeFileCount)
+      }
+      else {
+        if (nativeFilesBlobSize > 0) {
+          channel.position(channel.position() + nativeFilesBlobSize.toLong())
+        }
+        remainingBytes -= nativeFilesBlobSize.toLong()
+        emptyList()
+      }
+
+      SourceCacheItem(size = size, hash = hash, nativeFiles = nativeFiles)
+    }
+
+    check(remainingBytes == 0L) { "Unexpected bytes left in metadata" }
+    return sources
   }
-  check(!buffer.hasRemaining()) { "Unexpected bytes left in metadata" }
-  return sources
+}
+
+private fun readBufferFully(channel: FileChannel, buffer: ByteBuffer, errorMessage: String) {
+  while (buffer.hasRemaining()) {
+    check(channel.read(buffer) > 0) { errorMessage }
+  }
 }
 
 private class SerializedSourceCacheItem(
@@ -174,6 +257,10 @@ private fun encodeNativeFiles(nativeFiles: List<String>): ByteArray {
     val bytes = nativeFile.toByteArray(UTF_8)
     encodedFiles.add(bytes)
     totalBlobSize += bytes.size
+  }
+
+  check(totalBlobSize <= maxNativeFilesBlobSizeBytes) {
+    "Native files blob is too large: $totalBlobSize"
   }
 
   val blob = ByteArray(totalBlobSize)
@@ -228,23 +315,4 @@ internal class SourceCacheItem(
   @JvmField val size: Int,
   @JvmField val hash: Long,
   @JvmField val nativeFiles: List<String> = emptyList(),
-) {
-  companion object {
-    fun readFrom(buffer: ByteBuffer): SourceCacheItem {
-      check(buffer.remaining() >= sourceRecordFixedSizeBytes) { "Not enough bytes for source metadata" }
-      val size = buffer.getInt()
-      val hash = buffer.getLong()
-
-      val nativeFileCount = buffer.getInt()
-      check(nativeFileCount >= 0) { "Negative native file count: $nativeFileCount" }
-      val nativeFilesBlobSize = buffer.getInt()
-      check(nativeFilesBlobSize >= 0) { "Negative native files blob size: $nativeFilesBlobSize" }
-      check(buffer.remaining() >= nativeFilesBlobSize) { "Not enough bytes for native files blob" }
-
-      val nativeFilesBlob = ByteArray(nativeFilesBlobSize)
-      buffer.get(nativeFilesBlob)
-      val nativeFiles = decodeNativeFiles(nativeFilesBlob = nativeFilesBlob, nativeFileCount = nativeFileCount)
-      return SourceCacheItem(size = size, hash = hash, nativeFiles = nativeFiles)
-    }
-  }
-}
+) 

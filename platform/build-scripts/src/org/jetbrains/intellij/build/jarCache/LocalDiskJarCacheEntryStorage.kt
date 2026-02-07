@@ -14,7 +14,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.FileTime
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
+
+private const val metadataTouchThrottleMaxEntries = 200_000
 
 internal fun tryUseCacheEntry(
   key: String,
@@ -25,6 +28,8 @@ internal fun tryUseCacheEntry(
   nativeFiles: MutableMap<ZipSource, List<String>>?,
   span: Span,
   producer: SourceBuilder,
+  metadataTouchTracker: MetadataTouchTracker,
+  cleanupCandidateIndex: CleanupCandidateIndex,
   deleteInvalidEntry: Boolean,
   failOnCacheIoErrors: Boolean,
 ): Path? {
@@ -45,6 +50,7 @@ internal fun tryUseCacheEntry(
     paths = paths,
     sources = sources,
     items = items,
+    decodeNativeFiles = nativeFiles != null,
     span = span,
     onInvalidEntry = if (deleteInvalidEntry) {
       { deleteEntryFiles(paths) }
@@ -74,7 +80,11 @@ internal fun tryUseCacheEntry(
     }
   }
 
-  touchMetadataFileIfRequired(metadataFile = paths.metadataFile, span = span)
+  val metadataTouchUpdated = touchMetadataFileIfRequired(paths = paths, span = span, metadataTouchTracker = metadataTouchTracker)
+  if (failOnCacheIoErrors && metadataTouchUpdated) {
+    clearMarkFileIfPresent(paths = paths, span = span)
+  }
+  cleanupCandidateIndex.register(paths.entryStem, paths.entryShardDir.fileName.toString())
 
   notifyAboutMetadata(sources = savedSources, items = items, nativeFiles = nativeFiles, producer = producer)
   span.addEvent(
@@ -91,9 +101,16 @@ internal suspend fun produceAndCache(
   items: List<SourceAndCacheStrategy>,
   nativeFiles: MutableMap<ZipSource, List<String>>?,
   tempFilePrefix: String,
+  metadataTouchTracker: MetadataTouchTracker,
+  cleanupCandidateIndex: CleanupCandidateIndex,
 ): Path = withContext(Dispatchers.IO) {
   Files.createDirectories(paths.entryShardDir)
-  val tempPayload = paths.entryShardDir.resolve("${paths.payloadFile.fileName}.tmp.$tempFilePrefix-${longToString(Random.nextLong())}")
+  val tempPayloadFileName = buildTempSiblingFileName(
+    baseFileName = paths.payloadFile.fileName.toString(),
+    tempFilePrefix = tempFilePrefix,
+    randomSuffix = Random.nextLong(),
+  )
+  val tempPayload = paths.entryShardDir.resolve(tempPayloadFileName)
   var payloadMoved = false
   try {
     producer.produce(tempPayload)
@@ -108,14 +125,20 @@ internal suspend fun produceAndCache(
 
   val sourceCacheItems = Array(items.size) { index ->
     val source = items[index]
+    val sourceSize = source.getSize()
+    check(sourceSize in 0..Int.MAX_VALUE.toLong()) {
+      "Source size is out of supported range: $sourceSize"
+    }
     SourceCacheItem(
-      size = source.getSize().toInt(),
+      size = sourceSize.toInt(),
       hash = source.getHash(),
       nativeFiles = (source.source as? ZipSource)?.let { nativeFiles?.get(it) } ?: emptyList(),
     )
   }
 
   writeSourcesToMetadata(paths = paths, sources = sourceCacheItems, tempFilePrefix = tempFilePrefix)
+  metadataTouchTracker.recordTouch(paths.entryStem, System.currentTimeMillis())
+  cleanupCandidateIndex.register(paths.entryStem, paths.entryShardDir.fileName.toString())
   notifyAboutMetadata(sources = sourceCacheItems, items = items, nativeFiles = nativeFiles, producer = producer)
 
   if (!producer.useCacheAsTargetFile) {
@@ -140,16 +163,69 @@ private fun createLinkOrCopy(targetFile: Path, cacheFile: Path) {
   }
 }
 
-private fun touchMetadataFileIfRequired(metadataFile: Path, span: Span) {
+private fun touchMetadataFileIfRequired(paths: CacheEntryPaths, span: Span, metadataTouchTracker: MetadataTouchTracker): Boolean {
+  // See README.md: "Mtime Contract And Touch Throttle".
   // metadata mtime is treated as last-access timestamp for cleanup.
+  val now = System.currentTimeMillis()
+  // Marked entries must refresh access signal immediately to avoid stale second-pass deletion.
+  val forceTouch = Files.exists(paths.markFile)
+  if (!forceTouch && !metadataTouchTracker.shouldTouch(paths.entryStem, now)) {
+    return true
+  }
+
   try {
-    val now = System.currentTimeMillis()
-    val lastModifiedTime = Files.getLastModifiedTime(metadataFile).toMillis()
-    if (now - lastModifiedTime >= metadataTouchMinInterval.inWholeMilliseconds) {
-      Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(now))
-    }
+    Files.setLastModifiedTime(paths.metadataFile, FileTime.fromMillis(now))
+    metadataTouchTracker.recordTouch(paths.entryStem, now)
+    return true
   }
   catch (e: IOException) {
+    metadataTouchTracker.onTouchFailure(paths.entryStem, now)
     span.addEvent("update cache metadata modification time failed: $e")
+    return false
+  }
+}
+
+private fun clearMarkFileIfPresent(paths: CacheEntryPaths, span: Span) {
+  try {
+    Files.deleteIfExists(paths.markFile)
+  }
+  catch (e: IOException) {
+    span.addEvent("clear cache mark file failed: $e")
+  }
+}
+
+internal class MetadataTouchTracker(
+  minTouchIntervalMs: Long = metadataTouchMinInterval.inWholeMilliseconds,
+  private val maxEntries: Int = metadataTouchThrottleMaxEntries,
+) {
+  private val touchIntervalMs = minTouchIntervalMs.coerceAtLeast(0)
+  private val lastTouchByEntryStem = ConcurrentHashMap<String, Long>()
+
+  fun shouldTouch(entryStem: String, now: Long): Boolean {
+    var shouldTouch = false
+    lastTouchByEntryStem.compute(entryStem) { _, lastTouch ->
+      if (lastTouch == null || now - lastTouch >= touchIntervalMs) {
+        shouldTouch = true
+        now
+      }
+      else {
+        lastTouch
+      }
+    }
+
+    if (lastTouchByEntryStem.size > maxEntries * 2) {
+      // Bound memory in pathological workloads; state is advisory and can be rebuilt from subsequent hits.
+      lastTouchByEntryStem.clear()
+    }
+
+    return shouldTouch
+  }
+
+  fun recordTouch(entryStem: String, now: Long) {
+    lastTouchByEntryStem[entryStem] = now
+  }
+
+  fun onTouchFailure(entryStem: String, attemptedTouchTime: Long) {
+    lastTouchByEntryStem.remove(entryStem, attemptedTouchTime)
   }
 }

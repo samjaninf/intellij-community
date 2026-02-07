@@ -30,6 +30,7 @@ class LocalDiskJarCacheManager(
   cacheDir: Path,
   private val productionClassOutDir: Path,
   private val maxAccessTimeAge: Duration = 3.days,
+  metadataTouchInterval: Duration = metadataTouchMinInterval,
   scope: CoroutineScope? = null,
 ) : JarCacheManager {
   private val versionedCacheDir = cacheDir.resolve("v$CACHE_VERSION")
@@ -39,6 +40,8 @@ class LocalDiskJarCacheManager(
   private val lastCleanupMarkerFile = versionedCacheDir.resolve(cleanupMarkerFileName)
   private val legacyPurgeMarkerFile = cacheDir.resolve("$legacyPurgeMarkerPrefix$CACHE_VERSION")
   private val tempFilePrefix = longToString(ProcessHandle.current().pid())
+  private val metadataTouchTracker = MetadataTouchTracker(minTouchIntervalMs = metadataTouchInterval.inWholeMilliseconds)
+  private val cleanupCandidateIndex = CleanupCandidateIndex()
 
   init {
     Files.createDirectories(cacheDir)
@@ -71,7 +74,8 @@ class LocalDiskJarCacheManager(
       entriesDir = entriesDir,
       lastCleanupMarkerFile = lastCleanupMarkerFile,
       maxAccessTimeAge = maxAccessTimeAge,
-      withCacheEntryLock = { key, task -> withCacheEntryLock(key, task) },
+      cleanupCandidateIndex = cleanupCandidateIndex,
+      withCacheEntryLock = { lockSlot, task -> withCacheEntryLock(lockSlot, task) },
     )
   }
 
@@ -93,7 +97,9 @@ class LocalDiskJarCacheManager(
     hash.putString(targetFileName)
     producer.updateDigest(hash)
     val hashValue128 = hash.get()
-    val key = "${longToString(hashValue128.leastSignificantBits)}-${longToString(hashValue128.mostSignificantBits)}"
+    val leastSignificantBits = hashValue128.leastSignificantBits
+    val key = "${longToString(leastSignificantBits)}-${longToString(hashValue128.mostSignificantBits)}"
+    val lockSlot = getLockSlot(leastSignificantBits)
     val paths = getCacheEntryPaths(entriesDir = entriesDir, key = key, targetFileName = targetFileName)
 
     val optimisticCacheResult = tryUseCacheEntry(
@@ -105,6 +111,8 @@ class LocalDiskJarCacheManager(
       nativeFiles = nativeFiles,
       span = span,
       producer = producer,
+      metadataTouchTracker = metadataTouchTracker,
+      cleanupCandidateIndex = cleanupCandidateIndex,
       deleteInvalidEntry = false,
       failOnCacheIoErrors = false,
     )
@@ -112,7 +120,7 @@ class LocalDiskJarCacheManager(
       return optimisticCacheResult
     }
 
-    return withCacheEntryLock(key = key) {
+    return withCacheEntryLock(lockSlot = lockSlot) {
       tryUseCacheEntry(
         key = key,
         paths = paths,
@@ -122,6 +130,8 @@ class LocalDiskJarCacheManager(
         nativeFiles = nativeFiles,
         span = span,
         producer = producer,
+        metadataTouchTracker = metadataTouchTracker,
+        cleanupCandidateIndex = cleanupCandidateIndex,
         deleteInvalidEntry = true,
         failOnCacheIoErrors = true,
       ) ?: produceAndCache(
@@ -131,14 +141,15 @@ class LocalDiskJarCacheManager(
         items = items,
         nativeFiles = nativeFiles,
         tempFilePrefix = tempFilePrefix,
+        metadataTouchTracker = metadataTouchTracker,
+        cleanupCandidateIndex = cleanupCandidateIndex,
       )
     }
   }
 
   @Suppress("ConvertTryFinallyToUseCall")
-  private suspend fun <T> withCacheEntryLock(key: String, task: suspend () -> T): T {
-    return keyLocks.getLock(key).withLock {
-      val lockSlot = getLockSlot(key)
+  private suspend fun <T> withCacheEntryLock(lockSlot: Long, task: suspend () -> T): T {
+    return keyLocks.getLockByHash(lockSlot).withLock {
       lockSlotGuards.getLockByHash(lockSlot).withLock {
         withContext(Dispatchers.IO) {
           val channel = scopedStripedLockChannel
@@ -158,15 +169,15 @@ class LocalDiskJarCacheManager(
       }
     }
   }
+}
 
-  @Suppress("BlockingMethodInNonBlockingContext")
-  private suspend fun <T> withFileLock(channel: FileChannel, lockSlot: Long, task: suspend () -> T): T {
-    val fileLock = channel.lock(lockSlot, 1, false)
-    try {
-      return task()
-    }
-    finally {
-      fileLock.release()
-    }
+@Suppress("BlockingMethodInNonBlockingContext")
+private suspend fun <T> withFileLock(channel: FileChannel, lockSlot: Long, task: suspend () -> T): T {
+  val fileLock = channel.lock(lockSlot, 1, false)
+  try {
+    return task()
+  }
+  finally {
+    fileLock.release()
   }
 }
