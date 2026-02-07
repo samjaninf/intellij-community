@@ -20,6 +20,7 @@ sealed interface RpcLookupElementEvent {
     val itemId: RpcCompletionItemId?,
     val itemPattern: String,
     val prefixLength: Int,
+    val additionalPrefix: String,
   ) : RpcLookupElementEvent {
     override fun toString(): String = buildToString("SelectedItem") {
       field("requestId", requestId)
