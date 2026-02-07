@@ -280,7 +280,7 @@
   - name: intellij.kotlin.refactorings.move
   - name: intellij.kotlin.refactorings.rename
   - name: intellij.kotlin.performanceExtendedPlugin
-  - name: kotlin.bundled-compiler-plugins-support
+  - name: intellij.kotlin.compilerPlugins.support.bundled
   - name: kotlin.jsr223
   - name: intellij.kotlin.internal
   - name: intellij.kotlin.base.serialization

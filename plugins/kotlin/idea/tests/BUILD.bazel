@@ -232,7 +232,7 @@ jvm_library(
     "//platform/analysis-api:analysis",
     "//platform/projectModel-api:projectModel",
     "//plugins/kotlin/kotlin.ide",
-    "//plugins/kotlin/bundled-compiler-plugins-support",
+    "//plugins/kotlin/bundled-compiler-plugins-support:compilerPlugins-support-bundled",
     "//platform/navbar/testFramework",
     "//platform/execution.dashboard",
     "//plugins/kotlin/code-insight/intentions-shared:kotlin-code-insight-intentions-shared",

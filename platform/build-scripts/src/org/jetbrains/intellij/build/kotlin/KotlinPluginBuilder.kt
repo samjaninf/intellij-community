@@ -211,7 +211,7 @@ abstract class KotlinPluginBuilder(val kind : KotlinPluginKind = System.getPrope
       "intellij.kotlin.refactorings.move",
       "intellij.kotlin.refactorings.rename",
       "intellij.kotlin.performanceExtendedPlugin",
-      "kotlin.bundled-compiler-plugins-support",
+      "intellij.kotlin.compilerPlugins.support.bundled",
       "kotlin.jsr223",
       "intellij.kotlin.internal",
       "intellij.kotlin.base.serialization"

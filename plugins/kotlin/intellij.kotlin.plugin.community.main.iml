@@ -211,7 +211,7 @@
     <orderEntry type="module" module-name="intellij.kotlin.refactorings" exported="" />
     <orderEntry type="module" module-name="kotlin.refactorings.common" exported="" />
     <orderEntry type="module" module-name="intellij.kotlin.performanceExtendedPlugin" exported="" />
-    <orderEntry type="module" module-name="kotlin.bundled-compiler-plugins-support" exported="" />
+    <orderEntry type="module" module-name="intellij.kotlin.compilerPlugins.support.bundled" exported="" />
     <orderEntry type="module" module-name="intellij.kotlin.onboarding" exported="" />
     <orderEntry type="module" module-name="intellij.kotlin.onboarding.gradle" scope="RUNTIME" />
     <orderEntry type="module" module-name="intellij.kotlin.onboarding.maven" scope="RUNTIME" />

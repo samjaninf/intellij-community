@@ -174,7 +174,7 @@ jvm_library(
     "//java/testFramework",
     "//plugins/kotlin/base/statistics",
     "//platform/editor-ui-ex:editor-ex",
-    "//plugins/kotlin/bundled-compiler-plugins-support",
+    "//plugins/kotlin/bundled-compiler-plugins-support:compilerPlugins-support-bundled",
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting_test_lib",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",

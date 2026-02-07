@@ -74,7 +74,7 @@ jvm_library(
     "//plugins/kotlin/base/compiler-configuration",
     "//plugins/kotlin/code-insight/override-implement-shared:kotlin-code-insight-override-implement-shared",
     "//plugins/kotlin/code-insight/override-implement-k2:kotlin-codeInsight-overrideImplement",
-    "//plugins/kotlin/bundled-compiler-plugins-support",
+    "//plugins/kotlin/bundled-compiler-plugins-support:compilerPlugins-support-bundled",
     "//platform/workspace/jps",
     "//platform/backend/workspace",
     "//plugins/kotlin/refactorings/kotlin.refactorings.common:kotlin-refactorings-common",
