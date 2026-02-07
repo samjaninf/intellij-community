@@ -10,8 +10,11 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed interface RpcLookupElementEvent {
+  /**
+   * the current item changed in the current lookup
+   */
   @Serializable
-  data class SelectedItem(
+  data class CurrentItemChanged(
     val requestId: RpcCompletionRequestId,
     val arrangementId: RpcCompletionArrangementId,
     val itemId: RpcCompletionItemId?,
@@ -24,6 +27,9 @@ sealed interface RpcLookupElementEvent {
     }
   }
 
+  /**
+   * the lookup is closed without completion
+   */
   @Serializable
   data class Cancel(val projectId: ProjectId) : RpcLookupElementEvent {
     override fun toString(): String = buildToString("Cancel") {
@@ -31,7 +37,20 @@ sealed interface RpcLookupElementEvent {
     }
   }
 
+  /**
+   * the lookup is closed with completion
+   */
   @Serializable
+  data class ItemSelected(val projectId: ProjectId) : RpcLookupElementEvent {
+    override fun toString(): String = buildToString("Cancel") {
+      field("projectId", projectId)
+    }
+  }
+
+  @Serializable
+  /**
+   * the lookup is shown
+   */
   data class Show(val projectId: ProjectId, val editor: EditorId) : RpcLookupElementEvent {
     override fun toString(): String = buildToString("Show") {
       field("projectId", projectId)
