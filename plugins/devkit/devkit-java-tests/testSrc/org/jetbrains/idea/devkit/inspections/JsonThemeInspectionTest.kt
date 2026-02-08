@@ -2,13 +2,17 @@
 package org.jetbrains.idea.devkit.inspections
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import org.jetbrains.idea.devkit.themes.UnresolvedThemeJsonNamedColorInspection
 import org.jetbrains.idea.devkit.themes.UnresolvedIntelliJThemeKeyInspection
 
-class UnresolvedThemeKeyInspectionTest : BasePlatformTestCase() {
+class JsonThemeInspectionTest : BasePlatformTestCase() {
 
   override fun setUp() {
     super.setUp()
-    myFixture.enableInspections(UnresolvedIntelliJThemeKeyInspection::class.java)
+    myFixture.enableInspections(
+      UnresolvedIntelliJThemeKeyInspection::class.java,
+      UnresolvedThemeJsonNamedColorInspection::class.java
+    )
   }
 
   fun testRegularKeys() {
@@ -62,6 +66,34 @@ class UnresolvedThemeKeyInspectionTest : BasePlatformTestCase() {
               "UnknownGradient": {
                 <warning descr="Unresolved key 'ProjectGradients.Group2.UnknownGradient.Fraction1'">"Fraction1"</warning>: 0.5
               }
+            }
+          }
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
+
+  fun testColorNamesInThemeFiles() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "colors": {
+          "registered-color": "#000000"
+        },
+        "ui": {
+          "ActionButton.focusedBorderColor": "registered-color",
+          "ActionButton.separatorColor": "#ffffff",
+          "ActionButton": {
+            "pressedBackground": "<error descr="Cannot resolve symbol 'unregistered-color'">unregistered-color</error>",
+            "hoverBackground": "registered-color"
+          }
+        },
+        "ProjectGradients": {
+          "Group1": {
+            "DiagonalGradient": {
+              "Color1": "registered-color",
+              "Color2": "<error descr="Cannot resolve symbol 'unregistered-color'">unregistered-color</error>"
             }
           }
         }

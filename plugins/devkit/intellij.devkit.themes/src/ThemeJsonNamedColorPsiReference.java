@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 final class ThemeJsonNamedColorPsiReference extends JsonSchemaBaseReference<JsonLiteral> {
   private final String myName;

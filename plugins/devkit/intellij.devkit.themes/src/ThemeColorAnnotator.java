@@ -52,7 +52,7 @@ final class ThemeColorAnnotator implements Annotator, DumbAware {
 
     JsonStringLiteral literal = (JsonStringLiteral)element;
     holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
-    .gutterIconRenderer(new MyRenderer(literal.getValue(), literal)).create();
+      .gutterIconRenderer(new MyRenderer(literal.getValue(), literal)).create();
   }
 
   private static boolean isColorLineMarkerProviderEnabled() {
@@ -72,17 +72,16 @@ final class ThemeColorAnnotator implements Annotator, DumbAware {
     return isColorCode(text) || isNamedColor(text);
   }
 
-  private static boolean isNamedColor(String text) {
+  static boolean isNamedColor(String text) {
     return StringUtil.isLatinAlphanumeric(text);
   }
 
-  private static boolean isColorCode(@Nullable String text) {
+  static boolean isColorCode(@Nullable String text) {
     if (!StringUtil.startsWithChar(text, '#')) return false;
     //noinspection ConstantConditions - StringUtil#startsWithChar checks for null
     if (text.length() != HEX_COLOR_LENGTH_RGB && text.length() != HEX_COLOR_LENGTH_RGBA) return false;
     return COLOR_HEX_PATTERN_RGB.matcher(text).matches() || COLOR_HEX_PATTERN_RGBA.matcher(text).matches();
   }
-
 
   private static final class MyRenderer extends GutterIconRenderer implements DumbAware {
     private static final int ICON_SIZE = 12;
