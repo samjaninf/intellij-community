@@ -3547,6 +3547,46 @@
       "key": "Recap.chroniclesForegroundGreyed",
       "description": "Recap card's history element's muted text color.",
       "since": "2025.3"
+    },
+    {
+      "key": "ProjectGradients.GroupN.DiagonalGradient.ColorN",
+      "description": "Diagonal gradient color of project gradient in group",
+      "since": "2025.3"
+    },
+    {
+      "key": "ProjectGradients.GroupN.DiagonalGradient.FractionN",
+      "description": "Diagonal gradient fraction of project gradient in group",
+      "since": "2025.3"
+    },
+    {
+      "key": "ProjectGradients.GroupN.RadialGradient.ColorN",
+      "description": "Radial gradient color of project gradient in group",
+      "since": "2025.3"
+    },
+    {
+      "key": "ProjectGradients.GroupN.HorizontalGradient.ColorN",
+      "description": "Horizonal gradient color of project gradient in group",
+      "since": "2025.3"
+    },
+    {
+      "key": "ProjectGradients.GroupN.VerticalGradient.ColorN",
+      "description": "Vertical gradient color of project gradient in group",
+      "since": "2025.3"
+    },
+    {
+      "key": "RecentProject.ColorN.MainToolbarGradientStart",
+      "description": "Main toolbar gradient start color of recent project",
+      "since": "2025.3"
+    },
+    {
+      "key": "RecentProject.ColorN.Avatar.Start",
+      "description": "Avatar gradient start color of recent project",
+      "since": "2025.3"
+    },
+    {
+      "key": "RecentProject.ColorN.Avatar.End",
+      "description": "Avatar gradient end color of recent project",
+      "since": "2025.3"
     }
   ]
 }

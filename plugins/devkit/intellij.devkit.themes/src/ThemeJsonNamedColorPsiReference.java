@@ -14,11 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
-/**
- * @author Konstantin Bulenkov
- */
-class ThemeJsonNamedColorPsiReference extends JsonSchemaBaseReference<JsonLiteral> {
+final class ThemeJsonNamedColorPsiReference extends JsonSchemaBaseReference<JsonLiteral> {
   private final String myName;
 
   ThemeJsonNamedColorPsiReference(JsonLiteral element) {
@@ -28,10 +26,10 @@ class ThemeJsonNamedColorPsiReference extends JsonSchemaBaseReference<JsonLitera
 
   @Override
   public @Nullable PsiElement resolveInner() {
-    final PsiFile containingFile = getElement().getContainingFile();
+    PsiFile containingFile = getElement().getContainingFile();
     if (!(containingFile instanceof JsonFile)) return null;
 
-    final List<JsonProperty> namedColors = ThemeJsonUtil.getNamedColors((JsonFile)containingFile);
+    List<JsonProperty> namedColors = ThemeJsonUtil.getNamedColors((JsonFile)containingFile);
     return ContainerUtil.find(namedColors, property -> property.getName().equals(myName));
   }
 
