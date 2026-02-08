@@ -1,4 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInspection;
 
 import com.intellij.analysis.AnalysisScope;
@@ -138,18 +138,24 @@ public abstract class RedundantSuppressInspectionBase extends GlobalSimpleInspec
           InspectionToolWrapper<?, ?> toolWrapper = entry.getKey();
           String toolId = entry.getValue();
           toolWrapper.initialize(globalContext);
-          Collection<CommonProblemDescriptor> descriptors;
+          List<ProblemDescriptor> descriptors;
           if (toolWrapper instanceof LocalInspectionToolWrapper local) {
             if (local.isUnfair()) {
               continue; // can't work with passes other than LocalInspectionPass
             }
-            LocalInspectionTool tool = local.getTool();
+            String id = toolWrapper.getMainToolId();
+            List<LocalInspectionToolWrapper> wrappers;
+            if (id != null) {
+              LocalInspectionToolWrapper mainTool = (LocalInspectionToolWrapper)((InspectionProfileImpl)profile).getToolById(id, psiFile);
+              wrappers = mainTool != null ? List.of(local, mainTool) : List.of(local);
+            }
+            else {
+              wrappers = List.of(local);
+            }
             List<ProblemDescriptor> found = Collections.synchronizedList(new ArrayList<>());
             // shouldn't use standard ProblemsHolder because it filters out suppressed elements by default
-            InspectionEngine.inspectEx(Collections.singletonList(new LocalInspectionToolWrapper(tool)), psiFile, psiFile.getTextRange(),
-                                       psiFile.getTextRange(), false,
-                                       true, false, ProgressIndicatorProvider.getGlobalProgressIndicator(),
-                                       (wrapper, descriptor) -> found.add(descriptor));
+            InspectionEngine.inspectEx(wrappers, psiFile, psiFile.getTextRange(), psiFile.getTextRange(), false, true, false, 
+                                       ProgressIndicatorProvider.getGlobalProgressIndicator(), (__, descriptor) -> found.add(descriptor));
             descriptors = new ArrayList<>(found);
           }
           else if (toolWrapper instanceof GlobalInspectionToolWrapper global) {
@@ -166,7 +172,7 @@ public abstract class RedundantSuppressInspectionBase extends GlobalSimpleInspec
             Collection<String> suppressedIds = e.getValue();
             PsiElement suppressedScope = e.getKey();
             if (!suppressedIds.contains(toolId)) continue;
-            for (CommonProblemDescriptor descriptor : descriptors) {
+            for (ProblemDescriptor descriptor : descriptors) {
               if (!(descriptor instanceof ProblemDescriptor problemDescriptor)) continue;
               PsiElement element = problemDescriptor.getPsiElement();
               if (element == null) continue;

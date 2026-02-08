@@ -376,8 +376,8 @@ public final class InspectionEngine {
         if (holder.hasResults()) {
           for (ProblemDescriptor descriptor : holder.getResults()) {
             PsiElement element = descriptor.getPsiElement();
-            if (element == null || !ignoreSuppressedElements || !SuppressionUtil.inspectionResultSuppressed(element, tool)) {
-              LocalInspectionToolWrapper wrapper = getRedirectedToolWrapper(toolWrapper, descriptor);
+            LocalInspectionToolWrapper wrapper = getRedirectedToolWrapper(toolWrapper, descriptor);
+            if (element == null || !ignoreSuppressedElements || !SuppressionUtil.inspectionResultSuppressed(element, wrapper.getTool())) {
               resultDescriptors.computeIfAbsent(wrapper, x -> new ArrayList<>()).add(descriptor);
             }
           }
@@ -391,8 +391,7 @@ public final class InspectionEngine {
     return resultDescriptors;
   }
 
-  private static @Nullable LocalInspectionToolWrapper getRedirectedToolWrapper(LocalInspectionToolWrapper toolWrapper,
-                                                                               ProblemDescriptor descriptor) {
+  private static LocalInspectionToolWrapper getRedirectedToolWrapper(LocalInspectionToolWrapper toolWrapper, ProblemDescriptor descriptor) {
     if (descriptor instanceof ProblemDescriptorWithReporterName name && toolWrapper.getTool() instanceof DynamicGroupTool groupTool) {
       String reportingToolName = name.getReportingToolShortName();
       for (LocalInspectionToolWrapper child : groupTool.getChildren()) {
@@ -416,8 +415,7 @@ public final class InspectionEngine {
         if (toolWrapper instanceof LocalInspectionToolWrapper local) {
           Map<LocalInspectionToolWrapper, List<ProblemDescriptor>> problemDescriptors =
             inspectEx(Collections.singletonList(local), psiFile, psiFile.getTextRange(), psiFile.getTextRange(),
-                      false,
-                      false, true, new EmptyProgressIndicator(), PairProcessor.alwaysTrue());
+                      false, false, true, new EmptyProgressIndicator(), PairProcessor.alwaysTrue());
 
           for (List<ProblemDescriptor> group : problemDescriptors.values()) {
             result.addAll(group);
