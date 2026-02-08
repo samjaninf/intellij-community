@@ -177,7 +177,9 @@ internal class LoadedGitLabMergeRequest(
       { it.id },
 
       requestReloadFlow = mergeRequestReloadRequest.withInitial(Unit),
-      requestRefreshFlow = mergeRequestRefreshRequest.combine(stateEventsRefreshRequest.withInitial(Unit)) { _, _ -> }
+      requestRefreshFlow = mergeRequestRefreshRequest.combine(stateEventsRefreshRequest.withInitial(Unit)) { _, _ -> },
+
+      shouldTryToLoadAll = false
     ) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabResourceStateEventDTO>(
           GitLabApiRequestName.REST_GET_MERGE_REQUEST_STATE_EVENTS, uri, eTag
@@ -193,7 +195,9 @@ internal class LoadedGitLabMergeRequest(
       { it.id },
 
       requestReloadFlow = mergeRequestReloadRequest.withInitial(Unit),
-      requestRefreshFlow = mergeRequestRefreshRequest
+      requestRefreshFlow = mergeRequestRefreshRequest,
+
+      shouldTryToLoadAll = false
     ) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabResourceLabelEventDTO>(
           GitLabApiRequestName.REST_GET_MERGE_REQUEST_LABEL_EVENTS, uri, eTag
@@ -209,7 +213,9 @@ internal class LoadedGitLabMergeRequest(
       { it.id },
 
       requestReloadFlow = mergeRequestReloadRequest.withInitial(Unit),
-      requestRefreshFlow = mergeRequestRefreshRequest
+      requestRefreshFlow = mergeRequestRefreshRequest,
+
+      shouldTryToLoadAll = false
     ) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabResourceMilestoneEventDTO>(
           GitLabApiRequestName.REST_GET_MERGE_REQUEST_MILESTONE_EVENTS, uri, eTag

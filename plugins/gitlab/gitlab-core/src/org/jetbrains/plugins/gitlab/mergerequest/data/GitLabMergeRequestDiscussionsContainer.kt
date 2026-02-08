@@ -101,7 +101,9 @@ class GitLabMergeRequestDiscussionsContainerImpl(
 
       requestReloadFlow = reloadRequests,
       requestRefreshFlow = updateRequests,
-      requestChangeFlow = discussionEvents
+      requestChangeFlow = discussionEvents,
+
+      shouldTryToLoadAll = false
     ) { uri, eTag ->
       api.rest.loadUpdatableJsonList<GitLabDiscussionRestDTO>(
         GitLabApiRequestName.REST_GET_MERGE_REQUEST_DISCUSSIONS, uri, eTag
@@ -158,7 +160,9 @@ class GitLabMergeRequestDiscussionsContainerImpl(
 
         requestReloadFlow = reloadRequests,
         requestRefreshFlow = updateRequests,
-        requestChangeFlow = draftNotesEvents
+        requestChangeFlow = draftNotesEvents,
+
+        shouldTryToLoadAll = false
       ) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabMergeRequestDraftNoteRestDTO>(
           GitLabApiRequestName.REST_GET_DRAFT_NOTES, uri, eTag

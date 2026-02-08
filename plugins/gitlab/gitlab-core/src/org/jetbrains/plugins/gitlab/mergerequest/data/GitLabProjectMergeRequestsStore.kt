@@ -102,7 +102,8 @@ class CachingGitLabProjectMergeRequestsStore(private val project: Project,
       getMergeRequestListURI(glProject, searchQuery),
       { it.id },
 
-      requestReloadFlow = tokenRefreshFlow.withInitial(Unit)
+      requestReloadFlow = tokenRefreshFlow.withInitial(Unit),
+      shouldTryToLoadAll = false
     ) { uri, etag ->
       api.rest.loadUpdatableJsonList<GitLabMergeRequestShortRestDTO>(
         GitLabApiRequestName.REST_GET_MERGE_REQUESTS, uri, etag

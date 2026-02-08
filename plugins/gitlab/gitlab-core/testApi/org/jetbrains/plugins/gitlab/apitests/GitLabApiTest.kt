@@ -384,7 +384,8 @@ class GitLabApiTest : GitLabApiTestCase() {
       val loader = startGitLabRestETagListLoaderIn(backgroundScope,
                                                    getMergeRequestStateEventsUri(glTest1Coordinates, "1"),
                                                    { it.id },
-                                                   reloadRequest) { uri, eTag ->
+                                                   reloadRequest,
+                                                   shouldTryToLoadAll = false) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabResourceStateEventDTO>(
           GitLabApiRequestName.REST_GET_MERGE_REQUEST_STATE_EVENTS, uri, eTag
         )
@@ -405,7 +406,8 @@ class GitLabApiTest : GitLabApiTestCase() {
       val loader = startGitLabRestETagListLoaderIn(backgroundScope,
                                                    getMergeRequestLabelEventsUri(glTest1Coordinates, "1"),
                                                    { it.id },
-                                                   reloadRequest) { uri, eTag ->
+                                                   reloadRequest,
+                                                   shouldTryToLoadAll = false) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabResourceLabelEventDTO>(
           GitLabApiRequestName.REST_GET_MERGE_REQUEST_STATE_EVENTS, uri, eTag
         )
@@ -426,7 +428,8 @@ class GitLabApiTest : GitLabApiTestCase() {
       val loader = startGitLabRestETagListLoaderIn(backgroundScope,
                                                    getMergeRequestMilestoneEventsUri(glTest1Coordinates, "1"),
                                                    { it.id },
-                                                   reloadRequest) { uri, eTag ->
+                                                   reloadRequest,
+                                                   shouldTryToLoadAll = false) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabResourceMilestoneEventDTO>(
           GitLabApiRequestName.REST_GET_MERGE_REQUEST_STATE_EVENTS, uri, eTag
         )
