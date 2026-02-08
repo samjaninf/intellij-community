@@ -1,4 +1,4 @@
-<idea-plugin package="org.jetbrains.idea.devkit.themes">
+<idea-plugin>
   <dependencies>
     <module name="intellij.devkit.core"/>
     <module name="intellij.json.backend"/>
