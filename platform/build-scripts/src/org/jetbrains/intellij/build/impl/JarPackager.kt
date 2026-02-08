@@ -331,6 +331,9 @@ class JarPackager private constructor(
     val moduleSources = asset.includedModules.computeIfAbsent(item) { mutableListOf() }
 
     for ((relativePath, data) in patchedContent) {
+      if (layout is PluginLayout && moduleName != layout.mainModule && relativePath == "META-INF/plugin.xml") {
+        continue
+      }
       moduleSources.add(InMemoryContentSource(relativePath, data))
     }
 

@@ -240,7 +240,6 @@ internal suspend fun buildProduct(request: BuildRequest, createProductProperties
           platformLayout = platformLayout,
           searchableOptionSet = searchableOptionSetDeferred.await(),
           platformEntriesProvider = { platformLayoutResultDeferred.await().distributionEntries },
-          moduleOutputPatcher = moduleOutputPatcher,
         )
       }
 

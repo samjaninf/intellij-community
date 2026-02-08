@@ -23,7 +23,6 @@ import org.jetbrains.intellij.build.classPath.generatePluginClassPathFromPrebuil
 import org.jetbrains.intellij.build.classPath.writePluginClassPathHeader
 import org.jetbrains.intellij.build.impl.DescriptorCacheContainer
 import org.jetbrains.intellij.build.impl.DistributionBuilderState
-import org.jetbrains.intellij.build.impl.ModuleOutputPatcher
 import org.jetbrains.intellij.build.impl.PLUGINS_DIRECTORY
 import org.jetbrains.intellij.build.impl.PLUGIN_CLASSPATH
 import org.jetbrains.intellij.build.impl.PLUGIN_LAYOUT_COMPARATOR_BY_MAIN_MODULE
@@ -49,7 +48,6 @@ internal suspend fun buildBundledPluginsForAllPlatforms(
   isUpdateFromSources: Boolean,
   buildPlatformJob: Deferred<List<DistributionFileEntry>>,
   searchableOptionSetDescriptor: SearchableOptionSetDescriptor?,
-  moduleOutputPatcher: ModuleOutputPatcher,
   descriptorCacheContainer: DescriptorCacheContainer,
   context: BuildContext,
 ): List<PluginBuildDescriptor> = coroutineScope {
@@ -60,7 +58,6 @@ internal suspend fun buildBundledPluginsForAllPlatforms(
       isUpdateFromSources = isUpdateFromSources,
       buildPlatformJob = buildPlatformJob,
       searchableOptionSet = searchableOptionSetDescriptor,
-      moduleOutputPatcher = moduleOutputPatcher,
       descriptorCacheContainer = descriptorCacheContainer,
       context = context,
     )
@@ -80,7 +77,6 @@ internal suspend fun buildBundledPluginsForAllPlatforms(
       context = context,
       searchableOptionSet = searchableOptionSetDescriptor,
       pluginDirs = pluginDirs,
-      moduleOutputPatcher = moduleOutputPatcher,
       descriptorCacheContainer = descriptorCacheContainer,
     )
   }
@@ -109,7 +105,6 @@ private suspend fun buildOsSpecificBundledPlugins(
   searchableOptionSet: SearchableOptionSetDescriptor?,
   pluginDirs: List<Pair<SupportedDistribution, Path>>,
   descriptorCacheContainer: DescriptorCacheContainer,
-  moduleOutputPatcher: ModuleOutputPatcher,
 ): Map<SupportedDistribution, List<PluginBuildDescriptor>> {
   return spanBuilder("build os-specific bundled plugins")
     .setAttribute("isUpdateFromSources", isUpdateFromSources)
@@ -136,7 +131,6 @@ private suspend fun buildOsSpecificBundledPlugins(
             .setAttribute("outDir", targetDir.toString())
             .use {
               buildPlugins(
-                moduleOutputPatcher = moduleOutputPatcher,
                 plugins = osSpecificPlugins,
                 os = os,
                 arch = arch,
@@ -160,7 +154,6 @@ internal suspend fun buildBundledPlugins(
   isUpdateFromSources: Boolean,
   buildPlatformJob: Deferred<List<DistributionFileEntry>>,
   searchableOptionSet: SearchableOptionSetDescriptor?,
-  moduleOutputPatcher: ModuleOutputPatcher,
   descriptorCacheContainer: DescriptorCacheContainer,
   context: BuildContext,
 ): List<PluginBuildDescriptor> {
@@ -178,7 +171,6 @@ internal suspend fun buildBundledPlugins(
       val targetDir = context.paths.distAllDir.resolve(PLUGINS_DIRECTORY)
       val platformSpecificPluginDirs = getPluginDirs(context, isUpdateFromSources)
       val entries = buildPlugins(
-        moduleOutputPatcher = moduleOutputPatcher,
         plugins = pluginsToBundle,
         os = null,
         arch = null,

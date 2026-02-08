@@ -39,7 +39,6 @@ import java.nio.file.Path
 private class ScrambleTask(@JvmField val pluginLayout: PluginLayout, @JvmField val pluginDir: Path, @JvmField val targetDir: Path)
 
 internal suspend fun buildPlugins(
-  moduleOutputPatcher: ModuleOutputPatcher,
   plugins: Collection<PluginLayout>,
   os: OsFamily?,
   arch: JvmArchitecture?,
@@ -59,7 +58,6 @@ internal suspend fun buildPlugins(
       buildPlugin(
         pluginLayout = pluginLayout,
         targetDir = targetDir,
-        moduleOutputPatcher = moduleOutputPatcher,
         state = state,
         descriptorCacheContainer = descriptorCacheContainer,
         searchableOptionSet = searchableOptionSet,
@@ -103,7 +101,6 @@ internal suspend fun buildPlugins(
 private suspend fun CoroutineScope.buildPlugin(
   pluginLayout: PluginLayout,
   targetDir: Path,
-  moduleOutputPatcher: ModuleOutputPatcher,
   state: DistributionBuilderState,
   descriptorCacheContainer: DescriptorCacheContainer,
   searchableOptionSet: SearchableOptionSetDescriptor?,
@@ -116,6 +113,7 @@ private suspend fun CoroutineScope.buildPlugin(
 ): Pair<PluginBuildDescriptor, ScrambleTask?> {
   val directoryName = pluginLayout.directoryName
   val pluginDir = targetDir.resolve(directoryName)
+  val moduleOutputPatcher = ModuleOutputPatcher()
 
   if (pluginLayout.mainModule != BUILT_IN_HELP_MODULE_NAME) {
     if (context.options.skipCheckOutputOfPluginModules) {

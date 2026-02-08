@@ -924,7 +924,6 @@ private suspend fun buildCrossPlatformOnlyPlugins(context: BuildContext): Pair<P
     .use {
       val state = context.distributionState()
       buildPlugins(
-        moduleOutputPatcher = ModuleOutputPatcher(),
         plugins = crossPlatformPlugins,
         os = null,
         arch = null,

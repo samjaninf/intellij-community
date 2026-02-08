@@ -34,7 +34,6 @@ import org.jetbrains.intellij.build.getUnprocessedPluginXmlContent
 import org.jetbrains.intellij.build.impl.BUILT_IN_HELP_MODULE_NAME
 import org.jetbrains.intellij.build.impl.DescriptorCacheContainer
 import org.jetbrains.intellij.build.impl.DistributionBuilderState
-import org.jetbrains.intellij.build.impl.ModuleOutputPatcher
 import org.jetbrains.intellij.build.impl.NoDuplicateZipArchiveOutputStream
 import org.jetbrains.intellij.build.impl.PLUGIN_LAYOUT_COMPARATOR_BY_MAIN_MODULE
 import org.jetbrains.intellij.build.impl.PluginLayout
@@ -111,7 +110,6 @@ private suspend fun buildNonBundledPlugins(
     }
   }
 
-  val moduleOutputPatcher = ModuleOutputPatcher()
   val stageDir = nonBundledPluginsStageDir(context)
   NioFiles.deleteRecursively(stageDir)
 
@@ -138,7 +136,6 @@ private suspend fun buildNonBundledPlugins(
     }
 
     buildPlugins(
-      moduleOutputPatcher = moduleOutputPatcher,
       plugins = filteredPlugins,
       os = os,
       arch = arch,
@@ -175,7 +172,9 @@ private suspend fun buildNonBundledPlugins(
         context.nonBundledPlugins
       }
       val destFile = targetDirectory.resolve("${plugin.directoryName}-$pluginVersion.zip")
-      val pluginXml = moduleOutputPatcher.getPatchedPluginXml(plugin.mainModule)
+      val pluginXml = checkNotNull(descriptorCacheContainer.forPlugin(pluginDirOrFile).getCachedFileData(PLUGIN_XML_RELATIVE_PATH)) {
+        "Patched plugin descriptor is not found for module ${plugin.mainModule} in '$pluginDirOrFile'"
+      }
       pluginSpecs.add(PluginRepositorySpec(destFile, pluginXml))
 
       val entries = handleCustomPlatformSpecificAssets(layout = plugin, targetPlatform = null, context = context, pluginDir = pluginDirOrFile, isDevMode = true)
@@ -215,9 +214,9 @@ private suspend fun buildNonBundledPlugins(
     descriptorCacheContainer.forPlugin(targetDir.resolve(helpPluginLayout.directoryName)).put(PLUGIN_XML_RELATIVE_PATH, helpPlugin.second.encodeToByteArray())
     val spec = buildHelpPlugin(
       helpPluginLayout = helpPluginLayout,
+      pluginXml = helpPlugin.second,
       pluginsToPublishDir = stageDir,
       targetDir = targetDir,
-      moduleOutputPatcher = moduleOutputPatcher,
       state = state,
       searchableOptionSetDescriptor = searchableOptionSet,
       descriptorCacheContainer = descriptorCacheContainer,
@@ -410,9 +409,9 @@ private fun validatePlugin(file: Path, span: Span, context: BuildContext) {
 
 private suspend fun buildHelpPlugin(
   helpPluginLayout: PluginLayout,
+  pluginXml: String,
   pluginsToPublishDir: Path,
   targetDir: Path,
-  moduleOutputPatcher: ModuleOutputPatcher,
   state: DistributionBuilderState,
   descriptorCacheContainer: DescriptorCacheContainer,
   searchableOptionSetDescriptor: SearchableOptionSetDescriptor?,
@@ -423,7 +422,6 @@ private suspend fun buildHelpPlugin(
   spanBuilder("build help plugin").setAttribute("dir", directory).use {
     val targetDir = pluginsToPublishDir.resolve(directory)
     buildPlugins(
-      moduleOutputPatcher = moduleOutputPatcher,
       plugins = listOf(helpPluginLayout),
       os = null,
       arch = null,
@@ -437,5 +435,5 @@ private suspend fun buildHelpPlugin(
     zipWithCompression(targetFile = destFile, dirs = mapOf(targetDir to ""))
     null
   }
-  return PluginRepositorySpec(pluginZip = destFile, pluginXml = moduleOutputPatcher.getPatchedPluginXml(helpPluginLayout.mainModule))
+  return PluginRepositorySpec(pluginZip = destFile, pluginXml = pluginXml.encodeToByteArray())
 }

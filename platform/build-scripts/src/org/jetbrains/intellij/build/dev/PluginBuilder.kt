@@ -15,7 +15,6 @@ import org.jetbrains.intellij.build.PluginBundlingRestrictions
 import org.jetbrains.intellij.build.SearchableOptionSetDescriptor
 import org.jetbrains.intellij.build.classPath.PluginBuildDescriptor
 import org.jetbrains.intellij.build.impl.DistributionBuilderState
-import org.jetbrains.intellij.build.impl.ModuleOutputPatcher
 import org.jetbrains.intellij.build.impl.PlatformLayout
 import org.jetbrains.intellij.build.impl.PluginLayout
 import org.jetbrains.intellij.build.impl.SupportedDistribution
@@ -42,7 +41,6 @@ internal suspend fun buildPluginsForDevMode(
   platformLayout: Deferred<PlatformLayout>,
   searchableOptionSet: SearchableOptionSetDescriptor?,
   platformEntriesProvider: suspend () -> List<DistributionFileEntry>,
-  moduleOutputPatcher: ModuleOutputPatcher,
 ): PluginsLayoutResult {
   val bundledMainModuleNames = getBundledMainModuleNames(context, request.additionalModules)
 
@@ -59,7 +57,6 @@ internal suspend fun buildPluginsForDevMode(
   val pluginEntries = spanBuilder("build plugins").setAttribute(AttributeKey.longKey("count"), plugins.size.toLong()).use {
     val targetPlatform = SupportedDistribution(os = OsFamily.currentOs, arch = JvmArchitecture.currentJvmArch, libcImpl = LibcImpl.current(OsFamily.currentOs))
     buildPlugins(
-      moduleOutputPatcher = moduleOutputPatcher,
       plugins = plugins,
       os = null,
       arch = null,

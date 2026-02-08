@@ -127,7 +127,6 @@ internal suspend fun buildDistribution(
       isUpdateFromSources = isUpdateFromSources,
       buildPlatformJob = buildPlatformJob,
       searchableOptionSetDescriptor = searchableOptionSet,
-      moduleOutputPatcher = moduleOutputPatcher,
       descriptorCacheContainer = platformLayout.descriptorCacheContainer,
       context = context,
     )
@@ -212,7 +211,6 @@ suspend fun testBuildBundledPluginsForAllPlatforms(
   state: DistributionBuilderState,
   pluginLayouts: Set<PluginLayout>,
   buildPlatformJob: Deferred<List<DistributionFileEntry>>,
-  moduleOutputPatcher: ModuleOutputPatcher,
   descriptorCacheContainer: DescriptorCacheContainer,
   context: BuildContext,
 ): List<DistFile> {
@@ -224,7 +222,6 @@ suspend fun testBuildBundledPluginsForAllPlatforms(
     isUpdateFromSources = false,
     searchableOptionSetDescriptor = null,
     descriptorCacheContainer = descriptorCacheContainer,
-    moduleOutputPatcher = moduleOutputPatcher,
   )
   return context.getDistFiles(os = null, arch = null, libcImpl = null).filter { it.relativePath == PLUGIN_CLASSPATH }
 }
@@ -251,7 +248,6 @@ suspend fun buildBundledPluginsAsStandaloneTask(
     isUpdateFromSources = false,
     buildPlatformJob = CompletableDeferred(platformContent),
     searchableOptionSet = searchableOptionSetDescriptor,
-    moduleOutputPatcher = ModuleOutputPatcher(),
     descriptorCacheContainer = state.platformLayout.descriptorCacheContainer,
     context = context,
   )
