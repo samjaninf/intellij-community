@@ -66,6 +66,7 @@ import com.intellij.util.ObjectUtils;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.concurrency.Semaphore;
 import com.intellij.util.concurrency.ThreadingAssertions;
+import com.intellij.util.concurrency.annotations.RequiresReadLock;
 import com.intellij.util.indexing.DumbModeAccessType;
 import com.intellij.util.messages.SimpleMessageBusConnection;
 import com.intellij.util.ui.update.MergingUpdateQueue;
@@ -367,6 +368,7 @@ public final class CompletionProgressIndicator extends ProgressIndicatorBase imp
     return selectionEndOffset;
   }
 
+  @RequiresReadLock
   void scheduleAdvertising(@NotNull CompletionParameters parameters) {
     if (lookup.isAvailableToUser()) {
       return;
@@ -377,6 +379,8 @@ public final class CompletionProgressIndicator extends ProgressIndicatorBase imp
         if (!lookup.isCalculating() && !lookup.isVisible()) {
           return;
         }
+
+        ProgressManager.checkCanceled();
 
         @SuppressWarnings("removal")
         String s = contributor.advertise(parameters);
