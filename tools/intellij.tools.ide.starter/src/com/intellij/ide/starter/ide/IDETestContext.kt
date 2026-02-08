@@ -275,6 +275,11 @@ open class IDETestContext(
     configureLoggers(LogLevel.TRACE, "com.intellij.openapi.externalSystem")
   }
 
+  fun disableGotItTooltips(): IDETestContext =
+    applyVMOptionsPatch {
+      disableGotItTooltips()
+    }
+
   fun wipeSystemDir(): IDETestContext = apply {
     if (!preserveSystemDir) {
       //TODO: it would be better to allocate a new context instead of wiping the folder
@@ -822,6 +827,17 @@ open class IDETestContext(
     return this
   }
 
+  fun setThirdPartyPluginsAllowed(allowed: Boolean = true): IDETestContext {
+    writeConfigFile("options/updates.xml", """
+      <application>
+        <component name="UpdatesConfigurable">
+          <option name="THIRD_PARTY_PLUGINS_ALLOWED" value="$allowed" />
+        </component>
+      </application>
+    """)
+    return this
+  }
+
   fun enableDocRendering(): IDETestContext {
     writeConfigFile("options/editor.xml", """
       <application>
@@ -870,4 +886,6 @@ open class IDETestContext(
     """)
     return this
   }
+
+
 }
