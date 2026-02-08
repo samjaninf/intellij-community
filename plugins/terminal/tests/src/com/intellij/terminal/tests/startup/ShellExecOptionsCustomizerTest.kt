@@ -51,6 +51,9 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
   private val tempDir: Path by tempPathFixture()
   private val testDisposable: Disposable by disposableFixture()
 
+  private val eelApi: EelApi
+    get() = eelHolder.eel
+
   @Test
   fun `local dir appended to PATH is translated to remote`(): Unit = timeoutRunBlocking(TIMEOUT) {
     val dir = tempDir.asDirectory()
@@ -118,9 +121,9 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
       it[PATH] = "/path/to/baz"
     }
     Assertions.assertThat(result.shellExecOptions.envs[PATH]).isEqualTo(
-      "bar" + LocalEelDescriptor.osFamily.pathSeparator + dir1.remoteDir + eelHolder.eel.descriptor.osFamily.pathSeparator +
+      "bar" + LocalEelDescriptor.osFamily.pathSeparator + dir1.remoteDir + eelApi.descriptor.osFamily.pathSeparator +
       "/path/to/baz" +
-      eelHolder.eel.descriptor.osFamily.pathSeparator + dir2.remoteDir + LocalEelDescriptor.osFamily.pathSeparator + "foo"
+      eelApi.descriptor.osFamily.pathSeparator + dir2.remoteDir + LocalEelDescriptor.osFamily.pathSeparator + "foo"
     )
   }
 
@@ -190,7 +193,7 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
 
       it.appendEntryToPATH(Path.of("bar"))
       it.appendEntryToPATH(dir.nioDir)
-      Assertions.assertThat(it.envs[PATH]).endsWith(joinEntries("bar", dir.remoteDir, eelHolder.eel.descriptor))
+      Assertions.assertThat(it.envs[PATH]).endsWith(joinEntries("bar", dir.remoteDir, eelApi.descriptor))
 
       it.setExecCommand(newExecCommand)
       Assertions.assertThat(it.execCommand).isEqualTo(newExecCommand)
@@ -220,7 +223,7 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
     )
   }
 
-  private fun Path.asDirectory(descriptor: EelDescriptor = eelHolder.eel.descriptor): Directory {
+  private fun Path.asDirectory(descriptor: EelDescriptor = eelApi.descriptor): Directory {
     val nioDir = this
     Assertions.assertThat(nioDir.getEelDescriptor()).isEqualTo(descriptor)
     Assertions.assertThat(nioDir).isDirectory()
@@ -229,7 +232,7 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
     return Directory(nioDir, eelDir, descriptor)
   }
 
-  private suspend fun createTmpDir(prefix: String, eelApi: EelApi = eelHolder.eel): Path {
+  private suspend fun createTmpDir(prefix: String): Path {
     val dir = withContext(Dispatchers.IO) {
       eelApi.fs.createTemporaryDirectory().prefix(prefix).eelIt().getOrThrow().asNioPath()
     }
@@ -263,13 +266,13 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
 
   private fun CustomizationResult.assertPathLikeEnv(envName: String, vararg expectedEntries: String) {
     val expectedValue = expectedEntries.toList().reduce { result, entries ->
-      joinEntries(result, entries, eelHolder.eel.descriptor)
+      joinEntries(result, entries, eelApi.descriptor)
     }
     Assertions.assertThat(shellExecOptions.envs[envName]).isEqualTo(expectedValue)
   }
 
   private fun CustomizationResult.assertSinglePathEnv(envName: String, expectedPath: Path) {
-    val expectedValue = expectedPath.asEelPath(eelHolder.eel.descriptor).toString()
+    val expectedValue = expectedPath.asEelPath(eelApi.descriptor).toString()
     Assertions.assertThat(shellExecOptions.envs[envName]).isEqualTo(expectedValue)
   }
 }
