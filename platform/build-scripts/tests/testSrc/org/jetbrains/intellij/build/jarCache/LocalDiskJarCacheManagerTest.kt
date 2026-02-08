@@ -184,6 +184,27 @@ internal class LocalDiskJarCacheManagerTest {
   }
 
   @Test
+  fun `legacy purge removes root cleanup marker without legacy metadata files`() {
+    val cacheDir = tempDir.resolve("cache")
+    Files.createDirectories(cacheDir)
+
+    val legacyCleanupMarker = cacheDir.resolve(".last.cleanup.marker")
+    val oldVersionDir = cacheDir.resolve("v16")
+    val unrelatedFile = cacheDir.resolve("keep.txt")
+
+    Files.writeString(legacyCleanupMarker, "old cleanup")
+    Files.createDirectories(oldVersionDir)
+    Files.writeString(oldVersionDir.resolve("old.txt"), "old")
+    Files.writeString(unrelatedFile, "keep")
+
+    createManager(cacheDir = cacheDir, maxAccessTimeAge = 3.days)
+
+    assertThat(legacyCleanupMarker).doesNotExist()
+    assertThat(oldVersionDir).doesNotExist()
+    assertThat(unrelatedFile).exists()
+  }
+
+  @Test
   fun `concurrent compute for same key produces payload once`() {
     runBlocking {
       val manager = createManager(cacheDir = tempDir.resolve("cache"), maxAccessTimeAge = 30.days)

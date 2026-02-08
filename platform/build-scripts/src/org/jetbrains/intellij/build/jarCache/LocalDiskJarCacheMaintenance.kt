@@ -20,10 +20,10 @@ private const val cleanupScanCursorSeparator = '|'
 
 internal data class CleanupCandidate(
   @JvmField val entryStem: String,
-  @JvmField val shardDirName: String?,
+  @JvmField val shardDirName: String,
 ) {
   @JvmField
-  val dedupKey: String = "${shardDirName.orEmpty()}|$entryStem"
+  val dedupKey: String = "$shardDirName|$entryStem"
 }
 
 private data class CleanupScanCursor(
@@ -47,7 +47,7 @@ internal class CleanupCandidateIndex(
     check(maxEntries > 0) { "Expected positive maxEntries, but got $maxEntries" }
   }
 
-  fun register(entryStem: String, shardDirName: String? = null) {
+  fun register(entryStem: String, shardDirName: String) {
     if (!entryStem.contains(entryNameSeparator)) {
       return
     }
@@ -157,12 +157,10 @@ internal fun purgeLegacyCacheIfRequired(
         val jarMarkFile = jarFile.resolveSibling(jarFile.fileName.toString() + markedForCleanupFileSuffix)
         Files.deleteIfExists(metadataMarkFile)
         Files.deleteIfExists(jarMarkFile)
-
-        if (Files.exists(cacheDir.resolve(cleanupMarkerFileName))) {
-          Files.deleteIfExists(cacheDir.resolve(cleanupMarkerFileName))
-        }
       }
     }
+
+    Files.deleteIfExists(cacheDir.resolve(cleanupMarkerFileName))
 
     Files.writeString(legacyPurgeMarkerFile, LocalDateTime.now().toString())
   }
@@ -172,8 +170,21 @@ internal fun purgeLegacyCacheIfRequired(
 }
 
 private fun isTimeForCleanup(lastCleanupMarkerFile: Path): Boolean {
-  return Files.notExists(lastCleanupMarkerFile) ||
-         Files.getLastModifiedTime(lastCleanupMarkerFile).toMillis() < (System.currentTimeMillis() - cleanupEveryDuration.inWholeMilliseconds)
+  if (Files.notExists(lastCleanupMarkerFile)) {
+    return true
+  }
+
+  val lastCleanupTime = try {
+    Files.getLastModifiedTime(lastCleanupMarkerFile).toMillis()
+  }
+  catch (_: NoSuchFileException) {
+    return true
+  }
+  catch (_: IOException) {
+    return true
+  }
+
+  return lastCleanupTime < (System.currentTimeMillis() - cleanupEveryDuration.inWholeMilliseconds)
 }
 
 private suspend fun cleanupEntries(
@@ -193,12 +204,25 @@ private suspend fun cleanupEntries(
     )
     for (candidate in candidates) {
       val entryStem = candidate.entryStem
-      val key = getCacheKeyFromEntryStem(entryStem) ?: continue
+      val key = getCacheKeyFromEntryStem(entryStem)
+      val entryShardDir = entriesDir.resolve(candidate.shardDirName)
+      val paths = getCacheEntryPathsByStem(entryShardDir = entryShardDir, entryStem = entryStem)
+
+      if (key == null) {
+        deleteEntryFiles(paths)
+        continue
+      }
+
       // Cleanup sees only persisted entry names. Recover lock slot from stored key prefix
       // ("<lsb>-<msb>") to match computeIfAbsent slot selection.
-      val lockSlot = parseLockSlotFromKey(key) ?: continue
-      val entryShardDir = candidate.shardDirName?.let(entriesDir::resolve) ?: entriesDir.resolve(getShard(key))
-      val paths = getCacheEntryPathsByStem(entryShardDir = entryShardDir, entryStem = entryStem)
+      val lockSlot = parseLockSlotFromKey(key)
+      if (lockSlot == null) {
+        // Entries with malformed key prefix are unreachable by computeIfAbsent, so remove
+        // them directly instead of keeping garbage forever.
+        deleteEntryFiles(paths)
+        continue
+      }
+
       if (!shouldInspectEntryUnderLock(paths = paths, staleThreshold = staleThreshold)) {
         continue
       }

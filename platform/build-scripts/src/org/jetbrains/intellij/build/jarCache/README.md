@@ -154,11 +154,12 @@ Cleanup runs at most once per day (`.last.cleanup.marker`):
 
 1. Drain a bounded queue of recently touched entry stems.
 2. Always reserve a slice of each run for bounded shard-window scan (`.cleanup.scan.cursor`).
-3. Lock each candidate key.
-4. If metadata is missing, delete sibling entry files.
-5. If stale and not marked, create `.mark`.
-6. If stale and already marked, delete sibling entry files.
-7. If fresh, remove mark file.
+3. Delete malformed-key candidates as invalid entry garbage.
+4. Lock each well-formed candidate key.
+5. If metadata is missing, delete sibling entry files.
+6. If stale and not marked, create `.mark`.
+7. If stale and already marked, delete sibling entry files.
+8. If fresh, remove mark file.
 
 This is a two-pass stale deletion to avoid removing entries that become active again.
 

@@ -323,7 +323,7 @@ internal class LocalDiskJarCacheCleanupTest {
   }
 
   @Test
-  fun `cleanup skips malformed key entries`() {
+  fun `cleanup removes malformed key entries without lock acquisition`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
       val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
@@ -345,8 +345,36 @@ internal class LocalDiskJarCacheCleanupTest {
       manager.cleanup()
 
       assertThat(Files.exists(lockFile)).isFalse()
-      assertThat(Files.exists(entryPaths.payloadFile)).isTrue()
-      assertThat(Files.exists(metadataFile)).isTrue()
+      assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
+      assertThat(Files.exists(metadataFile)).isFalse()
+      assertThat(Files.exists(markFile)).isFalse()
+    }
+  }
+
+  @Test
+  fun `cleanup removes entries with missing key prefix without lock acquisition`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val entryPaths = buildEntryPathsFromStem(
+        shardDir = versionDir.resolve("entries").resolve("aa"),
+        entryStem = "${entryNameSeparatorForTests}first.jar",
+      )
+      val metadataFile = entryPaths.metadataFile
+      val markFile = entryPaths.markFile
+      val lockFile = getStripedLockFile(versionDir)
+
+      Files.createDirectories(entryPaths.payloadFile.parent)
+      Files.writeString(entryPaths.payloadFile, "payload")
+      Files.write(metadataFile, byteArrayOf(1))
+      Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
+
+      manager.cleanup()
+
+      assertThat(Files.exists(lockFile)).isFalse()
+      assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
+      assertThat(Files.exists(metadataFile)).isFalse()
       assertThat(Files.exists(markFile)).isFalse()
     }
   }
@@ -502,7 +530,7 @@ internal class LocalDiskJarCacheCleanupTest {
     val registerMethod = cleanupCandidateIndex.javaClass.getDeclaredMethod("register", String::class.java, String::class.java)
 
     repeat(45_000) { offset ->
-      registerMethod.invoke(cleanupCandidateIndex, "queued${seed + offset}${entryNameSeparatorForTests}dummy.jar", null)
+      registerMethod.invoke(cleanupCandidateIndex, "queued${seed + offset}${entryNameSeparatorForTests}dummy.jar", "zz")
     }
   }
 
