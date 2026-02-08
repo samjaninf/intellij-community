@@ -24,7 +24,11 @@ sealed interface RpcLookupElementEvent {
   ) : RpcLookupElementEvent {
     override fun toString(): String = buildToString("SelectedItem") {
       field("requestId", requestId)
+      field("arrangementId", arrangementId)
       field("itemId", itemId)
+      field("itemPattern", itemPattern)
+      field("prefixLength", prefixLength)
+      field("additionalPrefix", additionalPrefix)
     }
   }
 
@@ -43,7 +47,7 @@ sealed interface RpcLookupElementEvent {
    */
   @Serializable
   data class ItemSelected(val projectId: ProjectId) : RpcLookupElementEvent {
-    override fun toString(): String = buildToString("Cancel") {
+    override fun toString(): String = buildToString("ItemSelected") {
       field("projectId", projectId)
     }
   }
