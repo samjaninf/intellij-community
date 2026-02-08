@@ -89,33 +89,31 @@ class GitLabMergeRequestDiscussionsContainerImpl(
   private val reloadRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST).apply {
     tryEmit(Unit)
   }
-  private val updateRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+  private val refreshRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
   private val discussionEvents = MutableSharedFlow<Change<GitLabDiscussionRestDTO>>()
 
-  private val discussionsDataHolder =
+  private val nonEmptyDiscussionsData: SharedFlow<Result<List<GitLabDiscussionRestDTO>>> by lazy {
     startGitLabRestETagListLoaderIn(
       cs,
       getMergeRequestDiscussionsUri(glProject, mr.iid),
       { it.id },
 
       requestReloadFlow = reloadRequests,
-      requestRefreshFlow = updateRequests,
+      requestRefreshFlow = refreshRequests,
       requestChangeFlow = discussionEvents,
 
-      shouldTryToLoadAll = false
+      shouldTryToLoadAll = true
     ) { uri, eTag ->
       api.rest.loadUpdatableJsonList<GitLabDiscussionRestDTO>(
         GitLabApiRequestName.REST_GET_MERGE_REQUEST_DISCUSSIONS, uri, eTag
       )
-    }
-
-  private val nonEmptyDiscussionsData: SharedFlow<Result<List<GitLabDiscussionRestDTO>>> =
-    discussionsDataHolder.resultOrErrorFlow
+    }.resultOrErrorFlow
       .mapCatching { discussions -> discussions.filter { it.notes.isNotEmpty() } }
       .modelFlow(cs, LOG)
+  }
 
-  override val discussions: Flow<Result<List<GitLabMergeRequestDiscussion>>> =
+  override val discussions: Flow<Result<List<GitLabMergeRequestDiscussion>>> by lazy {
     nonEmptyDiscussionsData
       .transformConsecutiveSuccesses {
         mapFiltered { !it.notes.first().system }
@@ -131,8 +129,9 @@ class GitLabMergeRequestDiscussionsContainerImpl(
           )
       }
       .modelFlow(cs, LOG)
+  }
 
-  override val systemNotes: Flow<Result<List<GitLabNote>>> =
+  override val systemNotes: Flow<Result<List<GitLabNote>>> by lazy {
     nonEmptyDiscussionsData
       .transformConsecutiveSuccesses {
         // When one note in a discussion is a system note, all are, so we check the first.
@@ -145,12 +144,13 @@ class GitLabMergeRequestDiscussionsContainerImpl(
           )
       }
       .modelFlow(cs, LOG)
+  }
 
   private val draftNotesEvents = MutableSharedFlow<Change<GitLabMergeRequestDraftNoteRestDTO>>()
 
-  private val draftNotesDataHolder =
+  private val draftNotesData by lazy {
     if (glMetadata == null || glMetadata.version < GitLabVersion(15, 9)) {
-      null
+      flowOf(Result.success(emptyList()))
     }
     else {
       startGitLabRestETagListLoaderIn(
@@ -159,38 +159,36 @@ class GitLabMergeRequestDiscussionsContainerImpl(
         { it.id },
 
         requestReloadFlow = reloadRequests,
-        requestRefreshFlow = updateRequests,
+        requestRefreshFlow = refreshRequests,
         requestChangeFlow = draftNotesEvents,
 
-        shouldTryToLoadAll = false
+        shouldTryToLoadAll = true
       ) { uri, eTag ->
         api.rest.loadUpdatableJsonList<GitLabMergeRequestDraftNoteRestDTO>(
           GitLabApiRequestName.REST_GET_DRAFT_NOTES, uri, eTag
         )
-      }
-    }
-
-  private val draftNotesData =
-    (draftNotesDataHolder?.resultOrErrorFlow ?: flowOf(Result.success(emptyList())))
-      .mapCatching { draftNotes ->
+      }.resultOrErrorFlow.mapCatching { draftNotes ->
         if (draftNotes.isEmpty()) return@mapCatching emptyList()
 
         draftNotes.map { it }
-      }
-      .modelFlow(cs, LOG)
+      }.modelFlow(cs, LOG)
+    }
+  }
 
-  override val draftNotes: Flow<Result<Collection<GitLabMergeRequestDraftNote>>> = flow {
-    draftNotesData
-      .transformConsecutiveSuccesses {
-        mapDataToModel(
-          GitLabMergeRequestDraftNoteRestDTO::id,
-          {
-            GitLabMergeRequestDraftNoteImpl(this, api, glMetadata, glProject, mr, { draftNotesEvents.emit(it) }, it, currentUser)
-          },
-          { update(it) }
-        )
-      }.collect(this)
-  }.modelFlow(cs, LOG)
+  override val draftNotes: Flow<Result<Collection<GitLabMergeRequestDraftNote>>> by lazy {
+    flow {
+      draftNotesData
+        .transformConsecutiveSuccesses {
+          mapDataToModel(
+            GitLabMergeRequestDraftNoteRestDTO::id,
+            {
+              GitLabMergeRequestDraftNoteImpl(this, api, glMetadata, glProject, mr, { draftNotesEvents.emit(it) }, it, currentUser)
+            },
+            { update(it) }
+          )
+        }.collect(this)
+    }.modelFlow(cs, LOG)
+  }
 
   private fun getDiscussionDraftNotes(discussionId: GitLabId): Flow<Result<List<GitLabMergeRequestDraftNote>>> {
     // Convert discussion ID down to REST ID as it's safer than converting from REST to GQL
@@ -263,7 +261,7 @@ class GitLabMergeRequestDiscussionsContainerImpl(
       }
       withContext(NonCancellable) {
         draftNotesEvents.emit(AllDeleted())
-        checkUpdates()
+        requestDiscussionsRefresh()
       }
     }
     GitLabStatistics.logMrActionExecuted(project, GitLabStatistics.MergeRequestAction.SUBMIT_DRAFT_NOTES)
@@ -273,10 +271,7 @@ class GitLabMergeRequestDiscussionsContainerImpl(
     reloadRequests.emit(Unit)
   }
 
-  suspend fun checkUpdates() {
-    updateRequests.emit(Unit)
-
-    draftNotesDataHolder?.loadAll()
-    discussionsDataHolder.loadAll()
+  suspend fun requestDiscussionsRefresh() {
+    refreshRequests.emit(Unit)
   }
 }
