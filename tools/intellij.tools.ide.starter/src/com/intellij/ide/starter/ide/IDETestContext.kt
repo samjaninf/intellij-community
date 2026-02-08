@@ -1,3 +1,5 @@
+@file:Suppress("RAW_RUN_BLOCKING")
+
 package com.intellij.ide.starter.ide
 
 import com.intellij.ide.starter.buildTool.BuildTool
@@ -431,7 +433,18 @@ open class IDETestContext(
     configure: IDERunContext.() -> Unit = {},
   ) =
     runBlocking {
-      runIdeSuspending(commandLine, commands, runTimeout, useStartupScript, launchName, expectedKill, expectedExitCode, collectNativeThreads, stdOut, configure)
+      runIdeSuspending(
+        commandLine = commandLine,
+        commands = commands,
+        runTimeout = runTimeout,
+        useStartupScript = useStartupScript,
+        launchName = launchName,
+        expectedKill = expectedKill,
+        expectedExitCode = expectedExitCode,
+        collectNativeThreads = collectNativeThreads,
+        stdOut = stdOut,
+        configure = configure,
+      )
     }
 
   /**
