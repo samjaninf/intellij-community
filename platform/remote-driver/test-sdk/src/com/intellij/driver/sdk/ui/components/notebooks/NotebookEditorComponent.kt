@@ -143,9 +143,17 @@ class NotebookEditorUiComponent(private val data: ComponentData) : JEditorUiComp
     driver.invokeActionWithRetries("NotebookInsertCodeCellAction")
   }
 
+  fun addEmptyMarkdownCell(): Unit {
+    driver.invokeActionWithRetries("NotebookInsertMarkdownCellAction")
+  }
+
+  fun pasteToCurrentCell(text: String) {
+    driver.ui.pasteText(text)
+  }
+
   fun addCodeCell(text: String) {
     addEmptyCodeCell()
-    driver.ui.pasteText(text)
+    pasteToCurrentCell(text)
   }
 
   fun addCodeCellWithRetry(text: String) {
@@ -154,8 +162,8 @@ class NotebookEditorUiComponent(private val data: ComponentData) : JEditorUiComp
   }
 
   fun addMarkdownCell(content: String) {
-    driver.invokeActionWithRetries("NotebookInsertMarkdownCellAction")
-    driver.ui.pasteText(content)
+    addEmptyMarkdownCell()
+    pasteToCurrentCell(content)
   }
 
   fun runAllCells(): Unit = runAllCells.strictClick()
