@@ -16,6 +16,8 @@ import com.intellij.platform.eel.provider.asNioPath
 import com.intellij.platform.eel.provider.getEelDescriptor
 import com.intellij.platform.testFramework.junit5.eel.params.api.EelHolder
 import com.intellij.platform.testFramework.junit5.eel.params.api.TestApplicationWithEel
+import com.intellij.terminal.tests.reworked.util.TerminalTestUtil.setValueInTest
+import com.intellij.terminal.tests.reworked.util.withShellPathAndShellIntegration
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.common.timeoutRunBlocking
 import com.intellij.testFramework.junit5.fixture.disposableFixture
@@ -27,11 +29,15 @@ import kotlinx.coroutines.withContext
 import org.assertj.core.api.Assertions
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner
 import org.jetbrains.plugins.terminal.ShellStartupOptions
+import org.jetbrains.plugins.terminal.TerminalOptionsProvider
+import org.jetbrains.plugins.terminal.TerminalProjectOptionsProvider
+import org.jetbrains.plugins.terminal.session.ShellName
 import org.jetbrains.plugins.terminal.startup.MutableShellExecOptions
 import org.jetbrains.plugins.terminal.startup.ShellExecCommandImpl
 import org.jetbrains.plugins.terminal.startup.ShellExecOptions
 import org.jetbrains.plugins.terminal.startup.ShellExecOptionsCustomizer
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.condition.OS
 import org.junit.jupiter.params.ParameterizedClass
 import java.nio.file.Path
@@ -207,6 +213,37 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
     Assertions.assertThat(result.shellExecOptions.execCommand).isEqualTo(newExecCommand)
   }
 
+  @TestFactory
+  fun `source custom shell script via shell integration`() = withShellPathAndShellIntegration(eelApi, TIMEOUT) { shellPath, shellIntegration, testDisposable ->
+    TerminalOptionsProvider.instance::shellIntegration.setValueInTest(shellIntegration, testDisposable)
+    TerminalProjectOptionsProvider.getInstance(project)::shellPath.setValueInTest(shellPath.toString(), testDisposable)
+    val workingDir = tempDir.asDirectory()
+    val customShellScript = workingDir.nioDir.resolve("my-custom-shell-script")
+    var shellIntegrationInjected = false
+    register(customizer {
+      shellIntegrationInjected = it.shellIntegrationConfigurer != null
+      it.shellIntegrationConfigurer?.sourceShellScriptAtShellStartup(customShellScript, listOf("my-arg1", "my-arg2"))
+    }, parentDisposable = testDisposable)
+    val result = configureStartupOptions(workingDir) {
+      it.remove(JEDITERM_SOURCE)
+      it.remove(JEDITERM_SOURCE_ARGS)
+    }
+    Assertions.assertThat(shellIntegrationInjected).isEqualTo(shellIntegration && isShellIntegrationAvailableFor(shellPath))
+    if (shellIntegrationInjected) {
+      result.assertSinglePathEnv(JEDITERM_SOURCE, customShellScript)
+      Assertions.assertThat(result.getEnvVarValue(JEDITERM_SOURCE_ARGS)).isEqualTo("my-arg1 my-arg2")
+    }
+    else {
+      Assertions.assertThat(result.getEnvVarValue(JEDITERM_SOURCE)).isNull()
+      Assertions.assertThat(result.getEnvVarValue(JEDITERM_SOURCE_ARGS)).isNull()
+    }
+  }
+
+  private fun isShellIntegrationAvailableFor(shellPath: EelPath): Boolean {
+    val shellName = ShellExecCommandImpl(listOf(shellPath.toString())).shellName
+    return shellName in listOf(ShellName.BASH, ShellName.ZSH, ShellName.FISH, ShellName.POWERSHELL, ShellName.PWSH)
+  }
+
   private fun customizer(handler: (execOptions: MutableShellExecOptions) -> Unit): ShellExecOptionsCustomizer {
     return object : ShellExecOptionsCustomizer {
       override fun customizeExecOptions(project: Project, shellExecOptions: MutableShellExecOptions) {
@@ -215,11 +252,11 @@ class ShellExecOptionsCustomizerTest(private val eelHolder: EelHolder) {
     }
   }
 
-  private fun register(vararg customizers: ShellExecOptionsCustomizer) {
+  private fun register(vararg customizers: ShellExecOptionsCustomizer, parentDisposable: Disposable = testDisposable) {
     ExtensionTestUtil.maskExtensions(
       ShellExecOptionsCustomizer.EP_NAME,
       customizers.toList(),
-      testDisposable
+      parentDisposable
     )
   }
 
@@ -291,4 +328,5 @@ private fun joinEntries(path1: String?, path2: String?, descriptor: EelDescripto
 private const val PATH: String = "PATH"
 private const val IJ_PREPEND_PATH: String = "_INTELLIJ_FORCE_PREPEND_PATH"
 private const val JEDITERM_SOURCE: String = "JEDITERM_SOURCE"
+private const val JEDITERM_SOURCE_ARGS: String = "JEDITERM_SOURCE_ARGS"
 private val TIMEOUT: Duration = 60.seconds

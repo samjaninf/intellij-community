@@ -2,6 +2,7 @@
 package org.jetbrains.plugins.terminal.startup
 
 import org.jetbrains.annotations.ApiStatus
+import org.jetbrains.plugins.terminal.session.ShellName
 
 /**
  * Represents an immutable command for starting a shell process in the remote environment.
@@ -14,4 +15,9 @@ sealed interface ShellExecCommand {
    * All elements are in format understood by the remote environment.
    */
   val command: List<String>
+
+  /**
+   * The name of the shell to be started.
+   */
+  val shellName: ShellName
 }

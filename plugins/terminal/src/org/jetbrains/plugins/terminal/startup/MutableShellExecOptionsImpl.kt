@@ -7,6 +7,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.platform.eel.EelDescriptor
 import com.intellij.platform.eel.path.EelPath
 import com.intellij.platform.eel.provider.LocalEelDescriptor
+import org.jetbrains.plugins.terminal.util.ShellIntegration
 import java.nio.file.Path
 import java.util.Collections
 
@@ -14,6 +15,7 @@ internal class MutableShellExecOptionsImpl(
   private var _execCommand: ShellExecCommand,
   override val workingDirectory: EelPath,
   private val mutableEnvs: MutableMap<String, String>,
+  shellIntegration: ShellIntegration?,
   private val requester: Class<out ShellExecOptionsCustomizer>,
 ) : MutableShellExecOptions {
 
@@ -73,6 +75,10 @@ internal class MutableShellExecOptionsImpl(
     LOG.debug { "$requester: prependEntryToPathLikeEnv('$envName', '$remotePath')" }
   }
 
+  override val shellIntegrationConfigurer: ShellIntegrationConfigurer? = shellIntegration?.let {
+    ShellIntegrationConfigurerImpl(_execCommand.shellName, mutableEnvs, translator, requester)
+  }
+
   override val eelDescriptor: EelDescriptor
     get() = workingDirectory.descriptor
 
@@ -96,6 +102,8 @@ internal class MutableShellExecOptionsImpl(
     }
     return translator.translateAbsoluteLocalPathToRemote(path)?.toString()
   }
+
+  override fun toString() = "[$_execCommand] in $workingDirectory ($eelDescriptor)"
 }
 
 private const val PATH: String = "PATH"

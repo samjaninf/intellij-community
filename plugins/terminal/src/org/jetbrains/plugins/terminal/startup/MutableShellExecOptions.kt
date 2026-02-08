@@ -101,6 +101,13 @@ sealed interface MutableShellExecOptions {
   fun prependEntryToPathLikeEnv(envName: String, entry: Path)
 
   /**
+   * Allows customizing the shell integration.
+   * If null, then either the "Shell integration" is disabled in settings or the shell doesn't support shell integration.
+   * Otherwise, the shell integration has already been injected in the shell command line.
+   */
+  val shellIntegrationConfigurer: ShellIntegrationConfigurer?
+
+  /**
    * The environment where the shell will be started (local/WSL/Docker/SSH).
    */
   val eelDescriptor: EelDescriptor
