@@ -14,7 +14,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 @ApiStatus.Internal
-public final class UnresolvedIntelliJThemeKeyInspection extends LocalInspectionTool {
+public final class UnresolvedThemeKeyInspection extends LocalInspectionTool {
   @Override
   public @NotNull PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder, boolean isOnTheFly) {
     if (!ThemeJsonUtil.isThemeFilename(holder.getFile().getName())) return PsiElementVisitor.EMPTY_VISITOR;

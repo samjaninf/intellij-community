@@ -3,14 +3,14 @@ package org.jetbrains.idea.devkit.inspections
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.jetbrains.idea.devkit.themes.UnresolvedThemeJsonNamedColorInspection
-import org.jetbrains.idea.devkit.themes.UnresolvedIntelliJThemeKeyInspection
+import org.jetbrains.idea.devkit.themes.UnresolvedThemeKeyInspection
 
 class JsonThemeInspectionTest : BasePlatformTestCase() {
 
   override fun setUp() {
     super.setUp()
     myFixture.enableInspections(
-      UnresolvedIntelliJThemeKeyInspection::class.java,
+      UnresolvedThemeKeyInspection::class.java,
       UnresolvedThemeJsonNamedColorInspection::class.java
     )
   }

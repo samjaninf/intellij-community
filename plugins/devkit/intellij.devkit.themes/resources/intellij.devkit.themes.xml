@@ -18,9 +18,9 @@
     <localInspection language="JSON" shortName="UnresolvedIntelliJThemeKey"
                      enabledByDefault="true" level="WARNING"
                      groupBundle="messages.DevKitBundle" groupPathKey="inspections.group.path" groupKey="inspections.group.code"
-                     implementationClass="org.jetbrains.idea.devkit.themes.UnresolvedIntelliJThemeKeyInspection"
+                     implementationClass="org.jetbrains.idea.devkit.themes.UnresolvedThemeKeyInspection"
                      bundle="messages.DevKitThemesBundle" key="inspection.unresolved.theme.key.display.name"/>
-    <localInspection language="JSON" shortName="UnresolvedIntelliJThemeJsonNamedColor"
+    <localInspection language="JSON" shortName="UnresolvedIntelliJThemeNamedColor"
                      enabledByDefault="true" level="ERROR"
                      groupBundle="messages.DevKitBundle" groupPathKey="inspections.group.path" groupKey="inspections.group.code"
                      implementationClass="org.jetbrains.idea.devkit.themes.UnresolvedThemeJsonNamedColorInspection"
