@@ -3,6 +3,7 @@ package com.intellij.testFramework;
 
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.containers.ContainerUtil;
+import junit.framework.TestSuite;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -106,5 +107,24 @@ public final class TestFrameworkUtil {
   private static boolean containsWord(@Nullable String testName, @Nullable String className, @NotNull String word) {
     return testName != null && StringUtil.containsIgnoreCase(testName, word) ||
            className != null && StringUtil.containsIgnoreCase(className, word);
+  }
+
+  public static TestSuite flattenSuite(TestSuite suite) {
+    TestSuite result = new TestSuite();
+    result.setName(suite.getName());
+    return flattenSuite(suite, result);
+  }
+
+  private static TestSuite flattenSuite(TestSuite suite, TestSuite result) {
+    for (int i = 0; i < suite.testCount(); i++) {
+      junit.framework.Test test = suite.testAt(i);
+      if (test instanceof TestSuite) {
+        flattenSuite((TestSuite)test, result);
+      }
+      else {
+        result.addTest(test);
+      }
+    }
+    return result;
   }
 }
