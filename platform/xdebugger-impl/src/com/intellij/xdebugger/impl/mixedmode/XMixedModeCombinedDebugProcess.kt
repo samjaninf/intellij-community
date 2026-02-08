@@ -35,7 +35,6 @@ import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.PauseRequ
 import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.ResumeRequested
 import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.StepType
 import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.Stop
-import com.intellij.xdebugger.impl.mixedmode.MixedModeStateMachineBase.HighLevelSetNextStatementRequested
 import com.intellij.xdebugger.impl.ui.SessionTabComponentProvider
 import com.intellij.xdebugger.impl.ui.XDebugSessionTabCustomizer
 import com.intellij.xdebugger.mixedMode.XMixedModeHighLevelDebugProcessExtension
