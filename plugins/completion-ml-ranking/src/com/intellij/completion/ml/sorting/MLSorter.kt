@@ -23,6 +23,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.Pair
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.platform.ide.productMode.IdeProductMode
 import com.intellij.textMatching.PrefixMatchingUtil
 import java.util.IdentityHashMap
 import java.util.concurrent.TimeUnit
@@ -75,6 +76,7 @@ class MLSorter : CompletionFinalSorter() {
   }
 
   override fun sort(items: Iterable<LookupElement>, parameters: CompletionParameters): Iterable<LookupElement> {
+    if (IdeProductMode.isBackend && Registry.`is`("remdev.completion.on.frontend")) return items // todo support it on frontend
     val lookup = LookupManager.getActiveLookup(parameters.editor) as? LookupImpl ?: return items
     val lookupStorage = MutableLookupStorage.get(lookup) ?: return items
     // Do nothing if unable to reorder items or to log the weights
