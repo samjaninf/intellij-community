@@ -2,8 +2,14 @@
 package org.jetbrains.idea.devkit.inspections
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import org.jetbrains.idea.devkit.themes.UnresolvedIntelliJThemeKeyInspection
 
 class UnresolvedThemeKeyInspectionTest : BasePlatformTestCase() {
+
+  override fun setUp() {
+    super.setUp()
+    myFixture.enableInspections(UnresolvedIntelliJThemeKeyInspection::class.java)
+  }
 
   fun testRegularKeys() {
     myFixture.configureByText("test.theme.json", """
