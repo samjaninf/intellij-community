@@ -13,7 +13,6 @@ import com.intellij.openapi.editor.EditorSettings
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.util.registry.Registry
-import com.intellij.util.MathUtil.clamp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -27,6 +26,7 @@ import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.time.Duration.Companion.milliseconds
 
 private data class CaretUpdate(
   val finalPos: Point2D,
@@ -41,10 +41,10 @@ private data class AnimationState(val startPos: Point2D, val startLogicalPositio
 @Service(Service.Level.APP)
 internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
   companion object {
+    private val TICK_MS = 4.milliseconds
+
     @JvmStatic
     fun getInstance(): EditorCaretMoveService = service()
-
-    const val MILLIS_SECOND = 1000
 
     private fun calculateUpdates(editor: EditorImpl) = editor.caretModel.allCarets.map { caret ->
       val isRtl = caret.isAtRtlLocation()
@@ -113,12 +113,6 @@ internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
     cursor.blinkOpacity = 1.0f
     cursor.startTime = System.currentTimeMillis() + animationDuration
 
-    val refreshRate = clamp(
-      editor.component.graphicsConfiguration?.device?.displayMode?.refreshRate ?: 120,
-      60, 360)
-
-    val step = MILLIS_SECOND / (2 * refreshRate)
-
     val animationStates = calculateUpdates(editor).map {
       val (lastPos, lastVisualPosition) = editor.lastPosMap.getOrPut(it.caret) {
         it.finalPos to it.finalLogicalPosition
@@ -166,7 +160,7 @@ internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
         break
       }
 
-      delay(step.toLong())
+      delay(TICK_MS)
     }
   }
 }
