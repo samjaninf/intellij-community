@@ -196,7 +196,7 @@ public class DefaultChooseByNameItemProvider implements ChooseByNameInScopeItemP
       long started = System.currentTimeMillis();
       String fullPattern = parameters.getCompletePattern();
       MinusculeMatcher matcher = buildPatternMatcher(namePattern, preferStartMatches);
-      MinusculeMatcher fullMatcher = buildPatternMatcher(buildFullPattern(base, fullPattern), preferStartMatches);
+      MinusculeMatcher fullMatcher = buildPatternMatcher(convertToMatchingPattern(base, fullPattern), preferStartMatches);
       ((ChooseByNameModelEx)model).processNames(sequence -> {
         indicator.checkCanceled();
         MatchResult result = matchesWithFullMatcherCheck(base, fullMatcher, fullPattern, matcher, sequence);
