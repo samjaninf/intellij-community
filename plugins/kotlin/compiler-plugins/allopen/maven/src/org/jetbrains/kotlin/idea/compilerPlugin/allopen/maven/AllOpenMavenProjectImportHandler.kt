@@ -2,6 +2,7 @@
 
 package org.jetbrains.kotlin.idea.compilerPlugin.allopen.maven
 
+import com.intellij.openapi.project.Project
 import org.jetbrains.idea.maven.project.MavenProject
 import org.jetbrains.kotlin.allopen.AllOpenPluginNames.ANNOTATION_OPTION_NAME
 import org.jetbrains.kotlin.allopen.AllOpenPluginNames.PLUGIN_ID
@@ -11,7 +12,7 @@ import org.jetbrains.kotlin.idea.compilerPlugin.CompilerPluginSetup.PluginOption
 import org.jetbrains.kotlin.idea.maven.compilerPlugin.AbstractMavenImportHandler
 import java.nio.file.Path
 
-class AllOpenMavenProjectImportHandler : AbstractMavenImportHandler() {
+class AllOpenMavenProjectImportHandler(project: Project) : AbstractMavenImportHandler(project) {
     override val compilerPluginId: String = PLUGIN_ID
     override val pluginName: String = "allopen"
     override val mavenPluginArtifactName: String = "kotlin-maven-allopen"
