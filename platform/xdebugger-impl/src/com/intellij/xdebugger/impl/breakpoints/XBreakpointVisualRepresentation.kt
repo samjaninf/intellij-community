@@ -34,11 +34,8 @@ import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointHighlight
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointProxy
 import com.intellij.util.DocumentUtil
 import com.intellij.util.ThreeState
-import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerUtil
-import com.intellij.xdebugger.impl.XDebuggerManagerImpl
 import com.intellij.xdebugger.impl.XDebuggerUtilImpl
-import com.intellij.xdebugger.impl.proxy.MonolithLineBreakpointProxy
 import com.intellij.xdebugger.ui.DebuggerColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -254,18 +251,16 @@ class XBreakpointVisualRepresentation(
           if (myBreakpoint !is XLineBreakpointProxy) {
             return false
           }
+          val breakpointManager = XDebugManagerProxy.getInstance().getBreakpointManagerProxy(myProject)
           if (isCopyAction(actionId)) {
-            val breakpointManager = XDebugManagerProxy.getInstance().getBreakpointManagerProxy(myProject)
             breakpointManager.copyLineBreakpoint(myBreakpoint, file!!, line)
           }
           else {
-            val debuggerManager = XDebuggerManager.getInstance(myProject) as XDebuggerManagerImpl
             myBreakpoint.setFileUrl(file!!.url)
             myBreakpoint.setLine(line)
-            val session = debuggerManager.currentSession
-            if (session != null && myBreakpoint is MonolithLineBreakpointProxy) {
-              // TODO IJPL-185322 support active breakpoint update on DnD
-              session.checkActiveNonLineBreakpointOnRemoval(myBreakpoint.breakpoint)
+            val sessionProxy = XDebugManagerProxy.getInstance().getCurrentSessionProxy(myProject)
+            if (sessionProxy != null) {
+              breakpointManager.onBreakpointRemoval(myBreakpoint, sessionProxy)
             }
             return true
           }

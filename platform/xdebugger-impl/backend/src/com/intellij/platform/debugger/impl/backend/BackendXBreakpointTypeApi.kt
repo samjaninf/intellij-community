@@ -31,6 +31,7 @@ import com.intellij.platform.debugger.impl.rpc.XBreakpointTypeId
 import com.intellij.platform.debugger.impl.rpc.XBreakpointTypeList
 import com.intellij.platform.debugger.impl.rpc.XBreakpointTypeSerializableStandardPanels
 import com.intellij.platform.debugger.impl.rpc.XBreakpointsLineInfo
+import com.intellij.platform.debugger.impl.rpc.XDebugSessionId
 import com.intellij.platform.debugger.impl.rpc.XInlineBreakpointVariantDto
 import com.intellij.platform.debugger.impl.rpc.XInlineBreakpointVariantId
 import com.intellij.platform.debugger.impl.rpc.XLineBreakpointInstallationRequest
@@ -293,6 +294,12 @@ internal class BackendXBreakpointTypeApi : XBreakpointTypeApi {
       val breakpointCopy = breakpointManager.copyLineBreakpoint(breakpoint, file.url, line)
       LOG.info("[$requestId] Copied line breakpoint: ${(breakpointCopy as? XBreakpointBase<*, *, *>)?.breakpointId}")
     }
+  }
+
+  override suspend fun onBreakpointRemoval(breakpointId: XBreakpointId, sessionId: XDebugSessionId) {
+    val breakpoint = breakpointId.findValue() ?: return
+    val session = sessionId.findValue() ?: return
+    session.checkActiveNonLineBreakpointOnRemoval(breakpoint)
   }
 
   private fun getCurrentBreakpointTypeDtos(project: Project): List<XBreakpointTypeDto> {

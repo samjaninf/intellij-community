@@ -91,10 +91,12 @@ internal class MonolithXDebugManagerProxy : XDebugManagerProxy {
     return true
   }
 
-  private fun findSessionImpl(session: XDebugSessionProxy): XDebugSessionImpl {
-    val monolithSession = XDebuggerEntityConverter.getSessionNonSplitOnly(session) ?: error("Expected to have monolith session: $session")
-    val sessionImpl = monolithSession as XDebugSessionImpl
-    return sessionImpl
+  companion object {
+    internal fun findSessionImpl(session: XDebugSessionProxy): XDebugSessionImpl {
+      val monolithSession = XDebuggerEntityConverter.getSessionNonSplitOnly(session) ?: error("Expected to have monolith session: $session")
+      val sessionImpl = monolithSession as XDebugSessionImpl
+      return sessionImpl
+    }
   }
 
 }

@@ -21,6 +21,7 @@ import com.intellij.platform.debugger.impl.shared.InlineBreakpointsCache
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointManagerProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointTypeProxy
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XDependentBreakpointManagerProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointInstallationInfo
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointProxy
@@ -370,6 +371,12 @@ class FrontendXBreakpointManager(private val project: Project, private val cs: C
   override fun copyLineBreakpoint(breakpoint: XLineBreakpointProxy, file: VirtualFile, line: Int) {
     cs.launch {
       XBreakpointTypeApi.getInstance().copyLineBreakpoint(breakpoint.id, file.rpcId(), line)
+    }
+  }
+
+  override fun onBreakpointRemoval(breakpoint: XLineBreakpointProxy, session: XDebugSessionProxy) {
+    cs.launch {
+      XBreakpointTypeApi.getInstance().onBreakpointRemoval(breakpoint.id, session.id)
     }
   }
 

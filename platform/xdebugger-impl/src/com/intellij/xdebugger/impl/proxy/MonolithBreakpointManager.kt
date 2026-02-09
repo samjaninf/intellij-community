@@ -10,6 +10,7 @@ import com.intellij.platform.debugger.impl.shared.InlineBreakpointsCache
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointManagerProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointTypeProxy
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XDependentBreakpointManagerProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointInstallationInfo
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointProxy
@@ -120,6 +121,12 @@ private class MonolithBreakpointManager(val breakpointManager: XBreakpointManage
       return
     }
     breakpointManager.copyLineBreakpoint(breakpoint.breakpoint, file.url, line)
+  }
+
+  override fun onBreakpointRemoval(breakpoint: XLineBreakpointProxy, session: XDebugSessionProxy) {
+    if (breakpoint !is MonolithLineBreakpointProxy) return
+    val monolithSession = MonolithXDebugManagerProxy.findSessionImpl(session)
+    monolithSession.checkActiveNonLineBreakpointOnRemoval(breakpoint.breakpoint)
   }
 
   override fun rememberRemovedBreakpoint(breakpoint: XBreakpointProxy) {
