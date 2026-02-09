@@ -1,9 +1,9 @@
-### auto-generated section `build intellij.platform.plugins.testFramework` start
+### auto-generated section `build intellij.platform.pluginSystem.testFramework` start
 load("@rules_jvm//:jvm.bzl", "jvm_library")
 
 jvm_library(
   name = "testFramework",
-  module_name = "intellij.platform.plugins.testFramework",
+  module_name = "intellij.platform.pluginSystem.testFramework",
   visibility = ["//visibility:public"],
   srcs = glob(["src/**/*.kt", "src/**/*.java", "src/**/*.form"], allow_empty = True),
   deps = [
@@ -25,4 +25,4 @@ jvm_library(
     "//platform/util/jdom",
   ]
 )
-### auto-generated section `build intellij.platform.plugins.testFramework` end
+### auto-generated section `build intellij.platform.pluginSystem.testFramework` end
