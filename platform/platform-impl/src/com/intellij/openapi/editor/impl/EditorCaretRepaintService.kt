@@ -8,8 +8,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.getOrHandleException
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.util.registry.Registry
-import com.intellij.util.MathUtil.clamp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -21,6 +19,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.milliseconds
 
 @Service(Service.Level.APP)
 internal class EditorCaretRepaintService(coroutineScope: CoroutineScope) {
@@ -28,7 +27,7 @@ internal class EditorCaretRepaintService(coroutineScope: CoroutineScope) {
     @JvmStatic
     fun getInstance(): EditorCaretRepaintService = service()
 
-    private const val MILLIS_SECOND = 1000
+    private val TICK_MS = 4.milliseconds
   }
 
   var editor: EditorImpl?
@@ -106,12 +105,6 @@ internal class EditorCaretRepaintService(coroutineScope: CoroutineScope) {
   }
 
   private suspend fun blinkSmooth(editor: EditorImpl) {
-    val refreshRate = clamp(
-      editor.component.graphicsConfiguration?.device?.displayMode?.refreshRate ?: 120,
-      60, 360)
-
-    val frameDuration = MILLIS_SECOND / (2 * refreshRate)
-
     val visualBlinkPeriod = 1.2 * blinkPeriod
 
     var phaseStart = System.currentTimeMillis()
@@ -121,7 +114,7 @@ internal class EditorCaretRepaintService(coroutineScope: CoroutineScope) {
     var fadingOut = true
 
     while (true) {
-      delay(frameDuration.toLong())
+      delay(TICK_MS)
 
       val cursor = editor.myCaretCursor
 
