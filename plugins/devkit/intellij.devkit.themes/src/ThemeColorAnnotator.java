@@ -23,11 +23,13 @@ import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.util.CachedValueProvider.Result;
+import com.intellij.psi.util.CachedValuesManager;
+import com.intellij.psi.util.PsiModificationTracker;
 import com.intellij.ui.ColorChooserService;
 import com.intellij.ui.ColorLineMarkerProvider;
 import com.intellij.ui.ColorUtil;
 import com.intellij.ui.scale.JBUIScale;
-import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.ui.ColorIcon;
 import com.intellij.util.ui.EmptyIcon;
 import org.jetbrains.annotations.NotNull;
@@ -35,8 +37,12 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.Icon;
 import java.awt.Color;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 final class ThemeColorAnnotator implements Annotator, DumbAware {
@@ -45,6 +51,8 @@ final class ThemeColorAnnotator implements Annotator, DumbAware {
   private static final Pattern COLOR_HEX_PATTERN_RGBA = Pattern.compile("^#([A-Fa-f0-9]{8})$");
   private static final int HEX_COLOR_LENGTH_RGB = 7;
   private static final int HEX_COLOR_LENGTH_RGBA = 9;
+
+  private static final Pattern NAMED_COLOR_MASK = Pattern.compile("[\\w-]+");
 
   @Override
   public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
@@ -73,7 +81,7 @@ final class ThemeColorAnnotator implements Annotator, DumbAware {
   }
 
   static boolean isNamedColor(String text) {
-    return StringUtil.isLatinAlphanumeric(text);
+    return NAMED_COLOR_MASK.matcher(text).matches();
   }
 
   static boolean isColorCode(@Nullable String text) {
@@ -191,35 +199,46 @@ final class ThemeColorAnnotator implements Annotator, DumbAware {
       }
     }
 
+    private static Map<String, String> getNamedColorsMap(@NotNull JsonFile file) {
+      return CachedValuesManager.getCachedValue(file, () -> {
+        Map<String, String> namedColorsMap = new HashMap<>();
+        List<JsonProperty> colors = ThemeJsonUtil.getNamedColors(file);
+        for (JsonProperty property : colors) {
+          JsonValue value = property.getValue();
+          if (value instanceof JsonStringLiteral) {
+            namedColorsMap.put(property.getName(), ((JsonStringLiteral)value).getValue());
+          }
+        }
+        return Result.create(Map.copyOf(namedColorsMap), PsiModificationTracker.MODIFICATION_COUNT);
+      });
+    }
+
     private @Nullable Color findNamedColor(@NotNull String colorText) {
-      final PsiFile file = myLiteral.getContainingFile();
+      PsiFile file = myLiteral.getContainingFile();
       if (!(file instanceof JsonFile)) return null;
 
-      final List<JsonProperty> colors = ThemeJsonUtil.getNamedColors((JsonFile)file);
-      String colorValue = findNamedColorValue(colors, colorText);
-      if (colorValue == null) {
+      Map<String, String> namedColorsMap = getNamedColorsMap((JsonFile)file);
+      String colorValue = findNamedColorValue(colorText, namedColorsMap, new HashSet<>());
+      if (colorValue == null || !colorValue.startsWith("#")) {
         return null;
-      }
-
-      if (!colorValue.startsWith("#")) {
-        String nextColorValue = findNamedColorValue(colors, colorValue);
-        if (nextColorValue != null) {
-          colorValue = nextColorValue;
-        }
       }
 
       return parseColor(colorValue);
     }
 
-    private static @Nullable String findNamedColorValue(List<JsonProperty> colors, @NotNull String colorText) {
-      final JsonProperty namedColor = ContainerUtil.find(colors, property -> property.getName().equals(colorText));
-      if (namedColor == null) return null;
+    private static @Nullable String findNamedColorValue(@NotNull String colorName,
+                                                        @NotNull Map<String, String> namedColorsMap,
+                                                        @NotNull Set<String> visited) {
+      if (!visited.add(colorName)) return null; // cycle detected in resolve!
 
-      final JsonValue value = namedColor.getValue();
-      if ((value instanceof JsonStringLiteral literal)) {
-        return literal.getValue();
+      String colorValue = namedColorsMap.get(colorName);
+      if (colorValue == null) return null;
+
+      if (colorValue.startsWith("#")) {
+        return colorValue;
       }
-      return null;
+
+      return findNamedColorValue(colorValue, namedColorsMap, visited);
     }
 
     private static boolean isRgbaColorHex(@NotNull String colorHex) {
