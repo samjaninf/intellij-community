@@ -1062,11 +1062,6 @@ public class IncrementalK2JvmJpsTestGenerated extends AbstractIncrementalK2JvmJp
             runTest("inlineFunCallSite/function/");
         }
 
-        @TestMetadata("functionIndirect")
-        public void testFunctionIndirect() throws Exception {
-            runTest("inlineFunCallSite/functionIndirect/");
-        }
-
         @TestMetadata("getter")
         public void testGetter() throws Exception {
             runTest("inlineFunCallSite/getter/");
