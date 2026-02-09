@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInsight.lookup.impl;
 
 import com.intellij.CommonBundle;
@@ -211,7 +211,7 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
 
   private boolean myStartCompletionWhenNothingMatches;
   boolean myResizePending;
-  private boolean myFinishing;
+  private boolean myFinishingCompletionATM;
   boolean myUpdating;
   private LookupUi myUi;
   private LookupPresentation myPresentation = new LookupPresentation.Builder().build();
@@ -783,7 +783,7 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
       FeatureUsageTracker.getInstance().triggerFeatureUsed(CodeCompletionFeatures.EDITING_COMPLETION_CAMEL_HUMPS);
     }
 
-    myFinishing = true;
+    myFinishingCompletionATM = true;
     if (fireBeforeItemSelected(item, completionChar)) {
       if (item instanceof CompletionItemLookupElement wrapper) {
         PsiFile file = Objects.requireNonNull(getPsiFile(), "PsiFile must be known for ModCommand completion");
@@ -902,6 +902,10 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
     return true;
   }
 
+  private boolean hasGuardedChanges() {
+    return myGuardedChanges > 0;
+  }
+
   @ApiStatus.Internal
   protected void updateLocation(@NotNull Point p) {
     myDisplayStrategy.updateLocation(this, editor, p);
@@ -911,7 +915,7 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
   public boolean vetoesHiding() {
     if (isLookupDisposed()) return false;
     // the second condition means that the Lookup belongs to another connected client
-    return myGuardedChanges > 0 ||
+    return hasGuardedChanges() ||
            mySession != ClientSessionsUtil.getCurrentSessionOrNull(mySession.getProject()) ||
            LookupImplVetoPolicy.anyVetoesHiding(this);
   }
@@ -1152,7 +1156,7 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
   }
 
   private boolean canHideOnChange() {
-    return myGuardedChanges == 0 && !myFinishing && !vetoesHidingOnChange() && ClientId.isCurrentlyUnderLocalId();
+    return !hasGuardedChanges() && !myFinishingCompletionATM && !vetoesHidingOnChange() && ClientId.isCurrentlyUnderLocalId();
   }
 
   private boolean vetoesHidingOnChange() {
