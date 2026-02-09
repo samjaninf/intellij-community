@@ -16,6 +16,7 @@
 package com.siyeh.ig.controlflow;
 
 import com.intellij.codeInspection.LocalQuickFix;
+import com.intellij.codeInspection.MatchExceptionInspection;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.codeInspection.dataFlow.fix.DeleteSwitchLabelFix;
 import com.intellij.codeInspection.options.OptPane;
@@ -283,12 +284,19 @@ public final class UnnecessaryDefaultInspection extends BaseInspection {
     if (!(type instanceof PsiClassType)) {
       return null;
     }
-    final PsiElement result = JavaPsiSwitchUtil.findDefaultElement(switchBlock);
-    if (result == null) {
+    final PsiElement defaultElement = JavaPsiSwitchUtil.findDefaultElement(switchBlock);
+    if (defaultElement == null) {
       return null;
     }
-    final SwitchExhaustivenessState completenessResult = evaluateSwitchCompleteness(switchBlock, false);
-    return completenessResult == SwitchExhaustivenessState.EXHAUSTIVE_CAN_ADD_DEFAULT
-           ? result : null;
+    final SwitchExhaustivenessState completenessResult = evaluateSwitchCompleteness(switchBlock);
+
+    if (completenessResult != SwitchExhaustivenessState.EXHAUSTIVE_CAN_ADD_DEFAULT) {
+      return null;
+    }
+
+    if (MatchExceptionInspection.findPatternCanProduceMatchException(switchBlock, Set.of(defaultElement), false) != null) {
+      return null;
+    }
+    return defaultElement;
   }
 }

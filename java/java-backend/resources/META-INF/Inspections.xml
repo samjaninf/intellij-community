@@ -486,6 +486,12 @@
                      groupKey="group.names.nullability.problems" groupBundle="messages.InspectionsBundle" enabledByDefault="true"
                      level="WARNING"
                      implementationClass="com.intellij.codeInspection.nullable.NullableStuffInspection"/>
+    <localInspection groupPathKey="group.path.names.probable.bugs" language="JAVA" bundle="messages.JavaBundle"
+                     key="inspection.match.exception.problems.display.name"
+                     hasStaticDescription="true"
+                     groupKey="group.names.probable.bugs" groupBundle="messages.InspectionsBundle" enabledByDefault="true"
+                     level="WARNING"
+                     implementationClass="com.intellij.codeInspection.MatchExceptionInspection"/>
     <localInspection groupPath="Java" language="JAVA" shortName="UnsatisfiedRange" bundle="messages.JavaAnalysisBundle"
                      key="inspection.unsatisfied.range.display.name"
                      groupKey="group.names.probable.bugs" groupBundle="messages.InspectionsBundle" enabledByDefault="true" level="WARNING"

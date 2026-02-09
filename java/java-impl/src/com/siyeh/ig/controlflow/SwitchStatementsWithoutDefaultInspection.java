@@ -73,7 +73,7 @@ public final class SwitchStatementsWithoutDefaultInspection extends AbstractBase
           infoMode = true;
         }
         else {
-          SwitchExhaustivenessState completenessResult = evaluateSwitchCompleteness(statement, true);
+          SwitchExhaustivenessState completenessResult = evaluateSwitchCompleteness(statement);
           if (completenessResult == SwitchExhaustivenessState.UNNECESSARY ||
               completenessResult == SwitchExhaustivenessState.MALFORMED ||
               completenessResult == SwitchExhaustivenessState.EMPTY ||
