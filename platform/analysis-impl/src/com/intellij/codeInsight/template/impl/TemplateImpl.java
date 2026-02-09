@@ -3,19 +3,26 @@
 package com.intellij.codeInsight.template.impl;
 
 import com.intellij.codeInsight.template.Expression;
+import com.intellij.codeInsight.template.ExpressionContext;
+import com.intellij.codeInsight.template.Result;
 import com.intellij.codeInsight.template.Template;
+import com.intellij.codeInsight.template.TextResult;
 import com.intellij.modcommand.ModCommand;
 import com.intellij.modcommand.ModPsiUpdater;
 import com.intellij.modcommand.ModTemplateBuilder;
 import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.RangeMarker;
 import com.intellij.openapi.options.SchemeElement;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.SmartList;
 import com.intellij.util.containers.ContainerUtil;
@@ -435,28 +442,46 @@ public class TemplateImpl extends TemplateBase implements SchemeElement {
       Variable variable = variableMap.get(segment.name);
       if (variable != null) {
         manager.commitDocument(document);
-        PsiElement element = updater.getPsiFile().findElementAt(start + segment.offset);
+        PsiElement element = updater.getPsiFile().findElementAt(info.marker.getStartOffset());
         if (element != null) {
-          if (builder == null) builder = updater.templateBuilder();
-          builder.field(element, info.marker.getTextRange().shiftLeft(element.getTextRange().getStartOffset()), segment.name,
-                        variable.getExpression());
+          if (!variable.isAlwaysStopAt()) {
+            Result result = variable.getExpression().calculateResult(new DummyContext(info.marker.getTextRange(), element, updater.getPsiFile()));
+            if (result != null) {
+              document.replaceString(info.marker.getStartOffset(), info.marker.getEndOffset(), result.toString());
+            }
+          } else {
+            if (builder == null) builder = updater.templateBuilder();
+            builder.field(element, info.marker.getTextRange().shiftLeft(element.getTextRange().getStartOffset()), segment.name,
+                          variable.getExpression());
+          }
         }
       }
     }
     if (isToReformat()) {
+      List<MarkerInfo> emptyValues = new ArrayList<>();
+      for (MarkerInfo info : markers) {
+        if (info.marker.getStartOffset() == info.marker.getEndOffset()) {
+          document.insertString(info.marker.getStartOffset(), "a");
+          emptyValues.add(info);
+        }
+      }
       manager.commitDocument(document);
       CodeStyleManager.getInstance(updater.getProject())
         .reformatText(updater.getPsiFile(), wholeTemplate.getStartOffset(), wholeTemplate.getEndOffset());
-    }
-    if (endMarker != null) {
-      document.deleteString(endMarker.getStartOffset(), endMarker.getEndOffset());
-      if (builder != null) {
-        builder.finishAt(endMarker.getStartOffset());
-      } else {
-        updater.moveCaretTo(endMarker.getStartOffset());
+      for (MarkerInfo value : emptyValues) {
+        document.deleteString(value.marker.getStartOffset(), value.marker.getEndOffset());
       }
-      endMarker.dispose();
     }
+    if (endMarker == null) {
+      endMarker = document.createRangeMarker(wholeTemplate.getEndOffset(), wholeTemplate.getEndOffset());
+    }
+    document.deleteString(endMarker.getStartOffset(), endMarker.getEndOffset());
+    if (builder != null) {
+      builder.finishAt(endMarker.getStartOffset());
+    } else {
+      updater.moveCaretTo(endMarker.getStartOffset());
+    }
+    endMarker.dispose();
     for (MarkerInfo info : markers) {
       info.marker.dispose();
     }
@@ -466,5 +491,47 @@ public class TemplateImpl extends TemplateBase implements SchemeElement {
   @Override
   public String toString() {
     return myGroupName +"/" + myKey;
+  }
+
+  @ApiStatus.Internal
+  public static class DummyContext implements ExpressionContext {
+    private final @NotNull TextRange myRange;
+    private final @NotNull PsiElement myElement;
+    private final @NotNull PsiFile myFile;
+
+    public DummyContext(@NotNull TextRange range, @NotNull PsiElement element, @NotNull PsiFile file) {
+      myRange = range;
+      myElement = element;
+      myFile = file;
+    }
+
+    @Override
+    public Project getProject() { return myFile.getProject(); }
+
+    @Override
+    public @Nullable PsiFile getPsiFile() {
+      return myFile;
+    }
+
+    @Override
+    public @Nullable Editor getEditor() { return null; }
+
+    @Override
+    public int getStartOffset() { return myRange.getStartOffset(); }
+
+    @Override
+    public int getTemplateStartOffset() { return myRange.getStartOffset(); }
+
+    @Override
+    public int getTemplateEndOffset() { return myRange.getEndOffset(); }
+
+    @Override
+    public <T> T getProperty(Key<T> key) { return null; }
+
+    @Override
+    public @Nullable PsiElement getPsiElementAtStartOffset() { return myElement.isValid() ? myElement : null; }
+
+    @Override
+    public @Nullable TextResult getVariableValue(String variableName) { return null; }
   }
 }

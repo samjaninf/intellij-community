@@ -25,7 +25,7 @@ final class LiveTemplateModCompletionItemProvider implements ModCompletionItemPr
     PsiFile file = context.getPosition().getContainingFile();
     int offset = context.offset();
     List<TemplateImpl> availableTemplates = TemplateManagerImpl.listApplicableTemplates(
-      TemplateActionContext.expanding(file, offset));
+      TemplateActionContext.expanding(file, offset - context.prefix().length()));
     Map<TemplateImpl, String> templates =
       ListTemplatesHandler.filterTemplatesByPrefix(availableTemplates, file.getFileDocument(), offset, false, false);
     for (Map.Entry<TemplateImpl, String> entry : templates.entrySet()) {

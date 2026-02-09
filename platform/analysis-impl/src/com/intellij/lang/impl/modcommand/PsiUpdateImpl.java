@@ -3,9 +3,8 @@ package com.intellij.lang.impl.modcommand;
 
 import com.intellij.analysis.AnalysisBundle;
 import com.intellij.codeInsight.template.Expression;
-import com.intellij.codeInsight.template.ExpressionContext;
 import com.intellij.codeInsight.template.Result;
-import com.intellij.codeInsight.template.TextResult;
+import com.intellij.codeInsight.template.impl.TemplateImpl;
 import com.intellij.injected.editor.DocumentWindow;
 import com.intellij.injected.editor.InjectionEditService;
 import com.intellij.lang.Language;
@@ -31,7 +30,6 @@ import com.intellij.modcommand.ModUpdateReferences;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.RangeMarker;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.editor.event.DocumentEvent;
@@ -298,6 +296,7 @@ final class PsiUpdateImpl {
     private final Consumer<@NotNull Document> myCopyCleaner;
     private final List<ModHighlight.HighlightInfo> myHighlightInfos = new ArrayList<>();
     private final List<ModStartTemplate.TemplateField> myTemplateFields = new ArrayList<>();
+    private final Map<String, Result> myTemplateValues = new HashMap<>();
     private final List<ModLaunchEditorAction> myLaunchEditorActions = new ArrayList<>();
     private @NotNull Function<? super @NotNull PsiFile, ? extends @NotNull ModCommand> myTemplateFinishFunction = f -> nop();
     private @Nullable ModStartRename myRenameSymbol;
@@ -521,7 +520,9 @@ final class PsiUpdateImpl {
           }
           TextRange rangeForTemplate = templateRange(elementRange, rangeInElement);
           TextRange range = mapRange(rangeForTemplate);
-          Result result = expression.calculateResult(new DummyContext(range, element, getPsiFile()));
+          TextRange rangeForContext = range;
+          Result result = myTemplateValues.computeIfAbsent(varName, v -> expression.calculateResult(new TemplateImpl.DummyContext(
+            rangeForContext, element, getPsiFile())));
           if (result != null) {
             FileTracker tracker = requireNonNull(myTracker); // guarded by getRange call
             String fieldValue = result.toString();
@@ -824,47 +825,6 @@ final class PsiUpdateImpl {
     private @NotNull ModCommand getTemplateCommand() {
       if (myTemplateFields.isEmpty()) return nop();
       return new ModStartTemplate(navigationFile(), myTemplateFields, myTemplateFinishFunction);
-    }
-
-    private class DummyContext implements ExpressionContext {
-      private final TextRange myRange;
-      private final @NotNull PsiElement myElement;
-      private final @NotNull PsiFile myFile;
-
-      private DummyContext(TextRange range, @NotNull PsiElement element, @NotNull PsiFile file) {
-        myRange = range;
-        myElement = element;
-        myFile = file;
-      }
-
-      @Override
-      public Project getProject() { return myActionContext.project(); }
-
-      @Override
-      public @Nullable PsiFile getPsiFile() {
-        return myFile;
-      }
-
-      @Override
-      public @Nullable Editor getEditor() { return null; }
-
-      @Override
-      public int getStartOffset() { return myRange.getStartOffset(); }
-
-      @Override
-      public int getTemplateStartOffset() { return myRange.getStartOffset(); }
-
-      @Override
-      public int getTemplateEndOffset() { return myRange.getEndOffset(); }
-
-      @Override
-      public <T> T getProperty(Key<T> key) { return null; }
-
-      @Override
-      public @Nullable PsiElement getPsiElementAtStartOffset() { return myElement.isValid() ? myElement : null; }
-
-      @Override
-      public @Nullable TextResult getVariableValue(String variableName) { return null; }
     }
   }
 }

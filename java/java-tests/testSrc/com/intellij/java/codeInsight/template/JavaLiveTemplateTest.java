@@ -1022,6 +1022,25 @@ public class JavaLiveTemplateTest extends LiveTemplateTestCase {
                             """);
   }
 
+  public void testModCommandSoutm() {
+    TemplateImpl template = TemplateSettings.getInstance().getTemplate("soutm", "Java");
+    configureByJavaText("Test.java", """
+      class X {
+          void test() {
+              <caret>
+          }
+      }
+      """);
+    runModCommand(template);
+    myFixture.checkResult("""
+                            class X {
+                                void test() {
+                                    System.out.println("X.test");<caret>
+                                }
+                            }
+                            """);
+  }
+
   public void testModCommandMain() {
     TemplateImpl template = TemplateSettings.getInstance().getTemplate("main", "Java");
     configureByJavaText("Test.java", """
@@ -1052,7 +1071,7 @@ public class JavaLiveTemplateTest extends LiveTemplateTestCase {
     myFixture.checkResult("""
                             class X {
                                 void test() {
-                                    for (int <selection>i<caret></selection> = 0; i <; i++) {
+                                    for (int <selection>i<caret></selection> = 0; i < ; i++) {
                                        \s
                                     }
                                 }
