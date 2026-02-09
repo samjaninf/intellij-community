@@ -82,7 +82,10 @@ open class ITNReporter internal constructor(private val postUrl: String) : Error
   open fun showErrorInRelease(event: IdeaLoggingEvent): Boolean = false
 
   private fun createReportBean(event: IdeaLoggingEvent, comment: String?): ErrorBean =
-    ErrorBean(event, comment, event.plugin?.pluginId?.idString, event.plugin?.name, event.plugin?.version, IdeaLogger.ourLastActionId)
+    ErrorBean(event, comment,
+              event.plugin?.pluginId?.idString, event.plugin?.name, event.plugin?.version,
+              IdeaLogger.ourLastActionId,
+              ExceptionAutoReportUtil.isPlatformAutoReportedEvent(event))
 
   private fun submit(
     project: Project?,

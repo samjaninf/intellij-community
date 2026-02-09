@@ -11,6 +11,8 @@ import com.intellij.ide.util.PropertiesComponent
 import com.intellij.idea.AppMode
 import com.intellij.internal.statistic.utils.getPluginInfoByDescriptor
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
+import com.intellij.openapi.diagnostic.Attachment
+import com.intellij.openapi.diagnostic.IdeaLoggingEvent
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -91,6 +93,24 @@ object ExceptionAutoReportUtil {
   private fun isDefaultSubmitter(submitter: ITNReporter): Boolean {
     return submitter.javaClass == ITNReporter::class.java
   }
+
+  private interface PlatformAutoReportedExceptionMarker
+
+  /**
+   * Used to distinguish exceptions from the platform reported by [ITNReporter].
+   * Don't mix with other product-level auto-report systems.
+   */
+  fun createPlatformAutoReportedEvent(
+    message: String?,
+    throwable: Throwable,
+    attachments: List<Attachment>,
+    plugin: IdeaPluginDescriptor?,
+    data: Any?,
+  ): IdeaLoggingEvent {
+    return object : IdeaLoggingEvent(message, throwable, attachments, plugin, data), PlatformAutoReportedExceptionMarker {}
+  }
+
+  fun isPlatformAutoReportedEvent(event: IdeaLoggingEvent): Boolean = event is PlatformAutoReportedExceptionMarker
 }
 
 internal class ReporterIdForEAAutoReporters : AboutPopupDescriptionProvider {

@@ -99,6 +99,7 @@ internal object ITNProxy {
     val pluginName: String?,
     val pluginVersion: String?,
     val lastActionId: String?,
+    val isAutoReportedByPlatform: Boolean,
   )
 
   fun getBrowseUrl(threadId: Long): String? = when {
@@ -213,6 +214,10 @@ internal object ITNProxy {
     for (attachment in error.event.attachments) {
       append(builder, "attachment.name", attachment.name)
       append(builder, "attachment.value", attachment.encodedBytes)
+    }
+
+    if (error.isAutoReportedByPlatform) {
+      append(builder, "report.automatic", "true")
     }
     return builder
   }
