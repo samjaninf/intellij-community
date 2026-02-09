@@ -202,7 +202,7 @@ open class MergingQueueGuiExecutor<T : MergeableQueueTask<T>> protected construc
 
   protected open val taskId: Any? = null
 
-  private val schedulingDispatcher = Dispatchers.Default.limitedParallelism(1)
+  private val schedulingDispatcher = Dispatchers.IO.limitedParallelism(1)
 
   @OptIn(InternalCoroutinesApi::class)
   private fun startInBackgroundWithVisibleOrInvisibleProgress(
