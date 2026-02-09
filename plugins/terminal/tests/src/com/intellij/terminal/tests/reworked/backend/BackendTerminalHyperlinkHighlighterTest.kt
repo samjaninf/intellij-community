@@ -18,13 +18,14 @@ import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.common.timeoutRunBlocking
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -470,7 +471,7 @@ internal class BackendTerminalHyperlinkHighlighterTest : BasePlatformTestCase() 
     private val outputModel = TerminalTestUtil.createOutputModel(MAX_LENGTH)
     private val document: Document get() = outputModel.document
     private lateinit var backendFacade: BackendTerminalHyperlinkFacade
-    private val updateEvents = MutableSharedFlow<List<TerminalOutputEvent>>(replay = 100)
+    private val updateEvents = Channel<List<TerminalOutputEvent>>(capacity = UNLIMITED)
     private val pendingUpdateEventCount = MutableStateFlow(0)
 
     val filter = MyFilter()
@@ -482,9 +483,13 @@ internal class BackendTerminalHyperlinkHighlighterTest : BasePlatformTestCase() 
         val hyperlinkScope = childScope("BackendTerminalHyperlinkHighlighterTest hyperlink scope")
         backendFacade = BackendTerminalHyperlinkFacade(project, hyperlinkScope, outputModel, false)
 
-        // do what StateAwareTerminalSession does, but with less infrastructure around
-        val eventJob = launch(CoroutineName("BackendTerminalHyperlinkHighlighterTest event processing"), start = UNDISPATCHED) {
-          merge(updateEvents, backendFacade.heartbeatFlow.map { listOf(it) }).collect { events ->
+        // Do what StateAwareTerminalSession does, but with less infrastructure around.
+        // Note: do NOT use MutableSharedFlow with UNDISPATCHED,
+        // it's useless when combined with merge(), as it does its own launches (without UNDISPATCHED) inside.
+        // Instead, we use channel with an unlimited buffer to avoid losing some of the first events.
+        // Then the channel is consumed once as a flow, thus allowing to merge it with the heartbeat flow.
+        val eventJob = launch(CoroutineName("BackendTerminalHyperlinkHighlighterTest event processing")) {
+          merge(updateEvents.consumeAsFlow(), backendFacade.heartbeatFlow.map { listOf(it) }).collect { events ->
             events.forEach { event ->
               when (event) {
                 is TerminalContentUpdatedEvent -> {
@@ -512,7 +517,7 @@ internal class BackendTerminalHyperlinkHighlighterTest : BasePlatformTestCase() 
     }
 
     suspend fun updateModel(fromLine: Long, newText: String) {
-      updateEvents.emit(listOf(TerminalContentUpdatedEvent(newText.ensureEOL(), emptyList(), fromLine)))
+      updateEvents.send(listOf(TerminalContentUpdatedEvent(newText.ensureEOL(), emptyList(), fromLine)))
       pendingUpdateEventCount.update { it + 1 }
     }
 
