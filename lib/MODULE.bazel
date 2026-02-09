@@ -56,10 +56,10 @@ http_file(
 )
 
 http_file(
-  name = "ai_grazie-grazie-rule-engine-0_3_72_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/grazie-rule-engine/0.3.72/grazie-rule-engine-0.3.72.jar",
-  sha256 = "b0e285d84a7bc06c455394d5e599a0af0fb4bc303e4360f0cc18aa0073f8555e",
-  downloaded_file_path = "grazie-rule-engine-0.3.72.jar"
+  name = "ai_grazie-grazie-rule-engine-0_3_116_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/grazie-rule-engine/0.3.116/grazie-rule-engine-0.3.116.jar",
+  sha256 = "42295bfb13024abb78d2ef3b8347728b10ba108901894b3874fa4175bdcc27c9",
+  downloaded_file_path = "grazie-rule-engine-0.3.116.jar"
 )
 
 http_file(
@@ -70,10 +70,10 @@ http_file(
 )
 
 http_file(
-  name = "ai_grazie-grazie-rule-engine-0_3_72-sources_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/grazie-rule-engine/0.3.72/grazie-rule-engine-0.3.72-sources.jar",
-  sha256 = "dee3db29a22e667a49ef3cdd021e5fefa73287756e48915c7a90955c860903ca",
-  downloaded_file_path = "grazie-rule-engine-0.3.72-sources.jar"
+  name = "ai_grazie-grazie-rule-engine-0_3_116-sources_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/grazie-rule-engine/0.3.116/grazie-rule-engine-0.3.116-sources.jar",
+  sha256 = "d465a7f4c9221018b7860a356ae293bf3f29f703c5e04aa9af06166ca1e71cdf",
+  downloaded_file_path = "grazie-rule-engine-0.3.116-sources.jar"
 )
 
 http_file(
@@ -3409,24 +3409,24 @@ http_file(
 )
 
 http_file(
-  name = "ai_grazie_spell-hunspell-de-0_2_327_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-de/0.2.327/hunspell-de-0.2.327.jar",
-  sha256 = "41ace2052e81a529fdaca24d9ac47a1323d7ac91a4e764481ef4b84477483b42",
-  downloaded_file_path = "hunspell-de-0.2.327.jar"
+  name = "ai_grazie_spell-hunspell-de-0_2_336_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-de/0.2.336/hunspell-de-0.2.336.jar",
+  sha256 = "e4454be683ab6fd6d5626a2fd7d386ead4ee062e34cb923aad52595037357bec",
+  downloaded_file_path = "hunspell-de-0.2.336.jar"
 )
 
 http_file(
-  name = "ai_grazie_spell-hunspell-ru-0_2_327_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-ru/0.2.327/hunspell-ru-0.2.327.jar",
-  sha256 = "8c2b71691fbbc75cd6868aa6e7948f637470ba8b559cf6c98cacfe6b024f3513",
-  downloaded_file_path = "hunspell-ru-0.2.327.jar"
+  name = "ai_grazie_spell-hunspell-ru-0_2_336_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-ru/0.2.336/hunspell-ru-0.2.336.jar",
+  sha256 = "8ebb7a3c23398f1a0282e17d81b31699289bf3b52ec13b869bf379e0c1687259",
+  downloaded_file_path = "hunspell-ru-0.2.336.jar"
 )
 
 http_file(
-  name = "ai_grazie_spell-hunspell-uk-0_2_327_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-uk/0.2.327/hunspell-uk-0.2.327.jar",
-  sha256 = "155565ea33fdac34ffc3117bf645493a245a655eb2030b40f5f532348e72a81a",
-  downloaded_file_path = "hunspell-uk-0.2.327.jar"
+  name = "ai_grazie_spell-hunspell-uk-0_2_336_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-uk/0.2.336/hunspell-uk-0.2.336.jar",
+  sha256 = "38f3f528331ae190200ce521bb5ea756a5c5b1f4e062b025565aeb3f75f3e800",
+  downloaded_file_path = "hunspell-uk-0.2.336.jar"
 )
 
 http_file(
@@ -7980,10 +7980,10 @@ http_file(
 )
 
 http_file(
-  name = "ai_grazie_spell-hunspell-en-0_2_327_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-en/0.2.327/hunspell-en-0.2.327.jar",
-  sha256 = "474f2837876c3d31ceccd1fad2e28336553ab21472910cd2654aaa3373a3d031",
-  downloaded_file_path = "hunspell-en-0.2.327.jar"
+  name = "ai_grazie_spell-hunspell-en-0_2_336_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/grazi/grazie-platform-public/ai/grazie/spell/hunspell-en/0.2.336/hunspell-en-0.2.336.jar",
+  sha256 = "15921addad3d6a1fcc791e093358cbf1cd930def1641b64fa8b471d972007916",
+  downloaded_file_path = "hunspell-en-0.2.336.jar"
 )
 
 http_file(

@@ -117,9 +117,9 @@ jvm_import(
 )
 
 copy_file(
-  name = "ai.grazie/grazie-rule-engine-0.3.72.jar_copy",
-  src = "@ai_grazie-grazie-rule-engine-0_3_72_http//file",
-  out = "ai.grazie/grazie-rule-engine-0.3.72.jar",
+  name = "ai.grazie/grazie-rule-engine-0.3.116.jar_copy",
+  src = "@ai_grazie-grazie-rule-engine-0_3_116_http//file",
+  out = "ai.grazie/grazie-rule-engine-0.3.116.jar",
   allow_symlink = True,
   visibility = ["//visibility:public"]
 )
@@ -135,16 +135,16 @@ copy_file(
 java_library(
   name = "ai-grazie-rule-engine",
   exports = [
-    ":ai_grazie-grazie-rule-engine-0_3_72_http_import",
+    ":ai_grazie-grazie-rule-engine-0_3_116_http_import",
     ":net_fellbaum-jemoji-1_3_1_http_import",
   ],
   visibility = ["//visibility:public"]
 )
 
 jvm_import(
-  name = "ai_grazie-grazie-rule-engine-0_3_72_http_import",
-  jar = "@ai_grazie-grazie-rule-engine-0_3_72_http//file",
-  source_jar = "@ai_grazie-grazie-rule-engine-0_3_72-sources_http//file"
+  name = "ai_grazie-grazie-rule-engine-0_3_116_http_import",
+  jar = "@ai_grazie-grazie-rule-engine-0_3_116_http//file",
+  source_jar = "@ai_grazie-grazie-rule-engine-0_3_116-sources_http//file"
 )
 
 jvm_import(
@@ -4178,44 +4178,44 @@ jvm_import(
 )
 
 copy_file(
-  name = "ai.grazie.spell/hunspell-de-0.2.327.jar_copy",
-  src = "@ai_grazie_spell-hunspell-de-0_2_327_http//file",
-  out = "ai.grazie.spell/hunspell-de-0.2.327.jar",
+  name = "ai.grazie.spell/hunspell-de-0.2.336.jar_copy",
+  src = "@ai_grazie_spell-hunspell-de-0_2_336_http//file",
+  out = "ai.grazie.spell/hunspell-de-0.2.336.jar",
   allow_symlink = True,
   visibility = ["//visibility:public"]
 )
 
 jvm_import(
   name = "grazie-tests-ai-grazie-spell-hunspell-de",
-  jar = "@ai_grazie_spell-hunspell-de-0_2_327_http//file",
+  jar = "@ai_grazie_spell-hunspell-de-0_2_336_http//file",
   visibility = ["//visibility:public"]
 )
 
 copy_file(
-  name = "ai.grazie.spell/hunspell-ru-0.2.327.jar_copy",
-  src = "@ai_grazie_spell-hunspell-ru-0_2_327_http//file",
-  out = "ai.grazie.spell/hunspell-ru-0.2.327.jar",
+  name = "ai.grazie.spell/hunspell-ru-0.2.336.jar_copy",
+  src = "@ai_grazie_spell-hunspell-ru-0_2_336_http//file",
+  out = "ai.grazie.spell/hunspell-ru-0.2.336.jar",
   allow_symlink = True,
   visibility = ["//visibility:public"]
 )
 
 jvm_import(
   name = "grazie-tests-ai-grazie-spell-hunspell-ru",
-  jar = "@ai_grazie_spell-hunspell-ru-0_2_327_http//file",
+  jar = "@ai_grazie_spell-hunspell-ru-0_2_336_http//file",
   visibility = ["//visibility:public"]
 )
 
 copy_file(
-  name = "ai.grazie.spell/hunspell-uk-0.2.327.jar_copy",
-  src = "@ai_grazie_spell-hunspell-uk-0_2_327_http//file",
-  out = "ai.grazie.spell/hunspell-uk-0.2.327.jar",
+  name = "ai.grazie.spell/hunspell-uk-0.2.336.jar_copy",
+  src = "@ai_grazie_spell-hunspell-uk-0_2_336_http//file",
+  out = "ai.grazie.spell/hunspell-uk-0.2.336.jar",
   allow_symlink = True,
   visibility = ["//visibility:public"]
 )
 
 jvm_import(
   name = "grazie-tests-ai-grazie-spell-hunspell-uk",
-  jar = "@ai_grazie_spell-hunspell-uk-0_2_327_http//file",
+  jar = "@ai_grazie_spell-hunspell-uk-0_2_336_http//file",
   visibility = ["//visibility:public"]
 )
 
@@ -10118,16 +10118,16 @@ java_library(
 )
 
 copy_file(
-  name = "ai.grazie.spell/hunspell-en-0.2.327.jar_copy",
-  src = "@ai_grazie_spell-hunspell-en-0_2_327_http//file",
-  out = "ai.grazie.spell/hunspell-en-0.2.327.jar",
+  name = "ai.grazie.spell/hunspell-en-0.2.336.jar_copy",
+  src = "@ai_grazie_spell-hunspell-en-0_2_336_http//file",
+  out = "ai.grazie.spell/hunspell-en-0.2.336.jar",
   allow_symlink = True,
   visibility = ["//visibility:public"]
 )
 
 jvm_import(
   name = "libraries-ai-grazie-spell-gec-engine-local-ai-grazie-spell-hunspell-en",
-  jar = "@ai_grazie_spell-hunspell-en-0_2_327_http//file",
+  jar = "@ai_grazie_spell-hunspell-en-0_2_336_http//file",
   visibility = ["//visibility:public"]
 )
 
