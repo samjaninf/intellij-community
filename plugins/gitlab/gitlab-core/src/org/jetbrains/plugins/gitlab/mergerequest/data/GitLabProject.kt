@@ -14,18 +14,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.transformWhile
 import org.jetbrains.plugins.gitlab.api.GitLabApi
 import org.jetbrains.plugins.gitlab.api.GitLabGidData
@@ -35,12 +30,10 @@ import org.jetbrains.plugins.gitlab.api.GitLabProjectCoordinates
 import org.jetbrains.plugins.gitlab.api.GitLabServerMetadata
 import org.jetbrains.plugins.gitlab.api.GitLabVersion
 import org.jetbrains.plugins.gitlab.api.data.GitLabPlan
-import org.jetbrains.plugins.gitlab.api.dto.GitLabLabelDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabWorkItemDTO.GitLabWidgetDTO.WorkItemWidgetAssignees
 import org.jetbrains.plugins.gitlab.api.dto.GitLabWorkItemDTO.WorkItemType
-import org.jetbrains.plugins.gitlab.api.getResultOrThrow
 import org.jetbrains.plugins.gitlab.api.request.createAllProjectLabelsFlow
 import org.jetbrains.plugins.gitlab.api.request.createAllWorkItemsFlow
 import org.jetbrains.plugins.gitlab.api.request.getProjectNamespace
@@ -72,7 +65,7 @@ interface GitLabProject {
 
   suspend fun getEmojis(): List<GitLabReaction>
 
-  fun getLabelsBatches(): Flow<List<GitLabLabelDTO>>
+  fun getLabelsBatches(): Flow<List<GitLabLabel>>
   fun getMembersBatches(): Flow<List<GitLabUserDTO>>
 
   val defaultBranch: String?
@@ -135,7 +128,12 @@ class GitLabLazyProject(
     CachingGitLabProjectMergeRequestsStore(project, cs, api, glMetadata, projectMapping, currentUser, tokenRefreshFlow)
   }
 
-  private val labelsLoader = BatchesLoader(cs, api.graphQL.createAllProjectLabelsFlow(projectMapping.repository))
+  private val labelsLoader = BatchesLoader(cs,
+                                           api.graphQL.createAllProjectLabelsFlow(projectMapping.repository).map { labels ->
+                                             labels.map {
+                                               GitLabLabel(it.title, it.color)
+                                             }
+                                           })
   private val membersLoader = BatchesLoader(cs,
                                             ApiPageUtil.createPagesFlowByLinkHeader(getProjectUsersURI(projectMapping.repository)) {
                                               api.rest.getProjectUsers(it)
@@ -144,7 +142,7 @@ class GitLabLazyProject(
   override suspend fun getEmojis(): List<GitLabReaction> = emojisRequest.await()
   override val defaultBranch: String? = initialData.repository?.rootRef
   override suspend fun isMultipleReviewersAllowed(): Boolean = multipleReviewersAllowedRequest.await()
-  override fun getLabelsBatches(): Flow<List<GitLabLabelDTO>> = labelsLoader.getBatches()
+  override fun getLabelsBatches(): Flow<List<GitLabLabel>> = labelsLoader.getBatches()
   override fun getMembersBatches(): Flow<List<GitLabUserDTO>> = membersLoader.getBatches()
 
   private suspend fun loadMultipleReviewersAllowed(project: GitLabProjectDTO): Boolean {

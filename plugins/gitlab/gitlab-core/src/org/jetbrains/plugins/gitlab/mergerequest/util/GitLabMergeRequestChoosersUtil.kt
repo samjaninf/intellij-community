@@ -1,6 +1,7 @@
 // Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.plugins.gitlab.mergerequest.util
 
+import com.intellij.collaboration.ui.CollaborationToolsUIUtil
 import com.intellij.collaboration.ui.codereview.avatar.Avatar
 import com.intellij.collaboration.ui.codereview.list.search.ChooserPopupUtil
 import com.intellij.collaboration.ui.codereview.list.search.PopupConfig
@@ -9,8 +10,10 @@ import com.intellij.collaboration.ui.icon.IconsProvider
 import com.intellij.collaboration.ui.util.popup.PopupItemPresentation
 import com.intellij.collaboration.util.IncrementallyComputedValue
 import com.intellij.ui.awt.RelativePoint
+import com.intellij.util.ui.ColorIcon
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
+import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabLabel
 
 internal object GitLabMergeRequestChoosersUtil {
   suspend fun chooseUser(
@@ -22,13 +25,7 @@ internal object GitLabMergeRequestChoosersUtil {
     ChooserPopupUtil.showChooserPopupWithIncrementalLoading(
       point,
       users,
-      presenter = { reviewer ->
-        PopupItemPresentation.Simple(
-          reviewer.username,
-          avatarIconsProvider.getIcon(reviewer, Avatar.Sizes.BASE),
-          reviewer.name,
-        )
-      },
+      getUserPresenter(avatarIconsProvider),
       PopupConfig.DEFAULT.copy(showDirection = showDirection)
     )
 
@@ -43,13 +40,30 @@ internal object GitLabMergeRequestChoosersUtil {
       point,
       choseUsers,
       users,
-      presenter = { reviewer ->
-        PopupItemPresentation.Simple(
-          reviewer.username,
-          avatarIconsProvider.getIcon(reviewer, Avatar.Sizes.BASE),
-          reviewer.name,
-        )
-      },
+      getUserPresenter(avatarIconsProvider),
       PopupConfig.DEFAULT.copy(showDirection = showDirection)
     )
+
+  fun getUserPresenter(avatarIconsProvider: IconsProvider<GitLabUserDTO>): (GitLabUserDTO) -> PopupItemPresentation {
+    return {
+      PopupItemPresentation.Simple(
+        it.username,
+        avatarIconsProvider.getIcon(it, Avatar.Sizes.BASE),
+        it.name,
+      )
+    }
+  }
+
+  fun getLabelPresenter(): (GitLabLabel) -> PopupItemPresentation {
+    return {
+      val icon = runCatching {
+        val color = CollaborationToolsUIUtil.getLabelBackground(it.colorHex)
+        ColorIcon(16, color)
+      }
+      PopupItemPresentation.Simple(
+        it.title,
+        icon.getOrNull(),
+      )
+    }
+  }
 }

@@ -2,10 +2,12 @@
 package org.jetbrains.plugins.gitlab.api.dto
 
 import com.intellij.collaboration.api.dto.GraphQLFragment
+import com.intellij.openapi.util.NlsSafe
 import org.jetbrains.plugins.gitlab.api.SinceGitLab
 
 @SinceGitLab("12.0")
 @GraphQLFragment("/graphql/fragment/label.graphql")
-data class GitLabLabelDTO(
-  val title: String
+data class GitLabLabelGQLDTO(
+  val title: @NlsSafe String,
+  val color: String,
 )
