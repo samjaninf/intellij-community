@@ -201,7 +201,7 @@
     <applicationService serviceInterface="com.intellij.openapi.updateSettings.impl.UpdateCheckerFacade"
                         serviceImplementation="com.intellij.openapi.updateSettings.impl.UpdateCheckerFacadeImpl"/>
 
-    <applicationService serviceInterface="com.intellij.execution.wsl.WslDistributionManager" open="true"
+    <applicationService serviceInterface="com.intellij.execution.wsl.WslDistributionManager"
                         serviceImplementation="com.intellij.execution.wsl.WslDistributionManagerImpl"/>
     <applicationService serviceInterface="com.intellij.execution.wsl.WslIjentAvailabilityService" open="true"
                         serviceImplementation="com.intellij.execution.wsl.DummyWslIjentAvailabilityService"/>
