@@ -15,6 +15,11 @@ abstract class PyLspToolConfiguration<State : PyLspToolConfiguration<State>> : P
    * `null` means: not supported
    */
   open var inlayHints: Boolean? = null
+
+  /**
+   * `null` means: not supported
+   */
+  open var documentation: Boolean? = null
   var executableDiscoveryMode: ExecutableDiscoveryMode = ExecutableDiscoveryMode.INTERPRETER
   var pathToExecutable: String = ""
   val executablePath: Path? get() = pathToExecutable.ifEmpty { null }?.let { Path(it) }
