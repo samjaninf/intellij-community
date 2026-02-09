@@ -4,7 +4,7 @@ package com.intellij.util.indexing
 import com.intellij.ide.lightEdit.LightEdit
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.readAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.components.serviceAsync
@@ -51,7 +51,6 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.TestOnly
-import java.util.concurrent.Callable
 
 
 @ApiStatus.Internal
@@ -114,7 +113,9 @@ class ProjectEntityIndexingService(
   private fun computeScanningParametersFromWFIEvent(event: WorkspaceFileIndexChangedEvent): Deferred<ScanningParameters> {
     return if (Registry.`is`("create.coroutines.for.wfi.events.processing")) {
       scope.async {
-        processWfiEvent(event)
+        readAction {
+          processWfiEvent(event)
+        }
       }
     }
     else {
@@ -123,19 +124,17 @@ class ProjectEntityIndexingService(
   }
 
   private fun processWfiEvent(event: WorkspaceFileIndexChangedEvent): ScanningParameters {
-    return ReadAction.nonBlocking(Callable {
-      val iterators = ArrayList<IndexableFilesIterator>()
+    val iterators = ArrayList<IndexableFilesIterator>()
 
-      //generateIteratorsFromWFIChangedEvent(event.removedFileSets, event.storageBefore, iterators)
-      generateIteratorsFromWFIChangedEvent(event.registeredFileSets, event.storageAfter, iterators)
+    //generateIteratorsFromWFIChangedEvent(event.removedFileSets, event.storageBefore, iterators)
+    generateIteratorsFromWFIChangedEvent(event.registeredFileSets, event.storageAfter, iterators)
 
-      return@Callable if (iterators.isEmpty()) {
-        CancelledScanning
-      }
-      else {
-        ScanningIterators("Changes from WorkspaceFileIndex (${iterators.size} iterators)", predefinedIndexableFilesIterators = iterators)
-      }
-    }).executeSynchronously()
+    return if (iterators.isEmpty()) {
+      CancelledScanning
+    }
+    else {
+      ScanningIterators("Changes from WorkspaceFileIndex (${iterators.size} iterators)", predefinedIndexableFilesIterators = iterators)
+    }
   }
 
   private enum class Change {
