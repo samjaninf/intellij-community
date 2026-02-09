@@ -33,8 +33,10 @@ import java.io.IOException;
 public class EntityIndexingServiceTest extends EntityIndexingServiceTestBase {
 
   public void testIndexingModule() throws Exception {
-    doTest(this::createModuleAndSourceRoot, this::removeModule,
-           pair -> IndexableEntityProviderMethods.INSTANCE.createModuleContentIterators(pair.getFirst()));
+    if (!Registry.is("use.workspace.file.index.for.partial.scanning")) {
+      doTest(this::createModuleAndSourceRoot, this::removeModule,
+             pair -> IndexableEntityProviderMethods.INSTANCE.createModuleContentIterators(pair.getFirst()));
+    }
   }
 
   @NotNull

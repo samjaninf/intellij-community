@@ -39,11 +39,11 @@ object IndexableFilesIterationMethods {
     }
   }
 
-  private fun iterateRootsNonRecursively(project: Project,
+  fun iterateRootsNonRecursively(project: Project,
                                          roots: Iterable<VirtualFile>,
                                          contentIterator: ContentIterator,
                                          fileFilter: VirtualFileFilter,
-                                         excludeNonProjectRoots: Boolean): Boolean {
+                                         excludeNonProjectRoots: Boolean = true): Boolean {
     val projectFileIndex = ProjectFileIndex.getInstance(project)
     val rootsSet = roots.toSet()
     for (root in roots) {

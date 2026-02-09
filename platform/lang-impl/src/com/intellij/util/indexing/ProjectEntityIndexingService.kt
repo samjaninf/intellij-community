@@ -34,9 +34,11 @@ import com.intellij.util.indexing.roots.WorkspaceIndexingRootsBuilder
 import com.intellij.util.indexing.roots.builders.IndexableIteratorBuilders
 import com.intellij.util.indexing.roots.kind.LibraryOrigin
 import com.intellij.util.indexing.roots.processLibraryEntity
+import com.intellij.util.indexing.roots.processModuleRoot
 import com.intellij.workspaceModel.core.fileIndex.DependencyDescription
 import com.intellij.workspaceModel.core.fileIndex.DependencyDescription.OnParent
 import com.intellij.workspaceModel.core.fileIndex.EntityStorageKind
+import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileIndex
 import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileIndexChangedEvent
 import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileIndexContributor
 import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileIndexListener
@@ -91,22 +93,24 @@ class ProjectEntityIndexingService(
       LOG.error("Unexpected modality: should not be ANY. Replace with NON_MODAL (130820241337)")
     }
 
-    if (event.registeredFileSets.isNotEmpty() || event.removedFileSets.isNotEmpty()) {
-      val registeredIndexableFileSets = event.registeredFileSets.filter { it.kind.isIndexable }
-      val removedIndexableFileSets = event.removedFileSets.filter { it.kind.isIndexable }
+    val registeredIndexableFileSets = event.registeredFileSets.filter { it.kind.isIndexable }
+    val removedIndexableFileSets = event.removedFileSets.filter { it.kind.isIndexable }
 
-      if (registeredIndexableFileSets.isNotEmpty() || removedIndexableFileSets.isNotEmpty()) {
-        if (invalidateProjectFilterIfFirstScanningNotRequested(project)) return
+    if (registeredIndexableFileSets.isNotEmpty()
+        || removedIndexableFileSets.isNotEmpty()
+        || event.removedExclusions.isNotEmpty()
+    ) {
+      if (invalidateProjectFilterIfFirstScanningNotRequested(project)) return
 
-        val event  = WorkspaceFileIndexChangedEvent(
-          removedFileSets = removedIndexableFileSets,
-          registeredFileSets = registeredIndexableFileSets,
-          storageBefore = event.storageBefore,
-          storageAfter = event.storageAfter,
-        )
-        val parameters =  computeScanningParametersFromWFIEvent(event)
-        UnindexedFilesScanner(project, parameters).queue()
-      }
+      val event = WorkspaceFileIndexChangedEvent(
+        removedFileSets = removedIndexableFileSets,
+        registeredFileSets = registeredIndexableFileSets,
+        storageBefore = event.storageBefore,
+        storageAfter = event.storageAfter,
+        removedExclusions = event.removedExclusions,
+      )
+      val parameters = computeScanningParametersFromWFIEvent(event)
+      UnindexedFilesScanner(project, parameters).queue()
     }
   }
 
@@ -125,9 +129,11 @@ class ProjectEntityIndexingService(
 
   private fun processWfiEvent(event: WorkspaceFileIndexChangedEvent): ScanningParameters {
     val iterators = ArrayList<IndexableFilesIterator>()
+    val wfi = WorkspaceFileIndex.getInstance(project)
 
-    //generateIteratorsFromWFIChangedEvent(event.removedFileSets, event.storageBefore, iterators)
+    val removedExclusions = event.removedExclusions.mapNotNull { wfi.findFileSet(it, true, true, true, true, true, true, true); }
     generateIteratorsFromWFIChangedEvent(event.registeredFileSets, event.storageAfter, iterators)
+    generateIteratorsFromWFIChangedEvent(removedExclusions, event.storageAfter, iterators)
 
     return if (iterators.isEmpty()) {
       CancelledScanning
@@ -164,22 +170,32 @@ class ProjectEntityIndexingService(
     for (fileSet in fileSets) {
       fileSet as WorkspaceFileSetWithCustomData<*>
       val entityPointer = fileSet.getEntityPointer() ?: continue
-      if (fileSet.data is ModuleRelatedRootData) continue
-      if (fileSet.kind.isContent) continue
 
-      val entity = entityPointer.resolve(storage) ?: continue
-      if (entity is LibraryEntity) {
-        val (origin, iterator) = processLibraryEntity(entity, fileSet)
-        if (libraryOrigins.add(origin)) {
-          iterators.add(iterator)
+      val customData = fileSet.data
+      val root = fileSet.root
+
+      if (customData is ModuleRelatedRootData) {
+        processModuleRoot(fileSet, project, true)?.let(iterators::add)
+      }
+      else if (fileSet.kind.isContent) {
+        iterators.add(GenericDependencyIterator.forContentRoot(entityPointer, fileSet.recursive, root))
+      }
+      else {
+        val entity = entityPointer.resolve(storage) ?: continue
+        if (entity is LibraryEntity) {
+          val (origin, iterator) = processLibraryEntity(entity, fileSet)
+          if (libraryOrigins.add(origin)) {
+            iterators.add(iterator)
+          }
         }
-      } else if (entity is SdkEntity) {
-        iterators.add(GenericDependencyIterator.forSdkEntity(
-          sdkName = entity.name,
-          sdkType = SdkType.findByName(entity.type),
-          sdkHome = entity.homePath?.url,
-          root = fileSet.root
-        ))
+        else if (entity is SdkEntity) {
+          iterators.add(GenericDependencyIterator.forSdkEntity(
+            sdkName = entity.name,
+            sdkType = SdkType.findByName(entity.type),
+            sdkHome = entity.homePath?.url,
+            root = fileSet.root
+          ))
+        }
       }
     }
   }
@@ -278,7 +294,8 @@ class ProjectEntityIndexingService(
     private fun logRootChanges(project: Project, isFullReindex: Boolean) {
       if (ApplicationManager.getApplication().isUnitTestMode()) {
         if (LOG.isDebugEnabled()) {
-          val message = if (isFullReindex) "Project roots of " + project.getName() + " have changed" else "Project roots of " + project.getName() + " will be partially reindexed"
+          val message =
+            if (isFullReindex) "Project roots of " + project.getName() + " have changed" else "Project roots of " + project.getName() + " will be partially reindexed"
           LOG.debug(message, Throwable())
         }
       }
@@ -352,7 +369,9 @@ class ProjectEntityIndexingService(
           uncheckedProvider as (IndexableEntityProvider<E>)
           val generated = when (change) {
             Change.Added -> uncheckedProvider.getAddedEntityIteratorBuilders(newEntity!!, project)
-            else -> { emptyList() }
+            else -> {
+              emptyList()
+            }
           }
           builders.addAll(generated)
         }

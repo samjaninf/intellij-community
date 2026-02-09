@@ -49,6 +49,7 @@ import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileSetData
 import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileSetRegistrar
 import com.intellij.workspaceModel.core.fileIndex.WorkspaceFileSetWithCustomData
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
+import kotlin.collections.map
 
 @Suppress("DuplicatedCode")
 internal suspend fun initWorkspaceFileIndexData(
@@ -448,10 +449,18 @@ internal class WorkspaceFileIndexDataImpl(
       processChangesByContributor(it, event, storeRegistrar, removeRegistrar)
     }
     resetFileCache()
-    deduplicateFileSetsAndPublishChangeEvent(storeRegistrar.registeredFileSets,
-                                             removeRegistrar.removedFileSets,
-                                             event.storageBefore,
-                                             event.storageAfter)
+    val removedExclusions = removeRegistrar.removedExclusions
+    val registeredFileSets = storeRegistrar.registeredFileSets
+    val removedFileSets = removeRegistrar.removedFileSets
+    if (registeredFileSets.isNotEmpty() || removedFileSets.isNotEmpty() || removedExclusions.isNotEmpty()) {
+      val changeLog =
+        WorkspaceFileIndexChangedEvent(removedFileSets = removedFileSets.values.flatMapTo(HashSet()) { it.map { it.second } },
+                                       registeredFileSets = registeredFileSets.values.flatMapTo(HashSet()) { it.map { it.second } },
+                                       storageBefore = event.storageBefore,
+                                       storageAfter = event.storageAfter,
+                                       removedExclusions = removedExclusions.keys)
+      project.messageBus.syncPublisher(WorkspaceFileIndexListener.TOPIC).workspaceFileIndexChanged(changeLog)
+    }
   }
 
   /**
@@ -465,6 +474,7 @@ internal class WorkspaceFileIndexDataImpl(
   private fun deduplicateFileSetsAndPublishChangeEvent(
     registeredFileSets: MutableMap<VirtualFile, MutableSet<Pair<WorkspaceEntity, WorkspaceFileSet>>>,
     removedFileSets: MutableMap<VirtualFile, MutableSet<Pair<WorkspaceEntity, WorkspaceFileSet>>>,
+    removedExclusions: MutableMap<VirtualFile, MutableSet<WorkspaceEntity>>,
     storageBefore: ImmutableEntityStorage,
     storageAfter: ImmutableEntityStorage,
   ) {
@@ -498,12 +508,13 @@ internal class WorkspaceFileIndexDataImpl(
         removedFileSets.remove(file)
       }
     }
-    if (registeredFileSets.isNotEmpty() || removedFileSets.isNotEmpty()) {
+    if (registeredFileSets.isNotEmpty() || removedFileSets.isNotEmpty() || removedExclusions.isNotEmpty()) {
       val changeLog =
         WorkspaceFileIndexChangedEvent(removedFileSets = removedFileSets.values.flatMapTo(HashSet()) { it.map { it.second } },
                                        registeredFileSets = registeredFileSets.values.flatMapTo(HashSet()) { it.map { it.second } },
                                        storageBefore = storageBefore,
-                                       storageAfter = storageAfter)
+                                       storageAfter = storageAfter,
+                                       removedExclusions = removedExclusions.keys)
       project.messageBus.syncPublisher(WorkspaceFileIndexListener.TOPIC).workspaceFileIndexChanged(changeLog)
     }
   }
@@ -547,14 +558,20 @@ internal class WorkspaceFileIndexDataImpl(
     hasDirtyEntities = false
 
     WorkspaceFileIndexDataMetrics.updateDirtyEntitiesTimeNanosec.addElapsedTime(start)
-    deduplicateFileSetsAndPublishChangeEvent(storeRegistrar.registeredFileSets, removeRegistrar.removedFileSets, storage, storage)
+    deduplicateFileSetsAndPublishChangeEvent(
+      storeRegistrar.registeredFileSets,
+      removeRegistrar.removedFileSets,
+      removeRegistrar.removedExclusions,
+      storage,
+      storage
+    )
   }
 
   override fun resetFileCache() {
     fileIdWithoutFileSets.clear()
     packageDirectoryCache.clear()
   }
-  
+
   private fun isPackageDirectory(dir: VirtualFile, packageName: String): Boolean = getPackageName(dir) == packageName
 
   private fun fillPackageFilesAndDirectories(packageName: String, result: MutableList<in VirtualFile>) {
@@ -614,7 +631,7 @@ internal class WorkspaceFileIndexDataImpl(
     if (!fileSet.root.isDirectory) return@addMeasuredTime packagePrefix
     val dir = if (dirOrFile.isDirectory) dirOrFile else dirOrFile.parent
     if (!dir.isDirectory) return@addMeasuredTime null
-    val packageName = VfsUtilCore.getRelativePath(dir, correctRoot(fileSet.root, dir), '.') 
+    val packageName = VfsUtilCore.getRelativePath(dir, correctRoot(fileSet.root, dir), '.')
                       ?: error("${dir.presentableUrl} is not under ${fileSet.root.presentableUrl}")
     return@addMeasuredTime when {
       packagePrefix.isEmpty() -> packageName
@@ -689,6 +706,7 @@ private class RemoveFileSetsRegistrarImpl(
 ) : WorkspaceFileSetRegistrar {
 
   val removedFileSets = mutableMapOf<VirtualFile, MutableSet<Pair<WorkspaceEntity, WorkspaceFileSet>>>()
+  val removedExclusions = mutableMapOf<VirtualFile, MutableSet<WorkspaceEntity>>()
 
   override fun registerFileSet(root: VirtualFileUrl, kind: WorkspaceFileKind, entity: WorkspaceEntity, customData: WorkspaceFileSetData?) {
     val rootFile = root.virtualFile
@@ -741,7 +759,7 @@ private class RemoveFileSetsRegistrarImpl(
     }
     else {
       //todo compare origins, not just their entities?
-      fileSets.removeValueIf(excludedRootFile) { it is ExcludedFileSet && it.entityPointer.isPointerTo(entity) }
+      removeAndTrackValue(excludedRootFile) { it is ExcludedFileSet && it.entityPointer.isPointerTo(entity) }
     }
   }
 
@@ -751,7 +769,7 @@ private class RemoveFileSetsRegistrarImpl(
       nonExistingFilesRegistry.unregisterUrl(excludedRoot, entity, storageKind)
     }
     else {
-      fileSets.removeValueIf(excludedRootFile) { it is ExcludedFileSet && it.entityPointer.isPointerTo(entity) }
+      removeAndTrackValue(excludedRootFile) { it is ExcludedFileSet && it.entityPointer.isPointerTo(entity) }
     }
   }
 
@@ -761,7 +779,7 @@ private class RemoveFileSetsRegistrarImpl(
       nonExistingFilesRegistry.unregisterUrl(root, entity, storageKind)
     }
     else {
-      fileSets.removeValueIf(rootFile) { it is ExcludedFileSet.ByPattern && it.entityPointer.isPointerTo(entity) }
+      removeAndTrackValue(rootFile) { it is ExcludedFileSet.ByPattern && it.entityPointer.isPointerTo(entity) }
     }
   }
 
@@ -771,8 +789,26 @@ private class RemoveFileSetsRegistrarImpl(
       nonExistingFilesRegistry.unregisterUrl(root, entity, storageKind)
     }
     else {
-      fileSets.removeValueIf(rootFile) { it is ExcludedFileSet.ByCondition && it.entityPointer.isPointerTo(entity) }
+      removeAndTrackValue(rootFile) { it is ExcludedFileSet.ByCondition && it.entityPointer.isPointerTo(entity) }
+
     }
+  }
+
+  private fun removeAndTrackValue(rootFile: VirtualFile, valuePredicate: (StoredFileSet) -> Boolean) {
+    val fileSetToRemove = fileSets[rootFile]
+    val removed = mutableSetOf<WorkspaceEntity>()
+    fileSetToRemove?.forEach { fileSet ->
+      if (valuePredicate(fileSet)) {
+        removed.add(fileSet.entityPointer.resolve(storageBefore)!!)
+      }
+    }
+    if (removed.isNotEmpty()) {
+      removedExclusions.merge(rootFile, removed, { old, new ->
+        old.addAll(new)
+        old
+      })
+    }
+    fileSets.removeValueIf(rootFile, valuePredicate)
   }
 }
 

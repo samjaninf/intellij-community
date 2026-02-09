@@ -7,6 +7,7 @@ import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.util.ThrowableComputable;
+import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.platform.backend.workspace.WorkspaceModel;
@@ -59,34 +60,38 @@ public class EntityIndexingServiceOnCustomEntitiesTest extends EntityIndexingSer
   };
 
   public void testAddingContentWithoutModuleCustomWorkspaceEntity() throws Exception {
-    registerWorkspaceFileIndexContributor((entity, registrar) -> {
-      for (VirtualFileUrl root : entity.getRoots()) {
-        registrar.registerFileSet(root, WorkspaceFileKind.CONTENT, entity, null);
-      }
-    });
-    File root = createTempDir("customRoot");
-    VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
+    if (!Registry.is("use.workspace.file.index.for.partial.scanning")) {
+      registerWorkspaceFileIndexContributor((entity, registrar) -> {
+        for (VirtualFileUrl root : entity.getRoots()) {
+          registrar.registerFileSet(root, WorkspaceFileKind.CONTENT, entity, null);
+        }
+      });
+      File root = createTempDir("customRoot");
+      VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
 
-    doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
-      return INSTANCE.createGenericContentEntityIterators(entity.createPointer(),
-                                                          IndexingUrlRootHolder.Companion.fromUrls(getUrls(virtualRoot)));
-    });
+      doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
+        return INSTANCE.createGenericContentEntityIterators(entity.createPointer(),
+                                                            IndexingUrlRootHolder.Companion.fromUrls(getUrls(virtualRoot)));
+      });
+    }
   }
 
   public void testAddingContentNonRecursiveWithoutModuleCustomWorkspaceEntity() throws Exception {
-    registerWorkspaceFileIndexContributor((entity, registrar) -> {
-      for (VirtualFileUrl root : entity.getRoots()) {
-        registrar.registerNonRecursiveFileSet(root, WorkspaceFileKind.CONTENT, entity, null);
-      }
-    });
-    File root = createTempDir("customRoot");
-    VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
+    if (!Registry.is("use.workspace.file.index.for.partial.scanning")) {
+      registerWorkspaceFileIndexContributor((entity, registrar) -> {
+        for (VirtualFileUrl root : entity.getRoots()) {
+          registrar.registerNonRecursiveFileSet(root, WorkspaceFileKind.CONTENT, entity, null);
+        }
+      });
+      File root = createTempDir("customRoot");
+      VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
 
-    doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
-      return INSTANCE.createGenericContentEntityIterators(entity.createPointer(),
-                                                          IndexingUrlRootHolder.Companion.fromUrls(Collections.emptyList(),
-                                                                                                   getUrls(virtualRoot)));
-    });
+      doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
+        return INSTANCE.createGenericContentEntityIterators(entity.createPointer(),
+                                                            IndexingUrlRootHolder.Companion.fromUrls(Collections.emptyList(),
+                                                                                                     getUrls(virtualRoot)));
+      });
+    }
   }
 
   public void testAddingExternalCustomWorkspaceEntity() throws Exception {
@@ -182,87 +187,93 @@ public class EntityIndexingServiceOnCustomEntitiesTest extends EntityIndexingSer
   }
 
   public void testAddingNonRecursiveModuleAwareCustomWorkspaceEntity() throws Exception {
-    registerWorkspaceFileIndexContributor((entity, registrar) -> {
-      ModuleRelatedRootData data = new ModuleRelatedRootData() {
-        @NotNull
-        @Override
-        public Module getModule() {
-          return myModule;
+    if (!Registry.is("use.workspace.file.index.for.partial.scanning")) {
+      registerWorkspaceFileIndexContributor((entity, registrar) -> {
+        ModuleRelatedRootData data = new ModuleRelatedRootData() {
+          @NotNull
+          @Override
+          public Module getModule() {
+            return myModule;
+          }
+        };
+        for (VirtualFileUrl root : entity.getRoots()) {
+          registrar.registerNonRecursiveFileSet(root, WorkspaceFileKind.CONTENT, entity, data);
         }
-      };
-      for (VirtualFileUrl root : entity.getRoots()) {
-        registrar.registerNonRecursiveFileSet(root, WorkspaceFileKind.CONTENT, entity, data);
-      }
-    });
-    File root = createTempDir("customRoot");
-    VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
-    WriteAction.run(() -> {
-      virtualRoot.createChildData(this, "childFile.txt");
-    });
-
-    doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
-      return INSTANCE.createIterators(myModule, IndexingUrlRootHolder.Companion.fromUrls(Collections.emptyList(),
-                                                                                         getUrls(virtualRoot)));
-    });
-
-    try {
-      WriteAction.run(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject));
-
-      List<VirtualFile> filesInModule = new ArrayList<>();
-      ModuleRootManager.getInstance(myModule).getFileIndex().iterateContent(fileOrDir -> {
-        filesInModule.add(fileOrDir);
-        return true;
       });
-      assertSameElements(filesInModule, Collections.singletonList(virtualRoot));
+      File root = createTempDir("customRoot");
+      VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
+      WriteAction.run(() -> {
+        virtualRoot.createChildData(this, "childFile.txt");
+      });
+
+      doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
+        return INSTANCE.createIterators(myModule, IndexingUrlRootHolder.Companion.fromUrls(Collections.emptyList(),
+                                                                                           getUrls(virtualRoot)));
+      });
+
+      try {
+        WriteAction.run(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject));
+
+        List<VirtualFile> filesInModule = new ArrayList<>();
+        ModuleRootManager.getInstance(myModule).getFileIndex().iterateContent(fileOrDir -> {
+          filesInModule.add(fileOrDir);
+          return true;
+        });
+        assertSameElements(filesInModule, Collections.singletonList(virtualRoot));
+      }
+      finally {
+        WriteAction.run(() -> removeAllIndexingTestEntities(myProject));
+      }
     }
-    finally {
-      WriteAction.run(() -> removeAllIndexingTestEntities(myProject));
-    }
+
   }
 
   public void testModuleAwareCustomWorkspaceEntityALaRider() throws Exception {
-    registerWorkspaceFileIndexContributor((entity, registrar) -> {
-      ModuleRelatedRootData data = new ModuleRelatedRootData() {
-        @NotNull
-        @Override
-        public Module getModule() {
-          return myModule;
+    if (!Registry.is("use.workspace.file.index.for.partial.scanning")) {
+      registerWorkspaceFileIndexContributor((entity, registrar) -> {
+        ModuleRelatedRootData data = new ModuleRelatedRootData() {
+          @NotNull
+          @Override
+          public Module getModule() {
+            return myModule;
+          }
+        };
+        for (VirtualFileUrl root : entity.getRoots()) {
+          registrar.registerNonRecursiveFileSet(root, WorkspaceFileKind.CONTENT, entity, data);
+          registrar.registerFileSet(root.append("/childDirectory"), WorkspaceFileKind.CONTENT, entity, data);
         }
-      };
-      for (VirtualFileUrl root : entity.getRoots()) {
-        registrar.registerNonRecursiveFileSet(root, WorkspaceFileKind.CONTENT, entity, data);
-        registrar.registerFileSet(root.append("/childDirectory"), WorkspaceFileKind.CONTENT, entity, data);
-      }
-    });
-    File root = createTempDir("customRoot");
-    VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
-    WriteAction.run(() -> {
-      VirtualFile childDirectory = virtualRoot.createChildDirectory(this, "childDirectory");
-      childDirectory.createChildData(this, "file.txt");
-    });
-
-    doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
-      return INSTANCE.createIterators(myModule,
-                                      IndexingUrlRootHolder.Companion.fromUrls(
-                                        getUrls(virtualRoot.findChild("childDirectory")),
-                                        getUrls(virtualRoot)));
-    });
-
-    try {
-      WriteAction.run(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject));
-
-      List<VirtualFile> filesInModule = new ArrayList<>();
-      ModuleRootManager.getInstance(myModule).getFileIndex().iterateContent(fileOrDir -> {
-        filesInModule.add(fileOrDir);
-        return true;
       });
-      assertSameElements(filesInModule, Arrays.asList(virtualRoot,
-                                                      virtualRoot.findChild("childDirectory"),
-                                                      virtualRoot.findFileByRelativePath("childDirectory/file.txt")));
+      File root = createTempDir("customRoot");
+      VirtualFile virtualRoot = Objects.requireNonNull(LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root.toPath()));
+      WriteAction.run(() -> {
+        VirtualFile childDirectory = virtualRoot.createChildDirectory(this, "childDirectory");
+        childDirectory.createChildData(this, "file.txt");
+      });
+
+      doTest(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject), (entity) -> {
+        return INSTANCE.createIterators(myModule,
+                                        IndexingUrlRootHolder.Companion.fromUrls(
+                                          getUrls(virtualRoot.findChild("childDirectory")),
+                                          getUrls(virtualRoot)));
+      });
+
+      try {
+        WriteAction.run(() -> createAndRegisterEntity(getUrls(virtualRoot), Collections.emptyList(), myProject));
+
+        List<VirtualFile> filesInModule = new ArrayList<>();
+        ModuleRootManager.getInstance(myModule).getFileIndex().iterateContent(fileOrDir -> {
+          filesInModule.add(fileOrDir);
+          return true;
+        });
+        assertSameElements(filesInModule, Arrays.asList(virtualRoot,
+                                                        virtualRoot.findChild("childDirectory"),
+                                                        virtualRoot.findFileByRelativePath("childDirectory/file.txt")));
+      }
+      finally {
+        WriteAction.run(() -> removeAllIndexingTestEntities(myProject));
+      }
     }
-    finally {
-      WriteAction.run(() -> removeAllIndexingTestEntities(myProject));
-    }
+
   }
 
   public void testRemovingExcludedRootFromCustomWorkspaceEntity() throws Exception {

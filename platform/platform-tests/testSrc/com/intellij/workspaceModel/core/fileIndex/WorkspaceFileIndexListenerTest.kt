@@ -23,6 +23,7 @@ import com.intellij.workspaceModel.core.fileIndex.impl.WorkspaceFileIndexImpl
 import com.intellij.workspaceModel.ide.NonPersistentEntitySource
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.test.assertEquals
@@ -108,6 +109,7 @@ class WorkspaceFileIndexListenerTest {
   }
 
   @Test
+  @Disabled("We don't deduplicate events on entities change")
   fun `events are deduplicated`() = runBlocking {
     val listener = MyWorkspaceFileIndexListener()
     projectModel.project.messageBus.connect().subscribe(WorkspaceFileIndexListener.TOPIC, listener)
