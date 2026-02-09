@@ -5,6 +5,7 @@ import com.intellij.find.ngrams.TrigramIndex;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.ide.scratch.ScratchRootType;
 import com.intellij.ide.scratch.ScratchesSearchScope;
+import com.intellij.idea.IJIgnore;
 import com.intellij.java.index.StringIndex;
 import com.intellij.lang.LanguageParserDefinitions;
 import com.intellij.lang.ParserDefinition;
@@ -726,6 +727,7 @@ public class IndexTest extends JavaCodeInsightFixtureTestCase {
       stamp != ((StubIndexImpl)StubIndex.getInstance()).getIndexModificationStamp(JavaStubIndexKeys.CLASS_SHORT_NAMES, getProject()));
   }
 
+  @IJIgnore(issue = "AT-4013")
   public void test_internalErrorOfStubProcessingInvalidatesIndex() {
     DefaultLogger.disableStderrDumping(getTestRootDisposable());
 
