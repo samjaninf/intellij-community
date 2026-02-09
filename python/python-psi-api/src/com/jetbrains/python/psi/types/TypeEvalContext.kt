@@ -31,7 +31,7 @@ import org.jetbrains.annotations.ApiStatus
 import java.util.concurrent.ConcurrentMap
 import kotlin.concurrent.Volatile
 
-open class TypeEvalContext private constructor(
+sealed class TypeEvalContext(
   /**
    * @return context constraints (see [TypeEvalConstraints]
    */
@@ -267,7 +267,7 @@ open class TypeEvalContext private constructor(
     get() = constraints.myOrigin
 
   @ApiStatus.Internal
-  fun getContextTypeCache(): Map<Pair<PyExpression?, Any?>, PyType?> {
+  fun getContextTypeCache(): MutableMap<Pair<PyExpression?, Any?>, PyType?> {
     return contextTypeCache
   }
 
@@ -289,7 +289,7 @@ open class TypeEvalContext private constructor(
            isSameVirtualFile(constraints.myOrigin, getContextFile(element))
   }
 
-  object PyNullType : PyType {
+  private object PyNullType : PyType {
     override fun resolveMember(
       name: String,
       location: PyExpression?,
@@ -314,6 +314,9 @@ open class TypeEvalContext private constructor(
     override fun assertValid(message: String?) {
     }
   }
+
+  private class TypeEvalContextImpl(allowDataFlow: Boolean, allowStubToAST: Boolean, allowCallContext: Boolean, origin: PsiFile?) :
+    TypeEvalContext(allowDataFlow, allowStubToAST, allowCallContext, origin)
 
   private class AssumptionContext(val myParent: TypeEvalContext, element: PyTypedElement, type: PyType?) :
     TypeEvalContext(myParent.constraints) {
@@ -418,6 +421,7 @@ open class TypeEvalContext private constructor(
     }
   }
 
+  @ApiStatus.Internal
   companion object {
     private fun <T> getConcurrentMapForCaching(): ConcurrentMap<T & Any, PyType> {
       // In the current implementation, this value is only used to initialize the map and is basically ignored
@@ -451,7 +455,7 @@ open class TypeEvalContext private constructor(
      */
     @JvmStatic
     fun codeCompletion(project: Project, origin: PsiFile?): TypeEvalContext {
-      return getContextFromCache(project, TypeEvalContext(true, true, true, origin))
+      return getContextFromCache(project, TypeEvalContextImpl(true, true, true, origin))
     }
 
     /**
@@ -465,7 +469,7 @@ open class TypeEvalContext private constructor(
      */
     @JvmStatic
     fun userInitiated(project: Project, origin: PsiFile?): TypeEvalContext {
-      return getContextFromCache(project, TypeEvalContext(true, true, false, origin))
+      return getContextFromCache(project, TypeEvalContextImpl(true, true, false, origin))
     }
 
     /**
@@ -489,7 +493,7 @@ open class TypeEvalContext private constructor(
      */
     @JvmStatic
     fun codeInsightFallback(project: Project?): TypeEvalContext {
-      val anchor = TypeEvalContext(false, false, false, null)
+      val anchor = TypeEvalContextImpl(false, false, false, null)
       if (project != null) {
         return getContextFromCache(project, anchor)
       }
@@ -504,14 +508,14 @@ open class TypeEvalContext private constructor(
      */
     @JvmStatic
     fun deepCodeInsight(project: Project): TypeEvalContext {
-      return getContextFromCache(project, TypeEvalContext(false, true, false, null))
+      return getContextFromCache(project, TypeEvalContextImpl(false, true, false, null))
     }
 
     private fun buildCodeAnalysisContext(origin: PsiFile?): TypeEvalContext {
       if (Registry.`is`("python.optimized.type.eval.context")) {
         return OptimizedTypeEvalContext(false, false, false, origin)
       }
-      return TypeEvalContext(false, false, false, origin)
+      return TypeEvalContextImpl(false, false, false, origin)
     }
 
     /**

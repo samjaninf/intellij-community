@@ -439,7 +439,7 @@ object PyExpectedTypeJudgement {
 
     val returnType = ctx.getReturnType(funScope)
     val generatorDescriptor = PyTypingTypeProvider.GeneratorTypeDescriptor.fromGenerator(returnType)
-    val yieldType = generatorDescriptor?.yieldType()
+    val yieldType = generatorDescriptor?.yieldType
     if (parent.isDelegating) {
       return createIterableType(expr, yieldType)
     }
@@ -455,7 +455,7 @@ object PyExpectedTypeJudgement {
     if (funScope.isAsync) {
       return PyTypingTypeProvider.unwrapCoroutineReturnType(returnType)?.get()
     }
-    val generatorReturnType = PyTypingTypeProvider.GeneratorTypeDescriptor.fromGenerator(returnType)?.returnType()
+    val generatorReturnType = PyTypingTypeProvider.GeneratorTypeDescriptor.fromGenerator(returnType)?.returnType
     return generatorReturnType ?: returnType
   }
 

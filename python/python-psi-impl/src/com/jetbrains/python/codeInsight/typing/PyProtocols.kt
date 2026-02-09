@@ -3,8 +3,6 @@ package com.jetbrains.python.codeInsight.typing
 
 import com.intellij.psi.util.contextOfType
 import com.jetbrains.python.PyNames
-import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider.PROTOCOL
-import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider.PROTOCOL_EXT
 import com.jetbrains.python.psi.PyClass
 import com.jetbrains.python.psi.PyFunction
 import com.jetbrains.python.psi.PyKnownDecorator.TYPING_RUNTIME
@@ -107,5 +105,5 @@ fun inspectProtocolSubclass(protocol: PyClassType, subclass: PyClassType, contex
 
 private fun containsProtocol(types: List<PyClassLikeType?>) = types.any { type ->
   val classQName = type?.classQName
-  PROTOCOL == classQName || PROTOCOL_EXT == classQName
+  PyTypingTypeProvider.PROTOCOL == classQName || PyTypingTypeProvider.PROTOCOL_EXT == classQName
 }

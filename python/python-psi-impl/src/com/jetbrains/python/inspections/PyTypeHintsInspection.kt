@@ -36,7 +36,6 @@ import com.jetbrains.python.codeInsight.imports.AddImportHelper
 import com.jetbrains.python.codeInsight.imports.AddImportHelper.ImportPriority
 import com.jetbrains.python.codeInsight.typeHints.PyTypeHintFile
 import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider
-import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider.isBitwiseOrUnionAvailable
 import com.jetbrains.python.documentation.PythonDocumentationProvider
 import com.jetbrains.python.inspections.quickfix.PyUnpackTypeVarTupleQuickFix
 import com.jetbrains.python.psi.FutureFeature
@@ -709,7 +708,7 @@ class PyTypeHintsInspection : PyInspection() {
 
     private fun checkInstanceAndClassChecksOn(base: PyExpression) {
       if (base is PyBinaryExpression && base.operator == PyTokenTypes.OR) {
-        if (isBitwiseOrUnionAvailable(base)) {
+        if (PyTypingTypeProvider.isBitwiseOrUnionAvailable(base)) {
           val left = base.leftExpression
           val right = base.rightExpression
           if (left != null) checkInstanceAndClassChecksOn(left)
@@ -820,7 +819,7 @@ class PyTypeHintsInspection : PyInspection() {
                 PyTypingTypeProvider.UNION,
                 PyTypingTypeProvider.OPTIONAL,
                   -> {
-                  if (!isBitwiseOrUnionAvailable(base)) {
+                  if (!PyTypingTypeProvider.isBitwiseOrUnionAvailable(base)) {
                     registerParametrizedGenericsProblem(qName, base)
                   }
                   else if (base is PySubscriptionExpression) {
