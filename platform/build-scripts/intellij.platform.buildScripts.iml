@@ -419,7 +419,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="intellij.libraries.ktor.client" />
-    <orderEntry type="module" module-name="intellij.platform.plugins.parser.impl" />
+    <orderEntry type="module" module-name="intellij.platform.pluginSystem.parser.impl" />
     <orderEntry type="module" module-name="intellij.libraries.maven.resolver.provider" />
     <orderEntry type="module" module-name="intellij.platform.pluginGraph" />
     <orderEntry type="module" module-name="intellij.platform.buildScripts.api" exported="" />
