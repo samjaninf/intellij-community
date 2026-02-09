@@ -224,7 +224,6 @@ object MavenUtil {
   }
 
 
-
   @JvmStatic
   fun invokeAndWaitWriteAction(p: Project, r: Runnable) {
     if (ApplicationManager.getApplication().isWriteAccessAllowed()) {
@@ -295,7 +294,8 @@ object MavenUtil {
   }
 
   fun groupByBasedir(projects: Collection<MavenProject>, tree: MavenProjectsTree): MultiMap<String, MavenProject> {
-    return ContainerUtil.groupBy<String, MavenProject>(projects, NullableFunction { getBaseDir(tree.findRootProject(it).directoryFile).toString() })
+    return ContainerUtil.groupBy<String, MavenProject>(projects,
+                                                       NullableFunction { getBaseDir(tree.findRootProject(it).directoryFile).toString() })
   }
 
 
@@ -1118,10 +1118,12 @@ object MavenUtil {
   }
 
   /**
-   * @param path any path pointing to an environment where the repository should be searched.
+   * @param descriptor EelDescriptor pointing to an environment where the repository should be searched.
    */
   @JvmStatic
-  fun resolveDefaultLocalRepository(descriptor: EelDescriptor?): Path {
+  @ApiStatus.Obsolete
+  //do not use it, used only in Path macros contributors, waits for IJPL-234144 to be rewrited
+  fun resolveDefaultLocalRepositoryForJpsMacros(descriptor: EelDescriptor?): Path {
     val mavenRepoLocal = System.getProperty(MAVEN_REPO_LOCAL)
 
     if (mavenRepoLocal != null) {
@@ -1140,7 +1142,11 @@ object MavenUtil {
     val settingsPath: Path = m2DirPath.resolve(SETTINGS_XML)
     val defaultRepo = m2DirPath.resolve(REPOSITORY_DIR)
 
-    val repoPath = getRepositoryFromSettings(settingsPath) ?: return defaultRepo
+    val repoPath = getRepositoryFromSettings(settingsPath, Properties())
+    if (repoPath == null ||
+        repoPath.contains($$"${")) { //no property resolution for JPS projects
+      return defaultRepo
+    }
     return api.fs.getPath(repoPath).asNioPath()
   }
 
@@ -1227,7 +1233,7 @@ object MavenUtil {
     return path
   }
 
-  internal fun doResolveLocalRepository(userSettingsFile: Path?, globalSettingsFile: Path?): Path? {
+  internal suspend fun doResolveLocalRepository(userSettingsFile: Path?, globalSettingsFile: Path?): Path? {
     if (userSettingsFile != null) {
       val fromUserSettings: String? = getRepositoryFromSettings(userSettingsFile)
       if (!StringUtil.isEmpty(fromUserSettings)) {
@@ -1246,18 +1252,31 @@ object MavenUtil {
   }
 
   @JvmStatic
-  fun getRepositoryFromSettings(file: Path): String? {
-    try {
-      val repository: Element? = getRepositoryElement(file)
+  fun getRepositoryFromSettings(file: Path, props: Properties?): String? {
+    val propertiesToResolve = props ?: MavenServerUtil.collectSystemProperties()
 
-      if (repository == null) {
-        return null
-      }
-      val text = repository.getText()
-      if (isEmptyOrSpaces(text)) {
-        return null
-      }
-      return expandProperties(text!!.trim { it <= ' ' })
+    val repository = try {
+      getRepositoryElement(file)
+    }
+    catch (e: IOException) {
+      MavenLog.LOG.debug("Cannot read file $file", e)
+      return null
+    }
+
+    if (repository == null) {
+      return null
+    }
+    val text = repository.getText()
+    if (isEmptyOrSpaces(text)) {
+      return null
+    }
+    return expandProperties(text!!.trim { it <= ' ' }, propertiesToResolve)
+  }
+
+  suspend fun getRepositoryFromSettings(file: Path): String? {
+    try {
+      val api = file.getEelDescriptor().toEelApi()
+      return getRepositoryFromSettings(file, MavenEelUtil.getMavenProperties(api))
     }
     catch (e: Exception) {
       return null
@@ -1641,7 +1660,8 @@ object MavenUtil {
   }
 
   @JvmStatic
-  fun getIdeaVersionToPassToMavenProcess(): String = ApplicationInfoImpl.getShadowInstance().getMajorVersion() + "." + ApplicationInfoImpl.getShadowInstance().getMinorVersion()
+  fun getIdeaVersionToPassToMavenProcess(): String =
+    ApplicationInfoImpl.getShadowInstance().getMajorVersion() + "." + ApplicationInfoImpl.getShadowInstance().getMinorVersion()
 
   @JvmStatic
   fun isPomFileName(fileName: String): Boolean {
