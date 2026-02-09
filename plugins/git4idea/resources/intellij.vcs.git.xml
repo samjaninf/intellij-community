@@ -554,10 +554,13 @@
     <action id="Git.WorkingTrees.Open" class="git4idea.workingTrees.ui.OpenWorkingTreeAction">
       <mouse-shortcut keymap="$default" keystroke="button1 doubleClick"/>
     </action>
+    <action id="Git.WorkingTrees.Refresh" class="git4idea.workingTrees.ui.RefreshWorkingTreesAction"
+            icon="AllIcons.General.Refresh" use-shortcut-of="Synchronize"/>
 
     <group id="Git.WorkingTrees.ToolwindowGroup.Toolbar">
       <reference ref="Git.CreateNewWorkingTree"/>
       <reference ref="Git.WorkingTrees.Remove"/>
+      <reference ref="Git.WorkingTrees.Refresh"/>
       <separator/>
       <reference ref="ContextHelp"/>
     </group>
