@@ -1,0 +1,41 @@
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.agent.workbench.sessions
+
+import androidx.compose.runtime.Immutable
+
+internal enum class AgentSessionProvider {
+  CODEX,
+  CLAUDE,
+}
+
+@Immutable
+internal data class AgentSubAgent(
+  @JvmField val id: String,
+  @JvmField val name: String,
+)
+
+@Immutable
+internal data class AgentSessionThread(
+  @JvmField val id: String,
+  @JvmField val title: String,
+  @JvmField val updatedAt: Long,
+  @JvmField val archived: Boolean,
+  @JvmField val provider: AgentSessionProvider = AgentSessionProvider.CODEX,
+  @JvmField val subAgents: List<AgentSubAgent> = emptyList(),
+)
+
+@Immutable
+internal data class AgentProjectSessions(
+  @JvmField val path: String,
+  @JvmField val name: String,
+  @JvmField val isOpen: Boolean,
+  @JvmField val threads: List<AgentSessionThread> = emptyList(),
+  @JvmField val isLoading: Boolean = false,
+  @JvmField val hasLoaded: Boolean = false,
+  @JvmField val errorMessage: String? = null,
+)
+
+internal data class AgentSessionsState(
+  @JvmField val projects: List<AgentProjectSessions> = emptyList(),
+  @JvmField val lastUpdatedAt: Long? = null,
+)

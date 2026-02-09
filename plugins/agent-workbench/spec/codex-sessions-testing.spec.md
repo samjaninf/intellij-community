@@ -5,7 +5,7 @@ targets:
   - ../sessions/testSrc/CodexAppServerClientTest.kt
   - ../sessions/testSrc/CodexAppServerClientTestSupport.kt
   - ../sessions/testSrc/CodexTestAppServer.kt
-  - ../sessions/testSrc/CodexSessionsToolWindowTest.kt
+  - ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 ---
 
 # Agent Threads Testing
@@ -34,7 +34,7 @@ Validate Codex app-server thread listing and tool window UI states with a contra
 - Clicking `New Thread` invokes create-thread callback exactly once.
 - Hovering `New Thread` does not change project-row layout metrics (height/content shift).
 
-[@test] ../sessions/testSrc/CodexSessionsToolWindowTest.kt
+[@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 
 ## Integration Gating
 - The real backend runs when the `codex` CLI is resolvable.

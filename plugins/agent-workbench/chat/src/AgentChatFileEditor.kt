@@ -9,8 +9,8 @@ import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTab
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 
-internal class CodexChatFileEditor(
-  private val file: CodexChatVirtualFile,
+internal class AgentChatFileEditor(
+  private val file: AgentChatVirtualFile,
   private val tab: TerminalToolWindowTab,
 ) : UserDataHolderBase(), FileEditor {
   private val component = tab.content.component
@@ -31,7 +31,7 @@ internal class CodexChatFileEditor(
 
   override fun removePropertyChangeListener(listener: PropertyChangeListener) = Unit
 
-  override fun getFile(): CodexChatVirtualFile = file
+  override fun getFile(): AgentChatVirtualFile = file
 
   override fun dispose() {
     Disposer.dispose(tab.content)

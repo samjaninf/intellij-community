@@ -5,7 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.typography
 
-internal object CodexSessionsTextStyles {
+internal object AgentSessionsTextStyles {
   // Use theme typography so sizes track IntelliJ Platform defaults.
   @Composable
   fun projectTitle(): TextStyle {

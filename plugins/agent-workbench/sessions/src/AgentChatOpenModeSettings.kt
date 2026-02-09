@@ -5,7 +5,7 @@ import com.intellij.openapi.options.advanced.AdvancedSettings
 
 internal const val OPEN_CHAT_IN_DEDICATED_FRAME_SETTING_ID: String = "agent.workbench.chat.open.in.dedicated.frame"
 
-internal object CodexChatOpenModeSettings {
+internal object AgentChatOpenModeSettings {
   fun openInDedicatedFrame(): Boolean {
     return AdvancedSettings.getBoolean(OPEN_CHAT_IN_DEDICATED_FRAME_SETTING_ID)
   }

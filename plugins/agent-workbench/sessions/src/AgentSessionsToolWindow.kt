@@ -13,50 +13,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.intellij.agent.workbench.codex.common.CodexSessionsState
-import com.intellij.agent.workbench.codex.common.CodexSubAgent
-import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.openapi.components.service
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.Text
 
 @Composable
-internal fun codexSessionsToolWindow() {
-  val service = remember { service<CodexSessionsService>() }
-  val treeUiState = remember { service<CodexSessionsTreeUiStateService>() }
+internal fun agentSessionsToolWindow() {
+  val service = remember { service<AgentSessionsService>() }
   val state by service.state.collectAsState()
 
   LaunchedEffect(Unit) {
     service.refresh()
   }
 
-  codexSessionsToolWindowContent(
+  agentSessionsToolWindowContent(
     state = state,
     onRefresh = { service.refresh() },
     onOpenProject = { service.openOrFocusProject(it) },
     onProjectExpanded = { service.loadProjectThreadsOnDemand(it) },
-    onCreateThread = { service.createAndOpenThread(it) },
-    onShowMoreThreads = { service.showAllThreadsForProject(it) },
     onOpenThread = { path, thread -> service.openChatThread(path, thread) },
     onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent) },
-    treeUiState = treeUiState,
   )
 }
 
 @Composable
-internal fun codexSessionsToolWindowContent(
-  state: CodexSessionsState,
+internal fun agentSessionsToolWindowContent(
+  state: AgentSessionsState,
   onRefresh: () -> Unit,
   onOpenProject: (String) -> Unit,
   onProjectExpanded: (String) -> Unit = {},
-  onCreateThread: (String) -> Unit = {},
-  onShowMoreThreads: (String) -> Unit = {},
-  onOpenThread: (String, CodexThread) -> Unit = { _, _ -> },
-  onOpenSubAgent: (String, CodexThread, CodexSubAgent) -> Unit = { _, _, _ -> },
-  treeUiState: SessionsTreeUiState? = null,
+  onOpenThread: (String, AgentSessionThread) -> Unit = { _, _ -> },
+  onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit = { _, _, _ -> },
   nowProvider: () -> Long = { System.currentTimeMillis() },
 ) {
-  val effectiveTreeUiState = treeUiState ?: remember { InMemorySessionsTreeUiState() }
   Column(
     modifier = Modifier
       .fillMaxSize()
@@ -70,11 +59,8 @@ internal fun codexSessionsToolWindowContent(
         onRefresh = onRefresh,
         onOpenProject = onOpenProject,
         onProjectExpanded = onProjectExpanded,
-        onCreateThread = onCreateThread,
-        onShowMoreThreads = onShowMoreThreads,
         onOpenThread = onOpenThread,
         onOpenSubAgent = onOpenSubAgent,
-        treeUiState = effectiveTreeUiState,
         nowProvider = nowProvider,
       )
     }
@@ -90,9 +76,9 @@ private fun emptyState(isLoading: Boolean) {
     verticalArrangement = Arrangement.spacedBy(6.dp)
   ) {
     Text(
-      text = CodexSessionsBundle.message(messageKey),
+      text = AgentSessionsBundle.message(messageKey),
       color = JewelTheme.globalColors.text.disabled,
-      style = CodexSessionsTextStyles.emptyState(),
+      style = AgentSessionsTextStyles.emptyState(),
     )
   }
 }

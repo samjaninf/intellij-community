@@ -8,17 +8,21 @@ import com.intellij.openapi.vfs.VirtualFile
 
 @Service(Service.Level.PROJECT)
 @Suppress("unused")
-class CodexChatEditorService(private val project: Project) {
+class AgentChatEditorService(private val project: Project) {
   fun openChat(
     projectPath: String,
+    threadIdentity: String,
+    shellCommand: List<String>,
     threadId: String,
     threadTitle: String,
     subAgentId: String?,
   ) {
     val manager = FileEditorManager.getInstance(project)
-    val existing = findExistingChat(manager.openFiles, threadId, subAgentId)
-    val file = existing ?: CodexChatVirtualFile(
+    val existing = findExistingChat(manager.openFiles, threadIdentity, subAgentId)
+    val file = existing ?: AgentChatVirtualFile(
       projectPath = projectPath,
+      threadIdentity = threadIdentity,
+      shellCommand = shellCommand,
       threadId = threadId,
       threadTitle = threadTitle,
       subAgentId = subAgentId,
@@ -26,9 +30,13 @@ class CodexChatEditorService(private val project: Project) {
     manager.openFile(file, true)
   }
 
-  private fun findExistingChat(openFiles: Array<VirtualFile>, threadId: String, subAgentId: String?): CodexChatVirtualFile? {
+  private fun findExistingChat(
+    openFiles: Array<VirtualFile>,
+    threadIdentity: String,
+    subAgentId: String?,
+  ): AgentChatVirtualFile? {
     return openFiles
-      .filterIsInstance<CodexChatVirtualFile>()
-      .firstOrNull { it.matches(threadId, subAgentId) }
+      .filterIsInstance<AgentChatVirtualFile>()
+      .firstOrNull { it.matches(threadIdentity, subAgentId) }
   }
 }

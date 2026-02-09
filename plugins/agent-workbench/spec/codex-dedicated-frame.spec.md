@@ -4,7 +4,7 @@ description: Requirements for the dedicated AI-chat frame used by Agent Workbenc
 targets:
   - ../sessions/src/*.kt
   - ../sessions/resources/intellij.agent.workbench.sessions.xml
-  - ../sessions/resources/messages/CodexSessionsBundle.properties
+  - ../sessions/resources/messages/AgentSessionsBundle.properties
   - ../chat/src/*.kt
   - ../sessions/testSrc/*.kt
 ---
@@ -70,8 +70,8 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 - Verify current-project mode preserves legacy flow.
 - Verify dedicated frame project is filtered from Sessions list.
 - Run tests using:
-  - `./tests.cmd -Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.CodexSessionsGearActionsTest`
-  - `./tests.cmd -Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.CodexSessionsToolWindowTest`
+  - `./tests.cmd -Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionsGearActionsTest`
+  - `./tests.cmd -Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionsToolWindowTest`
 
 ## Open Questions / Risks
 - Dedicated frame project path base policy can be revised later to align with welcome-project storage conventions.

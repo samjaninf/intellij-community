@@ -9,15 +9,15 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 import org.jetbrains.jewel.bridge.compose
 
-internal class CodexSessionsToolWindowFactory : ToolWindowFactory, DumbAware {
+internal class AgentSessionsToolWindowFactory : ToolWindowFactory, DumbAware {
   override fun init(toolWindow: ToolWindow) {
-    toolWindow.setStripeTitle(CodexSessionsBundle.message("toolwindow.title"))
+    toolWindow.setStripeTitle(AgentSessionsBundle.message("toolwindow.title"))
   }
 
   override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-    toolWindow.title = CodexSessionsBundle.message("toolwindow.title")
+    toolWindow.title = AgentSessionsBundle.message("toolwindow.title")
     val contentFactory = ContentFactory.getInstance()
-    val panel = compose { codexSessionsToolWindow() }
+    val panel = compose { agentSessionsToolWindow() }
     val content = contentFactory.createContent(panel, null, false)
     toolWindow.contentManager.addContent(content)
     toolWindow.setAdditionalGearActions(ActionUtil.getActionGroup("AgentWorkbenchSessions.ToolWindow.GearActions"))

@@ -7,17 +7,17 @@ import org.jetbrains.annotations.NonNls
 import org.jetbrains.annotations.PropertyKey
 import java.util.function.Supplier
 
-const val CODEX_SESSIONS_BUNDLE: @NonNls String = "messages.CodexSessionsBundle"
+const val AGENT_SESSIONS_BUNDLE: @NonNls String = "messages.AgentSessionsBundle"
 
-internal object CodexSessionsBundle {
-  private val BUNDLE = DynamicBundle(CodexSessionsBundle::class.java, CODEX_SESSIONS_BUNDLE)
+internal object AgentSessionsBundle {
+  private val BUNDLE = DynamicBundle(AgentSessionsBundle::class.java, AGENT_SESSIONS_BUNDLE)
 
-  fun message(key: @PropertyKey(resourceBundle = CODEX_SESSIONS_BUNDLE) String, vararg params: Any): @Nls String {
+  fun message(key: @PropertyKey(resourceBundle = AGENT_SESSIONS_BUNDLE) String, vararg params: Any): @Nls String {
     return BUNDLE.getMessage(key, *params)
   }
 
   fun messagePointer(
-    key: @PropertyKey(resourceBundle = CODEX_SESSIONS_BUNDLE) String,
+    key: @PropertyKey(resourceBundle = AGENT_SESSIONS_BUNDLE) String,
     vararg params: Any,
   ): Supplier<@Nls String> {
     return BUNDLE.getLazyMessage(key, *params)

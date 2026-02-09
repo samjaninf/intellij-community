@@ -25,7 +25,6 @@ jvm_library(
     "//platform/util",
     "//platform/platform-util-io:ide-util-io",
     "//platform/execution-impl",
-    "//plugins/agent-workbench/codex/common",
     "//plugins/terminal/frontend",
   ]
 )
@@ -47,7 +46,6 @@ jvm_library(
     "//platform/util",
     "//platform/platform-util-io:ide-util-io",
     "//platform/execution-impl",
-    "//plugins/agent-workbench/codex/common",
     "//plugins/terminal/frontend",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",

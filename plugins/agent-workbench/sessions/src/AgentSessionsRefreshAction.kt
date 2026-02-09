@@ -6,13 +6,13 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAwareAction
 
-internal class CodexSessionsRefreshAction : DumbAwareAction() {
+internal class AgentSessionsRefreshAction : DumbAwareAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    service<CodexSessionsService>().refresh()
+    service<AgentSessionsService>().refresh()
   }
 
   override fun update(e: AnActionEvent) {
-    val isRefreshing = service<CodexSessionsService>().state.value.projects.any { it.isLoading }
+    val isRefreshing = service<AgentSessionsService>().state.value.projects.any { it.isLoading }
     e.presentation.isEnabled = !isRefreshing
   }
 

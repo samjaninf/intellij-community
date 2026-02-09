@@ -6,7 +6,7 @@ targets:
   - ../plugin-content.yaml
   - ../sessions/src/*.kt
   - ../sessions/resources/intellij.agent.workbench.sessions.xml
-  - ../sessions/resources/messages/CodexSessionsBundle.properties
+  - ../sessions/resources/messages/AgentSessionsBundle.properties
   - ../sessions/testSrc/*.kt
 ---
 
@@ -67,7 +67,7 @@ Dedicated-frame routing semantics for thread and sub-agent opens are specified i
 
 Detailed dedicated-frame project lifecycle, visibility, and reuse requirements are defined in `spec/codex-dedicated-frame.spec.md`.
 
-[@test] ../sessions/testSrc/CodexSessionsToolWindowTest.kt
+[@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 
 - Integration-style coverage must include backend-backed tree scenarios (saved preview restore and `More...` paging) against both mock and real Codex backends.
 - Real Codex backend scenarios are environment-gated (`CODEX_BIN`/auth available); mock backend scenarios must always run.

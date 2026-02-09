@@ -13,8 +13,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal class CodexChatFileEditorProvider : AsyncFileEditorProvider {
-  override fun accept(project: Project, file: VirtualFile): Boolean = file is CodexChatVirtualFile
+@Suppress("unused")
+internal class AgentChatFileEditorProvider : AsyncFileEditorProvider {
+  override fun accept(project: Project, file: VirtualFile): Boolean = file is AgentChatVirtualFile
 
   override fun acceptRequiresReadAction(): Boolean = false
 
@@ -25,34 +26,26 @@ internal class CodexChatFileEditorProvider : AsyncFileEditorProvider {
     editorCoroutineScope: CoroutineScope,
   ): FileEditor {
     return withContext(Dispatchers.EDT) {
-      createChatEditor(project, file as CodexChatVirtualFile)
+      createChatEditor(project, file as AgentChatVirtualFile)
     }
   }
 
   override fun createEditor(project: Project, file: VirtualFile): FileEditor {
-    return createChatEditor(project, file as CodexChatVirtualFile)
+    return createChatEditor(project, file as AgentChatVirtualFile)
   }
 
   override fun getEditorTypeId(): String = "agent.workbench-chat-editor"
 
   override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.HIDE_DEFAULT_EDITOR
-}
 
-private fun createChatEditor(project: Project, file: CodexChatVirtualFile): FileEditor {
-  val terminalManager = TerminalToolWindowTabsManager.getInstance(project)
-  val tab = terminalManager.createTabBuilder()
-    .shouldAddToToolWindow(false)
-    .workingDirectory(file.projectPath)
-    .tabName(file.name)
-    .shellCommand(buildShellCommand(file))
-    .createTab()
-  return CodexChatFileEditor(file, tab)
-}
-
-private fun buildShellCommand(file: CodexChatVirtualFile): List<String> {
-  return buildCodexResumeShellCommand(file.threadId)
-}
-
-internal fun buildCodexResumeShellCommand(threadId: String): List<String> {
-  return listOf("codex", "-c", "check_for_update_on_startup=false", "resume", threadId)
+  private fun createChatEditor(project: Project, file: AgentChatVirtualFile): FileEditor {
+    val terminalManager = TerminalToolWindowTabsManager.getInstance(project)
+    val tab = terminalManager.createTabBuilder()
+      .shouldAddToToolWindow(false)
+      .workingDirectory(file.projectPath)
+      .tabName(file.name)
+      .shellCommand(file.shellCommand)
+      .createTab()
+    return AgentChatFileEditor(file, tab)
+  }
 }

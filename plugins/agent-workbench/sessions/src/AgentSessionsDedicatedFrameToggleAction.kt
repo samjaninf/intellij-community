@@ -5,13 +5,13 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareToggleAction
 
-internal class CodexSessionsDedicatedFrameToggleAction : DumbAwareToggleAction() {
+internal class AgentSessionsDedicatedFrameToggleAction : DumbAwareToggleAction() {
   override fun isSelected(e: AnActionEvent): Boolean {
-    return CodexChatOpenModeSettings.openInDedicatedFrame()
+    return AgentChatOpenModeSettings.openInDedicatedFrame()
   }
 
   override fun setSelected(e: AnActionEvent, state: Boolean) {
-    CodexChatOpenModeSettings.setOpenInDedicatedFrame(state)
+    AgentChatOpenModeSettings.setOpenInDedicatedFrame(state)
   }
 
   override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT

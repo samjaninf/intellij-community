@@ -4,6 +4,9 @@
 - name: lib/modules/intellij.agent.workbench.chat.jar
   contentModules:
   - name: intellij.agent.workbench.chat
+- name: lib/modules/intellij.agent.workbench.claude.common.jar
+  contentModules:
+  - name: intellij.agent.workbench.claude.common
 - name: lib/modules/intellij.agent.workbench.codex.common.jar
   contentModules:
   - name: intellij.agent.workbench.codex.common
