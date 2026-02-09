@@ -68,6 +68,7 @@ import javax.swing.JComponent
 import javax.swing.border.Border
 import kotlin.io.path.extension
 import kotlin.math.roundToInt
+import java.lang.Boolean.getBoolean as getBooleanSystemProperty
 
 private const val VENDOR_PREFIX = "jetbrains-"
 private var appIcons: MutableList<Image?>? = null
@@ -182,11 +183,16 @@ fun findAppIcon(): String? {
   return if (url != null && URLUtil.FILE_PROTOCOL == url.protocol) URLUtil.urlToFile(url).absolutePath else null
 }
 
-fun isWindowIconAlreadyExternallySet(): Boolean = when (OS.CURRENT) {
-  OS.Windows -> java.lang.Boolean.getBoolean("ide.native.launcher") && SystemInfo.isJetBrainsJvm
-  // to prevent mess with java dukes when running from source
-  OS.macOS -> isMacDocIconSet || !PluginManagerCore.isRunningFromSources()
-  else -> false
+fun isWindowIconAlreadyExternallySet(): Boolean {
+  if (getBooleanSystemProperty("intellij.platform.force.update.app.window.icon")) {
+    return false
+  }
+  return when (OS.CURRENT) {
+    OS.Windows -> getBooleanSystemProperty("ide.native.launcher") && SystemInfo.isJetBrainsJvm
+    // to prevent mess with java dukes when running from source
+    OS.macOS -> isMacDocIconSet || !PluginManagerCore.isRunningFromSources()
+    else -> false
+  }
 }
 
 private fun removeTraceLocalConsents(localConsents: MutableList<Consent>) {
