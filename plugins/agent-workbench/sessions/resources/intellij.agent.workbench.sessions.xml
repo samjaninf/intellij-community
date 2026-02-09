@@ -21,6 +21,7 @@
       default="true"
       bundle="messages.CodexSessionsBundle"
       groupKey="advanced.settings.agent.workbench"/>
+    <projectFrameCapabilitiesProvider implementation="com.intellij.agent.workbench.sessions.AgentWorkbenchProjectFrameCapabilitiesProvider"/>
   </extensions>
 
   <actions resource-bundle="messages.CodexSessionsBundle">
