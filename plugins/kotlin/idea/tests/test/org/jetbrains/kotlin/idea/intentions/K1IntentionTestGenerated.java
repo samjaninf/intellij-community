@@ -8389,6 +8389,11 @@ public abstract class K1IntentionTestGenerated extends AbstractK1IntentionTest {
             runTest("testData/intentions/convertToBlockBody/annotatedExprInParentheses.kt");
         }
 
+        @TestMetadata("annotatedExprIsExpression.kt")
+        public void testAnnotatedExprIsExpression() throws Exception {
+            runTest("testData/intentions/convertToBlockBody/annotatedExprIsExpression.kt");
+        }
+
         @TestMetadata("comment.kt")
         public void testComment() throws Exception {
             runTest("testData/intentions/convertToBlockBody/comment.kt");

@@ -3224,6 +3224,11 @@ public abstract class K2IntentionTestGenerated extends AbstractK2IntentionTest {
             runTest("../../../idea/tests/testData/intentions/convertToBlockBody/annotatedExprInParentheses.kt");
         }
 
+        @TestMetadata("annotatedExprIsExpression.kt")
+        public void testAnnotatedExprIsExpression() throws Exception {
+            runTest("../../../idea/tests/testData/intentions/convertToBlockBody/annotatedExprIsExpression.kt");
+        }
+
         @TestMetadata("comment.kt")
         public void testComment() throws Exception {
             runTest("../../../idea/tests/testData/intentions/convertToBlockBody/comment.kt");
