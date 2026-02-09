@@ -196,6 +196,16 @@ public final class TypedHandler extends TypedActionHandlerBase {
           return;
         }
 
+        var selectionModel = editor.getSelectionModel();
+        if (selectionModel.hasSelection()) {
+          int selectionLength = selectionModel.getSelectionEnd() - selectionModel.getSelectionStart();
+          TypingEventsLogger.logSelectionDeleted(
+            project,
+            editor,
+            file,
+            selectionLength,
+            TypingEventsLogger.SelectionDeleteAction.TYPING);
+        }
         EditorModificationUtilEx.deleteSelectedText(editor);
 
         FileType fileType = getFileType(file, editor);
@@ -748,4 +758,3 @@ public final class TypedHandler extends TypedActionHandlerBase {
     }
   }
 }
-
