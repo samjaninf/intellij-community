@@ -1342,6 +1342,11 @@
                      key="markdown.documentation.comments.migration.display.name" groupBundle="messages.InspectionsBundle"
                      groupKey="group.names.language.level.specific.issues.and.migration.aids23" enabledByDefault="true" level="INFORMATION"
                      implementationClass="com.siyeh.ig.migration.MarkdownDocumentationCommentsMigrationInspection"/>
+    <localInspection groupPathKey="group.path.names.java.language.level.specific.issues.and.migration.aids" language="JAVA"
+                     shortName="MathClampMigration" bundle="messages.InspectionGadgetsBundle"
+                     key="inspection.clamp.migration.display.name" groupBundle="messages.InspectionsBundle"
+                     groupKey="group.names.language.level.specific.issues.and.migration.aids21" enabledByDefault="true" level="WARNING"
+                     implementationClass="com.siyeh.ig.migration.MathClampMigrationInspection"/>
 
     <!--group.names.java.language.level.issues-->
     <localInspection groupPath="Java" language="JAVA" shortName="AnnotationClass" bundle="messages.InspectionGadgetsBundle" key="annotation.class.display.name"

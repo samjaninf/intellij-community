@@ -87,6 +87,7 @@ internal object DefaultJavaSyntaxResources {
     "feature.local.interfaces" to "Local interfaces",
     "feature.lvti" to "Local variable type inference",
     "feature.markdown.comment" to "Markdown Documentation Comments",
+    "feature.math.clamp.methods" to "Clamp methods in standard library",
     "feature.method.references" to "Method references",
     "feature.module.import.declarations" to "Module Import Declarations",
     "feature.modules" to "Modules",
