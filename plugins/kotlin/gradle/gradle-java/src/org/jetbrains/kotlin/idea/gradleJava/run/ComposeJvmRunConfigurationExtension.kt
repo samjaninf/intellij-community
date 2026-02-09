@@ -15,11 +15,11 @@ import org.jetbrains.plugins.gradle.service.execution.GradleRunConfiguration
 private val isComposeJvmKey = Key.create<Boolean>("isComposeJvm")
 private val mainFunctionClassFqnKey = Key.create<String>("mainClassFqn")
 
-internal var ExternalSystemRunConfiguration.isComposeJvm: Boolean
+var ExternalSystemRunConfiguration.isComposeJvm: Boolean
     get() = getUserData<Boolean>(isComposeJvmKey) == true
     set(value) = putUserData<Boolean>(isComposeJvmKey, value)
 
-internal var ExternalSystemRunConfiguration.mainFunctionClassFqn: String?
+var ExternalSystemRunConfiguration.mainFunctionClassFqn: String?
     get() = getUserData<String>(mainFunctionClassFqnKey) as? String
     set(value) = putUserData<String>(mainFunctionClassFqnKey, value)
 
