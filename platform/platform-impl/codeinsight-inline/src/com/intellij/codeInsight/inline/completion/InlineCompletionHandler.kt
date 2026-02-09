@@ -213,9 +213,9 @@ abstract class InlineCompletionHandler @ApiStatus.Internal constructor(
 
     session.provider.insertHandler.afterInsertion(insertEnvironment, elements)
     editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
-    traceBlocking(InlineCompletionEventType.AfterInsert)
+    LookupManager.getActiveLookup(editor)?.hideLookup(false)
 
-    LookupManager.getActiveLookup(editor)?.hideLookup(false) //TODO: remove this
+    traceBlocking(InlineCompletionEventType.AfterInsert)
 
     afterInsert(actualProviderId)
   }
