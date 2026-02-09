@@ -1,606 +1,573 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.jetbrains.python.psi.types;
+package com.jetbrains.python.psi.types
 
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.util.Pair;
-import com.intellij.openapi.util.RecursionManager;
-import com.intellij.openapi.util.Ref;
-import com.intellij.openapi.util.registry.Registry;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
-import com.intellij.util.ArrayUtil;
-import com.intellij.util.ProcessingContext;
-import com.intellij.util.containers.CollectionFactory;
-import com.intellij.util.containers.HashingStrategy;
-import com.jetbrains.python.psi.AccessDirection;
-import com.jetbrains.python.psi.PyCallable;
-import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.psi.PyExpressionCodeFragment;
-import com.jetbrains.python.psi.PyFile;
-import com.jetbrains.python.psi.PyInstantTypeProvider;
-import com.jetbrains.python.psi.PyTypedElement;
-import com.jetbrains.python.psi.impl.PyTypeProvider;
-import com.jetbrains.python.psi.resolve.PyResolveContext;
-import com.jetbrains.python.psi.resolve.RatedResolveResult;
-import com.jetbrains.python.psi.types.external.ExternalPyTypeResolver;
-import com.jetbrains.python.psi.types.external.ExternalPyTypeResolverProvider;
-import com.jetbrains.python.pyi.PyiLanguageDialect;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.util.Computable
+import com.intellij.openapi.util.RecursionManager
+import com.intellij.openapi.util.Ref
+import com.intellij.openapi.util.registry.Registry
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.util.ArrayUtil
+import com.intellij.util.ProcessingContext
+import com.intellij.util.containers.CollectionFactory
+import com.intellij.util.containers.HashingStrategy
+import com.jetbrains.python.psi.AccessDirection
+import com.jetbrains.python.psi.PyCallable
+import com.jetbrains.python.psi.PyExpression
+import com.jetbrains.python.psi.PyExpressionCodeFragment
+import com.jetbrains.python.psi.PyFile
+import com.jetbrains.python.psi.PyInstantTypeProvider
+import com.jetbrains.python.psi.PyTypedElement
+import com.jetbrains.python.psi.resolve.PyResolveContext
+import com.jetbrains.python.psi.resolve.RatedResolveResult
+import com.jetbrains.python.psi.types.external.ExternalPyTypeResolver
+import com.jetbrains.python.psi.types.external.ExternalPyTypeResolverProvider.Companion.createTypeResolver
+import com.jetbrains.python.pyi.PyiLanguageDialect
+import org.jetbrains.annotations.ApiStatus
+import java.util.concurrent.ConcurrentMap
+import kotlin.concurrent.Volatile
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-
-
-public sealed class TypeEvalContext {
-
+open class TypeEvalContext private constructor(
   /**
-   * This class ensures that only {@link TypeEvalContext} instances can directly invoke
-   * {@link PyTypedElement#getType(TypeEvalContext, Key)} and everybody else has to
-   * access its result though {@link #getType(PyTypedElement)} or {@link #getReturnType(PyCallable)}.
-   * Hence, the inferred type information cannot bypass caching in {@link TypeEvalContext}.
+   * @return context constraints (see [TypeEvalConstraints]
    */
-  public static final class Key {
-    private static final Key INSTANCE = new Key();
+  @get:ApiStatus.Internal val constraints: TypeEvalConstraints,
+) {
+  /**
+   * This class ensures that only [TypeEvalContext] instances can directly invoke
+   * [PyTypedElement.getType] and everybody else has to
+   * access its result though [.getType] or [.getReturnType].
+   * Hence, the inferred type information cannot bypass caching in [TypeEvalContext].
+   */
+  sealed class Key
 
-    private Key() {
-    }
-  }
+  private object KeyImpl : Key()
 
-  private final @NotNull TypeEvalConstraints myConstraints;
+  private var myTrace: MutableList<String?>? = null
+  private var myTraceIndent = ""
 
-  private List<String> myTrace;
-  private String myTraceIndent = "";
+  private val myProcessingContext = ThreadLocal.withInitial { ProcessingContext() }
 
-  private final ThreadLocal<ProcessingContext> myProcessingContext = ThreadLocal.withInitial(ProcessingContext::new);
+  private var externalTypeResolver: ExternalPyTypeResolver? = null
+  protected val myEvaluated: MutableMap<PyTypedElement?, PyType?> = getConcurrentMapForCaching()
+  protected val myEvaluatedReturn: MutableMap<PyCallable?, PyType?> = getConcurrentMapForCaching()
+  protected val contextTypeCache: ConcurrentMap<Pair<PyExpression?, Any?>, PyType> = getConcurrentMapForCaching()
 
-  private ExternalPyTypeResolver externalTypeResolver = null;
-  protected final Map<PyTypedElement, PyType> myEvaluated = getConcurrentMapForCaching();
-  protected final Map<PyCallable, PyType> myEvaluatedReturn = getConcurrentMapForCaching();
-  protected final Map<Pair<PyExpression, Object>, PyType> contextTypeCache = getConcurrentMapForCaching();
+  private constructor(allowDataFlow: Boolean, allowStubToAST: Boolean, allowCallContext: Boolean, origin: PsiFile?) : this(
+    TypeEvalConstraints(allowDataFlow, allowStubToAST, allowCallContext, origin)
+  )
 
-  private static <T> @NotNull ConcurrentMap<@NotNull T, @NotNull PyType> getConcurrentMapForCaching() {
-    // In the current implementation, this value is only used to initialize the map and is basically ignored
-    // Just in case, set it to a reasonable value
-    // `Runtime.availableProcessors` shouldn't be called here, as that is a potentially expensive operation
-    int concurrencyLevel = 4;
-    if (Registry.is("python.typing.weak.keys.type.eval.context")) {
-      return CollectionFactory.createConcurrentWeakKeySoftValueMap(10, 0.75f, concurrencyLevel, HashingStrategy.canonical());
-    }
-    else if (Registry.is("python.typing.soft.keys.type.eval.context")) {
-      return CollectionFactory.createConcurrentSoftKeySoftValueMap(10, 0.75f, concurrencyLevel);
-    }
-    else {
-      return CollectionFactory.createConcurrentSoftValueMap();
-    }
-  }
-
-  protected static final Logger logger = Logger.getInstance(TypeEvalContext.class);
-
-  private TypeEvalContext(boolean allowDataFlow, boolean allowStubToAST, boolean allowCallContext, @Nullable PsiFile origin) {
-    this(new TypeEvalConstraints(allowDataFlow, allowStubToAST, allowCallContext, origin));
-  }
-
-  private TypeEvalContext(@NotNull TypeEvalConstraints constraints) {
-    myConstraints = constraints;
+  init {
     if (constraints.myOrigin != null) {
-      externalTypeResolver = ExternalPyTypeResolverProvider.createTypeResolver(constraints.myOrigin.getProject());
+      externalTypeResolver = createTypeResolver(constraints.myOrigin.getProject())
     }
   }
 
-  @Override
-  public String toString() {
-    return String.format("TypeEvalContext(%b, %b, %s)", myConstraints.myAllowDataFlow, myConstraints.myAllowStubToAST,
-                         myConstraints.myOrigin);
+  override fun toString(): String {
+    return String.format(
+      "TypeEvalContext(%b, %b, %s)", constraints.myAllowDataFlow, constraints.myAllowStubToAST,
+      constraints.myOrigin
+    )
   }
 
-  public boolean allowDataFlow(PsiElement element) {
-    return myConstraints.myAllowDataFlow && !inPyiFile(element) || inOrigin(element);
+  fun allowDataFlow(element: PsiElement): Boolean {
+    return constraints.myAllowDataFlow && !inPyiFile(element) || inOrigin(element)
   }
 
-  public boolean allowReturnTypes(PsiElement element) {
-    return myConstraints.myAllowDataFlow && !inPyiFile(element) || inOrigin(element);
+  fun allowReturnTypes(element: PsiElement): Boolean {
+    return constraints.myAllowDataFlow && !inPyiFile(element) || inOrigin(element)
   }
 
-  public boolean allowCallContext(@NotNull PsiElement element) {
-    return myConstraints.myAllowCallContext && !inPyiFile(element) && inOrigin(element);
+  fun allowCallContext(element: PsiElement): Boolean {
+    return constraints.myAllowCallContext && !inPyiFile(element) && inOrigin(element)
   }
 
-  public boolean maySwitchToAST(@NotNull PsiElement element) {
-    return myConstraints.myAllowStubToAST && !inPyiFile(element) || inOrigin(element);
+  fun maySwitchToAST(element: PsiElement): Boolean {
+    return constraints.myAllowStubToAST && !inPyiFile(element) || inOrigin(element)
   }
 
-  /**
-   * Create a context for code completion.
-   * <p/>
-   * It is as detailed as {@link TypeEvalContext#userInitiated(Project, PsiFile)}, but allows inferring types based on the context in which
-   * the analyzed code was called or may be called. Since this is basically guesswork, the results should be used only for code completion.
-   */
-  public static @NotNull TypeEvalContext codeCompletion(final @NotNull Project project, final @Nullable PsiFile origin) {
-    return getContextFromCache(project, new TypeEvalContext(true, true, true, origin));
-  }
-
-  /**
-   * Create the most detailed type evaluation context for user-initiated actions.
-   * <p/>
-   * Should be used go to definition, find usages, refactorings, documentation.
-   * <p/>
-   * For code completion see {@link TypeEvalContext#codeCompletion(Project, PsiFile)}.
-   */
-  public static TypeEvalContext userInitiated(final @NotNull Project project, final @Nullable PsiFile origin) {
-    return getContextFromCache(project, new TypeEvalContext(true, true, false, origin));
-  }
-
-  /**
-   * Create a type evaluation context for performing analysis operations on the specified file which is currently open in the editor,
-   * without accessing stubs. For such a file, additional slow operations are allowed.
-   * <p/>
-   * Inspections should not create a new type evaluation context. They should re-use the context of the inspection session.
-   */
-  public static TypeEvalContext codeAnalysis(final @NotNull Project project, final @Nullable PsiFile origin) {
-    return getContextFromCache(project, buildCodeAnalysisContext(origin));
-  }
-
-  /**
-   * Create the most shallow type evaluation context for code insight purposes when other more detailed contexts are not available.
-   * It's use should be minimized.
-   *
-   * @param project pass project here to enable cache. Pass null if you do not have any project.
-   *                <strong>Always</strong> do your best to pass project here: it increases performance!
-   */
-  public static TypeEvalContext codeInsightFallback(final @Nullable Project project) {
-    final TypeEvalContext anchor = new TypeEvalContext(false, false, false, null);
-    if (project != null) {
-      return getContextFromCache(project, anchor);
-    }
-    return anchor;
-  }
-
-  /**
-   * Create a type evaluation context for deeper and slower code insight.
-   * <p/>
-   * Should be used only when normal code insight context is not enough for getting good results.
-   */
-  public static TypeEvalContext deepCodeInsight(final @NotNull Project project) {
-    return getContextFromCache(project, new TypeEvalContext(false, true, false, null));
-  }
-
-  private static TypeEvalContext buildCodeAnalysisContext(@Nullable PsiFile origin) {
-    if (Registry.is("python.optimized.type.eval.context")) {
-      return new OptimizedTypeEvalContext(false, false, false, origin);
-    }
-    return new TypeEvalContext(false, false, false, origin);
-  }
-
-  /**
-   * Moves context through cache returning one from cache (if exists).
-   *
-   * @param project current project
-   * @param context context to fetch from cache
-   * @return context to use
-   * @see TypeEvalContextCache#getContext(TypeEvalContext)
-   */
-  private static @NotNull TypeEvalContext getContextFromCache(final @NotNull Project project, final @NotNull TypeEvalContext context) {
-    return project.getService(TypeEvalContextCache.class).getContext(context);
-  }
-
-  public TypeEvalContext withTracing() {
+  fun withTracing(): TypeEvalContext {
     if (myTrace == null) {
-      myTrace = new ArrayList<>();
+      myTrace = ArrayList()
     }
-    return this;
+    return this
   }
 
-  public void trace(String message, Object... args) {
+  open fun trace(message: String, vararg args: Any?) {
     if (myTrace != null) {
-      myTrace.add(myTraceIndent + String.format(message, args));
+      myTrace!!.add(myTraceIndent + String.format(message, *args))
     }
   }
 
-  public void traceIndent() {
+  open fun traceIndent() {
     if (myTrace != null) {
-      myTraceIndent += "  ";
+      myTraceIndent += "  "
     }
   }
 
-  public void traceUnindent() {
-    if (myTrace != null && myTraceIndent.length() >= 2) {
-      myTraceIndent = myTraceIndent.substring(0, myTraceIndent.length() - 2);
+  open fun traceUnindent() {
+    if (myTrace != null && myTraceIndent.length >= 2) {
+      myTraceIndent = myTraceIndent.substring(0, myTraceIndent.length - 2)
     }
   }
 
-  public String printTrace() {
-    return StringUtil.join(myTrace, "\n");
+  fun printTrace(): String {
+    return StringUtil.join(myTrace!!, "\n")
   }
 
-  public boolean tracing() {
-    return myTrace != null;
+  fun tracing(): Boolean {
+    return myTrace != null
   }
 
   @ApiStatus.Internal
-  public <R> @Nullable R assumeType(@NotNull PyTypedElement element, @Nullable PyType type, @NotNull Function<TypeEvalContext, R> func) {
-    if (!Registry.is("python.use.better.control.flow.type.inference")) {
-      return func.apply(this);
+  fun <R> assumeType(element: PyTypedElement, type: PyType?, func: (TypeEvalContext?) -> R): R? {
+    if (!Registry.`is`("python.use.better.control.flow.type.inference")) {
+      return func(this)
     }
     if (getKnownType(element) != null) {
       // Temporary solution, as overwriting known type might introduce inconsistencies with its dependencies.
-      return null;
+      return null
     }
-    AssumptionContext context = new AssumptionContext(this, element, type);
-    R result;
+    val context = AssumptionContext(this, element, type)
+    var result: R?
     try {
-      result = func.apply(context);
+      result = func(context)
     }
     finally {
-      element.getManager().dropResolveCaches();
+      element.getManager().dropResolveCaches()
     }
-    return result;
+    return result
   }
 
   @ApiStatus.Internal
-  public boolean hasAssumptions() {
-    return this instanceof AssumptionContext;
+  fun hasAssumptions(): Boolean {
+    return this is AssumptionContext
   }
 
   @ApiStatus.Internal
-  public boolean isKnown(PyTypedElement element) {
-    return getKnownType(element) != null;
+  fun isKnown(element: PyTypedElement): Boolean {
+    return getKnownType(element) != null
   }
 
-  protected @Nullable PyType getKnownType(final @NotNull PyTypedElement element) {
-    if (element instanceof PyInstantTypeProvider) {
-      return element.getType(this, Key.INSTANCE);
+  protected open fun getKnownType(element: PyTypedElement): PyType? {
+    if (element is PyInstantTypeProvider) {
+      return element.getType(this, KeyImpl)
     }
-    final PyType cachedType = myEvaluated.get(element);
+    val cachedType = myEvaluated[element]
     if (cachedType != null) {
-      assertValid(cachedType, element);
-      return cachedType;
+      assertValid(cachedType, element)
+      return cachedType
     }
 
-    return null;
+    return null
   }
 
-  protected @Nullable PyType getKnownReturnType(final @NotNull PyCallable callable) {
-    final PyType cachedType = myEvaluatedReturn.get(callable);
+  protected open fun getKnownReturnType(callable: PyCallable): PyType? {
+    val cachedType = myEvaluatedReturn[callable]
     if (cachedType != null) {
-      assertValid(cachedType, callable);
-      return cachedType;
+      assertValid(cachedType, callable)
+      return cachedType
     }
-    return null;
+    return null
   }
 
-  private static boolean isLibraryElement(@NotNull PsiElement element) {
-    PsiFile containingFile = element.getContainingFile();
-    VirtualFile vFile = containingFile == null ? null : containingFile.getOriginalFile().getVirtualFile();
-    return vFile != null && ("pyi".equals(vFile.getExtension()) || ProjectFileIndex.getInstance(element.getProject()).isInLibrary(vFile));
-  }
-
-  private @NotNull TypeEvalContext getLibraryContext(@NotNull Project project) {
+  private fun getLibraryContext(project: Project): TypeEvalContext {
     // code completion will always have a new PsiFile, use the original file instead
-    PsiFile origin = myConstraints.myOrigin != null
-                     ? myConstraints.myOrigin.getOriginalFile()
-                     : null;
-    TypeEvalConstraints constraints = new TypeEvalConstraints(myConstraints.myAllowDataFlow,
-                                                              myConstraints.myAllowStubToAST,
-                                                              myConstraints.myAllowCallContext,
-                                                              origin);
-    return project.getService(TypeEvalContextCache.class).getLibraryContext(new LibraryTypeEvalContext(constraints));
+    val origin = constraints.myOrigin?.getOriginalFile()
+    val constraints = TypeEvalConstraints(
+      constraints.myAllowDataFlow,
+      constraints.myAllowStubToAST,
+      constraints.myAllowCallContext,
+      origin
+    )
+    return project.getService(TypeEvalContextCache::class.java)
+      .getLibraryContext(LibraryTypeEvalContext(constraints))
   }
 
   /**
    * If true the element's type will be calculated and stored in the long-life context bounded to the PyLibraryModificationTracker.
    */
-  protected boolean canDelegateToLibraryContext(PyTypedElement element) {
-    return Registry.is("python.use.separated.libraries.type.cache") && isLibraryElement(element);
+  protected open fun canDelegateToLibraryContext(element: PyTypedElement): Boolean {
+    return Registry.`is`("python.use.separated.libraries.type.cache") && isLibraryElement(element)
   }
 
-  public @Nullable PyType getType(final @NotNull PyTypedElement element) {
+  open fun getType(element: PyTypedElement): PyType? {
     if (canDelegateToLibraryContext(element)) {
-      var context = getLibraryContext(element.getProject());
-      return context.getType(element);
+      val context = getLibraryContext(element.getProject())
+      return context.getType(element)
     }
 
-    final PyType knownType = getKnownType(element);
+    val knownType = getKnownType(element)
     if (knownType != null) {
-      return knownType == PyNullType.INSTANCE ? null : knownType;
+      return if (knownType === PyNullType) null else knownType
     }
 
-    PsiFile file = element.getContainingFile();
+    val file = element.getContainingFile()
 
-    return RecursionManager.doPreventingRecursion(
-      Pair.create(element, this),
+    return RecursionManager.doPreventingRecursion<PyType?>(
+      element to this,
       false,
-      () -> {
-        PyType type;
-
-        if (externalTypeResolver != null && externalTypeResolver.isSupportedForResolve(element)) {
-          type = Ref.deref(externalTypeResolver.resolveType(element, this instanceof LibraryTypeEvalContext));
+      Computable {
+        val type: PyType?
+        if (externalTypeResolver != null && externalTypeResolver!!.isSupportedForResolve(element)) {
+          type = Ref.deref<PyType?>(externalTypeResolver!!.resolveType(element, this is LibraryTypeEvalContext))
         }
         else {
-          type = element.getType(this, Key.INSTANCE);
+          type = element.getType(this, KeyImpl)
         }
 
-        assertValid(type, element);
-        myEvaluated.put(element, type == null ? PyNullType.INSTANCE : type);
-        return type;
+        assertValid(type, element)
+        myEvaluated[element] = type ?: PyNullType
+        type
       }
-    );
+    )
   }
 
 
-  public @Nullable PyType getReturnType(final @NotNull PyCallable callable) {
+  open fun getReturnType(callable: PyCallable): PyType? {
     if (canDelegateToLibraryContext(callable)) {
-      var context = getLibraryContext(callable.getProject());
-      return context.getReturnType(callable);
+      val context = getLibraryContext(callable.getProject())
+      return context.getReturnType(callable)
     }
 
-    final PyType knownReturnType = getKnownReturnType(callable);
+    val knownReturnType = getKnownReturnType(callable)
     if (knownReturnType != null) {
-      return knownReturnType == PyNullType.INSTANCE ? null : knownReturnType;
+      return if (knownReturnType is PyNullType) null else knownReturnType
     }
-    return RecursionManager.doPreventingRecursion(
-      Pair.create(callable, this),
+    return RecursionManager.doPreventingRecursion<PyType?>(
+      callable to this,
       false,
-      () -> {
-        final PyType type = callable.getReturnType(this, Key.INSTANCE);
-        assertValid(type, callable);
-        myEvaluatedReturn.put(callable, type == null ? PyNullType.INSTANCE : type);
-        return type;
+      Computable {
+        val type = callable.getReturnType(this, KeyImpl)
+        assertValid(type, callable)
+        myEvaluatedReturn[callable] = type ?: PyNullType
+        type
       }
-    );
+    )
   }
 
-  /**
-   * Normally, each {@link PyTypeProvider} is supposed to perform all the necessary analysis independently
-   * and hence should completely isolate its state. However, on rare occasions when several type providers have to
-   * recursively call each other, it might be necessary to preserve some state for subsequent calls to the same provider with
-   * the same instance of {@link TypeEvalContext}. Each {@link TypeEvalContext} instance contains an associated thread-local
-   * {@link ProcessingContext} that can be used for such caching. Should be used with discretion.
-   *
-   * @return a thread-local instance of {@link ProcessingContext} bound to this {@link TypeEvalContext} instance
-   */
-  @ApiStatus.Experimental
-  public @NotNull ProcessingContext getProcessingContext() {
-    return myProcessingContext.get();
-  }
+  @get:ApiStatus.Experimental
+  val processingContext: ProcessingContext
+    /**
+     * Normally, each [PyTypeProvider] is supposed to perform all the necessary analysis independently
+     * and hence should completely isolate its state. However, on rare occasions when several type providers have to
+     * recursively call each other, it might be necessary to preserve some state for subsequent calls to the same provider with
+     * the same instance of [TypeEvalContext]. Each [TypeEvalContext] instance contains an associated thread-local
+     * [ProcessingContext] that can be used for such caching. Should be used with discretion.
+     *
+     * @return a thread-local instance of [ProcessingContext] bound to this [TypeEvalContext] instance
+     */
+    get() = myProcessingContext.get()
 
-  private static void assertValid(@Nullable PyType result, @NotNull PyTypedElement element) {
-    if (result != null) {
-      result.assertValid(element.toString());
-    }
-  }
-
-  public @Nullable PsiFile getOrigin() {
-    return myConstraints.myOrigin;
-  }
+  val origin: PsiFile?
+    get() = constraints.myOrigin
 
   @ApiStatus.Internal
-  public @NotNull Map<Pair<PyExpression, Object>, PyType> getContextTypeCache() {
-    return contextTypeCache;
+  fun getContextTypeCache(): Map<Pair<PyExpression?, Any?>, PyType?> {
+    return contextTypeCache
   }
 
-  /**
-   * @return context constraints (see {@link TypeEvalConstraints}
-   */
-  @ApiStatus.Internal
-  @NotNull
-  public TypeEvalConstraints getConstraints() {
-    return myConstraints;
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other == null || javaClass != other.javaClass) return false
+
+    val context = other as TypeEvalContext
+
+    return this.constraints == context.constraints
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    TypeEvalContext context = (TypeEvalContext)o;
-
-    return myConstraints.equals(context.myConstraints);
+  override fun hashCode(): Int {
+    return constraints.hashCode()
   }
 
-  @Override
-  public int hashCode() {
-    return myConstraints.hashCode();
+  private fun inOrigin(element: PsiElement): Boolean {
+    return isSameVirtualFile(constraints.myOrigin, element.getContainingFile()) ||
+           isSameVirtualFile(constraints.myOrigin, getContextFile(element))
   }
 
-  private boolean inOrigin(@NotNull PsiElement element) {
-    return isSameVirtualFile(myConstraints.myOrigin, element.getContainingFile()) ||
-           isSameVirtualFile(myConstraints.myOrigin, getContextFile(element));
-  }
-
-  private static boolean isSameVirtualFile(@Nullable PsiFile file1, @Nullable PsiFile file2) {
-    if (file1 == null) return false;
-    if (file2 == null) return false;
-    return file1.getViewProvider().getVirtualFile().equals(file2.getViewProvider().getVirtualFile());
-  }
-
-  private static boolean inPyiFile(@NotNull PsiElement element) {
-    PsiFile containingFile = element.getContainingFile();
-    if (containingFile == null) {
-      return false;
+  object PyNullType : PyType {
+    override fun resolveMember(
+      name: String,
+      location: PyExpression?,
+      direction: AccessDirection,
+      resolveContext: PyResolveContext,
+    ): List<RatedResolveResult?> {
+      return mutableListOf()
     }
-    if (isPyiFile(containingFile)) {
-      return true;
-    }
-    PsiFile contextFile = getContextFile(element);
-    return contextFile != null && isPyiFile(contextFile);
-  }
 
-  private static PsiFile getContextFile(@NotNull PsiElement element) {
-    PsiFile file = element.getContainingFile();
-    if (file == null) return null;
-    PsiElement context = file.getContext();
-    if (context == null) {
-      return file;
+    override fun getCompletionVariants(completionPrefix: String?, location: PsiElement?, context: ProcessingContext?): Array<Any?>? {
+      return ArrayUtil.EMPTY_OBJECT_ARRAY
     }
-    else {
-      return getContextFile(context);
+
+    override fun getName(): String {
+      return "null"
+    }
+
+    override fun isBuiltin(): Boolean {
+      return false
+    }
+
+    override fun assertValid(message: String?) {
     }
   }
 
-  private static boolean isPyiFile(@NotNull PsiFile file) {
-    return file.getLanguage().equals(PyiLanguageDialect.getInstance());
-  }
-
-  private static class PyNullType implements PyType {
-    private PyNullType() { }
-
-    @Override
-    public @Nullable List<? extends RatedResolveResult> resolveMember(@NotNull String name,
-                                                                      @Nullable PyExpression location,
-                                                                      @NotNull AccessDirection direction,
-                                                                      @NotNull PyResolveContext resolveContext) {
-      return List.of();
+  private class AssumptionContext(val myParent: TypeEvalContext, element: PyTypedElement, type: PyType?) :
+    TypeEvalContext(myParent.constraints) {
+    init {
+      myEvaluated[element] = type ?: PyNullType
     }
 
-    @Override
-    public Object[] getCompletionVariants(String completionPrefix, PsiElement location, ProcessingContext context) {
-      return ArrayUtil.EMPTY_OBJECT_ARRAY;
-    }
-
-    @Override
-    public @Nullable String getName() {
-      return "null";
-    }
-
-    @Override
-    public boolean isBuiltin() {
-      return false;
-    }
-
-    @Override
-    public void assertValid(String message) {
-    }
-
-    private static final PyNullType INSTANCE = new PyNullType();
-  }
-
-  private static final class AssumptionContext extends TypeEvalContext {
-    @NotNull final TypeEvalContext myParent;
-
-    private AssumptionContext(@NotNull TypeEvalContext parent, @NotNull PyTypedElement element, @Nullable PyType type) {
-      super(parent.myConstraints);
-      myParent = parent;
-      myEvaluated.put(element, type == null ? PyNullType.INSTANCE : type);
-    }
-
-    @Override
-    protected @Nullable PyType getKnownType(@NotNull PyTypedElement element) {
-      final PyType knownType = super.getKnownType(element);
+    override fun getKnownType(element: PyTypedElement): PyType? {
+      val knownType = super.getKnownType(element)
       if (knownType != null) {
-        return knownType;
+        return knownType
       }
-      return myParent.getKnownType(element);
+      return myParent.getKnownType(element)
     }
 
-    @Override
-    protected @Nullable PyType getKnownReturnType(@NotNull PyCallable callable) {
-      final PyType knownReturnType = super.getKnownReturnType(callable);
+    override fun getKnownReturnType(callable: PyCallable): PyType? {
+      val knownReturnType = super.getKnownReturnType(callable)
       if (knownReturnType != null) {
-        return knownReturnType;
+        return knownReturnType
       }
-      return myParent.getKnownReturnType(callable);
+      return myParent.getKnownReturnType(callable)
     }
 
-    @Override
-    public void trace(String message, Object... args) {
-      myParent.trace(message, args);
+    override fun trace(message: String, vararg args: Any?) {
+      myParent.trace(message, *args)
     }
 
-    @Override
-    public void traceIndent() {
-      myParent.traceIndent();
+    override fun traceIndent() {
+      myParent.traceIndent()
     }
 
-    @Override
-    public void traceUnindent() {
-      myParent.traceUnindent();
+    override fun traceUnindent() {
+      myParent.traceUnindent()
     }
 
-    @Override
-    public boolean equals(Object o) {
+    override fun equals(other: Any?): Boolean {
       // Otherwise, it can be equal to other AssumptionContext with same constraints
-      return this == o;
+      return this === other
     }
   }
 
-  private final static class LibraryTypeEvalContext extends TypeEvalContext {
-    private LibraryTypeEvalContext(@NotNull TypeEvalConstraints constraints) {
-      super(constraints);
-    }
-
-    @Override
-    protected boolean canDelegateToLibraryContext(PyTypedElement element) {
+  private class LibraryTypeEvalContext(constraints: TypeEvalConstraints) : TypeEvalContext(constraints) {
+    override fun canDelegateToLibraryContext(element: PyTypedElement): Boolean {
       // It's already the library-context.
-      return false;
+      return false
     }
   }
 
-  private final static class OptimizedTypeEvalContext extends TypeEvalContext {
-    private volatile TypeEvalContext codeInsightFallback;
+  private class OptimizedTypeEvalContext(allowDataFlow: Boolean, allowStubToAST: Boolean, allowCallContext: Boolean, origin: PsiFile?) :
+    TypeEvalContext(allowDataFlow, allowStubToAST, allowCallContext, origin) {
+    @Volatile
+    private var codeInsightFallback: TypeEvalContext? = null
 
-    OptimizedTypeEvalContext(boolean allowDataFlow, boolean allowStubToAST, boolean allowCallContext, @Nullable PsiFile origin) {
-      super(allowDataFlow, allowStubToAST, allowCallContext, origin);
-    }
-
-    private boolean shouldSwitchToFallbackContext(PsiElement element) {
-      PsiFile file = element.getContainingFile();
-      if (file instanceof PyExpressionCodeFragment codeFragment) {
-        PsiElement context = codeFragment.getContext();
+    fun shouldSwitchToFallbackContext(element: PsiElement): Boolean {
+      var file = element.getContainingFile()
+      if (file is PyExpressionCodeFragment) {
+        val context = file.getContext()
         if (context != null) {
-          file = context.getContainingFile();
+          file = context.getContainingFile()
         }
       }
-      TypeEvalConstraints constraints = getConstraints();
-      return constraints.myOrigin != null && !isSameVirtualFile(file, constraints.myOrigin) && (file instanceof PyFile) &&
-             !constraints.myAllowDataFlow && !constraints.myAllowStubToAST && !constraints.myAllowCallContext;
+      val constraints = this.constraints
+      return constraints.myOrigin != null && !isSameVirtualFile(
+        file,
+        constraints.myOrigin
+      ) && (file is PyFile) && !constraints.myAllowDataFlow && !constraints.myAllowStubToAST && !constraints.myAllowCallContext
     }
 
-    private TypeEvalContext getFallbackContext(Project project) {
+    fun getFallbackContext(project: Project?): TypeEvalContext? {
       if (codeInsightFallback == null) {
-        codeInsightFallback = codeInsightFallback(project);
+        codeInsightFallback = codeInsightFallback(project)
       }
-      return codeInsightFallback;
+      return codeInsightFallback
     }
 
-    @Override
-    protected @Nullable PyType getKnownType(@NotNull PyTypedElement element) {
+    override fun getKnownType(element: PyTypedElement): PyType? {
       if (shouldSwitchToFallbackContext(element)) {
-        return getFallbackContext(element.getProject()).getKnownType(element);
+        return getFallbackContext(element.getProject())!!.getKnownType(element)
       }
-      return super.getKnownType(element);
+      return super.getKnownType(element)
     }
 
-    @Override
-    protected @Nullable PyType getKnownReturnType(@NotNull PyCallable callable) {
+    override fun getKnownReturnType(callable: PyCallable): PyType? {
       if (shouldSwitchToFallbackContext(callable)) {
-        return getFallbackContext(callable.getProject()).getKnownReturnType(callable);
+        return getFallbackContext(callable.getProject())!!.getKnownReturnType(callable)
       }
-      return super.getKnownReturnType(callable);
+      return super.getKnownReturnType(callable)
     }
 
-    @Override
-    public @Nullable PyType getType(@NotNull PyTypedElement element) {
+    override fun getType(element: PyTypedElement): PyType? {
       if (shouldSwitchToFallbackContext(element)) {
-        return getFallbackContext(element.getProject()).getType(element);
+        return getFallbackContext(element.getProject())!!.getType(element)
       }
-      return super.getType(element);
+      return super.getType(element)
     }
 
-    @Override
-    public @Nullable PyType getReturnType(@NotNull PyCallable callable) {
+    override fun getReturnType(callable: PyCallable): PyType? {
       if (shouldSwitchToFallbackContext(callable)) {
-        return getFallbackContext(callable.getProject()).getReturnType(callable);
+        return getFallbackContext(callable.getProject())!!.getReturnType(callable)
       }
-      return super.getReturnType(callable);
+      return super.getReturnType(callable)
+    }
+  }
+
+  companion object {
+    private fun <T> getConcurrentMapForCaching(): ConcurrentMap<T & Any, PyType> {
+      // In the current implementation, this value is only used to initialize the map and is basically ignored
+      // Just in case, set it to a reasonable value
+      // `Runtime.availableProcessors` shouldn't be called here, as that is a potentially expensive operation
+      val concurrencyLevel = 4
+      if (Registry.`is`("python.typing.weak.keys.type.eval.context")) {
+        return CollectionFactory.createConcurrentWeakKeySoftValueMap(
+          10,
+          0.75f,
+          concurrencyLevel,
+          HashingStrategy.canonical<T>()
+        )
+      }
+      else if (Registry.`is`("python.typing.soft.keys.type.eval.context")) {
+        return CollectionFactory.createConcurrentSoftKeySoftValueMap(10, 0.75f, concurrencyLevel)
+      }
+      else {
+        return CollectionFactory.createConcurrentSoftValueMap()
+      }
+    }
+
+    protected val logger: Logger = Logger.getInstance(TypeEvalContext::class.java)
+
+    /**
+     * Create a context for code completion.
+     *
+     *
+     * It is as detailed as [TypeEvalContext.userInitiated], but allows inferring types based on the context in which
+     * the analyzed code was called or may be called. Since this is basically guesswork, the results should be used only for code completion.
+     */
+    @JvmStatic
+    fun codeCompletion(project: Project, origin: PsiFile?): TypeEvalContext {
+      return getContextFromCache(project, TypeEvalContext(true, true, true, origin))
+    }
+
+    /**
+     * Create the most detailed type evaluation context for user-initiated actions.
+     *
+     *
+     * Should be used go to definition, find usages, refactorings, documentation.
+     *
+     *
+     * For code completion see [TypeEvalContext.codeCompletion].
+     */
+    @JvmStatic
+    fun userInitiated(project: Project, origin: PsiFile?): TypeEvalContext {
+      return getContextFromCache(project, TypeEvalContext(true, true, false, origin))
+    }
+
+    /**
+     * Create a type evaluation context for performing analysis operations on the specified file which is currently open in the editor,
+     * without accessing stubs. For such a file, additional slow operations are allowed.
+     *
+     *
+     * Inspections should not create a new type evaluation context. They should re-use the context of the inspection session.
+     */
+    @JvmStatic
+    fun codeAnalysis(project: Project, origin: PsiFile?): TypeEvalContext {
+      return getContextFromCache(project, buildCodeAnalysisContext(origin))
+    }
+
+    /**
+     * Create the most shallow type evaluation context for code insight purposes when other more detailed contexts are not available.
+     * It's use should be minimized.
+     *
+     * @param project pass project here to enable cache. Pass null if you do not have any project.
+     * **Always** do your best to pass project here: it increases performance!
+     */
+    @JvmStatic
+    fun codeInsightFallback(project: Project?): TypeEvalContext {
+      val anchor = TypeEvalContext(false, false, false, null)
+      if (project != null) {
+        return getContextFromCache(project, anchor)
+      }
+      return anchor
+    }
+
+    /**
+     * Create a type evaluation context for deeper and slower code insight.
+     *
+     *
+     * Should be used only when normal code insight context is not enough for getting good results.
+     */
+    @JvmStatic
+    fun deepCodeInsight(project: Project): TypeEvalContext {
+      return getContextFromCache(project, TypeEvalContext(false, true, false, null))
+    }
+
+    private fun buildCodeAnalysisContext(origin: PsiFile?): TypeEvalContext {
+      if (Registry.`is`("python.optimized.type.eval.context")) {
+        return OptimizedTypeEvalContext(false, false, false, origin)
+      }
+      return TypeEvalContext(false, false, false, origin)
+    }
+
+    /**
+     * Moves context through cache returning one from cache (if exists).
+     *
+     * @param project current project
+     * @param context context to fetch from cache
+     * @return context to use
+     * @see TypeEvalContextCache.getContext
+     */
+    private fun getContextFromCache(project: Project, context: TypeEvalContext): TypeEvalContext {
+      return project.getService(TypeEvalContextCache::class.java).getContext(context)
+    }
+
+    private fun isLibraryElement(element: PsiElement): Boolean {
+      val containingFile = element.getContainingFile()
+      val vFile = if (containingFile == null) null else containingFile.getOriginalFile().getVirtualFile()
+      return vFile != null && ("pyi" == vFile.getExtension() || ProjectFileIndex.getInstance(element.getProject()).isInLibrary(vFile))
+    }
+
+    private fun assertValid(result: PyType?, element: PyTypedElement) {
+      result?.assertValid(element.toString())
+    }
+
+    private fun isSameVirtualFile(file1: PsiFile?, file2: PsiFile?): Boolean {
+      if (file1 == null) return false
+      if (file2 == null) return false
+      return file1.getViewProvider().getVirtualFile() == file2.getViewProvider().getVirtualFile()
+    }
+
+    private fun inPyiFile(element: PsiElement): Boolean {
+      val containingFile = element.getContainingFile()
+      if (containingFile == null) {
+        return false
+      }
+      if (isPyiFile(containingFile)) {
+        return true
+      }
+      val contextFile: PsiFile? = getContextFile(element)
+      return contextFile != null && isPyiFile(contextFile)
+    }
+
+    private fun getContextFile(element: PsiElement): PsiFile? {
+      val file = element.getContainingFile()
+      if (file == null) return null
+      val context = file.getContext()
+      if (context == null) {
+        return file
+      }
+      else {
+        return getContextFile(context)
+      }
+    }
+
+    private fun isPyiFile(file: PsiFile): Boolean {
+      return file.getLanguage() == PyiLanguageDialect.getInstance()
     }
   }
 }

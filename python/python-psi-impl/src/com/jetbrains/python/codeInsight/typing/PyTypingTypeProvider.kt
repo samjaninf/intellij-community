@@ -2646,11 +2646,11 @@ public final class PyTypingTypeProvider extends PyTypeProviderWithCustomContext<
 
     public @Nullable PyType getKnownType(@NotNull PyExpression expression) {
       //noinspection SuspiciousMethodCalls
-      return myContext.getContextTypeCache().get(new Pair<>(expression, getContextStrongHashValue()));
+      return myContext.getContextTypeCache().get(new kotlin.Pair<>(expression, getContextStrongHashValue()));
     }
 
     public void assumeType(@NotNull PyExpression expression, @NotNull PyType type) {
-      myContext.getContextTypeCache().put(new Pair<>(expression, getContextStrongHashValue()), type);
+      myContext.getContextTypeCache().put(new kotlin.Pair<>(expression, getContextStrongHashValue()), type);
     }
 
     private @NotNull HashValue128 myContextStrongHashValue;
