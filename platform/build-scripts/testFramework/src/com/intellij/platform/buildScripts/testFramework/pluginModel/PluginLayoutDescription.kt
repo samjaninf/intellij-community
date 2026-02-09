@@ -3,7 +3,7 @@ package com.intellij.platform.buildScripts.testFramework.pluginModel
 
 import com.intellij.platform.distributionContent.testFramework.FileEntry
 import com.intellij.platform.distributionContent.testFramework.deserializeContentData
-import com.intellij.platform.plugins.testFramework.resolveModuleSet
+import com.intellij.platform.pluginSystem.testFramework.resolveModuleSet
 import org.jetbrains.jps.model.JpsProject
 import org.jetbrains.jps.model.java.JpsJavaExtensionService
 import org.jetbrains.jps.model.module.JpsModule

@@ -30,10 +30,10 @@ import com.intellij.platform.pluginSystem.parser.impl.PluginDescriptorReaderCont
 import com.intellij.platform.pluginSystem.parser.impl.XIncludeLoader
 import com.intellij.platform.pluginSystem.parser.impl.consume
 import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
-import com.intellij.platform.plugins.testFramework.PluginSetTestBuilder
-import com.intellij.platform.plugins.testFramework.isModuleSetPath
-import com.intellij.platform.plugins.testFramework.loadRawPluginDescriptorInTest
-import com.intellij.platform.plugins.testFramework.resolveModuleSetPath
+import com.intellij.platform.pluginSystem.testFramework.PluginSetTestBuilder
+import com.intellij.platform.pluginSystem.testFramework.isModuleSetPath
+import com.intellij.platform.pluginSystem.testFramework.loadRawPluginDescriptorInTest
+import com.intellij.platform.pluginSystem.testFramework.resolveModuleSetPath
 import com.intellij.platform.runtime.product.ProductMode
 import com.intellij.util.SystemProperties
 import com.intellij.util.lang.UrlClassLoader

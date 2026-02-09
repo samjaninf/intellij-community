@@ -4,7 +4,7 @@ package com.intellij.ide.plugins
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.BuildNumber
 import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
-import com.intellij.platform.plugins.testFramework.PluginSetTestBuilder
+import com.intellij.platform.pluginSystem.testFramework.PluginSetTestBuilder
 import com.intellij.platform.testFramework.plugins.ContentModuleSpec
 import com.intellij.platform.testFramework.plugins.PluginPackagingConfig
 import com.intellij.platform.testFramework.plugins.buildDir

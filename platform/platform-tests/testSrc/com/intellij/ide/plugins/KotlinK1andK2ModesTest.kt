@@ -1,7 +1,7 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.ide.plugins
 
-import com.intellij.platform.plugins.testFramework.PluginSetTestBuilder
+import com.intellij.platform.pluginSystem.testFramework.PluginSetTestBuilder
 import com.intellij.platform.testFramework.plugins.buildDir
 import com.intellij.platform.testFramework.plugins.depends
 import com.intellij.platform.testFramework.plugins.extensions

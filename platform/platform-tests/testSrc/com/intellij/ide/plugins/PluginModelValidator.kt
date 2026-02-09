@@ -13,8 +13,8 @@ import com.intellij.platform.pluginSystem.parser.impl.elements.DependenciesEleme
 import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleVisibilityValue
 import com.intellij.platform.pluginSystem.parser.impl.elements.ServiceElement
-import com.intellij.platform.plugins.testFramework.LoadFromSourceXIncludeLoader
-import com.intellij.platform.plugins.testFramework.loadRawPluginDescriptorInTest
+import com.intellij.platform.pluginSystem.testFramework.LoadFromSourceXIncludeLoader
+import com.intellij.platform.pluginSystem.testFramework.loadRawPluginDescriptorInTest
 import com.intellij.project.IntelliJProjectConfiguration
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.junit5.NamedFailure

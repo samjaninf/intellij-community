@@ -4,7 +4,7 @@ import com.intellij.ide.plugins.IdeaPluginDescriptorImpl
 import com.intellij.ide.plugins.getEnabledPlugin
 import com.intellij.idea.TestFor
 import com.intellij.openapi.components.SettingsCategory
-import com.intellij.platform.plugins.testFramework.PluginSetTestBuilder
+import com.intellij.platform.pluginSystem.testFramework.PluginSetTestBuilder
 import com.intellij.platform.testFramework.plugins.PluginSpecBuilder
 import com.intellij.platform.testFramework.plugins.buildDir
 import com.intellij.platform.testFramework.plugins.extensions
