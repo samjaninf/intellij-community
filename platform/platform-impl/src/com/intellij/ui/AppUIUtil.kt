@@ -79,7 +79,7 @@ private val LOG: Logger
   get() = logger<AppUIUtil>()
 
 fun updateAppWindowIcon(window: Window) {
-  if (isMacDocIconSet || isWindowIconAlreadyExternallySet()) {
+  if (isWindowIconAlreadyExternallySet()) {
     return
   }
 
