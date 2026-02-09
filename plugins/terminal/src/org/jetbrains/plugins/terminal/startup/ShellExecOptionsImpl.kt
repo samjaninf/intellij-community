@@ -5,14 +5,26 @@ import com.intellij.platform.eel.EelDescriptor
 import com.intellij.platform.eel.path.EelPath
 import java.util.Collections
 
-internal class ShellExecOptionsImpl(
+internal data class ShellExecOptionsImpl(
   override val execCommand: ShellExecCommand,
   override val workingDirectory: EelPath,
-  envs: Map<String, String>,
+  private val _envs: Map<String, String>,
 ) : ShellExecOptions {
 
   override val eelDescriptor: EelDescriptor
     get() = workingDirectory.descriptor
 
-  override val envs: Map<String, String> = Collections.unmodifiableMap(envs)
+  override val envs: Map<String, String> = Collections.unmodifiableMap(_envs)
+
+  override fun toString() = stringify(execCommand, workingDirectory, envs)
+
+  companion object {
+    internal fun stringify(
+      command: ShellExecCommand,
+      workingDirectory: EelPath,
+      envs: Map<String, String>,
+    ): String {
+      return "command [$command] in $workingDirectory (${workingDirectory.descriptor}), ${envs.size} envs"
+    }
+  }
 }

@@ -103,7 +103,7 @@ internal class MutableShellExecOptionsImpl(
     return translator.translateAbsoluteLocalPathToRemote(path)?.toString()
   }
 
-  override fun toString() = "[$_execCommand] in $workingDirectory ($eelDescriptor)"
+  override fun toString() = ShellExecOptionsImpl.stringify(_execCommand, workingDirectory, envs)
 }
 
 private const val PATH: String = "PATH"
