@@ -9,7 +9,7 @@ import com.intellij.platform.pluginGraph.DependencyClassification
 import com.intellij.platform.pluginGraph.GraphScope
 import com.intellij.platform.pluginGraph.PluginGraph
 import com.intellij.platform.pluginGraph.TargetName
-import com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue
+import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 import org.jetbrains.intellij.build.ModuleOutputProvider
 import org.jetbrains.intellij.build.productLayout.LIB_MODULE_PREFIX
 import org.jetbrains.intellij.build.productLayout.config.SuppressionConfig

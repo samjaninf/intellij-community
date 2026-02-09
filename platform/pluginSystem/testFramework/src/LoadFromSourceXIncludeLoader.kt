@@ -1,8 +1,8 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.plugins.testFramework
 
-import com.intellij.platform.plugins.parser.impl.LoadedXIncludeReference
-import com.intellij.platform.plugins.parser.impl.XIncludeLoader
+import com.intellij.platform.pluginSystem.parser.impl.LoadedXIncludeReference
+import com.intellij.platform.pluginSystem.parser.impl.XIncludeLoader
 import org.jetbrains.jps.model.JpsProject
 import org.jetbrains.jps.model.java.JavaResourceRootType
 import java.nio.file.Files

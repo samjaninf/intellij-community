@@ -98,9 +98,9 @@ import com.intellij.openapi.wm.IdeFocusManager
 import com.intellij.openapi.wm.IdeFrame
 import com.intellij.openapi.wm.awaitFocusSettlesDown
 import com.intellij.platform.ide.CoreUiCoroutineScopeHolder
-import com.intellij.platform.plugins.parser.impl.elements.ActionElement.ActionDescriptorAction
-import com.intellij.platform.plugins.parser.impl.elements.ActionElement.ActionElementGroup
-import com.intellij.platform.plugins.parser.impl.elements.ActionElement.ActionElementName
+import com.intellij.platform.pluginSystem.parser.impl.elements.ActionElement.ActionDescriptorAction
+import com.intellij.platform.pluginSystem.parser.impl.elements.ActionElement.ActionElementGroup
+import com.intellij.platform.pluginSystem.parser.impl.elements.ActionElement.ActionElementName
 import com.intellij.platform.util.coroutines.childScope
 import com.intellij.serviceContainer.AlreadyDisposedException
 import com.intellij.serviceContainer.executeRegisterTaskForOldContent

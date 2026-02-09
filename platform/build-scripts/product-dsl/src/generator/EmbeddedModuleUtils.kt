@@ -4,7 +4,7 @@ package org.jetbrains.intellij.build.productLayout.generator
 import com.intellij.platform.pluginGraph.ContentModuleNode
 import com.intellij.platform.pluginGraph.ContentSourceKind
 import com.intellij.platform.pluginGraph.GraphScope
-import com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue
+import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 
 /**
  * Check if a module has any plugin as content source.

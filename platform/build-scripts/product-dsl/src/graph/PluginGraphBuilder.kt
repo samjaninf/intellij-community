@@ -47,7 +47,7 @@ import com.intellij.platform.pluginGraph.storesReverseEdges
 import com.intellij.platform.pluginGraph.unpackNodeId
 import com.intellij.platform.pluginGraph.unpackPluginDepFormats
 import com.intellij.platform.pluginGraph.unpackPluginDepOptional
-import com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue
+import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope

@@ -3,7 +3,7 @@ package org.jetbrains.intellij.build.productLayout.deps
 
 import com.intellij.platform.pluginGraph.ContentModuleName
 import com.intellij.platform.pluginGraph.PluginId
-import com.intellij.platform.plugins.parser.impl.parseContentAndXIncludes
+import com.intellij.platform.pluginSystem.parser.impl.parseContentAndXIncludes
 import org.jetbrains.intellij.build.productLayout.discovery.extractLegacyDepends
 import java.nio.file.Files
 import java.nio.file.Path

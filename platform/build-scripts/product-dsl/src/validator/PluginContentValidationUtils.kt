@@ -4,7 +4,7 @@ package org.jetbrains.intellij.build.productLayout.validator
 import com.intellij.platform.pluginGraph.ContentModuleName
 import com.intellij.platform.pluginGraph.GraphScope
 import com.intellij.platform.pluginGraph.PluginNode
-import com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue
+import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 
 /**
  * Collect content module dependencies from graph edges.

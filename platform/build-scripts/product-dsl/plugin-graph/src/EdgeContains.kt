@@ -3,7 +3,7 @@
 
 package com.intellij.platform.pluginGraph
 
-import com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue
+import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 import java.util.concurrent.atomic.AtomicReferenceArray
 
 /**

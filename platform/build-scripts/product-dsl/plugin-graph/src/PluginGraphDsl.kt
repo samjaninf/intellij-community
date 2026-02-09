@@ -33,7 +33,7 @@ package com.intellij.platform.pluginGraph
 import androidx.collection.IntList
 import androidx.collection.MutableIntSet
 import androidx.collection.mutableIntListOf
-import com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue
+import com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue
 
 // region ContentSource - Unified content source traversal
 

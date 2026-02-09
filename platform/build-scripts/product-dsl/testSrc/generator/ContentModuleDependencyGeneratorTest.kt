@@ -289,7 +289,7 @@ class ContentModuleDependencyGeneratorTest {
           product("TestProduct") {
             bundlesPlugin("intellij.my.plugin")
             moduleSet("essential") {
-              module("intellij.platform.core", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
+              module("intellij.platform.core", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
             }
           }
         }
@@ -328,7 +328,7 @@ class ContentModuleDependencyGeneratorTest {
           product("TestProduct") {
             bundlesPlugin("intellij.my.plugin")
             moduleSet("essential") {
-              module("intellij.platform.core", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
+              module("intellij.platform.core", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
             }
           }
         }
@@ -369,7 +369,7 @@ class ContentModuleDependencyGeneratorTest {
             bundlesPlugin("intellij.my.plugin")
             bundlesPlugin("intellij.core.plugin")
             moduleSet("essential") {
-              module("intellij.platform.core", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
+              module("intellij.platform.core", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
             }
           }
         }
@@ -405,7 +405,7 @@ class ContentModuleDependencyGeneratorTest {
           product("TestProduct") {
             bundlesPlugin("intellij.shared.plugin")
             moduleSet("essential") {
-              module("intellij.platform.core", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
+              module("intellij.platform.core", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
             }
             moduleSet("shared.set") {
               module("intellij.shared.module")
@@ -494,7 +494,7 @@ class ContentModuleDependencyGeneratorTest {
             bundlesPlugin("intellij.my.plugin")
             moduleSet("optional.set") {
               // REQUIRED loading, not EMBEDDED
-              module("intellij.platform.optional", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.REQUIRED)
+              module("intellij.platform.optional", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.REQUIRED)
             }
           }
         }

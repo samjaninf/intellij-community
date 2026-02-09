@@ -201,7 +201,7 @@ class PluginDependencyGeneratorTest {
     runBlocking(Dispatchers.Default) {
       val setup = pluginTestSetup(tempDir) {
         plugin("intellij.test.plugin") {
-          content("intellij.test.content", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.ON_DEMAND)
+          content("intellij.test.content", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.ON_DEMAND)
         }
         contentModule("intellij.test.content") {
           descriptor = """<idea-plugin package="com.intellij.test"/>"""
@@ -232,7 +232,7 @@ class PluginDependencyGeneratorTest {
     runBlocking(Dispatchers.Default) {
       val setup = pluginTestSetup(tempDir) {
         plugin("intellij.test.plugin") {
-          content("intellij.test.content", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.ON_DEMAND)
+          content("intellij.test.content", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.ON_DEMAND)
         }
         // Declare dependency module FIRST so it has a descriptor when jpsDependency processes it
         // NOT in any plugin content (unresolvable), but has descriptor so it's validated
@@ -1464,7 +1464,7 @@ class PluginDependencyGeneratorTest {
         product("TestProduct") {
           bundlesPlugin("intellij.my.plugin")
           moduleSet("essential") {
-            module("intellij.platform.core", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
+            module("intellij.platform.core", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.EMBEDDED)
           }
         }
       }
@@ -1553,7 +1553,7 @@ class PluginDependencyGeneratorTest {
           bundlesPlugin("intellij.my.plugin")
           moduleSet("optional.set") {
             // REQUIRED loading, not EMBEDDED - dependency should be kept
-            module("intellij.platform.optional", com.intellij.platform.plugins.parser.impl.elements.ModuleLoadingRuleValue.REQUIRED)
+            module("intellij.platform.optional", com.intellij.platform.pluginSystem.parser.impl.elements.ModuleLoadingRuleValue.REQUIRED)
           }
         }
       }
