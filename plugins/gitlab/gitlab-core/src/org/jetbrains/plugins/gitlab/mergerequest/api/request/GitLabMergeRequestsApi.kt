@@ -47,7 +47,8 @@ suspend fun GitLabApi.Rest.createMergeRequest(
   targetBranch: String,
   title: String,
   description: String? = null,
-  reviewerIds: List<String>? = null
+  reviewerIds: List<String>? = null,
+  assigneeIds: List<String>? = null,
 ): HttpResponse<out GitLabMergeRequestShortRestDTO> {
   val uri = project.restApiUri
     .resolveRelative("merge_requests")
@@ -57,6 +58,7 @@ suspend fun GitLabApi.Rest.createMergeRequest(
       "title" eq title
       "description" eq description
       "reviewer_ids" eq reviewerIds
+      "assignee_ids" eq assigneeIds
     }
   val request = request(uri).POST(HttpRequest.BodyPublishers.noBody()).build()
   return withErrorStats(GitLabApiRequestName.REST_CREATE_MERGE_REQUEST) {

@@ -44,7 +44,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
@@ -68,6 +67,7 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
 
   val isBusy: Flow<Boolean>
 
+  val allowsMultipleAssignees: StateFlow<Boolean>
   val allowsMultipleReviewers: StateFlow<Boolean>
   val branchState: Flow<BranchState?>
 
@@ -80,12 +80,14 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
 
   val projectMembers: StateFlow<IncrementallyComputedValue<List<GitLabUserDTO>>>
   val reviewers: StateFlow<List<GitLabUserDTO>>
+  val assignees: StateFlow<List<GitLabUserDTO>>
 
   val openReviewTabAction: suspend (mrIid: String) -> Unit
 
   fun updateBranchState(state: BranchState?)
 
   fun setReviewers(reviewers: List<GitLabUserDTO>)
+  fun setAssignees(assignees: List<GitLabUserDTO>)
 
   fun createMergeRequest()
 }
@@ -104,6 +106,15 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   private val taskLauncher = SingleCoroutineLauncher(cs)
 
   override val isBusy: Flow<Boolean> = taskLauncher.busy
+
+  override val allowsMultipleAssignees: StateFlow<Boolean> = suspend {
+    try {
+      projectData.isMultipleAssigneesAllowed()
+    }
+    catch (_: Exception) {
+      false
+    }
+  }.asFlow().stateIn(cs, SharingStarted.Eagerly, false)
 
   override val allowsMultipleReviewers: StateFlow<Boolean> = suspend {
     try {
@@ -189,6 +200,9 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   private val _reviewers: MutableStateFlow<List<GitLabUserDTO>> = MutableStateFlow(listOf())
   override val reviewers: StateFlow<List<GitLabUserDTO>> = _reviewers.asStateFlow()
 
+  private val _assignees: MutableStateFlow<List<GitLabUserDTO>> = MutableStateFlow(listOf())
+  override val assignees: StateFlow<List<GitLabUserDTO>> = _assignees.asStateFlow()
+
   private val _title: MutableStateFlow<String> = MutableStateFlow("")
   override val titleText: StateFlow<String> = _title.asStateFlow()
 
@@ -254,6 +268,10 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     GitLabStatistics.logMrCreationReviewersAdjusted(project)
   }
 
+  override fun setAssignees(assignees: List<GitLabUserDTO>) {
+    _assignees.value = assignees
+  }
+
   override fun createMergeRequest() {
     taskLauncher.launch {
       GitLabStatistics.logMrCreationStarted(project)
@@ -266,7 +284,8 @@ internal class GitLabMergeRequestCreateViewModelImpl(
           targetBranch = baseBranch.nameForRemoteOperations,
           title = titleText.value.ifBlank { gitRemoteBranch.nameForRemoteOperations },
           description = descriptionText.value.ifBlank { null },
-          reviewers = reviewers.value
+          reviewers = reviewers.value,
+          assignees = assignees.value
         )
         openReviewTabAction(mergeRequest.iid)
         onReviewCreated()

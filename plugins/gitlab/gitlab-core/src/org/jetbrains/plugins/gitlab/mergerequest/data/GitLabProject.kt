@@ -70,6 +70,7 @@ interface GitLabProject {
 
   val defaultBranch: String?
   val gitLabProjectId: GitLabId
+  suspend fun isMultipleAssigneesAllowed(): Boolean
   suspend fun isMultipleReviewersAllowed(): Boolean
 
   /**
@@ -87,7 +88,8 @@ interface GitLabProject {
     targetBranch: String,
     title: String,
     description: String?,
-    reviewers: List<GitLabUserDTO> = emptyList()
+    reviewers: List<GitLabUserDTO> = emptyList(),
+    assignees: List<GitLabUserDTO> = emptyList(),
   ): GitLabMergeRequestDTO
 
   fun reloadData()
@@ -119,9 +121,10 @@ class GitLabLazyProject(
   private val emojisRequest = cs.async(start = CoroutineStart.LAZY) {
     serviceAsync<GitLabEmojiService>().emojis.await().map { GitLabReactionImpl(it) }  }
 
-  private val multipleReviewersAllowedRequest = cs.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
-    loadMultipleReviewersAllowed(initialData)
+  private val multipleAssigneesAllowedFallbackRequest = cs.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+    loadMultipleAssigneesAllowedFallback()
   }
+
   override val gitLabProjectId: GitLabId = initialData.id
 
   override val mergeRequests by lazy {
@@ -141,15 +144,23 @@ class GitLabLazyProject(
 
   override suspend fun getEmojis(): List<GitLabReaction> = emojisRequest.await()
   override val defaultBranch: String? = initialData.repository?.rootRef
-  override suspend fun isMultipleReviewersAllowed(): Boolean = multipleReviewersAllowedRequest.await()
+
+  override suspend fun isMultipleAssigneesAllowed(): Boolean {
+    return initialData.allowsMultipleMergeRequestAssignees
+           ?: multipleAssigneesAllowedFallbackRequest.await()
+           ?: false
+  }
+
+  override suspend fun isMultipleReviewersAllowed(): Boolean {
+    return initialData.allowsMultipleMergeRequestReviewers
+           ?: multipleAssigneesAllowedFallbackRequest.await()
+           ?: false
+  }
+
   override fun getLabelsBatches(): Flow<List<GitLabLabel>> = labelsLoader.getBatches()
   override fun getMembersBatches(): Flow<List<GitLabUserDTO>> = membersLoader.getBatches()
 
-  private suspend fun loadMultipleReviewersAllowed(project: GitLabProjectDTO): Boolean {
-    if (project.allowsMultipleMergeRequestReviewers != null) {
-      return project.allowsMultipleMergeRequestReviewers
-    }
-
+  private suspend fun loadMultipleAssigneesAllowedFallback(): Boolean? {
     val fromPlan = getAllowsMultipleAssigneesPropertyFromNamespacePlan()
     if (fromPlan != null) {
       return fromPlan
@@ -159,7 +170,7 @@ class GitLabLazyProject(
       return getAllowsMultipleAssigneesPropertyFromIssueWidget()
     }
 
-    return false
+    return null
   }
 
   @Throws(GitLabGraphQLMutationException::class)
@@ -168,17 +179,20 @@ class GitLabLazyProject(
     targetBranch: String,
     title: String,
     description: String?,
-    reviewers: List<GitLabUserDTO>
+    reviewers: List<GitLabUserDTO>,
+    assignees: List<GitLabUserDTO>,
   ): GitLabMergeRequestDTO {
     return cs.async(Dispatchers.IO) {
       val reviewerIds = reviewers.nullize()?.map { GitLabGidData(it.id).guessRestId() }
+      val assigneeIds = assignees.nullize()?.map { GitLabGidData(it.id).guessRestId() }
       val iid = api.rest.createMergeRequest(
         projectCoordinates,
         sourceBranch,
         targetBranch,
         title,
         description,
-        reviewerIds
+        reviewerIds,
+        assigneeIds
       ).body().iid
       val attempts = GitLabRegistry.getRequestPollingAttempts()
       repeat(attempts) {

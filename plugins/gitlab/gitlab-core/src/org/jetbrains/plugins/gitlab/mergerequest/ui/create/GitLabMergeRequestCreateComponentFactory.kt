@@ -144,7 +144,8 @@ internal object GitLabMergeRequestCreateComponentFactory {
 
   private fun createMetadataPanel(createVm: GitLabMergeRequestCreateViewModel): JComponent {
     val lists = buildList {
-      add(GitLabMergeRequestCreateReviewersComponentFactory.createReviewersListPanelHandle(createVm))
+      add(GitLabMergeRequestCreateMetadataComponentFactory.createAssigneesListPanelHandle(createVm))
+      add(GitLabMergeRequestCreateMetadataComponentFactory.createReviewersListPanelHandle(createVm))
     }
 
     return LabeledListComponentsFactory.createGrid(lists)
