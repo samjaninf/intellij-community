@@ -125,6 +125,7 @@ jvm_library(
     "//libraries/mockito",
     "//platform/execution",
     "//platform/xdebugger-impl/ui",
+    "//platform/xdebugger-impl/ui:ui_test_lib",
   ],
   exports = [
     "@lib//:assert_j",

@@ -145,6 +145,7 @@ jvm_library(
     "//platform/xdebugger-impl/shared",
     "//platform/xdebugger-impl/rpc",
     "//platform/xdebugger-impl/ui",
+    "//platform/xdebugger-impl/ui:ui_test_lib",
     "//fleet/rpc",
     "//platform/kernel/rpc",
     "//platform/testFramework/common",

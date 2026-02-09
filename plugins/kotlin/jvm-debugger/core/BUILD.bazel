@@ -50,6 +50,7 @@ jvm_library(
     "//platform/core-ui",
     "//platform/xdebugger-impl:debugger-impl",
     "//platform/xdebugger-impl/shared",
+    "//platform/xdebugger-impl/ui",
     "//platform/projectModel-impl",
     "//platform/util:util-ui",
     "//platform/script-debugger/debugger-ui:scriptDebugger-ui",

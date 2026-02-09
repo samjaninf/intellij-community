@@ -31,6 +31,7 @@ jvm_library(
     "//plugins/kotlin/jvm-debugger/eval4j",
     "//plugins/kotlin/jvm-debugger/core",
     "//platform/xdebugger-impl:debugger-impl",
+    "//platform/xdebugger-impl/shared",
     "//java/java-psi-impl:psi-impl",
     "//java/debugger/impl",
     "//plugins/kotlin/jvm-debugger/coroutines",

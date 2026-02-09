@@ -35,6 +35,7 @@ jvm_library(
     "//platform/util/coroutines",
     "//platform/xdebugger-impl/rpc",
     "//platform/xdebugger-impl/shared",
+    "//platform/xdebugger-impl/ui",
     "//platform/project/shared:project",
   ]
 )

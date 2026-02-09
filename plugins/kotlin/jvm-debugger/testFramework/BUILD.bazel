@@ -58,6 +58,8 @@ jvm_library(
     "//platform/xdebugger-impl:debugger-impl",
     "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//platform/xdebugger-impl/shared",
+    "//platform/xdebugger-impl/ui",
+    "//platform/xdebugger-impl/ui:ui_test_lib",
     "//platform/xdebugger-testFramework:debugger-testFramework",
     "//platform/execution",
     "//platform/external-system-api:externalSystem",

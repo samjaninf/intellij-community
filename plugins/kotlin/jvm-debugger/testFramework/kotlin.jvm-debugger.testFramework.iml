@@ -42,6 +42,7 @@
     <orderEntry type="module" module-name="intellij.platform.debugger" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.debugger.impl" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.debugger.impl.shared" scope="TEST" />
+    <orderEntry type="module" module-name="intellij.platform.debugger.impl.ui" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.debugger.testFramework" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.execution" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.externalSystem" scope="TEST" />

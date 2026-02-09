@@ -73,6 +73,7 @@ jvm_library(
     "//platform/execution",
     "//platform/forms_rt:java-guiForms-rt",
     "//platform/xdebugger-impl/shared",
+    "//platform/xdebugger-impl/ui",
     ":libraries_cli-parser_provided",
   ]
 )
@@ -145,6 +146,8 @@ jvm_library(
     "//platform/execution",
     "//platform/forms_rt:java-guiForms-rt",
     "//platform/xdebugger-impl/shared",
+    "//platform/xdebugger-impl/ui",
+    "//platform/xdebugger-impl/ui:ui_test_lib",
     ":libraries_cli-parser_provided",
   ]
 )

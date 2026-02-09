@@ -26,6 +26,7 @@ jvm_library(
     "//platform/xdebugger-impl:debugger-impl",
     "//platform/xdebugger-impl/rpc",
     "//platform/xdebugger-impl/shared",
+    "//platform/xdebugger-impl/ui",
   ]
 )
 ### auto-generated section `build intellij.debugger.streams.shared` end
