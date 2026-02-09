@@ -1,9 +1,9 @@
 package com.intellij.mcpserver.actions
 
-import com.intellij.mcpserver.McpParameter
 import com.intellij.mcpserver.McpServerBundle
 import com.intellij.mcpserver.McpTool
 import com.intellij.mcpserver.McpToolCategory
+import com.intellij.mcpserver.McpToolsMarkdownExporter
 import com.intellij.mcpserver.impl.McpServerService
 import com.intellij.mcpserver.settings.McpToolFilterOptimizer
 import com.intellij.mcpserver.settings.McpToolFilterSettings
@@ -13,12 +13,7 @@ import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.openapi.util.io.FileUtil
-import com.intellij.ui.CheckboxTree
-import com.intellij.ui.CheckboxTreeTable
-import com.intellij.ui.CheckedTreeNode
-import com.intellij.ui.ScrollPaneFactory
-import com.intellij.ui.SimpleTextAttributes
+import com.intellij.ui.*
 import com.intellij.ui.treeStructure.treetable.TreeColumnInfo
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.tree.TreeUtil
@@ -30,6 +25,7 @@ import javax.swing.Action
 import javax.swing.JComponent
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
+import kotlin.io.path.writeText
 
 class ShowMcpToolsAction : AnAction() {
   override fun actionPerformed(e: AnActionEvent) {
@@ -82,13 +78,6 @@ private class McpToolsDialog(
         categoryNode.add(toolNode)
         
         if (isEnabled) anyToolEnabled = true
-        
-        for (parameter in tool.descriptor.inputSchema.getParameters()) {
-          val paramNode = DefaultMutableTreeNode(parameter)
-          //paramNode.isEnabled = false // Parameters should not have checkboxes
-          //paramNode.isChecked = false // Prevent mixed state when tool is unchecked
-          toolNode.add(paramNode)
-        }
       }
       
       // Set category checkbox state based on its children
@@ -159,44 +148,9 @@ private class McpToolsDialog(
     val saveDialog = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
     val fileWrapper = saveDialog.save(null as Path?, "mcp_tools.md") ?: return
 
-    val markdown = buildString {
-      appendLine("# MCP Tools")
-      appendLine()
-      for ((category, categoryTools) in toolsByCategory) {
-        appendLine("## ${category.shortName}")
-        appendLine()
-        for (tool in categoryTools) {
-          appendLine("### ${tool.descriptor.name}")
-          appendLine(tool.descriptor.description.trimIndent().escapeLineBreaks().escapeMarkdown())
-          appendLine()
-          appendLine("#### Parameters")
-          val parameters = tool.descriptor.inputSchema.getParameters()
-          if (parameters.isEmpty()) {
-            appendLine("No parameters.")
-          }
-          else {
-            appendLine("| Name | Type | Description |")
-            appendLine("| --- | --- | --- |")
-            val requiredProperties = tool.descriptor.inputSchema.requiredProperties
-            for (param in parameters) {
-              val name = if (param.name in requiredProperties) "${param.name}*" else param.name
-              appendLine("| $name | ${(param.type ?: "N/A").escapeMarkdown()} | ${param.description?.trimIndent()?.escapeLineBreaks()?.escapeMarkdown() ?: ""} |")
-            }
-          }
-          appendLine()
-          val outputSchema = tool.descriptor.outputSchema
-          if (outputSchema != null) {
-            appendLine("#### Output Schema")
-            appendLine("```json")
-            appendLine(outputSchema.prettyPrint())
-            appendLine("```")
-            appendLine()
-          }
-        }
-      }
-    }
-
-    FileUtil.writeToFile(fileWrapper.file, markdown)
+    val markdown = McpToolsMarkdownExporter.generateMarkdown(toolsByCategory)
+    val virtualFile = fileWrapper.getVirtualFile(true) ?: return
+    virtualFile.toNioPath().writeText(markdown)
   }
 }
 
@@ -218,9 +172,6 @@ private class McpToolTreeCellRenderer : CheckboxTree.CheckboxTreeCellRenderer() 
       is McpTool -> {
         textRenderer.append(userObject.descriptor.name, SimpleTextAttributes.REGULAR_ATTRIBUTES)
       }
-      is McpParameter -> {
-        textRenderer.append(userObject.name, SimpleTextAttributes.GRAYED_ATTRIBUTES)
-      }
     }
   }
 }
@@ -232,12 +183,7 @@ private class DescriptionColumnInfo : ColumnInfo<DefaultMutableTreeNode, String>
     return when (val userObject = node.userObject) {
       is CategoryNode -> ""
       is McpTool -> userObject.descriptor.description.trimIndent()
-      is McpParameter -> userObject.description?.trimIndent() ?: ""
       else -> ""
     }
   }
 }
-
-private fun String.escapeLineBreaks(): String = replace("\r\n", "<br/>").replace("\n", "<br/>").replace("\r", "<br/>")
-
-private fun String.escapeMarkdown(): String = replace("|", "\\|")

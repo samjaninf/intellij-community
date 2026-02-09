@@ -53,6 +53,7 @@
     <mcpServer.mcpToolsProvider implementation="com.intellij.mcpserver.impl.ReflectionToolsProvider" />
     <mcpServer.mcpToolFilterProvider implementation="com.intellij.mcpserver.impl.RegistryKeyMcpToolFilterProvider" />
     <mcpServer.mcpToolFilterProvider implementation="com.intellij.mcpserver.impl.SettingsBasedMcpToolFilterProvider" />
+    <mcpServer.mcpToolFilterProvider implementation="com.intellij.mcpserver.impl.DisallowListBasedMcpToolFilterProvider" />
 
     <mcpServer.mcpToolset implementation="com.intellij.mcpserver.toolsets.general.ExecutionToolset" />
     <mcpServer.mcpToolset implementation="com.intellij.mcpserver.toolsets.general.AnalysisToolset" />
@@ -79,6 +80,9 @@
     <registryKey defaultValue="*"
                  description="Filter for MCP tools, like -*,+com.intellij.mcpserver.toolsets.general.*,-*.get_file_text_by_path"
                  key="mcp.server.tools.filter"/>
+    <registryKey defaultValue="false"
+                 description="Show advanced filter options UI in MCP tool filter settings"
+                 key="mcp.server.show.advanced.filter.options.ui"/>
 
     <applicationConfigurable
       instance="com.intellij.mcpserver.settings.McpServerSettingsConfigurable"
@@ -87,6 +91,14 @@
       bundle="messages.McpServerBundle"
       dynamic="true"
       parentId="tools"/>
+
+    <applicationConfigurable
+      instance="com.intellij.mcpserver.settings.McpToolFilterConfigurable"
+      id="com.intellij.mcpserver.settings.filter"
+      key="configurable.mcp.tool.filter"
+      bundle="messages.McpServerBundle"
+      dynamic="true"
+      parentId="com.intellij.mcpserver.settings"/>
 
   </extensions>
 

@@ -1,19 +1,12 @@
 package com.intellij.mcpserver
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import com.intellij.openapi.util.NlsSafe
-
-class McpParameter(
-  val name: @NlsSafe String,
-  val description: @NlsSafe String?,
-  val type: @NlsSafe String?,
-)
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Schema of the input or output of an MCP tool.
@@ -122,20 +115,5 @@ class McpToolSchema(
 
   fun prettyPrint(): String {
     return json.encodeToString(schemaObject)
-  }
-
-  fun getParameters(): List<McpParameter> {
-    return propertiesSchema.map { (name, schema) ->
-      val schemaObject = schema as? JsonObject
-      val description = schemaObject?.get("description")?.let { (it as? JsonPrimitive)?.content }
-      val rawType = schemaObject?.get("type")?.let { (it as? JsonPrimitive)?.content }
-      val enumValues = schemaObject?.get("enum")?.let { it as? JsonArray }
-      val type = if (enumValues != null && (rawType == null || rawType == "string")) {
-        enumValues.mapNotNull { (it as? JsonPrimitive)?.content }.joinToString(" | ")
-      } else {
-        rawType
-      }
-      McpParameter(name, description, type)
-    }
   }
 }

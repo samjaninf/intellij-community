@@ -12,7 +12,7 @@ internal class McpToolFilterSettings : SimplePersistentStateComponent<McpToolFil
     @JvmStatic
     fun getInstance(): McpToolFilterSettings = service()
 
-    const val DEFAULT_FILTER: String = "*"
+    const val DEFAULT_FILTER: String = ""
   }
 
   private val _toolsFilterFlow = MutableStateFlow(state.toolsFilter ?: DEFAULT_FILTER)

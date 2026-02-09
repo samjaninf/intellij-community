@@ -449,6 +449,19 @@ class McpServerService(val cs: CoroutineScope) {
   }
 
   internal fun getMcpTools(filter: McpToolFilter = McpToolFilter.AllowAll, useFiltersFromEP: Boolean = true): List<McpTool> {
+    return getMcpToolsFiltered(filter, useFiltersFromEP, excludeProviders = emptySet())
+  }
+
+  /**
+   * Returns MCP tools filtered by all filter providers except those specified in [excludeProviders].
+   * This is useful for UI that needs to show tools filtered by some providers but not others
+   * (e.g., showing tools for disallow list configuration without applying the disallow list filter itself).
+   */
+  internal fun getMcpToolsFiltered(
+    filter: McpToolFilter = McpToolFilter.AllowAll,
+    useFiltersFromEP: Boolean = true,
+    excludeProviders: Set<Class<out McpToolFilterProvider>>
+  ): List<McpTool> {
     val allTools = McpToolsProvider.EP.extensionList.flatMap {
       try {
         it.getTools()
@@ -462,7 +475,9 @@ class McpServerService(val cs: CoroutineScope) {
     if (!useFiltersFromEP) {
       return filteredByName
     }
-    val filters = McpToolFilterProvider.EP.extensionList.flatMap { it.getFilters(null).value }
+    val filterProviders = McpToolFilterProvider.EP.extensionList
+      .filter { provider -> excludeProviders.none { it.isInstance(provider) } }
+    val filters = filterProviders.flatMap { it.getFilters(null).value }
     var context = McpToolFilterProvider.McpToolFilterContext(
       disallowedTools = emptySet(),
       allowedTools = filteredByName.toSet()

@@ -31,7 +31,7 @@ object McpToolFilterOptimizer {
     categoriesInfo: List<CategoryToolsInfo>
   ): String {
     if (disabledTools.isEmpty()) {
-      return McpToolFilterSettings.DEFAULT_FILTER // "*" - all enabled
+      return "*" // All enabled
     }
     if (enabledTools.isEmpty()) {
       return "-*" // All disabled
