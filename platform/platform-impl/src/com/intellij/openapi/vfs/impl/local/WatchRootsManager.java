@@ -4,6 +4,7 @@ package com.intellij.openapi.vfs.impl.local;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.diagnostic.ThrottledLogger;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.util.SystemInfoRt;
@@ -37,6 +38,9 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Class manages the roots to monitor via {@link FileWatcher} -- i.e., it keeps {@link FileWatcher} configured
@@ -46,6 +50,7 @@ import java.util.Set;
 @ApiStatus.Internal
 public final class WatchRootsManager {
   private static final Logger LOG = Logger.getInstance(WatchRootsManager.class);
+  private static final ThrottledLogger THROTTLED_LOG = new ThrottledLogger(LOG, SECONDS.toMillis(1));
 
   private final FileWatcher myFileWatcher;
 
@@ -155,7 +160,7 @@ public final class WatchRootsManager {
       //BAZEL-2800: LOG.error() does quite expensive deduplication, so invoking it under the myLock
       //            could hurt performance a lot.
       if (dataInconsistencyDetails != null) {
-        LOG.error(dataInconsistencyDetails);
+        THROTTLED_LOG.error(dataInconsistencyDetails);
       }
     }
   }
