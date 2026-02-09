@@ -8,20 +8,18 @@ import com.intellij.platform.backend.workspace.WorkspaceModel
 import com.intellij.platform.backend.workspace.impl.WorkspaceModelInternal
 import com.intellij.platform.workspace.jps.entities.ModuleDependency
 import com.intellij.platform.workspace.jps.entities.ModuleEntity
+import com.intellij.platform.workspace.jps.entities.ModuleId
 import com.intellij.platform.workspace.storage.CachedValue
 import com.intellij.platform.workspace.storage.EntityStorage
 import com.intellij.platform.workspace.storage.VersionedEntityStorage
-import com.intellij.platform.workspace.storage.referrers
-import com.intellij.util.graph.CachingSemiGraph
 import com.intellij.util.graph.Graph
-import com.intellij.util.graph.GraphGenerator
-import com.intellij.util.graph.InboundSemiGraph
 import org.jetbrains.annotations.ApiStatus
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * [Graph.getIn] returns [ModuleEntity] which depend on the given module taking into account exported dependencies.
  *
- * [Graph.getOut] returns [ModuleEntity] on which the given module depends taking into account exported dependencies.
+ * [Graph.getOut] returns dependencies of the given [ModuleEntity] both exported and not exported.
  */
 @ApiStatus.Internal
 @Service(Service.Level.PROJECT)
@@ -35,35 +33,63 @@ class ModuleExportedDependenciesGraph(project: Project) {
     buildGraph(storage)
   }
 
-  private fun buildGraph(storage: EntityStorage): Graph<ModuleEntity> {
-    return GraphGenerator.generate(CachingSemiGraph.cache(object : InboundSemiGraph<ModuleEntity> {
-      override fun getNodes(): Collection<ModuleEntity> =
-        storage.entities(ModuleEntity::class.java).toList()
+  private data class DependencyEdge(
+    val dependent: ModuleEntity,
+    val exported: Boolean,
+  )
 
-      override fun getIn(module: ModuleEntity): Iterator<ModuleEntity> {
-        return collectDependentModules(module, storage).iterator()
-      }
-    }))
-  }
+  companion object {
+    fun buildGraph(storage: EntityStorage): Graph<ModuleEntity> {
+      return object : Graph<ModuleEntity> {
+        private val directDependents: Map<ModuleId, List<DependencyEdge>>
+        private val cache = ConcurrentHashMap<ModuleEntity, Set<ModuleEntity>>()
 
-  private fun collectDependentModules(module: ModuleEntity, storage: EntityStorage): Set<ModuleEntity> {
-    val queue = ArrayDeque<ModuleEntity>()
-    val result = HashSet<ModuleEntity>()
-    queue.add(module)
-    while (queue.isNotEmpty()) {
-      val currentModule = queue.removeFirst()
-      for (referrer in storage.referrers<ModuleEntity>(currentModule.symbolicId)) {
-        val dependency =
-          referrer.dependencies.filterIsInstance<ModuleDependency>().find { it.module == currentModule.symbolicId } ?: continue
-        if (result.add(referrer) && dependency.exported) {
-          queue.add(referrer)
+        init {
+          val dependentsMap = HashMap<ModuleId, MutableList<DependencyEdge>>()
+
+          for (module in storage.entities(ModuleEntity::class.java)) {
+            for (dep in module.dependencies) {
+              if (dep is ModuleDependency) {
+                dependentsMap
+                  .computeIfAbsent(dep.module) { mutableListOf() }
+                  .add(DependencyEdge(module, dep.exported))
+              }
+            }
+          }
+
+          this.directDependents = dependentsMap
+        }
+
+        override fun getNodes(): Collection<ModuleEntity> {
+          return storage.entities(ModuleEntity::class.java).toList()
+        }
+
+        override fun getIn(node: ModuleEntity): Iterator<ModuleEntity> {
+          return cache.computeIfAbsent(node) {
+            val result = HashSet<ModuleEntity>()
+            val queue = ArrayDeque<ModuleEntity>()
+            queue.add(node)
+
+            while (queue.isNotEmpty()) {
+              val current = queue.removeFirst()
+              val edges = directDependents[current.symbolicId] ?: emptyList()
+
+              for (edge in edges) {
+                if (result.add(edge.dependent) && edge.exported) {
+                  queue.add(edge.dependent)
+                }
+              }
+            }
+            result
+          }.iterator()
+        }
+
+        override fun getOut(node: ModuleEntity): Iterator<ModuleEntity> {
+          return node.dependencies.filterIsInstance<ModuleDependency>().mapNotNull { it.module.resolve(storage) }.iterator()
         }
       }
     }
-    return result
-  }
 
-  companion object {
     @JvmStatic
     fun getInstance(project: Project): ModuleExportedDependenciesGraph = project.service()
   }
