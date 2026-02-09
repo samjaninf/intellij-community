@@ -49,6 +49,7 @@ import com.intellij.openapi.util.registry.Registry.Companion.`is`
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.*
 import com.intellij.platform.eel.EelApi
+import com.intellij.platform.eel.EelDescriptor
 import com.intellij.platform.eel.EelPlatform
 import com.intellij.platform.eel.LocalEelApi
 import com.intellij.platform.eel.fs.getPath
@@ -1111,7 +1112,7 @@ object MavenUtil {
    * @param path any path pointing to an environment where the repository should be searched.
    */
   @JvmStatic
-  fun resolveDefaultLocalRepository(path: Path?): Path {
+  fun resolveDefaultLocalRepository(descriptor: EelDescriptor?): Path {
     val mavenRepoLocal = System.getProperty(MAVEN_REPO_LOCAL)
 
     if (mavenRepoLocal != null) {
@@ -1125,7 +1126,7 @@ object MavenUtil {
       return Path.of(forcedM2Home)
     }
 
-    val api = if (path == null || path.getEelDescriptor() is LocalEelDescriptor) localEel else path.getEelApiBlocking()
+    val api = if (descriptor == null || descriptor is LocalEelDescriptor) localEel else descriptor.toEelApiBlocking()
     val m2DirPath = api.resolveM2Dir()
     val settingsPath: Path = m2DirPath.resolve(SETTINGS_XML)
     val defaultRepo = m2DirPath.resolve(REPOSITORY_DIR)
