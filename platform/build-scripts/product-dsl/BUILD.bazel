@@ -20,7 +20,7 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//libraries/fastutil",
-    "//platform/plugins/parser/impl",
+    "//platform/pluginSystem/parser/impl",
     "//platform/build-scripts/api",
     "//libraries/kotlinx/serialization/core",
     "//libraries/kotlinx/serialization/json",
@@ -46,8 +46,8 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//libraries/fastutil",
-    "//platform/plugins/parser/impl",
-    "//platform/plugins/parser/impl:impl_test_lib",
+    "//platform/pluginSystem/parser/impl",
+    "//platform/pluginSystem/parser/impl:impl_test_lib",
     "//platform/build-scripts/api",
     "//libraries/kotlinx/serialization/core",
     "//libraries/kotlinx/serialization/json",

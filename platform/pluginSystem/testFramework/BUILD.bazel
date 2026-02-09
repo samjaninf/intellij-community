@@ -14,7 +14,7 @@ jvm_library(
     "//platform/core-impl",
     "//platform/util-class-loader:util-classLoader",
     "//platform/diagnostic",
-    "//platform/plugins/parser/impl",
+    "//platform/pluginSystem/parser/impl",
     "//platform/util-ex",
     "//platform/platform-impl/bootstrap",
     "//platform/util/xmlDom",
