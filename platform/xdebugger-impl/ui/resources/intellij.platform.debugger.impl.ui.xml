@@ -17,8 +17,7 @@
   </dependencies>
 
   <extensionPoints>
-    <extensionPoint name="xdebugger.debuggerTabCustomizer"
-                    interface="com.intellij.xdebugger.impl.ui.SessionTabComponentProvider" dynamic="true"/>
+
   </extensionPoints>
 
   <!-- endregion -->

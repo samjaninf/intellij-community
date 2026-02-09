@@ -31,6 +31,9 @@
 
     <extensionPoint qualifiedName="com.intellij.xdebugger.customMuteBreakpointHandler"
                     interface="com.intellij.xdebugger.impl.actions.handlers.XDebuggerCustomMuteBreakpointHandler" dynamic="true"/>
+
+    <extensionPoint name="xdebugger.debuggerTabCustomizer"
+                    interface="com.intellij.xdebugger.impl.ui.SessionTabComponentProvider" dynamic="true"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">

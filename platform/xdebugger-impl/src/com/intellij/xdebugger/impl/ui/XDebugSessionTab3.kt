@@ -11,6 +11,7 @@ import com.intellij.ide.ui.customization.CustomActionsListener
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowAnchor
+import com.intellij.platform.debugger.impl.shared.XDebuggerMonolithAccessPoint
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.toolWindow.InternalDecoratorImpl
 import com.intellij.ui.OnePixelSplitter
@@ -19,7 +20,6 @@ import com.intellij.util.ui.UIUtil
 import com.intellij.xdebugger.XDebuggerBundle
 import com.intellij.xdebugger.impl.frame.XDebugView
 import com.intellij.xdebugger.impl.frame.XFramesView
-import com.intellij.xdebugger.impl.frame.XSplitterWatchesViewImpl
 import com.intellij.xdebugger.impl.frame.XVariablesView
 import com.intellij.xdebugger.impl.frame.XVariablesViewBase
 import com.intellij.xdebugger.impl.frame.XWatchesViewImpl
@@ -55,8 +55,8 @@ class XDebugSessionTab3(
   override fun getFramesContentId(): String = debuggerContentId
 
   private fun getWatchesViewImpl(sessionProxy: XDebugSessionProxy, watchesIsVariables: Boolean): XWatchesViewImpl {
-    if (SessionTabComponentProvider.hasProvider())
-      return XSplitterWatchesViewImpl(sessionProxy, watchesIsVariables, true, withToolbar = false)
+    val monolithView = XDebuggerMonolithAccessPoint.find { it.createWatchesViewComponent(sessionProxy, watchesIsVariables) }
+    if (monolithView != null) return monolithView as XWatchesViewImpl
 
     return XWatchesViewImpl(sessionProxy, watchesIsVariables, true, false)
   }

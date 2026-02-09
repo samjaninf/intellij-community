@@ -23,8 +23,6 @@ com.intellij.xdebugger.impl.frame.XDebuggerFramesList$ItemWithCustomBackgroundCo
 - com.intellij.xdebugger.impl.frame.XStackFrameWithCustomBackgroundColor
 com.intellij.xdebugger.impl.frame.XDebuggerFramesList$ItemWithSeparatorAbove
 - com.intellij.xdebugger.impl.frame.XStackFrameWithSeparatorAbove
-com.intellij.xdebugger.impl.ui.SessionTabComponentProvider
-- a:createBottomLocalsComponent():javax.swing.JComponent
 c:com.intellij.xdebugger.impl.ui.XDebuggerEmbeddedComboBox
 - com.intellij.openapi.ui.ComboBox
 - <init>():V
