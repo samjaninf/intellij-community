@@ -187,7 +187,6 @@ public final class JavaPatternCompletionUtil {
                               @NotNull List<PsiType> types,
                               boolean onlyDeconstructionList) {
     static PatternModel create(@NotNull PsiClass record, @NotNull PsiElement context, boolean onlyDeconstructionList) {
-      JavaCodeStyleManager manager = JavaCodeStyleManager.getInstance(record.getProject());
       PsiDeconstructionPattern deconstructionPattern = PsiTreeUtil.getParentOfType(context, PsiDeconstructionPattern.class);
       List<String> names = new ArrayList<>();
       for (PsiRecordComponent component : record.getRecordComponents()) {
