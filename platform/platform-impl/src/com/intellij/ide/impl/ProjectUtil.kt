@@ -188,11 +188,15 @@ object ProjectUtil {
       }
     }
 
-    val storePathManager = serviceAsync<ProjectStorePathManager>()
-    val descriptor = withContext(Dispatchers.IO) {
-      storePathManager.getStoreDescriptor(file)
-    }
-    if (descriptor.testStoreDirectoryExistsForProjectRoot()) {
+    // `isDirectory` test here is for backward compatibility with 252: in 252 we never entered this method with regular files - only with
+    // directories. The problem here is that any regular file now has a storeDescriptor (getStoreDescriptor return type is not nullable),
+    // which evaluates to `regularFile.parent.resolve(".idea")`, which, if exists, pushes IDE to open a new project, instead of a file in
+    // the opened project. This is a tiny quick-fix for 253. We should rework the project open flow to avoid this strange check here.
+    if (Files.isDirectory(file) && isValidProjectPath(file)) {
+      val descriptor = withContext(Dispatchers.IO) {
+        serviceAsync<ProjectStorePathManager>().getStoreDescriptor(file)
+      }
+
       LOG.info("Opening existing project with .idea at $file")
       // see OpenProjectTest.`open valid existing project dir with inability to attach using OpenFileAction` test about why `runConfigurators = true` is specified here
       val options = options.copy(
