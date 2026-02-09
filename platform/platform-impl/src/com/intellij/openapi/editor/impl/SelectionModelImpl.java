@@ -16,12 +16,16 @@ import com.intellij.openapi.editor.event.SelectionEvent;
 import com.intellij.openapi.editor.event.SelectionListener;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.ui.ColorUtil;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+
+import static com.intellij.ui.ColorUtil.desaturate;
 
 //@ApiStatus.Internal
 public final class SelectionModelImpl implements SelectionModel {
@@ -142,7 +146,17 @@ public final class SelectionModelImpl implements SelectionModel {
       TextAttributes textAttributes = new TextAttributes();
       EditorColorsScheme scheme = myEditor.getColorsScheme();
       textAttributes.setForegroundColor(scheme.getColor(EditorColors.SELECTION_FOREGROUND_COLOR));
-      textAttributes.setBackgroundColor(scheme.getColor(EditorColors.SELECTION_BACKGROUND_COLOR));
+
+      var backgroundColor = scheme.getColor(EditorColors.SELECTION_BACKGROUND_COLOR);
+      if (backgroundColor == null || myEditor.isInFocus()) {
+        textAttributes.setBackgroundColor(backgroundColor);
+      } else {
+        var inactiveColor = scheme.getColor(EditorColors.INACTIVE_SELECTION_BACKGROUND_COLOR);
+        textAttributes.setBackgroundColor(
+          inactiveColor != null ? inactiveColor :
+          ColorUtil.mix(myEditor.getBackgroundColor(), desaturate(backgroundColor, 2), 0.3)
+        );
+      }
       myTextAttributes = textAttributes;
     }
 

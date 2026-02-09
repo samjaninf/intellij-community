@@ -490,6 +490,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   private boolean myCurrentDragIsSubstantial;
   private boolean myForcePushHappened;
   private boolean myMouseIsInDrag;
+  private boolean myIsInFocus = true;
 
   private @Nullable VisualPosition mySuppressedByBreakpointsLastPressPosition;
 
@@ -833,21 +834,52 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   public void focusGained(@NotNull FocusEvent e) {
     myCaretCursor.activate();
     gainedFocus.set(true);
+
     for (Caret caret : myCaretModel.getAllCarets()) {
       int caretLine = caret.getLogicalPosition().line;
       repaintLines(caretLine, caretLine);
     }
+
     fireFocusGained(e);
+
+    SwingUtilities.invokeLater(() -> {
+      if (isDisposed()) return;
+
+      if (myKeepSelectionOnMousePress && myMousePressedEvent != null) {
+        return;
+      }
+
+      setFocusGained();
+    });
+  }
+
+  private void setFocusGained() {
+    if (myIsInFocus) return;
+
+    myIsInFocus = true;
+    mySelectionModel.reinitSettings();
+    for (Caret caret : myCaretModel.getAllCarets()) {
+      if (caret.hasSelection()) {
+        repaint(caret.getSelectionStart(), caret.getSelectionEnd());
+      }
+    }
   }
 
   @Override
   public void focusLost(@NotNull FocusEvent e) {
+    myIsInFocus = false;
+    mySelectionModel.reinitSettings();
+
     clearCaretThread();
     for (Caret caret : myCaretModel.getAllCarets()) {
       int caretLine = caret.getLogicalPosition().line;
       repaintLines(caretLine, caretLine);
     }
     fireFocusLost(e);
+  }
+
+  boolean isInFocus() {
+    return myIsInFocus;
   }
 
   private void queueErrorStipeRepaintRequest(int start, int end) {
@@ -2986,6 +3018,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
         return;
       }
 
+      setFocusGained();
       if (mySuppressedByBreakpointsLastPressPosition != null) {
         getCaretModel().removeSecondaryCarets();
         getCaretModel().moveToVisualPosition(mySuppressedByBreakpointsLastPressPosition);
@@ -4521,6 +4554,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
             Math.abs(e.getY() - myMousePressedEvent.getY()) < getLineHeight()) {
           runMouseClickedCommand(e);
         }
+        setFocusGained();
       });
     }
 
