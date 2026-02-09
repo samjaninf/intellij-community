@@ -22,7 +22,7 @@ internal open class SamplingTask(@JvmField internal val dumpInterval: Int, maxDu
   var threadInfos: UList<Array<ThreadInfo>> = UList()
     private set
 
-  private val job: Job?
+  private val job: Job
   private val startTime: Long = System.nanoTime()
   private var currentTime: Long = startTime
   private val gcStartTime: Long = currentGcTime()
@@ -36,11 +36,15 @@ internal open class SamplingTask(@JvmField internal val dumpInterval: Int, maxDu
 
   init {
     job = coroutineScope.launch(CoroutineName("freeze dumper")) {
-      val delayDuration = dumpInterval.milliseconds
-      while (true) {
-        dumpThreads(asyncCoroutineScope = coroutineScope)
-        delay(delayDuration)
-      }
+      dumpThreadsLoop(coroutineScope)
+    }
+  }
+
+  private suspend fun dumpThreadsLoop(coroutineScope: CoroutineScope) {
+    val delayDuration = dumpInterval.milliseconds
+    while (threadInfos.size < maxDumps) {
+      dumpThreads(asyncCoroutineScope = coroutineScope)
+      delay(delayDuration)
     }
   }
 
@@ -51,10 +55,6 @@ internal open class SamplingTask(@JvmField internal val dumpInterval: Int, maxDu
     coroutineContext.ensureActive()
 
     threadInfos = threadInfos.add(infos)
-    if (threadInfos.size > maxDumps) {
-      stopDumpingThreads()
-      return
-    }
 
     asyncCoroutineScope.launch(CoroutineName("async freeze dumper")) {
       val rawDump = ThreadDumper.getThreadDumpInfo(infos, true)
@@ -68,11 +68,11 @@ internal open class SamplingTask(@JvmField internal val dumpInterval: Int, maxDu
   protected open suspend fun dumpedThreads(threadDump: ThreadDump) {}
 
   open fun stop() {
-    job?.cancel()
+    job.cancel()
   }
 
   open suspend fun stopDumpingThreads() {
-    job?.cancelAndJoin()
+    job.cancelAndJoin()
   }
 }
 
