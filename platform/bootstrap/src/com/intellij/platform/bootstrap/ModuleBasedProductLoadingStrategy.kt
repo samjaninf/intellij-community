@@ -455,10 +455,11 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
 
     val paths = resolvedModule.resourceRootPaths
     val singlePath = paths.singleOrNull()
+    val isRunningFromSourcesWithoutDevBuild = PluginManagerCore.isRunningFromSources() && !AppMode.isRunningFromDevBuild()
     /* when running from sources without dev build, resources of a content module may include the module output directory and paths to its
        module-level libraries, so this function may return null so resolveModuleFile and resolveCustomModuleClassesRoots from
        ModuleBasedPluginXmlPathResolver will be used to load the module */
-    if (singlePath == null && !(PluginManagerCore.isRunningFromSources() && !AppMode.isRunningFromDevBuild())) {
+    if (singlePath == null && !isRunningFromSourcesWithoutDevBuild) {
       error("Content modules are supposed to have only one resource root, but $moduleId have multiple: $paths")
     }
 
