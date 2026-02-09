@@ -837,7 +837,7 @@
       },
       "Advertiser": {
         "foreground": "text-secondary",
-        "background": "bg-layer",
+        "background": "bg-popup",
         "borderInsets": "8,12,8,12"
       }
     },
@@ -1568,7 +1568,7 @@
           "MoreLines": {
             "foreground": "text-secondary",
             "background": "container-tool-window-bg",
-            "hoverForeground": "text-primary",
+            "hoverForeground": "text-default",
             "hoverBackground": "control-bg-hovered"
           }
         }
