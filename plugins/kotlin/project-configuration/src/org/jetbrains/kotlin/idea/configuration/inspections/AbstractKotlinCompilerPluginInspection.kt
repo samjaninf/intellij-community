@@ -38,24 +38,8 @@ abstract class AbstractKotlinCompilerPluginInspection(protected val kotlinCompil
     protected fun compilerPluginProjectConfigurators(): List<KotlinCompilerPluginProjectConfigurator> =
         compilerPluginProjectConfigurators(kotlinCompilerPluginId)
 
-    protected fun KtFile.hasCompilerPluginExtension(filter: (FirExtensionRegistrarAdapter) -> Boolean): Boolean {
-        val module = getKaModule(project, useSiteModule = null).takeIf { it is KaSourceModule } ?: return false
-        return module.hasCompilerPluginExtension(filter)
-    }
-
-    final override fun isAvailableForFile(file: PsiFile): Boolean {
-        val ktFile = (file as? KtFile)?.takeUnless { it.isCompiled } ?: return false
-        val module = ModuleUtilCore.findModuleForFile(ktFile) ?: return false
-
-        if (!super.isAvailableForFile(file) || isIncompleteModel(file)) return false
-
-        val scope = module.getModuleWithDependenciesAndLibrariesScope(true)
-        val hasKotlinJvmRuntime = DumbModeAccessType.RELIABLE_DATA_ONLY.ignoreDumbMode(ThrowableComputable {
-            scope.hasKotlinJvmRuntime(module.project)
-        })
-
-        return hasKotlinJvmRuntime && isAvailableForFileInModule(ktFile, module)
-    }
+    final override fun isAvailableForFile(file: PsiFile): Boolean =
+        isAvailableForFile(file) { file, module -> isAvailableForFileInModule(file, module) }
 
     protected abstract fun isAvailableForFileInModule(ktFile: KtFile, module: Module): Boolean
 
@@ -93,8 +77,46 @@ abstract class AbstractKotlinCompilerPluginInspection(protected val kotlinCompil
             val element = descriptor.psiElement
             val module = ModuleUtilCore.findModuleForPsiElement(element) ?: return
 
+            configureCompilerPlugin(project, module, kotlinCompilerPluginId)
+        }
+    }
+
+    companion object {
+        @OptIn(KaPlatformInterface::class)
+        @ApiStatus.Internal
+        fun KaModule.hasCompilerPluginExtension(filter: (FirExtensionRegistrarAdapter) -> Boolean): Boolean {
+            val pluginsProvider =
+                KotlinCompilerPluginsProvider.getInstance(project) ?: return false
+            val registeredExtensions =
+                pluginsProvider.getRegisteredExtensions(this, FirExtensionRegistrarAdapter)
+            return registeredExtensions.any(filter)
+        }
+
+        @ApiStatus.Internal
+        fun KtFile.hasCompilerPluginExtension(filter: (FirExtensionRegistrarAdapter) -> Boolean): Boolean {
+            val module = getKaModule(project, useSiteModule = null).takeIf { it is KaSourceModule } ?: return false
+            return module.hasCompilerPluginExtension(filter)
+        }
+
+        @ApiStatus.Internal
+        fun isAvailableForFile(file: PsiFile, isAvailableForFileInModule: (KtFile, Module) -> Boolean): Boolean {
+            val ktFile = (file as? KtFile)?.takeUnless { it.isCompiled } ?: return false
+
+            if (isIncompleteModel(file)) return false
+
+            val module = ModuleUtilCore.findModuleForFile(ktFile) ?: return false
+
+            val scope = module.getModuleWithDependenciesAndLibrariesScope(true)
+            val hasKotlinJvmRuntime = DumbModeAccessType.RELIABLE_DATA_ONLY.ignoreDumbMode(ThrowableComputable {
+                scope.hasKotlinJvmRuntime(module.project)
+            })
+
+            return hasKotlinJvmRuntime && isAvailableForFileInModule(ktFile, module)
+        }
+
+        fun configureCompilerPlugin(project: Project, module: Module, kotlinCompilerPluginId: String) {
             val configurators =
-                compilerPluginProjectConfigurators().ifEmpty { return }
+                compilerPluginProjectConfigurators(kotlinCompilerPluginId).ifEmpty { return }
 
             val configurationResultBuilder = ConfigurationResultBuilder()
             val configurationService = KotlinProjectConfigurationService.getInstance(project)
@@ -111,18 +133,6 @@ abstract class AbstractKotlinCompilerPluginInspection(protected val kotlinCompil
                 }
                 configurationService.queueSyncIfPossible()
             }
-        }
-    }
-
-    companion object {
-        @OptIn(KaPlatformInterface::class)
-        @ApiStatus.Internal
-        fun KaModule.hasCompilerPluginExtension(filter: (FirExtensionRegistrarAdapter) -> Boolean): Boolean {
-            val pluginsProvider =
-                KotlinCompilerPluginsProvider.getInstance(project) ?: return false
-            val registeredExtensions =
-                pluginsProvider.getRegisteredExtensions(this, FirExtensionRegistrarAdapter)
-            return registeredExtensions.any(filter)
         }
     }
 
