@@ -265,7 +265,15 @@ f:com.intellij.collaboration.api.json.JsonHttpApiHelperKt
 - f:attachSearch(javax.swing.JList,com.intellij.ui.SearchTextField,kotlin.jvm.functions.Function1):V
 - f:cleanupUrl(java.lang.String):java.lang.String
 - f:createTagLabel(com.intellij.collaboration.ui.SingleValueModel):javax.swing.JComponent
+- f:createTagLabel(com.intellij.collaboration.ui.SingleValueModel,java.awt.Color):javax.swing.JComponent
+- f:createTagLabel(com.intellij.collaboration.ui.SingleValueModel,java.awt.Color,java.awt.Color):javax.swing.JComponent
+- f:createTagLabel(com.intellij.collaboration.ui.SingleValueModel,java.awt.Color,java.awt.Color,Z):javax.swing.JComponent
 - f:createTagLabel(java.lang.String):javax.swing.JComponent
+- f:createTagLabel(java.lang.String,java.awt.Color):javax.swing.JComponent
+- f:createTagLabel(java.lang.String,java.awt.Color,java.awt.Color):javax.swing.JComponent
+- f:createTagLabel(java.lang.String,java.awt.Color,java.awt.Color,Z):javax.swing.JComponent
+- bs:createTagLabel$default(com.intellij.collaboration.ui.CollaborationToolsUIUtil,com.intellij.collaboration.ui.SingleValueModel,java.awt.Color,java.awt.Color,Z,I,java.lang.Object):javax.swing.JComponent
+- bs:createTagLabel$default(com.intellij.collaboration.ui.CollaborationToolsUIUtil,java.lang.String,java.awt.Color,java.awt.Color,Z,I,java.lang.Object):javax.swing.JComponent
 - f:defaultButton(javax.swing.JButton):javax.swing.JButton
 - f:focusPanel(javax.swing.JComponent):V
 - f:getAnimatedLoadingIcon():javax.swing.Icon

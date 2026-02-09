@@ -90,6 +90,7 @@ interface GitLabProject {
     description: String?,
     reviewers: List<GitLabUserDTO> = emptyList(),
     assignees: List<GitLabUserDTO> = emptyList(),
+    labels: List<GitLabLabel> = emptyList(),
   ): GitLabMergeRequestDTO
 
   fun reloadData()
@@ -181,10 +182,12 @@ class GitLabLazyProject(
     description: String?,
     reviewers: List<GitLabUserDTO>,
     assignees: List<GitLabUserDTO>,
+    labels: List<GitLabLabel>,
   ): GitLabMergeRequestDTO {
     return cs.async(Dispatchers.IO) {
       val reviewerIds = reviewers.nullize()?.map { GitLabGidData(it.id).guessRestId() }
       val assigneeIds = assignees.nullize()?.map { GitLabGidData(it.id).guessRestId() }
+      val labelTitles = labels.nullize()?.map { it.title }
       val iid = api.rest.createMergeRequest(
         projectCoordinates,
         sourceBranch,
@@ -192,7 +195,8 @@ class GitLabLazyProject(
         title,
         description,
         reviewerIds,
-        assigneeIds
+        assigneeIds,
+        labelTitles
       ).body().iid
       val attempts = GitLabRegistry.getRequestPollingAttempts()
       repeat(attempts) {

@@ -7,7 +7,6 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.util.ui.InlineIconButton
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.JBUI.Panels.simplePanel
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.WrapLayout
 import com.intellij.util.ui.launchOnShow
@@ -108,7 +107,10 @@ object LabeledListComponentsFactory {
             }
             val lastItem = newList.last()
             // attach controls to the last items so they are moved to the next line together
-            val itemWithControls = simplePanel(itemComponentFactory(lastItem)).andTransparent().addToRight(editButton)
+            val itemWithControls = HorizontalListPanel().apply {
+              add(itemComponentFactory(lastItem))
+              add(editButton)
+            }
             add(itemWithControls)
           }
           revalidate()

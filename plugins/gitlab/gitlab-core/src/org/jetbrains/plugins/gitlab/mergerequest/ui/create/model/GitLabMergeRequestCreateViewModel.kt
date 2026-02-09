@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
@@ -52,6 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.plugins.gitlab.GitLabProjectsManager
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
+import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabLabel
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequestState
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProject
 import org.jetbrains.plugins.gitlab.util.GitLabBundle
@@ -82,12 +84,16 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   val reviewers: StateFlow<List<GitLabUserDTO>>
   val assignees: StateFlow<List<GitLabUserDTO>>
 
+  val projectLabels: StateFlow<IncrementallyComputedValue<List<GitLabLabel>>>
+  val labels: StateFlow<List<GitLabLabel>>
+
   val openReviewTabAction: suspend (mrIid: String) -> Unit
 
   fun updateBranchState(state: BranchState?)
 
   fun setReviewers(reviewers: List<GitLabUserDTO>)
   fun setAssignees(assignees: List<GitLabUserDTO>)
+  fun setLabels(labels: List<GitLabLabel>)
 
   fun createMergeRequest()
 }
@@ -203,6 +209,14 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   private val _assignees: MutableStateFlow<List<GitLabUserDTO>> = MutableStateFlow(listOf())
   override val assignees: StateFlow<List<GitLabUserDTO>> = _assignees.asStateFlow()
 
+  override val projectLabels: StateFlow<IncrementallyComputedValue<List<GitLabLabel>>> =
+    projectData.dataReloadSignal.withInitial(Unit).transformLatest {
+      projectData.getLabelsBatches().collectIncrementallyTo(this)
+    }.stateIn(cs, SharingStarted.Lazily, IncrementallyComputedValue.loading())
+
+  private val _labels: MutableStateFlow<List<GitLabLabel>> = MutableStateFlow(listOf())
+  override val labels: StateFlow<List<GitLabLabel>> = _labels.asStateFlow()
+
   private val _title: MutableStateFlow<String> = MutableStateFlow("")
   override val titleText: StateFlow<String> = _title.asStateFlow()
 
@@ -272,6 +286,10 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     _assignees.value = assignees
   }
 
+  override fun setLabels(labels: List<GitLabLabel>) {
+    _labels.value = labels
+  }
+
   override fun createMergeRequest() {
     taskLauncher.launch {
       GitLabStatistics.logMrCreationStarted(project)
@@ -285,7 +303,8 @@ internal class GitLabMergeRequestCreateViewModelImpl(
           title = titleText.value.ifBlank { gitRemoteBranch.nameForRemoteOperations },
           description = descriptionText.value.ifBlank { null },
           reviewers = reviewers.value,
-          assignees = assignees.value
+          assignees = assignees.value,
+          labels = labels.value
         )
         openReviewTabAction(mergeRequest.iid)
         onReviewCreated()

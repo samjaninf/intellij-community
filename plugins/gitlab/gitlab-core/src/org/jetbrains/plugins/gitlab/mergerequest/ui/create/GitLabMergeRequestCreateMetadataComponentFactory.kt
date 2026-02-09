@@ -2,6 +2,7 @@
 package org.jetbrains.plugins.gitlab.mergerequest.ui.create
 
 import com.intellij.collaboration.async.mapState
+import com.intellij.collaboration.ui.CollaborationToolsUIUtil
 import com.intellij.collaboration.ui.LabeledListComponentsFactory
 import com.intellij.collaboration.ui.codereview.avatar.Avatar
 import com.intellij.collaboration.ui.codereview.list.search.ShowDirection
@@ -12,6 +13,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
+import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabLabel
 import org.jetbrains.plugins.gitlab.mergerequest.ui.create.model.GitLabMergeRequestCreateViewModel
 import org.jetbrains.plugins.gitlab.mergerequest.util.GitLabMergeRequestChoosersUtil
 import org.jetbrains.plugins.gitlab.util.GitLabBundle
@@ -97,6 +99,35 @@ internal object GitLabMergeRequestCreateMetadataComponentFactory {
     }
     return newList
   }
+
+  fun createLabelsListPanelHandle(
+    vm: GitLabMergeRequestCreateViewModel,
+  ): Pair<JComponent, JComponent> {
+    val label = LabeledListComponentsFactory.createLabelPanel(
+      vm.labels.mapState { it.isEmpty() },
+      GitLabBundle.message("merge.request.create.no.labels"),
+      GitLabBundle.message("merge.request.create.labels")
+    )
+
+    val list = LabeledListComponentsFactory.createListPanel(
+      vm.labels,
+      { comp, _ -> chooseLabels(comp, vm) },
+      { LabelLabel(it) }
+    )
+
+    return label to list
+  }
+
+  private suspend fun chooseLabels(
+    parentComponent: JComponent,
+    vm: GitLabMergeRequestCreateViewModel,
+  ) {
+    val point = RelativePoint.getNorthEastOf(parentComponent)
+    val currentLabels = vm.labels.value
+    val potentialLabels = vm.projectLabels
+    val newLabels = GitLabMergeRequestChoosersUtil.chooseLabels(point, currentLabels, potentialLabels, ShowDirection.ABOVE)
+    vm.setLabels(newLabels)
+  }
 }
 
 @Suppress("FunctionName")
@@ -104,3 +135,12 @@ private fun UserLabel(user: GitLabUserDTO, avatarIconsProvider: IconsProvider<Gi
   JLabel(user.name, avatarIconsProvider.getIcon(user, Avatar.Sizes.BASE), SwingConstants.LEFT).apply {
     border = JBUI.Borders.empty(0, UIUtil.DEFAULT_HGAP / 2)
   }
+
+@Suppress("FunctionName")
+private fun LabelLabel(label: GitLabLabel): JComponent {
+  val background = CollaborationToolsUIUtil.getLabelBackground(label.colorHex)
+  val foreground = CollaborationToolsUIUtil.getLabelForeground(background)
+  return CollaborationToolsUIUtil.createTagLabel(label.title, foreground, background, compact = false).apply {
+    border = JBUI.Borders.empty(0, UIUtil.DEFAULT_HGAP / 2)
+  }
+}

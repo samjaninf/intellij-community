@@ -44,6 +44,19 @@ internal object GitLabMergeRequestChoosersUtil {
       PopupConfig.DEFAULT.copy(showDirection = showDirection)
     )
 
+  suspend fun chooseLabels(
+    point: RelativePoint,
+    chosenLabels: List<GitLabLabel>,
+    potentialLabels: StateFlow<IncrementallyComputedValue<List<GitLabLabel>>>,
+    showDirection: ShowDirection = ShowDirection.BELOW,
+  ): List<GitLabLabel> = ChooserPopupUtil.showMultipleChooserPopupWithIncrementalLoading(
+    point,
+    chosenLabels,
+    potentialLabels,
+    presenter = getLabelPresenter(),
+    PopupConfig.DEFAULT.copy(showDirection = showDirection)
+  )
+
   fun getUserPresenter(avatarIconsProvider: IconsProvider<GitLabUserDTO>): (GitLabUserDTO) -> PopupItemPresentation {
     return {
       PopupItemPresentation.Simple(

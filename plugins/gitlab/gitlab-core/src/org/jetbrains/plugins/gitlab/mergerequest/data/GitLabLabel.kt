@@ -1,8 +1,10 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.plugins.gitlab.mergerequest.data
 
+import com.intellij.openapi.util.NlsSafe
+
 class GitLabLabel(
-  val title: String,
+  val title: @NlsSafe String,
   val colorHex: String,
 ) {
   override fun equals(other: Any?): Boolean {
