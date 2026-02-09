@@ -31,8 +31,10 @@ class PyTypeInlayHintsProvider : InlayHintsProvider {
   override fun createCollector(file: PsiFile, editor: Editor): InlayHintsCollector? = Collector()
 
   private class Collector : SharedBypassCollector {
-    val hintFormat = HintFormat.default
+    val returnTypeHintFormat = HintFormat.default
       .withFontSize(HintFontSize.ABitSmallerThanInEditor)
+
+    val revealTypeHintFormat = returnTypeHintFormat
       .withHorizontalMargin(HintMarginPadding.MarginAndSmallerPadding)
 
     override fun collectFromElement(element: PsiElement, sink: InlayTreeSink) {
@@ -61,7 +63,7 @@ class PyTypeInlayHintsProvider : InlayHintsProvider {
 
         val document = element.containingFile.fileDocument
         val lineNumber = document.getLineNumber(element.textRange.endOffset)
-        sink.addPresentation(position = EndOfLinePosition(lineNumber), hintFormat = hintFormat) {
+        sink.addPresentation(position = EndOfLinePosition(lineNumber), hintFormat = revealTypeHintFormat) {
           // use geTypeName here, because reveal_type should show the same as "Type Info" action
           text(PythonDocumentationProvider.getTypeName(type, typeEvalContext))
         }
@@ -74,7 +76,7 @@ class PyTypeInlayHintsProvider : InlayHintsProvider {
       if (element == function.nameIdentifier && function.annotationValue == null && function.typeCommentAnnotation == null) {
         val type = typeEvalContext.getReturnType(function)
         val typeHint = PythonDocumentationProvider.getTypeHint(type, typeEvalContext)
-        sink.addPresentation(position = InlineInlayPosition(function.parameterList.textRange.endOffset, true), hintFormat = hintFormat) {
+        sink.addPresentation(position = InlineInlayPosition(function.parameterList.textRange.endOffset, true), hintFormat = returnTypeHintFormat) {
           text("-> ")
           if (typeHint.length >= MAX_SEGMENT_TEXT_LENGTH) {
             // Platform doesn't allow one text node to be more than 30 characters, but that might not be enough for some types,
