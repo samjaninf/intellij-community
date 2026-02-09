@@ -42,6 +42,7 @@ jvm_library(
     "//java/codeserver/core",
     "//platform/workspace/storage",
     "//java/java-syntax:syntax",
+    "//xml/xml-psi-api:psi",
   ]
 )
 ### auto-generated section `build intellij.java.impl.inspections` end
