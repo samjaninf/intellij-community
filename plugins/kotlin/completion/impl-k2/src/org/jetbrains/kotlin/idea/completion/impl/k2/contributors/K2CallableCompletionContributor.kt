@@ -210,6 +210,7 @@ internal abstract class K2AbstractCallableCompletionContributor<P : KotlinNameRe
     ): Sequence<LookupElement> =
         filterIfInsideAnnotationEntryArgument(context.positionContext.position, context.weighingContext.expectedType)
             .mapNotNull(shadowIfNecessary(context, shadowedCallablesFilter))
+            .filter { filterVariadicCallables(it.signature) }
             .filterNot(isUninitializedCallable(context))
             .flatMap { callableWithMetadata ->
                 createCallableLookupElements(
@@ -751,6 +752,18 @@ internal abstract class K2AbstractCallableCompletionContributor<P : KotlinNameRe
             else if (newImportStrategy == null) callableWithMetadata
             else callableWithMetadata.copy(options = insertionOptions.copy(importingStrategy = newImportStrategy))
         }
+    }
+
+    /**
+     * For variadic callables, we want to only allow the representative callable with the lowest number of arguments.
+     * This completion item will then be rendered with a variadic presentation for its parameters.
+     */
+    context(_: KaSession)
+    private fun filterVariadicCallables(signature: KaCallableSignature<*>): Boolean {
+        val variadicCallableId = signature.getVariadicCallable() ?: return true
+        val functionSymbol = signature.symbol as? KaNamedFunctionSymbol ?: return true
+
+        return variadicCallableId.lowestNumberOfArguments == functionSymbol.valueParameters.size
     }
 
     context(_: KaSession)

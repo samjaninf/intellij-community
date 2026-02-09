@@ -41,6 +41,8 @@ import org.jetbrains.kotlin.idea.completion.impl.k2.weighers.Weighers.applyWeigh
 import org.jetbrains.kotlin.idea.completion.impl.k2.weighers.WeighingContext
 import org.jetbrains.kotlin.idea.debugger.evaluate.util.KotlinK2CodeFragmentUtils
 import org.jetbrains.kotlin.idea.util.positionContext.KotlinTypeNameReferencePositionContext
+import org.jetbrains.kotlin.name.CallableId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtCodeFragment
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
@@ -55,7 +57,7 @@ internal fun createCallableLookupElements(
     scopeKind: KaScopeKind? = null,
     presentableText: @NlsSafe String? = null, // TODO decompose
     withTrailingLambda: Boolean = false, // TODO find a better solution
-    aliasName: Name? = null
+    aliasName: Name? = null,
 ): Sequence<LookupElementBuilder> {
     val callableSymbol = signature.symbol
     val namedSymbol = when (callableSymbol) {
@@ -189,3 +191,40 @@ internal fun KtExpression.evaluateRuntimeKaType(): KaType? {
 context(_: KaSession)
 internal fun KaType.replaceTypeParametersWithStarProjections(): KaType? =
     abbreviationOrSelf.symbol?.let { buildClassTypeWithStarProjections(it) }
+
+
+/**
+ * Represents a [callableId] that is variadic in its parameters.
+ * For completion, we want to group these as a single completion item to not clutter up the list
+ * with often 25+ nearly identical results.
+ * The [renderedParameters] is the string representation of the parameter list that will be used in rendering
+ * rather than the rendered parameters of the callable.
+ * We use the [lowestNumberOfArguments] as a performance measure to exactly show the completion item with this number of arguments,
+ * all other callables with the same [callableId] but different number of arguments will be filtered out.
+ */
+internal class VariadicCallable(
+    val callableId: CallableId,
+    val renderedParameters: String,
+    val lowestNumberOfArguments: Int,
+)
+
+
+/**
+ * For performance reason, we statically register the variadic callables we want to group
+ */
+private val variadicCallableIds: Map<CallableId, VariadicCallable> = listOf(
+    VariadicCallable(
+        callableId = CallableId(FqName.topLevel(Name.identifier("kotlin")), Name.identifier("context")),
+        renderedParameters = "(a: A, ..., block: context(A, ...) () -> R)",
+        lowestNumberOfArguments = 2,
+    )
+).associateBy { it.callableId }
+
+/**
+ * Returns a [VariadicCallable] in case the signature represents a registered variadic callable
+ * found within [variadicCallableIds], otherwise returns `null`.
+ */
+internal fun KaCallableSignature<*>.getVariadicCallable(): VariadicCallable? {
+    val callableId = callableId ?: return null
+    return variadicCallableIds[callableId]
+}
