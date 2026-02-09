@@ -145,7 +145,7 @@ public final class JavaPatternCompletionUtil {
       indexOfPattern = components.length;
     }
     PsiRecordComponent[] recordComponents = psiRecord.getRecordComponents();
-    if (recordComponents.length < indexOfPattern) return null;
+    if (recordComponents.length <= indexOfPattern) return null;
     return recordComponents[indexOfPattern];
   }
 
