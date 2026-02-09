@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.xdebugger.XDebuggerManager
+import com.intellij.xdebugger.impl.XDebuggerUtilImpl.getDocumentBreakpoints
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl
 import org.jetbrains.annotations.ApiStatus
 
@@ -16,7 +17,7 @@ class RemoveAllBreakpointsInFileAction : DumbAwareAction() {
     if (project != null && editor != null) {
       val breakpointManager = XDebuggerManager.getInstance(project).getBreakpointManager() as XBreakpointManagerImpl
       val lineBreakpointManager = breakpointManager.lineBreakpointManager
-      lineBreakpointManager.getDocumentBreakpoints(editor.getDocument()).forEach {
+      getDocumentBreakpoints(editor.getDocument(), lineBreakpointManager).forEach {
         breakpointManager.removeBreakpoint(it)
       }
     }

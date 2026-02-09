@@ -689,4 +689,9 @@ public final class DebuggerUIUtil {
     }
     return editor;
   }
+
+  @ApiStatus.Internal
+  public static boolean isEmptyExpression(@Nullable XExpression expression) {
+    return expression == null || StringUtil.isEmptyOrSpaces(expression.getExpression());
+  }
 }

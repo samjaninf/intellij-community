@@ -61,7 +61,7 @@ import com.intellij.xdebugger.evaluation.EvaluationMode;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProviderBase;
 import com.intellij.xdebugger.impl.XDebuggerHistoryManager;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
+
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -238,7 +238,7 @@ public abstract class XDebuggerEditorBase implements Expandable {
       mySourcePosition = sourcePosition;
       XExpression expression = getExpression();
       // for empty expression we reset the language from the source position
-      if (XDebuggerUtilImpl.isEmptyExpression(expression) && expression.getLanguage() != null) {
+      if (DebuggerUIUtil.isEmptyExpression(expression) && expression.getLanguage() != null) {
         expression = XExpressionImpl.changeLanguage(expression, null);
       }
       setExpression(expression);

@@ -306,7 +306,7 @@ public class XLightBreakpointPropertiesPanel implements XSuspendPolicyPanel.Dele
 
     if (myConditionComboBox != null) {
       XExpression expression = myConditionComboBox.getExpression();
-      XExpression condition = !XDebuggerUtilImpl.isEmptyExpression(expression) ? expression : null;
+      XExpression condition = !DebuggerUIUtil.isEmptyExpression(expression) ? expression : null;
       myBreakpoint.setConditionEnabled(condition == null || myConditionEnabledCheckbox.isSelected());
       myBreakpoint.setConditionExpression(condition);
       myConditionComboBox.saveTextInHistory();

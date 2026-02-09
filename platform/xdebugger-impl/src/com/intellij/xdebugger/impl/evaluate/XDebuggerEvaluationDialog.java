@@ -19,6 +19,7 @@ import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.Conditions;
 import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy;
+import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.components.BorderLayoutPanel;
 import com.intellij.xdebugger.XDebugSession;
@@ -29,16 +30,15 @@ import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.evaluation.EvaluationMode;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
 import com.intellij.xdebugger.evaluation.XDebuggerEvaluator;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.actions.XDebuggerActions;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
-import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter;
-import com.intellij.xdebugger.settings.XDebuggerSettingsManager;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.XDebugSessionTab;
 import com.intellij.xdebugger.impl.ui.XDebuggerEditorBase;
 import com.intellij.xdebugger.impl.ui.tree.XDebuggerTree;
 import com.intellij.xdebugger.impl.ui.tree.XDebuggerTreePanel;
 import com.intellij.xdebugger.impl.ui.tree.nodes.EvaluatingExpressionRootNode;
+import com.intellij.xdebugger.settings.XDebuggerSettingsManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
@@ -269,7 +269,7 @@ public class XDebuggerEvaluationDialog extends DialogWrapper {
   private void addToWatches() {
     if (myMode == EvaluationMode.EXPRESSION) {
       XExpression expression = getInputEditor().getExpression();
-      if (!XDebuggerUtilImpl.isEmptyExpression(expression)) {
+      if (!DebuggerUIUtil.isEmptyExpression(expression)) {
         XDebugSessionTab tab = (XDebugSessionTab)mySession.getSessionTab();
         if (tab != null) {
           tab.getWatchesView().addWatchExpression(expression, -1, true);

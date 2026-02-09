@@ -1,13 +1,13 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl.breakpoints
 
+import com.intellij.CommonBundle
 import com.intellij.codeInsight.folding.impl.FoldingUtil
 import com.intellij.codeInsight.folding.impl.actions.ExpandRegionAction
-import com.intellij.configurationStore.ComponentSerializationUtil
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.readAction
-import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.fileLogger
@@ -16,6 +16,8 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DoNotAskOption
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Pair
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.component1
@@ -24,9 +26,12 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy
+import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointInstallationInfo
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointProxy
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointTypeProxy
+import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter
 import com.intellij.util.SmartList
+import com.intellij.xdebugger.XDebuggerBundle
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.XSourcePosition
@@ -38,8 +43,8 @@ import com.intellij.xdebugger.breakpoints.XLineBreakpointType
 import com.intellij.xdebugger.impl.XDebuggerUtilImpl
 import com.intellij.xdebugger.impl.XSourcePositionImpl
 import com.intellij.xdebugger.impl.breakpoints.ui.BreakpointItem
-import com.intellij.xdebugger.impl.proxy.MonolithBreakpointProxy
-import com.intellij.xdebugger.impl.proxy.MonolithLineBreakpointProxy
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil
+import com.intellij.xdebugger.settings.XDebuggerSettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
@@ -105,8 +110,10 @@ object XBreakpointUtil {
   fun findSelectedBreakpoint(project: Project, editor: Editor): Pair<GutterIconRenderer?, XBreakpoint<*>?> {
     val pair = findSelectedBreakpointProxy(project, editor)
     val (renderer, breakpoint) = pair
-    if (breakpoint is MonolithBreakpointProxy) {
-      return Pair.create(renderer, breakpoint.breakpoint)
+    if (breakpoint == null) return Pair.create(null, null)
+    val monolithBreakpoint = XDebuggerEntityConverter.getBreakpoint(breakpoint.id)
+    if (monolithBreakpoint != null) {
+      return Pair.create(renderer, monolithBreakpoint)
     }
     return Pair.create(null, null)
   }
@@ -206,7 +213,9 @@ object XBreakpointUtil {
   ): Promise<XLineBreakpoint<*>?> {
     return toggleLineBreakpointProxy(project, position, selectVariantByPositionColumn, editor, temporary, moveCaret, canRemove).asPromise()
       .then { proxy ->
-        (proxy as? MonolithLineBreakpointProxy)?.breakpoint as? XLineBreakpoint<*>
+        if (proxy == null) return@then null
+        val monolithBreakpoint = XDebuggerEntityConverter.getBreakpoint(proxy.id)
+        monolithBreakpoint as? XLineBreakpoint<*>
       }
   }
 
@@ -260,33 +269,6 @@ object XBreakpointUtil {
     }
 
     return future
-  }
-
-  @ApiStatus.Internal
-  @JvmStatic
-  fun <B : XBreakpoint<P>, P : XBreakpointProperties<*>, T : XBreakpointType<B, P>> createBreakpoint(
-    type: T,
-    state: BreakpointState,
-    breakpointManager: XBreakpointManagerImpl,
-  ): XBreakpointBase<B, P, *> {
-    return if (type is XLineBreakpointType<*> && state is LineBreakpointState) {
-      @Suppress("UNCHECKED_CAST")
-      XLineBreakpointImpl<P>(type as XLineBreakpointType<P>, breakpointManager, createProperties(type, state), state) as XBreakpointBase<B, P, *>
-    }
-    else {
-      XBreakpointBase<B, P, BreakpointState>(type, breakpointManager, createProperties(type, state), state)
-    }
-  }
-
-  private fun <P : XBreakpointProperties<*>> createProperties(
-    type: XBreakpointType<*, P>,
-    state: BreakpointState,
-  ): P? {
-    val properties = type.createProperties()
-    if (properties != null) {
-      ComponentSerializationUtil.loadComponentState(properties as PersistentStateComponent<*>, state.propertiesElement)
-    }
-    return properties
   }
 
   @ApiStatus.Internal
@@ -384,6 +366,109 @@ object XBreakpointUtil {
       typeWinner.sortByDescending { computePriority(it) }
     }
     return Pair.create(typeWinner, lineWinner)
+  }
+
+  @ApiStatus.Internal
+  @JvmStatic
+  fun findBreakpointsAtLine(
+    project: Project,
+    breakpointInfo: XLineBreakpointInstallationInfo
+  ): List<XLineBreakpointProxy> {
+    val breakpointManager = XDebugManagerProxy.getInstance().getBreakpointManagerProxy(project)
+    val file = breakpointInfo.position.file
+    val line = breakpointInfo.position.line
+    return breakpointInfo.types
+      .flatMap { t -> breakpointManager.findBreakpointsAtLine(t, file, line) }
+      .toList()
+  }
+
+  @ApiStatus.Internal
+  @JvmStatic
+  fun <T : XBreakpointProxy> removeBreakpointIfPossible(
+    project: Project,
+    info: XLineBreakpointInstallationInfo,
+    vararg breakpoints: T
+  ) {
+    if (info.canRemoveBreakpoint()) {
+      removeBreakpointsWithConfirmation(project, *breakpoints)
+    }
+  }
+
+  @ApiStatus.Internal
+  @JvmStatic
+  fun removeBreakpointWithConfirmation(breakpoint: XBreakpointProxy): Boolean {
+    return removeBreakpointWithConfirmation(breakpoint.project, breakpoint)
+  }
+
+  /**
+   * Remove breakpoint. Show confirmation dialog if breakpoint has non-empty condition or log expression.
+   * Returns whether breakpoint was really deleted.
+   */
+  @ApiStatus.Internal
+  @JvmStatic
+  fun removeBreakpointWithConfirmation(project: Project, breakpoint: XBreakpointProxy): Boolean {
+    if ((!DebuggerUIUtil.isEmptyExpression(breakpoint.getConditionExpression()) || !DebuggerUIUtil.isEmptyExpression(breakpoint.getLogExpressionObject())) &&
+        !ApplicationManager.getApplication().isHeadlessEnvironment &&
+        !ApplicationManager.getApplication().isUnitTestMode &&
+        XDebuggerSettingsManager.getInstance().generalSettings.isConfirmBreakpointRemoval) {
+      @Suppress("HardCodedStringLiteral")
+      val message = buildString {
+        append("<html>")
+        append(XDebuggerBundle.message("message.confirm.breakpoint.removal.message"))
+        if (!DebuggerUIUtil.isEmptyExpression(breakpoint.getConditionExpression())) {
+          append("<br>")
+          append(XDebuggerBundle.message("message.confirm.breakpoint.removal.message.condition"))
+          append("<br><pre>")
+          append(StringUtil.escapeXmlEntities(breakpoint.getConditionExpression()!!.expression))
+          append("</pre>")
+        }
+        if (!DebuggerUIUtil.isEmptyExpression(breakpoint.getLogExpressionObject())) {
+          append("<br>")
+          append(XDebuggerBundle.message("message.confirm.breakpoint.removal.message.log"))
+          append("<br><pre>")
+          append(StringUtil.escapeXmlEntities(breakpoint.getLogExpressionObject()!!.expression))
+          append("</pre>")
+        }
+      }
+      if (Messages.showOkCancelDialog(
+          message,
+          XDebuggerBundle.message("message.confirm.breakpoint.removal.title"),
+          CommonBundle.message("button.remove"),
+          Messages.getCancelButton(),
+          Messages.getQuestionIcon(),
+          object : DoNotAskOption.Adapter() {
+            override fun rememberChoice(isSelected: Boolean, exitCode: Int) {
+              if (isSelected) {
+                XDebuggerSettingsManager.getInstance().generalSettings.isConfirmBreakpointRemoval = false
+              }
+            }
+          }
+        ) != Messages.OK) {
+        return false
+      }
+    }
+    val breakpointManager = XDebugManagerProxy.getInstance().getBreakpointManagerProxy(project)
+    breakpointManager.rememberRemovedBreakpoint(breakpoint)
+    breakpointManager.removeBreakpoint(breakpoint)
+    return true
+  }
+
+  @ApiStatus.Internal
+  @JvmStatic
+  fun removeBreakpointsWithConfirmation(breakpoints: List<XBreakpointProxy>) {
+    if (breakpoints.isEmpty()) return
+    val project = breakpoints[0].project
+    // FIXME[inline-bp]: support multiple breakpoints restore
+    // FIXME[inline-bp]: Reconsider this, maybe we should have single confirmation for all breakpoints.
+    removeBreakpointsWithConfirmation(project, *breakpoints.toTypedArray())
+  }
+
+  @ApiStatus.Internal
+  @JvmStatic
+  fun <T : XBreakpointProxy> removeBreakpointsWithConfirmation(project: Project, vararg breakpoints: T) {
+    for (b in breakpoints) {
+      removeBreakpointWithConfirmation(project, b)
+    }
   }
 }
 

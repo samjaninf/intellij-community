@@ -64,8 +64,8 @@ import com.intellij.util.ui.update.Update
 import com.intellij.xdebugger.SplitDebuggerMode
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.breakpoints.XBreakpoint
+import com.intellij.xdebugger.breakpoints.XLineBreakpoint
 import com.intellij.xdebugger.impl.actions.ToggleLineBreakpointAction
-import com.intellij.xdebugger.impl.proxy.MonolithLineBreakpointProxy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import org.jetbrains.annotations.ApiStatus
@@ -156,7 +156,7 @@ class XLineBreakpointManager(
   }
 
   @Deprecated("Use {@link #registerBreakpoint(XLineBreakpointProxy, boolean)} instead")
-  fun registerBreakpoint(breakpoint: XLineBreakpointImpl<*>, initUI: Boolean) {
+  fun registerBreakpoint(breakpoint: XLineBreakpoint<*>, initUI: Boolean) {
     val proxy = XDebuggerEntityConverter.asProxy(breakpoint) as? XLineBreakpointProxy
     if (proxy != null) {
       registerBreakpoint(proxy, initUI)
@@ -181,10 +181,6 @@ class XLineBreakpointManager(
   override fun getDocumentBreakpointProxies(document: Document): Collection<XLineBreakpointProxy> {
     val file = FileDocumentManager.getInstance().getFile(document) ?: return emptyList()
     return myBreakpoints[file.url]
-  }
-
-  fun getDocumentBreakpoints(document: Document): Collection<XLineBreakpointImpl<*>> {
-    return getDocumentBreakpointProxies(document).filterIsInstance<MonolithLineBreakpointProxy>().map { it.breakpoint }
   }
 
   @TestOnly
@@ -275,7 +271,7 @@ class XLineBreakpointManager(
   }
 
   @Deprecated("Use queueBreakpointUpdateCallback(XLightLineBreakpointProxy, Runnable)")
-  fun queueBreakpointUpdateCallback(breakpoint: XLineBreakpointImpl<*>?, callback: Runnable) {
+  fun queueBreakpointUpdateCallback(breakpoint: XLineBreakpoint<*>?, callback: Runnable) {
     breakpointUpdateQueue.queue(object : Update(breakpoint) {
       override fun run() {
         callback.run()

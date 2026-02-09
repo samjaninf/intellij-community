@@ -271,7 +271,7 @@ class XBreakpointVisualRepresentation(
       override fun remove() {
         // TODO IJPL-185322 implement DnD remove for light breakpoints?
         if (myBreakpoint is XLineBreakpointProxy) {
-          XDebuggerUtilImpl.removeBreakpointWithConfirmation(myBreakpoint)
+          XBreakpointUtil.removeBreakpointWithConfirmation(myBreakpoint)
         }
       }
 

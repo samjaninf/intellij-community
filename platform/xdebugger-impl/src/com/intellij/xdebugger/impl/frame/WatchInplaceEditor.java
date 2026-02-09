@@ -5,10 +5,10 @@ import com.intellij.platform.debugger.impl.shared.XDebuggerWatchesManager;
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy;
 import com.intellij.util.ui.tree.TreeUtil;
 import com.intellij.xdebugger.XExpression;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.inline.InlineWatch;
 import com.intellij.xdebugger.impl.inline.InlineWatchNodeImpl;
 import com.intellij.xdebugger.impl.inline.XInlineWatchesView;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.tree.XDebuggerTreeInplaceEditor;
 import com.intellij.xdebugger.impl.ui.tree.nodes.WatchNode;
 import com.intellij.xdebugger.impl.ui.tree.nodes.WatchesRootNode;
@@ -59,7 +59,7 @@ public class WatchInplaceEditor extends XDebuggerTreeInplaceEditor {
       watchesManager = XDebugManagerProxy.getInstance().getWatchesManager(getProject());
       watchesManager.inlineWatchesRemoved(Collections.singletonList(inlineWatch), (XInlineWatchesView)myWatchesView);
     }
-    if (!XDebuggerUtilImpl.isEmptyExpression(expression) && index != -1) {
+    if (!DebuggerUIUtil.isEmptyExpression(expression) && index != -1) {
       if (myNode instanceof InlineWatchNodeImpl) {
         watchesManager.addInlineWatchExpression(expression, index, ((InlineWatchNodeImpl)myNode).getPosition(), false);
       } else  {

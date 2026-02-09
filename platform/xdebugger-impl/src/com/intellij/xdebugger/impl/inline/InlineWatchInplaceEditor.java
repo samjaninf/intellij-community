@@ -9,7 +9,7 @@ import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy;
 import com.intellij.util.ui.UIUtil;
 import com.intellij.xdebugger.XExpression;
 import com.intellij.xdebugger.XSourcePosition;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.InplaceEditor;
 import com.intellij.xdebugger.impl.ui.XDebuggerExpressionComboBox;
 import org.jetbrains.annotations.ApiStatus;
@@ -80,7 +80,7 @@ public class InlineWatchInplaceEditor extends InplaceEditor {
     XExpression expression = getExpression();
     myInplaceEditor.saveTextInHistory();
     super.doOKAction();
-    if (!XDebuggerUtilImpl.isEmptyExpression(expression)) {
+    if (!DebuggerUIUtil.isEmptyExpression(expression)) {
       XDebuggerWatchesManager watchesManager = XDebugManagerProxy.getInstance().getWatchesManager(getProject());
       watchesManager.addInlineWatchExpression(expression, -1, myPresentationPosition, false);
     }

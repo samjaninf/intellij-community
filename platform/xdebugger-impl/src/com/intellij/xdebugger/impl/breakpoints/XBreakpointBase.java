@@ -35,7 +35,7 @@ import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.breakpoints.XBreakpointProperties;
 import com.intellij.xdebugger.breakpoints.XBreakpointType;
 import com.intellij.xdebugger.impl.XDebugSessionImpl;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xml.CommonXmlStrings;
 import com.intellij.xml.util.XmlStringUtil;
 import kotlin.Unit;
@@ -545,7 +545,7 @@ public class XBreakpointBase<Self extends XBreakpoint<P>, P extends XBreakpointP
     @NotNull Icon icon,
     @NotNull XBreakpointProxy breakpoint
   ) {
-    if (XDebuggerUtilImpl.isEmptyExpression(breakpoint.getConditionExpression())) {
+    if (DebuggerUIUtil.isEmptyExpression(breakpoint.getConditionExpression())) {
       return icon;
     }
 

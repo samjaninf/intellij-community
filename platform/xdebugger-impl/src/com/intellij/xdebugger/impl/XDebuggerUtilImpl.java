@@ -1,7 +1,6 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl;
 
-import com.intellij.CommonBundle;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.icons.AllIcons;
@@ -23,8 +22,6 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.DoNotAskOption;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.popup.PopupStep;
 import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
 import com.intellij.openapi.util.Ref;
@@ -33,11 +30,10 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.platform.debugger.impl.shared.DebuggerAsyncActionUtilsKt;
 import com.intellij.platform.debugger.impl.shared.XDebuggerUtilImplShared;
-import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointManagerProxy;
-import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy;
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy;
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointHighlighterRange;
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointInstallationInfo;
+import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointManagerProxy;
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointProxy;
 import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointTypeProxy;
 import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter;
@@ -81,6 +77,7 @@ import com.intellij.xdebugger.frame.XValueContainer;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointUtil;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
+import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointImpl;
 import com.intellij.xdebugger.impl.breakpoints.ui.grouping.XBreakpointFileGroupingRule;
 import com.intellij.xdebugger.impl.evaluate.ValueLookupManagerController;
 import com.intellij.xdebugger.impl.frame.XStackFrameContainerEx;
@@ -105,6 +102,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -344,9 +342,6 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
       temporary, editor, canRemove, false, null);
     return asPromise(future).then(b -> {
       if (b == null) return null;
-      if (b instanceof MonolithLineBreakpointProxy monolith) {
-        return monolith.getBreakpoint();
-      }
       XBreakpoint<?> monolithBreakpoint = XDebuggerEntityConverter.getBreakpoint(b.getId());
       if (monolithBreakpoint instanceof XLineBreakpoint<?> lineBreakpoint) {
         return lineBreakpoint;
@@ -396,7 +391,7 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
     for (XLineBreakpointTypeProxy type : breakpointInfo.getTypes()) {
       XLineBreakpointProxy breakpoint = breakpointManager.findBreakpointAtLine(type, file, line);
       if (breakpoint != null) {
-        removeBreakpointIfPossible(project, breakpointInfo, breakpoint);
+        XBreakpointUtil.removeBreakpointIfPossible(project, breakpointInfo, breakpoint);
         return CompletableFuture.completedFuture(null);
       }
     }
@@ -529,7 +524,7 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
         return Unit.INSTANCE;
       }
 
-      List<XLineBreakpointProxy> breakpoints = findBreakpointsAtLine(project, breakpointInfo);
+      List<XLineBreakpointProxy> breakpoints = XBreakpointUtil.findBreakpointsAtLine(project, breakpointInfo);
 
       FrontendXLineBreakpointVariant variant;
       if (selectVariantByPositionColumn) {
@@ -540,7 +535,7 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
                                                                  : ((FrontendXLineBreakpointVariant)o).getHighlightRange());
 
         if (breakpointOrVariant instanceof XLineBreakpointProxy existingBreakpoint) {
-          removeBreakpointIfPossible(project, breakpointInfo, existingBreakpoint);
+          XBreakpointUtil.removeBreakpointIfPossible(project, breakpointInfo, existingBreakpoint);
           variantChoice.breakpointRemoved();
           return Unit.INSTANCE;
         }
@@ -549,7 +544,7 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
       }
       else {
         if (!breakpoints.isEmpty()) {
-          removeBreakpointIfPossible(project, breakpointInfo, breakpoints.toArray(XLineBreakpointProxy[]::new));
+          XBreakpointUtil.removeBreakpointIfPossible(project, breakpointInfo, breakpoints.toArray(XLineBreakpointProxy[]::new));
           variantChoice.breakpointRemoved();
           return Unit.INSTANCE;
         }
@@ -567,17 +562,6 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
       return available.getRange();
     }
     return null;
-  }
-
-  @ApiStatus.Internal
-  public static @NotNull List<@NotNull XLineBreakpointProxy> findBreakpointsAtLine(
-    @NotNull Project project,
-    @NotNull XLineBreakpointInstallationInfo breakpointInfo
-  ) {
-    var breakpointManager = XDebugManagerProxy.getInstance().getBreakpointManagerProxy(project);
-    final VirtualFile file = breakpointInfo.getPosition().getFile();
-    final int line = breakpointInfo.getPosition().getLine();
-    return breakpointInfo.getTypes().stream().flatMap(t -> breakpointManager.findBreakpointsAtLine(t, file, line).stream()).toList();
   }
 
   public static <P extends XBreakpointProperties> XLineBreakpoint<P> addLineBreakpoint(XBreakpointManager breakpointManager,
@@ -610,30 +594,12 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
     return breakpointManager.addLineBreakpoint(type, file.getUrl(), line, properties, temporary);
   }
 
-  public static boolean removeBreakpointWithConfirmation(final XBreakpointProxy breakpoint) {
-    return removeBreakpointWithConfirmation(breakpoint.getProject(), breakpoint);
-  }
-
   @ApiStatus.Internal
-  public static <T extends XBreakpointProxy> void removeBreakpointIfPossible(Project project, XLineBreakpointInstallationInfo info, T... breakpoints) {
-    if (info.canRemoveBreakpoint()) {
-      removeBreakpointsWithConfirmation(project, breakpoints);
-    }
-  }
-
-  static <T extends XBreakpointProxy> void removeBreakpointsWithConfirmation(final Project project, T... breakpoints) {
-    // FIXME[inline-bp]: support multiple breakpoints restore
-    // FIXME[inline-bp]: Reconsider this, maybe we should have single confirmation for all breakpoints.
-    for (XBreakpointProxy b : breakpoints) {
-      removeBreakpointWithConfirmation(project, b);
-    }
-  }
-
-  public static void removeBreakpointsWithConfirmation(final List<XBreakpointProxy> breakpoints) {
-    if (breakpoints.isEmpty()) return;
-    var project = breakpoints.get(0).getProject();
-    LOG.assertTrue(ContainerUtil.and(breakpoints, b -> b.getProject().equals(project)));
-    removeBreakpointsWithConfirmation(project, breakpoints.toArray(XBreakpointProxy[]::new));
+  public static Collection<? extends XLineBreakpointImpl<?>> getDocumentBreakpoints(Document document, XLineBreakpointManagerProxy managerProxy) {
+    return StreamEx.of(managerProxy.getDocumentBreakpointProxies(document))
+      .select(MonolithLineBreakpointProxy.class)
+      .map(MonolithLineBreakpointProxy::getBreakpoint)
+      .toList();
   }
 
   /**
@@ -669,54 +635,6 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
     if (XDebuggerManager.getInstance(project) instanceof XDebuggerManagerImpl debuggerManagerImpl) {
       debuggerManagerImpl.reshowInlayToolbar(editor);
     }
-  }
-
-  /**
-   * Remove breakpoint. Show confirmation dialog if breakpoint has non-empty condition or log expression.
-   * Returns whether breakpoint was really deleted.
-   */
-  public static boolean removeBreakpointWithConfirmation(final Project project, final XBreakpointProxy breakpoint) {
-    if ((!isEmptyExpression(breakpoint.getConditionExpression()) || !isEmptyExpression(breakpoint.getLogExpressionObject())) &&
-        !ApplicationManager.getApplication().isHeadlessEnvironment() &&
-        !ApplicationManager.getApplication().isUnitTestMode() &&
-        XDebuggerSettingManagerImpl.getInstanceImpl().getGeneralSettings().isConfirmBreakpointRemoval()) {
-      StringBuilder message = new StringBuilder("<html>").append(XDebuggerBundle.message("message.confirm.breakpoint.removal.message"));
-      if (!isEmptyExpression(breakpoint.getConditionExpression())) {
-        message.append("<br>")
-          .append(XDebuggerBundle.message("message.confirm.breakpoint.removal.message.condition"))
-          .append("<br><pre>")
-          .append(StringUtil.escapeXmlEntities(breakpoint.getConditionExpression().getExpression()))
-          .append("</pre>");
-      }
-      if (!isEmptyExpression(breakpoint.getLogExpressionObject())) {
-        message.append("<br>")
-          .append(XDebuggerBundle.message("message.confirm.breakpoint.removal.message.log"))
-          .append("<br><pre>")
-          .append(StringUtil.escapeXmlEntities(breakpoint.getLogExpressionObject().getExpression()))
-          .append("</pre>");
-      }
-      //noinspection HardCodedStringLiteral
-      if (Messages.showOkCancelDialog(message.toString(),
-                                      XDebuggerBundle.message("message.confirm.breakpoint.removal.title"),
-                                      CommonBundle.message("button.remove"),
-                                      Messages.getCancelButton(),
-                                      Messages.getQuestionIcon(),
-                                      new DoNotAskOption.Adapter() {
-                                        @Override
-                                        public void rememberChoice(boolean isSelected, int exitCode) {
-                                          if (isSelected) {
-                                            XDebuggerSettingManagerImpl.getInstanceImpl().getGeneralSettings()
-                                                                       .setConfirmBreakpointRemoval(false);
-                                          }
-                                        }
-                                      }) != Messages.OK) {
-        return false;
-      }
-    }
-    XBreakpointManagerProxy breakpointManager = XDebugManagerProxy.getInstance().getBreakpointManagerProxy(project);
-    breakpointManager.rememberRemovedBreakpoint(breakpoint);
-    breakpointManager.removeBreakpoint(breakpoint);
-    return true;
   }
 
   @Override
@@ -903,8 +821,12 @@ public class XDebuggerUtilImpl extends XDebuggerUtil {
     return new XExpressionImpl(text, language, custom, mode);
   }
 
+  /**
+   * @deprecated Use {@link DebuggerUIUtil#isEmptyExpression(XExpression)} instead.
+   */
+  @Deprecated
   public static boolean isEmptyExpression(@Nullable XExpression expression) {
-    return expression == null || StringUtil.isEmptyOrSpaces(expression.getExpression());
+    return DebuggerUIUtil.isEmptyExpression(expression);
   }
 
   @Override

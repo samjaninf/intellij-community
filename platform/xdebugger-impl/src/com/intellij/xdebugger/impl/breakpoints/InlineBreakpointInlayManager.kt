@@ -80,7 +80,7 @@ class InlineBreakpointInlayManager(private val project: Project, parentScope: Co
         }
       }, project)
 
-      for (key in listOf(XDebuggerUtil.INLINE_BREAKPOINTS_KEY, InlineBreakpointsVariantsManager.SHOW_EVEN_TRIVIAL_KEY)) {
+      for (key in listOf(XDebuggerUtil.INLINE_BREAKPOINTS_KEY, "debugger.show.breakpoints.inline.even.trivial")) {
         Registry.get(key).addListener(object : RegistryValueListener {
           override fun afterValueChanged(value: RegistryValue) {
             reinitializeAll()

@@ -16,6 +16,7 @@ import com.intellij.util.xmlb.annotations.Tag;
 import com.intellij.xdebugger.XExpression;
 import com.intellij.xdebugger.evaluation.EvaluationMode;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xml.util.XmlStringUtil;
 import org.jdom.Element;
 import org.jetbrains.annotations.NonNls;
@@ -42,7 +43,7 @@ public final class XDebuggerHistoryManager implements PersistentStateComponent<E
   }
 
   public boolean addRecentExpression(@NotNull @NonNls String id, @Nullable XExpression expression) {
-    if (XDebuggerUtilImpl.isEmptyExpression(expression) || expression.getExpression().length() > 100000) {
+    if (DebuggerUIUtil.isEmptyExpression(expression) || expression.getExpression().length() > 100000) {
       return false;
     }
 

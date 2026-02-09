@@ -1,11 +1,13 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl.breakpoints;
 
+import com.intellij.configurationStore.ComponentSerializationUtil;
 import com.intellij.configurationStore.XmlSerializer;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.ExtensionPointListener;
 import com.intellij.openapi.extensions.PluginDescriptor;
@@ -656,7 +658,29 @@ public final class XBreakpointManagerImpl implements XBreakpointManager {
       LOG.warn("Unknown breakpoint type " + breakpointState.getTypeId());
       return null;
     }
-    return XBreakpointUtil.createBreakpoint(type, breakpointState, this);
+    return createBreakpoint(type, breakpointState);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <B extends XBreakpoint<P>, P extends XBreakpointProperties<?>> XBreakpointBase<B, P, ?> createBreakpoint(
+    XBreakpointType<B, P> type,
+    BreakpointState state) {
+    if (type instanceof XLineBreakpointType<?> && state instanceof LineBreakpointState lineBreakpointState) {
+      XLineBreakpointType<P> lineType = (XLineBreakpointType<P>)type;
+      return (XBreakpointBase<B, P, ?>)new XLineBreakpointImpl<>(lineType, this, createProperties(lineType, state),
+                                                                 lineBreakpointState);
+    }
+    else {
+      return new XBreakpointBase<>(type, this, createProperties(type, state), state);
+    }
+  }
+
+  private static <P extends XBreakpointProperties<?>> @Nullable P createProperties(XBreakpointType<?, P> type, BreakpointState state) {
+    P properties = type.createProperties();
+    if (properties != null) {
+      ComponentSerializationUtil.loadComponentState((PersistentStateComponent<?>)properties, state.getPropertiesElement());
+    }
+    return properties;
   }
 
   public @NotNull BreakpointState getBreakpointDefaults(@NotNull XBreakpointType type) {

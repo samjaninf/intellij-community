@@ -62,7 +62,6 @@ import com.intellij.xdebugger.XExpression;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
 import com.intellij.xdebugger.frame.XStackFrame;
 import com.intellij.xdebugger.frame.XValueContainer;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.XWatch;
 import com.intellij.xdebugger.impl.actions.XDebuggerActions;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
@@ -260,7 +259,7 @@ public class XWatchesViewImpl extends XVariablesView implements DnDNativeTarget,
 
               @Override
               public void update(@NotNull AnActionEvent e) {
-                e.getPresentation().setEnabled(!XDebuggerUtilImpl.isEmptyExpression(getExpression()));
+                e.getPresentation().setEnabled(!DebuggerUIUtil.isEmptyExpression(getExpression()));
               }
 
               @Override
@@ -374,7 +373,7 @@ public class XWatchesViewImpl extends XVariablesView implements DnDNativeTarget,
 
   private void addExpressionResultNode() {
     XExpression expression = myEvaluateComboBox.getExpression();
-    if (!XDebuggerUtilImpl.isEmptyExpression(expression)) {
+    if (!DebuggerUIUtil.isEmptyExpression(expression)) {
       myEvaluateComboBox.saveTextInHistory();
       XDebugSessionProxy session = getSessionProxy();
       if (session != null) {

@@ -74,7 +74,7 @@ class MultipleBreakpointGutterIconRenderer extends CommonBreakpointGutterIconRen
   }
 
   private void removeBreakpoints() {
-    XDebuggerUtilImpl.removeBreakpointsWithConfirmation(breakpoints);
+    XBreakpointUtil.removeBreakpointsWithConfirmation(breakpoints);
   }
 
   @Override

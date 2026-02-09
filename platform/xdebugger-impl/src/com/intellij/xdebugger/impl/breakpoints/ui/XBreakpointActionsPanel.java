@@ -143,7 +143,7 @@ public class XBreakpointActionsPanel extends XBreakpointPropertiesSubPanel {
 
     if (myLogExpressionComboBox != null) {
       XExpression expression = myLogExpressionComboBox.getExpression();
-      XExpression logExpression = !XDebuggerUtilImpl.isEmptyExpression(expression) ? expression : null;
+      XExpression logExpression = !DebuggerUIUtil.isEmptyExpression(expression) ? expression : null;
       myBreakpoint.setLogExpressionEnabled(logExpression == null || myLogExpressionCheckBox.isSelected());
       myBreakpoint.setLogExpressionObject(logExpression);
       myLogExpressionComboBox.saveTextInHistory();
