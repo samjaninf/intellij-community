@@ -28,6 +28,7 @@ jvm_library(
     "//java/debugger/impl:impl_test_lib",
     "//java/debugger/shared",
     "//java/execution/openapi:java-execution",
+    "//java/execution/impl",
     "//java/idea-ui:ui",
     "//plugins/kotlin/base/analysis",
     "//plugins/kotlin/base/code-insight",
