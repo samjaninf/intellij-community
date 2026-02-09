@@ -87,6 +87,8 @@ import static com.intellij.codeInspection.options.OptPane.pane;
 import static com.siyeh.ig.psiutils.SwitchUtils.SwitchExhaustivenessState;
 import static com.siyeh.ig.psiutils.SwitchUtils.evaluateSwitchCompleteness;
 
+// TODO(bartekpacia): Move to the "intelij.java.impl.inspections" module
+//  once the situation with QuickFixFactoryImpl in "intellij.java.impl" depending on this class is resolved.
 public final class UnnecessaryDefaultInspection extends BaseInspection {
 
   public boolean onlyReportSwitchExpressions = true;
