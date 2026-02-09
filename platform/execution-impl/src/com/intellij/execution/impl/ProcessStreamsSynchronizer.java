@@ -113,7 +113,9 @@ public class ProcessStreamsSynchronizer {
 
   @VisibleForTesting
   protected void scheduleProcessPendingChunks(long delayNano) {
-    myAlarm.addRequest(() -> processPendingChunks(getNanoTime()), TimeUnit.NANOSECONDS.toMillis(delayNano));
+    if (!myAlarm.isDisposed()) {
+      myAlarm.addRequest(() -> processPendingChunks(getNanoTime()), TimeUnit.NANOSECONDS.toMillis(delayNano));
+    }
   }
 
   /*
