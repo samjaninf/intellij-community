@@ -4954,6 +4954,16 @@ public abstract class K2JvmBasicCompletionTestGenerated extends AbstractK2JvmBas
             public void testTopLevelFromStandardLibrary() throws Exception {
                 runTest("../../completion/testData/basic/java/TopLevelFromStandardLibrary.kt");
             }
+
+            @TestMetadata("VariadicContextCallableAsExpression.kt")
+            public void testVariadicContextCallableAsExpression() throws Exception {
+                runTest("../../completion/testData/basic/java/VariadicContextCallableAsExpression.kt");
+            }
+
+            @TestMetadata("VariadicContextCallableSingleItem.kt")
+            public void testVariadicContextCallableSingleItem() throws Exception {
+                runTest("../../completion/testData/basic/java/VariadicContextCallableSingleItem.kt");
+            }
         }
 
         @RunWith(JUnit3RunnerWithInners.class)

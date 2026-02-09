@@ -5007,6 +5007,16 @@ public abstract class K1MLPerformanceCompletionTestGenerated extends AbstractK1M
             public void testTopLevelFromStandardLibrary() throws Exception {
                 runTest("../testData/basic/java/TopLevelFromStandardLibrary.kt");
             }
+
+            @TestMetadata("VariadicContextCallableAsExpression.kt")
+            public void testVariadicContextCallableAsExpression() throws Exception {
+                runTest("../testData/basic/java/VariadicContextCallableAsExpression.kt");
+            }
+
+            @TestMetadata("VariadicContextCallableSingleItem.kt")
+            public void testVariadicContextCallableSingleItem() throws Exception {
+                runTest("../testData/basic/java/VariadicContextCallableSingleItem.kt");
+            }
         }
 
         @RunWith(JUnit3RunnerWithInners.class)
