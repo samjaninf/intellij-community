@@ -7,6 +7,7 @@ import com.intellij.codeInsight.completion.CompletionType;
 import com.intellij.codeInsight.completion.PrefixMatcher;
 import com.intellij.lang.Language;
 import com.intellij.lang.LanguageExtension;
+import com.intellij.lang.LanguageExtensionWithAny;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.registry.Registry;
 import com.intellij.psi.PsiElement;
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
  */
 @NotNullByDefault
 public interface ModCompletionItemProvider {
-  LanguageExtension<ModCompletionItemProvider> EP_NAME = new LanguageExtension<>("com.intellij.modcompletion.completionItemProvider");
+  LanguageExtension<ModCompletionItemProvider> EP_NAME = new LanguageExtensionWithAny<>("com.intellij.modcompletion.completionItemProvider");
 
   /**
    * Provide completion items for given context

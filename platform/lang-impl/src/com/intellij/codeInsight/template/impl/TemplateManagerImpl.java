@@ -64,8 +64,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.intellij.codeInsight.template.impl.ListTemplatesHandler.filterTemplatesByPrefix;
-
 public final class TemplateManagerImpl extends TemplateManager implements Disposable {
   private final @NotNull Project myProject;
   private static final Key<Boolean> ourTemplateTesting = Key.create("TemplateTesting");
@@ -599,7 +597,9 @@ public final class TemplateManagerImpl extends TemplateManager implements Dispos
   public static boolean isApplicableTemplatePresent(@NotNull PsiFile file, @NotNull Editor editor) {
     TemplateActionContext context = TemplateActionContext.expanding(file, editor);
     int offset = editor.getCaretModel().getOffset();
-    Map<TemplateImpl, String> templates = filterTemplatesByPrefix(listApplicableTemplates(context), editor, offset, true, false);
+    @NotNull Collection<? extends TemplateImpl> applicableTemplates = listApplicableTemplates(context);
+    Map<TemplateImpl, String> templates =
+      ListTemplatesHandler.filterTemplatesByPrefix(applicableTemplates, editor.getDocument(), offset, true, false);
     if (!templates.isEmpty()) {
       return true;
     }

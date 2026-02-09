@@ -26,6 +26,7 @@ import com.intellij.codeInsight.template.macro.MethodNameMacro;
 import com.intellij.codeInsight.template.macro.MethodReturnTypeMacro;
 import com.intellij.codeInsight.template.macro.VariableOfTypeMacro;
 import com.intellij.modcommand.ActionContext;
+import com.intellij.modcommand.ModCommand;
 import com.intellij.modcommand.ModCommandExecutor;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.impl.DocumentImpl;

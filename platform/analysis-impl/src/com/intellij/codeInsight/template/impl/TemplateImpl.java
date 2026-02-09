@@ -4,8 +4,8 @@ package com.intellij.codeInsight.template.impl;
 
 import com.intellij.codeInsight.template.Expression;
 import com.intellij.codeInsight.template.Template;
-import com.intellij.modcommand.ActionContext;
 import com.intellij.modcommand.ModCommand;
+import com.intellij.modcommand.ModPsiUpdater;
 import com.intellij.modcommand.ModTemplateBuilder;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.RangeMarker;
@@ -397,8 +397,10 @@ public class TemplateImpl extends TemplateBase implements SchemeElement {
   }
 
   /**
-   * @param context context where the template should be executed
-   * @return the {@link ModCommand}, which when executed will show the template like the current one.
+   * Performs a template execution within ModCommand context. The template is not actually executed, but
+   * contributes to {@link ModPsiUpdater} to form the final {@link ModCommand}.
+   * 
+   * @param updater {@link ModPsiUpdater} to use.
    */
   @ApiStatus.Internal
   public void update(@NotNull ModPsiUpdater updater, @NotNull TemplateStateProcessor processor) {

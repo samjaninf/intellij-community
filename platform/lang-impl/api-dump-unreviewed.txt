@@ -4798,7 +4798,6 @@ f:com.intellij.codeInsight.template.impl.InvokeTemplateAction
 f:com.intellij.codeInsight.template.impl.ListTemplatesHandler
 - com.intellij.codeInsight.CodeInsightActionHandler
 - <init>():V
-- s:filterTemplatesByPrefix(java.util.Collection,com.intellij.openapi.editor.Editor,I,Z,Z):java.util.Map
 - s:getCustomTemplatesLookupItems(com.intellij.openapi.editor.Editor,com.intellij.psi.PsiFile,I):com.intellij.util.containers.MultiMap
 - invoke(com.intellij.openapi.project.Project,com.intellij.openapi.editor.Editor,com.intellij.psi.PsiFile):V
 - s:showTemplatesLookup(com.intellij.openapi.project.Project,com.intellij.openapi.editor.Editor,java.util.Map):V
