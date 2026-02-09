@@ -5,7 +5,6 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowId
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.openapi.wm.ex.WelcomeScreenProjectProvider
 import com.intellij.openapi.wm.ex.WelcomeScreenTabService
 import com.intellij.platform.ide.nonModalWelcomeScreen.leftPanel.WelcomeScreenLeftPanel
 import com.intellij.platform.ide.nonModalWelcomeScreen.rightTab.WelcomeScreenRightTab
@@ -14,14 +13,14 @@ import kotlinx.coroutines.withContext
 
 internal class WelcomeScreenTabServiceImpl(private val project: Project) : WelcomeScreenTabService {
   override suspend fun openTab() {
-    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
+    if (!project.isWelcomeExperienceProject()) {
       return
     }
     WelcomeScreenRightTab.show(project)
   }
 
   override suspend fun openProjectView(toolWindowManager: ToolWindowManager) {
-    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
+    if (!project.isWelcomeExperienceProject()) {
       return
     }
     withContext(Dispatchers.EDT) {
@@ -30,9 +29,6 @@ internal class WelcomeScreenTabServiceImpl(private val project: Project) : Welco
   }
 
   override fun getProjectPaneToActivate(): String? {
-    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
-      return null
-    }
-    return WelcomeScreenLeftPanel.ID
+    return if (project.isWelcomeExperienceProjectSync()) WelcomeScreenLeftPanel.ID else null
   }
 }

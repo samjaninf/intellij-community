@@ -15,6 +15,7 @@ import com.intellij.platform.PlatformProjectOpenProcessor
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.nio.file.LinkOption
 import java.nio.file.Path
+import java.util.EnumSet
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
@@ -130,3 +131,29 @@ abstract class WelcomeScreenProjectProvider {
 
   protected open fun doIsHiddenInRecentProjects(): Boolean = true
 }
+
+internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapabilitiesProvider {
+  override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
+    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
+      return emptySet()
+    }
+
+    if (WelcomeScreenProjectProvider.isForceDisabledFileColors()) {
+      return WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS
+    }
+    else {
+      return WELCOME_CAPABILITIES
+    }
+  }
+}
+
+private val WELCOME_CAPABILITIES: EnumSet<ProjectFrameCapability> =
+  EnumSet.of(
+    ProjectFrameCapability.WELCOME_EXPERIENCE,
+    ProjectFrameCapability.SUPPRESS_VCS_UI,
+  )
+
+private val WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS: EnumSet<ProjectFrameCapability> =
+  EnumSet.copyOf(WELCOME_CAPABILITIES).apply {
+    add(ProjectFrameCapability.FORCE_DISABLE_FILE_COLORS)
+  }

@@ -496,7 +496,6 @@ c:com.intellij.openapi.vcs.actions.VcsQuickActionsToolbarPopup
 - com.intellij.openapi.roots.ui.configuration.actions.IconWithTextAction
 - com.intellij.openapi.actionSystem.ex.CustomComponentAction
 - com.intellij.openapi.project.DumbAware
-- sf:Companion:com.intellij.openapi.vcs.actions.VcsQuickActionsToolbarPopup$Companion
 - <init>():V
 - actionPerformed(com.intellij.openapi.actionSystem.AnActionEvent):V
 - createCustomComponent(com.intellij.openapi.actionSystem.Presentation,java.lang.String):javax.swing.JComponent
@@ -504,7 +503,6 @@ c:com.intellij.openapi.vcs.actions.VcsQuickActionsToolbarPopup
 - getName(com.intellij.openapi.project.Project):java.lang.String
 - update(com.intellij.openapi.actionSystem.AnActionEvent):V
 - pf:updateVcs(com.intellij.openapi.project.Project,com.intellij.openapi.actionSystem.AnActionEvent):Z
-f:com.intellij.openapi.vcs.actions.VcsQuickActionsToolbarPopup$Companion
 f:com.intellij.openapi.vcs.actions.VcsQuickActionsToolbarPopup$MyActionButtonWithText
 - com.intellij.openapi.actionSystem.impl.ActionButtonWithText
 - <init>(com.intellij.openapi.vcs.actions.VcsQuickActionsToolbarPopup,com.intellij.openapi.actionSystem.AnAction,com.intellij.openapi.actionSystem.Presentation,java.lang.String):V

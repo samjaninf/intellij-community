@@ -7,6 +7,7 @@
     <extensionPoint qualifiedName="com.intellij.diagnostic.freezeNotifier" interface="com.intellij.diagnostic.FreezeNotifier"/>
     <extensionPoint name="noProjectStateHandler" interface="com.intellij.openapi.wm.ex.NoProjectStateHandler"/>
     <extensionPoint name="welcomeScreenProjectProvider" interface="com.intellij.openapi.wm.ex.WelcomeScreenProjectProvider"/>
+    <extensionPoint name="projectFrameCapabilitiesProvider" interface="com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesProvider"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
@@ -216,6 +217,8 @@
     <projectService serviceInterface="com.intellij.openapi.wm.ex.WelcomeScreenTabService"
                     serviceImplementation="com.intellij.openapi.wm.ex.NoWelcomeScreenTabService"
                     open="true"/>
+
+    <projectFrameCapabilitiesProvider implementation="com.intellij.openapi.wm.ex.WelcomeScreenProjectFrameCapabilitiesProvider"/>
 
     <!--XNext-->
     <applicationService serviceInterface="com.intellij.openapi.application.impl.InternalUICustomization"
