@@ -1,3 +1,8 @@
+---
+name: testing
+description: Comprehensive testing reference for running tests in IntelliJ codebase via tests.cmd. Use when running, debugging, or troubleshooting test execution.
+---
+
 # Testing Guide for IntelliJ IDEA
 
 Comprehensive testing reference for running tests in the IntelliJ IDEA codebase.
@@ -67,7 +72,7 @@ Run a single test class (use FQN or wildcard - simple names don't work):
   2. Wrong main module for running tests
   3. Test class not in the correct test module's classpath
 
-For deeper troubleshooting, see [TESTING-internals.md](./TESTING-internals.md).
+For deeper troubleshooting, see [TESTING-internals.md](../testing-internals/SKILL.md).
 
 ## Test Script Parameters
 
@@ -325,9 +330,9 @@ With `idea.include.unconventionally.named.tests=true`:
 
 **Bazel build fails before tests run:**
 - Check module dependencies in `.iml` file
-- Consult [module-dependencies.md](module-dependencies.md)
+- Consult [module-dependencies.md](../module-dependencies/SKILL.md)
 
-For deeper troubleshooting, see [TESTING-internals.md](TESTING-internals.md).
+For deeper troubleshooting, see [TESTING-internals.md](../testing-internals/SKILL.md).
 
 ## Test Execution Internals
 
@@ -338,16 +343,16 @@ For detailed information about how `tests.cmd` works internally, including:
 - Bazel target configuration
 - Test discovery flow
 
-See [TESTING-internals.md](TESTING-internals.md)
+See [TESTING-internals.md](../testing-internals/SKILL.md)
 
 ## Writing Tests
 
 For guidelines on **writing** tests (as opposed to running them), see the guidelines:
-- [Writing Tests](./writing-tests.md) - How to write tests, always consult before writing new tests
+- [Writing Tests](../writing-tests/SKILL.md) - How to write tests, always consult before writing new tests
 
 ## Additional Resources
 
 - [Running and Testing Documentation](../docs/IntelliJ-Platform/2_Running-and-Testing)
 - [Community README](../community/README.md)
 - [Main README](../README.md)
-- [Driver UI testing](./driver-ui-tests.md)
+- [Driver UI testing](../driver-ui-tests/SKILL.md)

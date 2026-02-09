@@ -1,3 +1,8 @@
+---
+name: driver-ui-tests
+description: Guide for writing UI tests using IDE Starter and UI Driver frameworks. Use when creating or modifying UI tests.
+---
+
 # Driver UI Tests Guide
 
 Guidelines for writing UI tests using IDE Starter and UI Driver frameworks.

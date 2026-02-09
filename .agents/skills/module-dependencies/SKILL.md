@@ -1,3 +1,8 @@
+---
+name: module-dependencies
+description: How to manage module dependencies in IntelliJ codebase. Use when adding or modifying module dependencies in iml files.
+---
+
 # Module Dependencies Management
 
 This document describes how to manage module dependencies when working with IntelliJ IDEA codebase.

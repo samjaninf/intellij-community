@@ -10,8 +10,6 @@ repository: monorepo
 
 **Critical:** These guidelines MUST be followed at all times.
 
-**Reference Index:** @./.ai/ai-topic-index.md
-
 ## Project Invariants
 
 - The repository is a large monorepo with multiple IDE products and plugins.
@@ -41,7 +39,7 @@ Special handling applies to the directories below. If a file you touch lives und
 - **Full Bazel compilation after code changes:** run `./bazel-build-all.cmd` via terminal command tool (not JetBrains MCP terminal). Skip if only `.js`, `.mjs`, `.md`, `.txt`, or `.json` files are modified.
 - After modifying `*.iml`, `BUILD.bazel`, or `.idea/` files: run `./build/jpsModelToBazel.cmd`.
 - Run affected tests: `./tests.cmd -Dintellij.build.test.patterns=<FQN or wildcard>` (**FQN required; simple class names do not match**), or `node --test <file>` for `*.test.mjs`.
-  Module-specific rules may override the runner. Skip if plugin has no tests. See [TESTING-internals](./.ai/topics/TESTING-internals.md).
+  Module-specific rules may override the runner. Skip if plugin has no tests. See [TESTING-internals](./.agents/skills/testing-internals/SKILL.md).
 
 ### After Writing Code
 

@@ -1,3 +1,8 @@
+---
+name: testing-internals
+description: Internals of tests.cmd execution flow, test discovery, and troubleshooting. Use when debugging test discovery issues or understanding the test runner.
+---
+
 # Test Execution Internals
 
 This document explains `tests.cmd` internals and helps troubleshoot test execution issues.
@@ -246,7 +251,7 @@ Then attach debugger to port 5005.
 | RubyMine | `RubyRunTestsBuildTarget` | `intellij.idea.ultimate.tests.main` | `ruby/build/src/` |
 | CLion | `CLionRunTestsBuildTarget` | `intellij.idea.ultimate.tests.main` | `CIDR/clion-build/src/` |
 
-**Note:** Product entry points (RustRover, RubyMine, CLion) inherit `intellij.idea.ultimate.tests.main` as the default, but to run product-specific tests, use the dedicated test module with `-Dintellij.build.test.main.module`. See [TESTING.md](./TESTING.md#known-test-modules-by-product) for the correct module per product.
+**Note:** Product entry points (RustRover, RubyMine, CLion) inherit `intellij.idea.ultimate.tests.main` as the default, but to run product-specific tests, use the dedicated test module with `-Dintellij.build.test.main.module`. See [TESTING.md](../testing/SKILL.md#known-test-modules-by-product) for the correct module per product.
 
 ### CI-Defined Test Modules
 
@@ -518,5 +523,5 @@ This applies to ALL modules (default and non-default). Always use:
 
 ## Related Documentation
 
-- [TESTING.md](./TESTING.md) - How to run tests via `tests.cmd` (quick start, parameters, examples)
-- [Writing Tests](./writing-tests.md) - How to write tests (framework, `@TestApplication`, fixtures, EDT)
+- [TESTING.md](../testing/SKILL.md) - How to run tests via `tests.cmd` (quick start, parameters, examples)
+- [Writing Tests](../writing-tests/SKILL.md) - How to write tests (framework, `@TestApplication`, fixtures, EDT)

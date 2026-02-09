@@ -1,3 +1,8 @@
+---
+name: remote-dev
+description: Guidelines for structuring and developing IntelliJ remote development modules. Use when working on Remote Development features.
+---
+
 # Remote Development
 
 ## Basics

@@ -1,3 +1,8 @@
+---
+name: code-style
+description: Code style rules for IntelliJ codebase. Use when writing or reviewing code for style compliance.
+---
+
 # Code Style
 
 Follow the IntelliJ Coding Guidelines with these IntelliJ-specific rules.

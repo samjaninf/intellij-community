@@ -1,3 +1,8 @@
+---
+name: ssr
+description: Guide for using Structural Search and Replace in IntelliJ. Use when creating or modifying SSR inspections or search patterns.
+---
+
 # Structural Search and Replace
 
 - You must use terminal search (`ls`, `cat` and `grep`) to read directory `.idea`. Do not use IDE search.

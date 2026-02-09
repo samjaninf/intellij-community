@@ -1,3 +1,8 @@
+---
+name: registry
+description: Guidelines for using the IntelliJ Registry API. Use when working with registry keys or feature flags.
+---
+
 # Working with Registry
 
 Guidelines for using the IntelliJ Registry API.
@@ -76,4 +81,4 @@ Use `@RegistryKey` annotation instead of `Registry.get().setValue()`:
 fun testWithRegistryEnabled() { ... }
 ```
 
-See [writing-tests.md](./writing-tests.md#registry-values-in-tests) for more test patterns.
+See [writing-tests.md](../writing-tests/SKILL.md#registry-values-in-tests) for more test patterns.

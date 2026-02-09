@@ -1,3 +1,8 @@
+---
+name: commits
+description: Commit message format and conventions for IntelliJ repository. Use when creating git commits.
+---
+
 # Commits
 
 > **CRITICAL:** SafePush/Patronus validates commit messages BEFORE allowing merges.

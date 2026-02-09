@@ -1,3 +1,8 @@
+---
+name: debugging
+description: Debugging techniques and tools for IntelliJ development. Use when debugging IDE issues or investigating failures.
+---
+
 # Debugging
 
 ## Documentation

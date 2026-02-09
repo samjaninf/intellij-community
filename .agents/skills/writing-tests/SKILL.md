@@ -1,3 +1,8 @@
+---
+name: writing-tests
+description: Guidelines for writing tests in IntelliJ codebase. Use when creating new test classes or test methods.
+---
+
 # Writing Tests
 
 Guidelines for writing tests in IntelliJ IDEA codebase.
@@ -140,7 +145,7 @@ class MyTest {
 
 ## Running Tests
 
-To run tests via command line, see [TESTING.md](./TESTING.md).
+To run tests via command line, see [TESTING.md](../testing/SKILL.md).
 
 Quick example:
 ```bash

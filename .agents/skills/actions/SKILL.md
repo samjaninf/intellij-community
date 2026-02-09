@@ -1,3 +1,8 @@
+---
+name: actions
+description: Guidelines for implementing IntelliJ actions (AnAction). Use those rules when you need to create or change an action in the intellij platform.
+---
+
 # Actions
 
 Guidelines for implementing IntelliJ actions (`AnAction`).
