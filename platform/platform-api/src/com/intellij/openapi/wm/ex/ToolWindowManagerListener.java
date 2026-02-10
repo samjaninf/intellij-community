@@ -5,6 +5,7 @@ import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.util.messages.Topic;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.ApiStatus.Internal;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EventListener;
@@ -49,7 +50,7 @@ public interface ToolWindowManagerListener extends EventListener {
     stateChanged(toolWindowManager);
   }
 
-  @ApiStatus.Internal
+  @Internal
   @ApiStatus.Experimental
   default void stateChanged(@NotNull ToolWindowManager toolWindowManager,
                             @NotNull ToolWindow toolWindow,

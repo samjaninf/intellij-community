@@ -9342,14 +9342,6 @@ a:com.intellij.openapi.wm.ToolWindowContextMenuActionBase
 - isDumbAware():Z
 - f:update(com.intellij.openapi.actionSystem.AnActionEvent):V
 - a:update(com.intellij.openapi.actionSystem.AnActionEvent,com.intellij.openapi.wm.ToolWindow,com.intellij.ui.content.Content):V
-c:com.intellij.openapi.wm.ex.AbstractDelegatingToRootTraversalPolicy
-- java.awt.FocusTraversalPolicy
-- <init>():V
-- getComponentAfter(java.awt.Container,java.awt.Component):java.awt.Component
-- getComponentBefore(java.awt.Container,java.awt.Component):java.awt.Component
-- getDefaultComponent(java.awt.Container):java.awt.Component
-- getFirstComponent(java.awt.Container):java.awt.Component
-- getLastComponent(java.awt.Container):java.awt.Component
 c:com.intellij.openapi.wm.ex.IdeFocusTraversalPolicy
 - javax.swing.LayoutFocusTraversalPolicy
 - <init>():V
@@ -9388,30 +9380,6 @@ a:com.intellij.openapi.wm.ex.ToolWindowManagerEx
 - shouldUpdateToolWindowContent(com.intellij.openapi.wm.ToolWindow):Z
 f:com.intellij.openapi.wm.ex.ToolWindowManagerEx$Companion
 - f:getInstanceEx(com.intellij.openapi.project.Project):com.intellij.openapi.wm.ex.ToolWindowManagerEx
-e:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- java.lang.Enum
-- sf:ActivateToolWindow:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:HideToolWindow:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:MoreButtonUpdated:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:MovedOrResized:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:RegisterToolWindow:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetContentUiType:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetLayout:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetShowStripeButton:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetSideTool:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetSideToolAndAnchor:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetToolWindowAnchor:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetToolWindowAutoHide:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetToolWindowType:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SetVisibleOnLargeStripe:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:ShowNames:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:ShowToolWindow:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:SideCustomWidth:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:ToolWindowAvailable:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:ToolWindowUnavailable:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- sf:UnregisterToolWindow:com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- s:valueOf(java.lang.String):com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType
-- s:values():com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType[]
 a:com.intellij.openapi.wm.ex.WindowManagerEx
 - com.intellij.openapi.wm.WindowManager
 - <init>():V
@@ -9626,38 +9594,6 @@ c:com.intellij.openapi.wm.impl.PlatformFrameTitleBuilder
 - getFileTitle(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile):java.lang.String
 - getFileTitleAsync(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile,kotlin.coroutines.Continuation):java.lang.Object
 - getProjectTitle(com.intellij.openapi.project.Project):java.lang.String
-a:com.intellij.openapi.wm.impl.ProjectFrameHelper
-- com.intellij.openapi.actionSystem.UiDataProvider
-- com.intellij.openapi.wm.IdeFrame
-- com.intellij.util.ui.accessibility.AccessibleContextAccessor
-- sf:Companion:com.intellij.openapi.wm.impl.ProjectFrameHelper$Companion
-- f:appClosing():V
-- dispose():V
-- getBalloonLayout():com.intellij.ui.BalloonLayout
-- getComponent():javax.swing.JComponent
-- getCurrentAccessibleContext():javax.accessibility.AccessibleContext
-- f:getFrame():com.intellij.openapi.wm.impl.IdeFrameImpl
-- sf:getFrameHelper(java.awt.Window):com.intellij.openapi.wm.impl.ProjectFrameHelper
-- getProject():com.intellij.openapi.project.Project
-- getStatusBar():com.intellij.openapi.wm.impl.status.IdeStatusBarImpl
-- p:getTitleInfoProviders():java.util.List
-- installDefaultProjectStatusBarWidgets(com.intellij.openapi.project.Project,kotlin.coroutines.Continuation):java.lang.Object
-- isInFullScreen():Z
-- notifyProjectActivation():V
-- f:postInit():V
-- setFileTitle(java.lang.String,java.nio.file.Path):V
-- setFrameTitle(java.lang.String):V
-- f:storeStateForReuse():V
-- suggestChildFrameBounds():java.awt.Rectangle
-- toggleFullScreen(Z):kotlinx.coroutines.Job
-- uiDataSnapshot(com.intellij.openapi.actionSystem.DataSink):V
-- f:updateMainMenuActions():V
-- f:updateTitle(java.lang.String,com.intellij.openapi.project.Project,kotlin.coroutines.Continuation):java.lang.Object
-- f:updateView():V
-- windowClosing(com.intellij.openapi.project.Project):V
-f:com.intellij.openapi.wm.impl.ProjectFrameHelper$Companion
-- f:getFrameHelper(java.awt.Window):com.intellij.openapi.wm.impl.ProjectFrameHelper
-- f:getSuperUserSuffix():java.lang.String
 a:com.intellij.openapi.wm.impl.SplitButtonAction
 - com.intellij.openapi.actionSystem.AnAction
 - com.intellij.openapi.actionSystem.ex.CustomComponentAction
@@ -10180,14 +10116,6 @@ f:com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
 - f:updateWidget(com.intellij.openapi.wm.StatusBarWidgetFactory):V
 - f:updateWidget(java.lang.Class):V
 - f:wasWidgetCreated(java.lang.String):Z
-a:com.intellij.openapi.wm.impl.welcomeScreen.AbstractActionWithPanel
-- com.intellij.openapi.actionSystem.AnAction
-- com.intellij.openapi.Disposable
-- com.intellij.openapi.project.DumbAware
-- <init>():V
-- a:createPanel():javax.swing.JPanel
-- a:getActionButton():javax.swing.JButton
-- onPanelSelected():V
 a:com.intellij.openapi.wm.impl.welcomeScreen.AbstractWelcomeScreen
 - javax.swing.JPanel
 - com.intellij.openapi.wm.WelcomeScreen
@@ -10201,11 +10129,6 @@ f:com.intellij.openapi.wm.impl.welcomeScreen.ActionGroupPanelWrapper
 - s:createActionGroupPanel(java.util.List,java.lang.Runnable,com.intellij.openapi.Disposable):com.intellij.openapi.util.Pair
 - s:installQuickSearch(com.intellij.ui.components.JBList):V
 - s:wrapGroups(com.intellij.openapi.actionSystem.ActionGroup,com.intellij.openapi.Disposable):com.intellij.openapi.actionSystem.AnAction
-com.intellij.openapi.wm.impl.welcomeScreen.ActionsWithPanelProvider
-f:com.intellij.openapi.wm.impl.welcomeScreen.BottomLineBorder
-- javax.swing.border.EmptyBorder
-- <init>():V
-- paintBorder(java.awt.Component,java.awt.Graphics,I,I,I,I):V
 f:com.intellij.openapi.wm.impl.welcomeScreen.CustomizeTabFactory
 - com.intellij.openapi.wm.WelcomeTabFactory
 - <init>():V
@@ -10266,12 +10189,6 @@ c:com.intellij.openapi.wm.impl.welcomeScreen.OpenAlienProjectAction
 - getActionUpdateThread():com.intellij.openapi.actionSystem.ActionUpdateThread
 - p:projectOpened():V
 - update(com.intellij.openapi.actionSystem.AnActionEvent):V
-a:com.intellij.openapi.wm.impl.welcomeScreen.ProjectDetector
-- sf:EXTENSION_POINT_NAME:com.intellij.openapi.extensions.ExtensionPointName
-- <init>():V
-- a:detectProjects(java.util.function.Consumer):V
-- logRecentProjectOpened(com.intellij.ide.ProjectGroup):V
-- s:runDetectors(java.util.function.Consumer):V
 c:com.intellij.openapi.wm.impl.welcomeScreen.TabbedWelcomeScreen
 - com.intellij.openapi.wm.impl.welcomeScreen.AbstractWelcomeScreen
 - <init>(java.util.List,com.intellij.openapi.wm.WelcomeScreenLeftPanel,Z,Z):V
@@ -10339,19 +10256,6 @@ f:com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenDefaultCustomization
 - com.intellij.openapi.wm.WelcomeScreenCustomization
 - <init>():V
 - createQuickAccessActions(com.intellij.openapi.Disposable):java.util.List
-f:com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager
-- <init>():V
-- s:getActionLinkSelectionColor():java.awt.Color
-- s:getActionsButtonBackground(Z):com.intellij.ui.JBColor
-- s:getActionsButtonSelectionBorder():com.intellij.ui.JBColor
-- s:getLinkNormalColor():java.awt.Color
-- s:getMainAssociatedComponentBackground():java.awt.Color
-- s:getMainBackground():java.awt.Color
-- s:getMainTabListBackground():java.awt.Color
-- s:getProjectsBackground():java.awt.Color
-- s:getProjectsSelectionBackground(Z):java.awt.Color
-- s:getProjectsSelectionForeground(Z,Z):java.awt.Color
-- s:getSeparatorColor():com.intellij.ui.JBColor
 f:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService
 - sf:Companion:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$Companion
 - <init>():V
@@ -10405,9 +10309,6 @@ f:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjects
 f:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$Companion
 - f:getInstance():com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService
 - f:getTOPIC():com.intellij.util.messages.Topic
-f:com.intellij.openapi.wm.impl.welcomeScreen.collapsedActionGroup.CollapsedActionGroup
-- com.intellij.openapi.actionSystem.DefaultActionGroup
-- <init>(java.lang.String,java.util.List):V
 c:com.intellij.openapi.wm.impl.welcomeScreen.learnIde.InteractiveCoursePanel
 - javax.swing.JPanel
 - <init>(com.intellij.openapi.wm.InteractiveCourseData,Z):V

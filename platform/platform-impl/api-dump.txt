@@ -1023,17 +1023,6 @@ com.intellij.openapi.wm.ex.ToolWindowEx
 - a:stretchHeight(I):V
 - a:stretchWidth(I):V
 - updateContentUi():V
-com.intellij.openapi.wm.ex.ToolWindowManagerListener
-- java.util.EventListener
-- sf:TOPIC:com.intellij.util.messages.Topic
-- stateChanged():V
-- stateChanged(com.intellij.openapi.wm.ToolWindowManager):V
-- stateChanged(com.intellij.openapi.wm.ToolWindowManager,com.intellij.openapi.wm.ex.ToolWindowManagerListener$ToolWindowManagerEventType):V
-- toolWindowRegistered(java.lang.String):V
-- toolWindowShown(com.intellij.openapi.wm.ToolWindow):V
-- toolWindowShown(java.lang.String,com.intellij.openapi.wm.ToolWindow):V
-- toolWindowUnregistered(java.lang.String,com.intellij.openapi.wm.ToolWindow):V
-- toolWindowsRegistered(java.util.List,com.intellij.openapi.wm.ToolWindowManager):V
 com.intellij.openapi.wm.impl.IdeGlassPaneEx
 - com.intellij.openapi.wm.IdeGlassPane
 - a:add(java.awt.Component):java.awt.Component
@@ -1045,6 +1034,38 @@ com.intellij.openapi.wm.impl.IdeGlassPaneEx
 - a:remove(java.awt.Component):V
 f:com.intellij.openapi.wm.impl.IdeGlassPaneImpl
 - com.intellij.ide.IdeEventQueue$NonLockedEventDispatcher
+a:com.intellij.openapi.wm.impl.ProjectFrameHelper
+- com.intellij.openapi.actionSystem.UiDataProvider
+- com.intellij.openapi.wm.IdeFrame
+- com.intellij.util.ui.accessibility.AccessibleContextAccessor
+- sf:Companion:com.intellij.openapi.wm.impl.ProjectFrameHelper$Companion
+- f:appClosing():V
+- dispose():V
+- getBalloonLayout():com.intellij.ui.BalloonLayout
+- getComponent():javax.swing.JComponent
+- getCurrentAccessibleContext():javax.accessibility.AccessibleContext
+- f:getFrame():com.intellij.openapi.wm.impl.IdeFrameImpl
+- sf:getFrameHelper(java.awt.Window):com.intellij.openapi.wm.impl.ProjectFrameHelper
+- getProject():com.intellij.openapi.project.Project
+- getStatusBar():com.intellij.openapi.wm.impl.status.IdeStatusBarImpl
+- p:getTitleInfoProviders():java.util.List
+- installDefaultProjectStatusBarWidgets(com.intellij.openapi.project.Project,kotlin.coroutines.Continuation):java.lang.Object
+- isInFullScreen():Z
+- notifyProjectActivation():V
+- f:postInit():V
+- setFileTitle(java.lang.String,java.nio.file.Path):V
+- setFrameTitle(java.lang.String):V
+- f:storeStateForReuse():V
+- suggestChildFrameBounds():java.awt.Rectangle
+- toggleFullScreen(Z):kotlinx.coroutines.Job
+- uiDataSnapshot(com.intellij.openapi.actionSystem.DataSink):V
+- f:updateMainMenuActions():V
+- f:updateTitle(java.lang.String,com.intellij.openapi.project.Project,kotlin.coroutines.Continuation):java.lang.Object
+- f:updateView():V
+- windowClosing(com.intellij.openapi.project.Project):V
+f:com.intellij.openapi.wm.impl.ProjectFrameHelper$Companion
+- f:getFrameHelper(java.awt.Window):com.intellij.openapi.wm.impl.ProjectFrameHelper
+- f:getSuperUserSuffix():java.lang.String
 com.intellij.openapi.wm.impl.TitleInfoProvider
 - sf:Companion:com.intellij.openapi.wm.impl.TitleInfoProvider$Companion
 - a:addUpdateListener(com.intellij.openapi.project.Project,com.intellij.openapi.Disposable,kotlin.jvm.functions.Function1):V
@@ -1076,6 +1097,8 @@ f:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjects
 - bs:copy$default(com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$CloneableProject,java.nio.file.Path,com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$CloneTaskInfo,com.intellij.openapi.wm.ex.ProgressIndicatorEx,com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$CloneStatus,I,java.lang.Object):com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$CloneableProject
 - f:getProjectPath():java.nio.file.Path
 f:com.intellij.openapi.wm.impl.welcomeScreen.collapsedActionGroup.CollapsedActionGroup
+- com.intellij.openapi.actionSystem.DefaultActionGroup
+- <init>(java.lang.String,java.util.List):V
 - f:getCollapsed():Z
 - f:setCollapsed(Z):V
 com.intellij.openapi.wm.impl.welcomeScreen.learnIde.coursesInProgress.CourseDataStorage

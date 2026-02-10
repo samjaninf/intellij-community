@@ -249,6 +249,8 @@ object CoreModuleSets {
     embeddedModule("intellij.platform.core")
     embeddedModule("intellij.platform.core.ui")
     embeddedModule("intellij.platform.core.impl")
+    embeddedModule("intellij.platform.projectFrame")
+    embeddedModule("intellij.platform.welcomeScreen")
 
     embeddedModule("intellij.platform.projectModel")
     embeddedModule("intellij.platform.projectModel.impl")
