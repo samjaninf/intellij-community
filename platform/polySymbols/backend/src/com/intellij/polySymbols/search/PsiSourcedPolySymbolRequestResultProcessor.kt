@@ -53,10 +53,15 @@ class PsiSourcedPolySymbolRequestResultProcessor(
 
           equivalentSymbol ?: return@forEach
 
-          if (!consumer.process(
-              PsiSourcedPolySymbolReference(equivalentSymbol, targetElement, element, ref.rangeInElement))) {
+          val equivalentSymbolReference = PsiSourcedPolySymbolReference(
+            symbol = equivalentSymbol,
+            sourceElement = targetElement,
+            host = element,
+            range = ref.rangeInElement,
+          )
+
+          if (!consumer.process(equivalentSymbolReference))
             return false
-          }
         }
     }
 
