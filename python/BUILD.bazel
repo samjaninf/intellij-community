@@ -286,8 +286,6 @@ jvm_library(
     "//platform/ui.jcef",
     "//libraries/io",
     "//platform/util/progress",
-    "//platform/feedback",
-    "//libraries/kotlinx/datetime",
     "//platform/platform-impl/remote",
     "//platform/platform-impl/ui",
     "//libraries/jackson/module-kotlin:libraries-jackson-module-kotlin",
