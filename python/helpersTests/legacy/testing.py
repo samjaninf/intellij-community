@@ -18,9 +18,14 @@ import six
 if six.PY2:
     from io import open
 
-_test_root = os.path.dirname(os.path.abspath(__file__))
-_helpers_root = os.path.dirname(_test_root) + "/helpers"
-_test_data_root = os.path.join(_test_root, 'data')
+_this_file = os.path.abspath(__file__)
+_legacy_dir = os.path.dirname(_this_file)
+_helpers_tests = os.path.dirname(_legacy_dir)
+_python = os.path.dirname(_helpers_tests)
+
+_helpers_root = os.path.join(_python, "helpers")
+_test_data_root = os.path.join(_python, "helpersTestResources", "data")
+
 _override_test_data = False
 
 ProcessResult = collections.namedtuple('GeneratorResults',
