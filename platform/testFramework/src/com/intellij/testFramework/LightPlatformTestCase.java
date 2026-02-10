@@ -95,6 +95,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * @deprecated Do not use in a new code. Use Junit 5.
+ */
+@Deprecated
 public abstract class LightPlatformTestCase extends UsefulTestCase implements DataProvider {
   private static LightProjectDescriptor ourProjectDescriptor;
   @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized") private static Project ourProject;

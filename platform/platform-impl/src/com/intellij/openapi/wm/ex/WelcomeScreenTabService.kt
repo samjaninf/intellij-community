@@ -2,27 +2,32 @@
 package com.intellij.openapi.wm.ex
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.ToolWindowManager
 import org.jetbrains.annotations.ApiStatus
 
 /**
- * Service that allows to open welcome screen tab simultaneously with the other tabs.
+ * Opens a welcome-screen tab alongside regular editor tabs during startup.
  *
- * ProjectActivity is executed too late for that purpose.
+ * Implementations run earlier than [com.intellij.openapi.startup.ProjectActivity], which is too
+ * late for this initialization stage.
  */
 @ApiStatus.Internal
 interface WelcomeScreenTabService {
+  /**
+   * Opens a welcome tab for the current project when applicable.
+   */
   suspend fun openTab()
-  suspend fun openProjectView(toolWindowManager: ToolWindowManager)
-  fun getProjectPaneToActivate(): String?
 
   companion object {
+    /**
+     * Returns the project-level implementation.
+     */
     fun getInstance(project: Project): WelcomeScreenTabService = project.getService(WelcomeScreenTabService::class.java)
   }
 }
 
+/**
+ * Default no-op implementation used when no product-specific implementation is registered.
+ */
 internal class NoWelcomeScreenTabService : WelcomeScreenTabService {
   override suspend fun openTab() = Unit
-  override suspend fun openProjectView(toolWindowManager: ToolWindowManager) = Unit
-  override fun getProjectPaneToActivate(): String? = null
 }

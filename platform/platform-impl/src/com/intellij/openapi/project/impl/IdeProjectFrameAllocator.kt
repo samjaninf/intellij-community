@@ -54,6 +54,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesService
+import com.intellij.openapi.wm.ex.ProjectFrameUiPolicy
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.wm.ex.WelcomeScreenTabService
 import com.intellij.openapi.wm.impl.FrameBoundsConverter
@@ -104,6 +106,7 @@ import java.awt.event.WindowEvent
 import java.awt.event.WindowStateListener
 import java.nio.file.Path
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import javax.swing.JFrame
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.math.min
@@ -195,7 +198,7 @@ internal class IdeProjectFrameAllocator(
           launch(CoroutineName("tool window pane creation")) {
             val deferredToolWindowManager = async { project.serviceAsync<ToolWindowManager>() as? ToolWindowManagerImpl }
             val taskListDeferred = async(CoroutineName("toolwindow init command creation")) {
-              computeToolWindowBeans(project = project)
+              computeToolWindowBeans(project)
             }
 
             val toolWindowManager = deferredToolWindowManager.await() ?: return@launch
@@ -204,7 +207,9 @@ internal class IdeProjectFrameAllocator(
               projectFrameHelper.toolWindowPane
             }
             toolWindowManager.init(pane = toolWindowPane, reopeningEditorJob = reopeningEditorJob, taskListDeferred = taskListDeferred)
-            WelcomeScreenTabService.getInstance(project).openProjectView(toolWindowManager)
+            serviceAsync<ProjectFrameCapabilitiesService>().getUiPolicy(project)?.let { projectFrameUiPolicy ->
+              applyProjectFrameUiPolicy(toolWindowManager, project, projectFrameUiPolicy)
+            }
           }
         }
       }
@@ -355,6 +360,76 @@ private suspend fun hideSplashWhenEditorOrToolWindowShown(connection: SimpleMess
     }
   })
   splashHiddenDeferred.await()
+}
+
+private fun applyProjectFrameUiPolicy(toolWindowManager: ToolWindowManager,
+                                      project: Project,
+                                      projectFrameUiPolicy: ProjectFrameUiPolicy) {
+  val startupToolWindowId = projectFrameUiPolicy.startupToolWindowIdToActivate
+  val toolWindowIdsToHideOnStartup = projectFrameUiPolicy.toolWindowIdsToHideOnStartup
+  val pendingToolWindowIds = ConcurrentHashMap.newKeySet<String>().apply {
+    startupToolWindowId?.let(::add)
+    addAll(toolWindowIdsToHideOnStartup)
+  }
+  if (pendingToolWindowIds.isEmpty()) {
+    return
+  }
+
+  var connection: SimpleMessageBusConnection? = null
+
+  fun disconnectIfDone() {
+    if (project.isDisposed || pendingToolWindowIds.isEmpty()) {
+      connection?.disconnect()
+      connection = null
+    }
+  }
+
+  fun applyPolicyForToolWindowId(toolWindowId: String) {
+    if (!pendingToolWindowIds.contains(toolWindowId)) {
+      return
+    }
+    val toolWindow = toolWindowManager.getToolWindow(toolWindowId) ?: return
+    if (!pendingToolWindowIds.remove(toolWindowId)) {
+      return
+    }
+
+    toolWindowManager.invokeLater {
+      if (project.isDisposed) {
+        return@invokeLater
+      }
+
+      if (startupToolWindowId == toolWindowId) {
+        toolWindow.activate(null)
+      }
+      if (toolWindowId in toolWindowIdsToHideOnStartup) {
+        toolWindow.hide()
+      }
+    }
+
+    disconnectIfDone()
+  }
+
+  pendingToolWindowIds.toList().forEach(::applyPolicyForToolWindowId)
+  if (pendingToolWindowIds.isEmpty()) {
+    return
+  }
+
+  val expectedToolWindowManager = toolWindowManager
+  val messageBusConnection = project.messageBus.connect(project)
+  connection = messageBusConnection
+  messageBusConnection.subscribe(ToolWindowManagerListener.TOPIC, object : ToolWindowManagerListener {
+    override fun toolWindowsRegistered(ids: List<String>, toolWindowManager: ToolWindowManager) {
+      if (toolWindowManager !== expectedToolWindowManager) {
+        return
+      }
+
+      ids.forEach(::applyPolicyForToolWindowId)
+    }
+  })
+
+  // Cover ids registered between initial check and listener subscription.
+  pendingToolWindowIds.toList().forEach(::applyPolicyForToolWindowId)
+  disconnectIfDone()
 }
 
 private suspend fun restoreEditors(project: Project, fileEditorManager: FileEditorManagerImpl) {

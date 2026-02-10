@@ -133,6 +133,12 @@ abstract class WelcomeScreenProjectProvider {
 }
 
 internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapabilitiesProvider {
+  /**
+   * Maps welcome-screen project classification to generic frame capabilities.
+   *
+   * Startup UI policy is intentionally not provided here; it is contributed by module-specific
+   * providers that consume [ProjectFrameCapability.WELCOME_EXPERIENCE].
+   */
   override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
     if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
       return emptySet()
@@ -144,6 +150,10 @@ internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapab
     else {
       return WELCOME_CAPABILITIES
     }
+  }
+
+  override fun getUiPolicy(project: Project, capabilities: Set<ProjectFrameCapability>): ProjectFrameUiPolicy? {
+    return null
   }
 }
 

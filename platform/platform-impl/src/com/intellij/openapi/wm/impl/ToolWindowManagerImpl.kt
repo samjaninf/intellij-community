@@ -652,10 +652,11 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
     reopeningEditorJob: Job,
     taskListDeferred: Deferred<List<RegisterToolWindowTaskData>>,
   ) {
-    doInit(pane = pane,
-           connection = project.messageBus.connect(coroutineScope),
-           reopeningEditorJob = reopeningEditorJob,
-           taskListDeferred = taskListDeferred
+    doInit(
+      pane = pane,
+      connection = project.messageBus.connect(coroutineScope),
+      reopeningEditorJob = reopeningEditorJob,
+      taskListDeferred = taskListDeferred,
     )
   }
 
