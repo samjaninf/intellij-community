@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.intellij.openapi.util.Pair.pair;
@@ -51,17 +52,32 @@ public final class ExternalSystemJdkUtil {
   public static final String USE_PROJECT_JDK = "#USE_PROJECT_JDK";
   public static final String USE_JAVA_HOME = "#JAVA_HOME";
 
+  /**
+   * @deprecated Use {@link ExternalSystemJdkUtil#resolveJdkName(Project, String)} instead.
+   */
+  @Deprecated
   @Contract("_, null -> null")
   public static @Nullable Sdk getJdk(@Nullable Project project, @Nullable String jdkName) throws ExternalSystemJdkException {
-    return resolveJdkName(getProjectJdk(project), jdkName);
+    return resolveJdkName(project, jdkName);
+  }
+
+  @Contract("_, null -> null")
+  public static @Nullable Sdk resolveJdkName(@Nullable Project project, @Nullable String jdkName) throws ExternalSystemJdkException {
+    return matchJdkName(jdkName, () -> getProjectJdk(project));
   }
 
   @Contract("_, null -> null")
   public static @Nullable Sdk resolveJdkName(@Nullable Sdk projectSdk, @Nullable String jdkName) throws ExternalSystemJdkException {
+    return matchJdkName(jdkName, () -> projectSdk);
+  }
+
+  @Contract("null, _ -> null")
+  private static @Nullable Sdk matchJdkName(@Nullable String jdkName, @NotNull Supplier<Sdk> projectSdkSupplier) {
     return switch (jdkName) {
       case null -> null;
       case USE_INTERNAL_JAVA -> getInternalJdk();
       case USE_PROJECT_JDK -> {
+        Sdk projectSdk = projectSdkSupplier.get();
         if (projectSdk == null) {
           throw new ProjectJdkNotFoundException();
         }
