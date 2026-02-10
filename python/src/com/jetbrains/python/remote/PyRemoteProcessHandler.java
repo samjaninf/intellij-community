@@ -60,6 +60,7 @@ public final class PyRemoteProcessHandler extends BaseRemoteProcessHandler<Remot
     return myPathMapper;
   }
 
+
   @Override
   public Pair<String, Integer> getRemoteSocket(int localPort) throws RemoteSdkException {
     try {
@@ -69,6 +70,7 @@ public final class PyRemoteProcessHandler extends BaseRemoteProcessHandler<Remot
       throw new RuntimeException(e);
     }
   }
+
 
   @Override
   public @Nullable HostAndPort getLocalTunnel(int remotePort) {
@@ -85,6 +87,7 @@ public final class PyRemoteProcessHandler extends BaseRemoteProcessHandler<Remot
   public void killProcess() {
     destroyProcessImpl();
   }
+
 
 
   public static @NotNull PyRemoteProcessHandler createProcessHandler(@NotNull RemoteProcess remoteProcess,
@@ -152,6 +155,7 @@ public final class PyRemoteProcessHandler extends BaseRemoteProcessHandler<Remot
   public List<PathMappingSettings.PathMapping> getFileMappings() {
     return myFileMappings;
   }
+
 
   @Override
   public @NotNull PyPositionConverter createPositionConverter(@NotNull PyDebugProcess debugProcess) {

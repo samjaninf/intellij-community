@@ -443,6 +443,7 @@ public final class PythonSdkUpdater {
    * @see #updateVersionAndPathsSynchronouslyAndScheduleRemaining(Sdk, Project)
    */
   @ApiStatus.Internal
+
   public static void updateOrShowError(@NotNull Sdk sdk, @Nullable Project project, @Nullable Component ownerComponent) {
     boolean versionAndPathsUpdated = updateVersionAndPathsSynchronouslyAndScheduleRemaining(sdk, project);
     if (!versionAndPathsUpdated) {

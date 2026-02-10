@@ -73,7 +73,6 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
   private JComboBox<PyAbstractTestFactory<?>> myTestRunnerComboBox;
   private JComboBox<DocStringFormat> myDocstringFormatComboBox;
   private PyTestRunConfigurationsModel myModel;
-  private final PyPackageRequirementsSettings myPackagingSettings;
   private final @Nullable Module myModule;
   private final @NotNull Project myProject;
   private final PyDocumentationSettings myDocumentationSettings;
@@ -104,7 +103,7 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
     myModule = module;
     myProject = project;
     myDocumentationSettings = PyDocumentationSettings.getInstance(myModule);
-    myPackagingSettings = PyPackageRequirementsSettings.getInstance(module);
+    PyPackageRequirementsSettings packagingSettings = PyPackageRequirementsSettings.getInstance(module);
     myDocstringFormatComboBox.setModel(new CollectionComboBoxModel<>(new ArrayList<>(Arrays.asList(DocStringFormat.values())),
                                                                      myDocumentationSettings.getFormat()));
     myDocstringFormatComboBox.setRenderer(SimpleListCellRenderer.create("", DocStringFormat::getName));

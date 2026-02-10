@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @deprecated use {@link com.intellij.execution.process.ProcessListener} directly
  */
+
 @Deprecated(forRemoval = true)
 public final class IndicatedProcessOutputListener extends ProcessAdapter {
   private final @NotNull ProgressIndicator myIndicator;
