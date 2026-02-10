@@ -15,6 +15,7 @@ jvm_library(
     "//platform/projectModel-api:projectModel",
     "//platform/util",
     "//platform/util/base",
+    "//platform/util:util-ui",
   ]
 )
 ### auto-generated section `build intellij.platform.projectFrame` end

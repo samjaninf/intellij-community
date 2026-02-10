@@ -1,6 +1,7 @@
 // Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.wm.impl;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.SystemInfoRt;
 import com.intellij.openapi.util.registry.Registry;
 import com.intellij.ui.JreHiDpiUtil;
@@ -16,16 +17,16 @@ import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.Rectangle;
 
-import static com.intellij.openapi.wm.impl.WindowManagerImplKt.IDE_FRAME_EVENT_LOG;
-
 /**
  * Converts the frame bounds b/w the user space (JRE-managed HiDPI mode) and the device space (IDE-managed HiDPI mode).
  * See {@link JreHiDpiUtil#isJreHiDPIEnabled()}
  */
 @ApiStatus.Internal
 public final class FrameBoundsConverter {
-  static final int MIN_WIDTH = 350;
-  static final int MIN_HEIGHT = 150;
+  private static final Logger LOG = Logger.getInstance("ide.frame.events");
+
+  public static final int MIN_WIDTH = 350;
+  public static final int MIN_HEIGHT = 150;
 
   /**
    * @param bounds the bounds in the device space
@@ -69,15 +70,15 @@ public final class FrameBoundsConverter {
         if (b.height > screen.height) {
           b.height = screen.height;
         }
-        if (IDE_FRAME_EVENT_LOG.isDebugEnabled()) { // avoid unnecessary concatenation
-          IDE_FRAME_EVENT_LOG.debug("Found the screen " + screen + " for the loaded bounds " + bounds);
+        if (LOG.isDebugEnabled()) { // avoid unnecessary concatenation
+          LOG.debug("Found the screen " + screen + " for the loaded bounds " + bounds);
         }
         return b;
       }
     }
 
-    if (IDE_FRAME_EVENT_LOG.isDebugEnabled()) { // avoid unnecessary concatenation
-      IDE_FRAME_EVENT_LOG.debug("Found no screen for the loaded bounds " + bounds);
+    if (LOG.isDebugEnabled()) { // avoid unnecessary concatenation
+      LOG.debug("Found no screen for the loaded bounds " + bounds);
     }
     // We didn't find a proper device at all. Probably it was an external screen that is unavailable now. We cannot use specified bounds.
     return null;
@@ -113,7 +114,7 @@ public final class FrameBoundsConverter {
     scale(bounds, gc.getBounds(), JBUIScale.sysScale(gc));
   }
 
-  static void scaleDown(@NotNull Rectangle bounds, @NotNull GraphicsConfiguration gc) {
+  public static void scaleDown(@NotNull Rectangle bounds, @NotNull GraphicsConfiguration gc) {
     float scale = JBUIScale.sysScale(gc);
     assert scale != 0;
     scale(bounds, gc.getBounds(), 1 / scale);

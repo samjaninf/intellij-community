@@ -22,7 +22,7 @@ public class ActionPanel extends JPanel {
     return myActions;
   }
 
-  void addAction(@NotNull AnAction action) {
+  public void addAction(@NotNull AnAction action) {
     myActions.add(action);
   }
 }
