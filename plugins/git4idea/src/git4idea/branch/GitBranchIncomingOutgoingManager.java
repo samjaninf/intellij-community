@@ -31,6 +31,7 @@ import com.intellij.vcs.git.branch.GitInOutProjectState;
 import com.intellij.vcs.log.Hash;
 import com.intellij.vcsUtil.VcsFileUtil;
 import git4idea.GitLocalBranch;
+import git4idea.GitOperationsCollector;
 import git4idea.GitRemoteBranch;
 import git4idea.commands.Git;
 import git4idea.commands.GitAuthenticationListener;
@@ -72,6 +73,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.intellij.externalProcessAuthHelper.AuthenticationMode;
@@ -293,24 +295,32 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   private void requestRemoteInfo(GitIncomingRemoteCheckStrategy remoteCheckStrategy, List<GitRepository> repositories) {
     myLocalBranchesToFetch.remove(repositories);
-    switch (remoteCheckStrategy) {
-      case FETCH -> {
-        LOG.info("Fetching %d repositories".formatted(repositories.size()));
-        List<GitFetchSpec> remotesToFetch = new ArrayList<>();
-        for (GitRepository repository : repositories) {
-          for (GitRemote remote : repository.getRemotes()) {
-            remotesToFetch.add(new GitFetchSpec(repository, remote, getAuthenticationMode(repository, remote)));
+    if (remoteCheckStrategy == GitIncomingRemoteCheckStrategy.NONE) {
+      LOG.debug("Remote check disabled");
+      return;
+    }
+
+    AtomicBoolean success = new AtomicBoolean(false);
+    try {
+      switch (remoteCheckStrategy) {
+        case FETCH -> {
+          LOG.info("Fetching %d repositories".formatted(repositories.size()));
+          List<GitFetchSpec> remotesToFetch = new ArrayList<>();
+          for (GitRepository repository : repositories) {
+            for (GitRemote remote : repository.getRemotes()) {
+              remotesToFetch.add(new GitFetchSpec(repository, remote, getAuthenticationMode(repository, remote)));
+            }
           }
+          success.set(GitFetchSupport.fetchSupport(myProject).fetch(remotesToFetch).isSuccessful());
         }
-        GitFetchSupport.fetchSupport(myProject).fetch(remotesToFetch);
+        case LS_REMOTE -> {
+          LOG.info("Listing remote info for %d repositories".formatted(repositories.size()));
+          repositories.forEach(r -> myLocalBranchesToFetch.put(r, calculateBranchesToFetch(r, () -> success.set(false))));
+        }
       }
-      case LS_REMOTE -> {
-        LOG.info("Listing remote info for %d repositories".formatted(repositories.size()));
-        repositories.forEach(r -> myLocalBranchesToFetch.put(r, calculateBranchesToFetch(r)));
-      }
-      case NONE -> {
-        LOG.debug("Remote check disabled");
-      }
+    }
+    finally {
+      GitOperationsCollector.logRemoteInfoRequest(myProject, remoteCheckStrategy, success.get());
     }
   }
 
@@ -354,20 +364,22 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
     scheduleUpdate();
   }
 
-  private @NotNull Map<GitLocalBranch, Hash> calculateBranchesToFetch(@NotNull GitRepository repository) {
+  private @NotNull Map<GitLocalBranch, Hash> calculateBranchesToFetch(@NotNull GitRepository repository,
+                                                                      @NotNull Runnable onError) {
     Map<GitLocalBranch, Hash> result = new HashMap<>();
     groupTrackInfoByRemotes(repository).entrySet()
-      .forEach(entry -> result.putAll(calcBranchesToFetchForRemote(repository, entry.getKey(), entry.getValue())));
+      .forEach(entry -> result.putAll(calcBranchesToFetchForRemote(repository, entry.getKey(), entry.getValue(), onError)));
     return result;
   }
 
   private @NotNull Map<GitLocalBranch, Hash> calcBranchesToFetchForRemote(@NotNull GitRepository repository,
                                                                           @NotNull GitRemote gitRemote,
-                                                                          @NotNull Collection<? extends GitBranchTrackInfo> trackInfoList) {
+                                                                          @NotNull Collection<? extends GitBranchTrackInfo> trackInfoList,
+                                                                          @NotNull Runnable onError) {
     Map<GitLocalBranch, Hash> result = new HashMap<>();
     GitBranchesCollection branchesCollection = repository.getBranches();
     final Map<String, Hash> remoteNameWithHash =
-      lsRemote(repository, gitRemote, ContainerUtil.map(trackInfoList, info -> info.getRemoteBranch().getNameForRemoteOperations()));
+      lsRemote(repository, gitRemote, ContainerUtil.map(trackInfoList, info -> info.getRemoteBranch().getNameForRemoteOperations()), onError);
 
     for (Map.Entry<String, Hash> hashEntry : remoteNameWithHash.entrySet()) {
       String remoteBranchName = hashEntry.getKey();
@@ -435,7 +447,8 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   private @NotNull Map<String, Hash> lsRemote(@NotNull GitRepository repository,
                                               @NotNull GitRemote remote,
-                                              @NotNull List<String> branchRefNames) {
+                                              @NotNull List<String> branchRefNames,
+                                              @NotNull Runnable onError) {
     Map<String, Hash> result = new HashMap<>();
 
     if (!supportsIncomingOutgoing()) return result;
@@ -451,6 +464,9 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
         Map<String, String> hashWithNameMap = ContainerUtil.map2MapNotNull(lsRemoteResult.getOutput(), GitRefUtil::parseBranchesLine);
         result.putAll(getResolvedHashes(hashWithNameMap));
         myAuthSuccessMap.putValue(repository, remote);
+      }
+      else {
+        onError.run();
       }
     });
     return result;

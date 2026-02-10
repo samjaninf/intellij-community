@@ -323,6 +323,8 @@ internal class GitFetchSupportImpl(private val project: Project) : GitFetchSuppo
 
     private val isFailed = results.values.any { !it.totallySuccessful() }
 
+    override fun isSuccessful(): Boolean = !isFailed
+
     override fun showNotification() {
       doShowNotification()
     }
