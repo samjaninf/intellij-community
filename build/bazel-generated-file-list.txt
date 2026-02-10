@@ -721,6 +721,7 @@ platform/polySymbols/backend
 platform/pratt
 platform/progress/backend
 platform/progress/shared
+platform/project-frame
 platform/project/backend
 platform/project/shared
 platform/projectModel-api
@@ -852,6 +853,7 @@ platform/vcs-log/impl
 platform/vcs-tests
 platform/warmup
 platform/warmup/performanceTesting
+platform/welcome-screen
 platform/whatsNew
 platform/workspace/jps
 platform/workspace/jps/tests

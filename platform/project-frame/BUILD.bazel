@@ -1,0 +1,19 @@
+### auto-generated section `build intellij.platform.projectFrame` start
+load("@rules_jvm//:jvm.bzl", "jvm_library")
+
+jvm_library(
+  name = "project-frame",
+  module_name = "intellij.platform.projectFrame",
+  visibility = ["//visibility:public"],
+  srcs = glob(["src/**/*.kt", "src/**/*.java", "src/**/*.form"], allow_empty = True),
+  deps = [
+    "@lib//:kotlin-stdlib",
+    "//libraries/kotlinx/coroutines/core",
+    "//platform/core-api:core",
+    "//platform/extensions",
+    "//platform/projectModel-api:projectModel",
+    "//platform/util",
+    "//platform/util/base",
+  ]
+)
+### auto-generated section `build intellij.platform.projectFrame` end
