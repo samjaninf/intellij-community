@@ -47,12 +47,18 @@ fun Project.resolveInProject(pathInProject: String, throwWhenOutside: Boolean = 
 }
 
 fun findMostRelevantProjectForRoots(roots: Collection<String>): Project? {
-  return roots
-    .map { Paths.get(URI(FileUtilRt.toSystemIndependentName(it))).normalize() }
-    .firstNotNullOfOrNull { findMostRelevantProject(it) }
+  return roots.firstNotNullOfOrNull(::findMostRelevantProject)
 }
 
-fun findMostRelevantProject(path: Path): Project? {
+fun findMostRelevantProject(path: String): Project? {
+  var siPath = FileUtilRt.toSystemIndependentName(path)
+  if (!siPath.startsWith("file://")) {
+    siPath = "file://$siPath"
+  }
+  return findMostRelevantProject(Paths.get(URI(siPath)).normalize())
+}
+
+private fun findMostRelevantProject(path: Path): Project? {
   if (!path.isAbsolute) {
     logger.trace { "Path is not absolute: $path" }
     return null

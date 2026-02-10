@@ -457,13 +457,13 @@ class McpServerService(val cs: CoroutineScope) {
         } else if (!projectPathFromMcpRequest.isNullOrBlank()) {
           logger.trace { "Project path specified in MCP request: $projectPathFromMcpRequest" }
           // project from mcp argument first (may hallucinate)
-          findMostRelevantProject(Path(projectPathFromMcpRequest))
+          findMostRelevantProject(projectPathFromMcpRequest)
           ?: throw noSuitableProjectError("`$projectPathParameterName`=`$projectPathFromMcpRequest` doesn't correspond to any open project.")
         }
         else if (!projectPathFromHeaders.isNullOrBlank()) {
           logger.trace { "Project path specified in MCP request headers: $projectPathFromHeaders" }
           // then from headers
-          findMostRelevantProject(Path(projectPathFromHeaders))
+          findMostRelevantProject(projectPathFromHeaders)
           ?: throw noSuitableProjectError("Project path specified via header variable `$IJ_MCP_SERVER_PROJECT_PATH`=`$projectPathFromHeaders` doesn't correspond to any open project.")
         }
         else {
