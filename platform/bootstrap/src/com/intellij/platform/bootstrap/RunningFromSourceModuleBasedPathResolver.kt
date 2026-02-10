@@ -34,7 +34,7 @@ internal class RunningFromSourceModuleBasedPathResolver(
   }
 
   override fun resolveCustomModuleClassesRoots(moduleId: PluginModuleId): List<Path> {
-    val moduleDescriptor = moduleRepository.resolveModule(RuntimeModuleId.raw(moduleId.name)).resolvedModule
+    val moduleDescriptor = moduleRepository.resolveModule(RuntimeModuleId.module(moduleId.name)).resolvedModule
     return moduleDescriptor?.resourceRootPaths ?: emptyList()
   }
 }

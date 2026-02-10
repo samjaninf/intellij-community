@@ -61,7 +61,7 @@ fun loadPluginModules(
                 "on-demand" -> RuntimeModuleLoadingRule.ON_DEMAND
                 else -> RuntimeModuleLoadingRule.OPTIONAL
               }    
-              modules.add(RawIncludedRuntimeModule(RuntimeModuleId.raw(moduleName), loadingRule))
+              modules.add(RawIncludedRuntimeModule(RuntimeModuleId.module(moduleName), loadingRule))
             }
           }
         }

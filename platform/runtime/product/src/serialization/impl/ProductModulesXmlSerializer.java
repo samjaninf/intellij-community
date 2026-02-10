@@ -73,7 +73,7 @@ public final class ProductModulesXmlSerializer {
           if (moduleName == null || moduleName.isEmpty()) {
             throw new XMLStreamException("Module name is not specified");
           }
-          RuntimeModuleId moduleId = RuntimeModuleId.raw(moduleName);
+          RuntimeModuleId moduleId = RuntimeModuleId.module(moduleName);
           if ("main-root-modules".equals(secondLevelTag)) {
             assert loadingRule != null;
             rootMainGroupModules.add(new RawIncludedRuntimeModule(moduleId, loadingRule));

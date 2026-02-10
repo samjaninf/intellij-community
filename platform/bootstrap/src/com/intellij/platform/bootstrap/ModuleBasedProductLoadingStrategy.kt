@@ -295,7 +295,7 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
         val repositoryData = repositoryDataMap[path] ?: return@async null
         val mainModuleId = repositoryData.mainPluginModuleId ?: return@async null
         try {
-          val mainModule = moduleRepository.getModule(RuntimeModuleId.raw(mainModuleId))
+          val mainModule = moduleRepository.getModule(RuntimeModuleId.module(mainModuleId))
           /* 
             It would be probably better to reuse PluginModuleGroup here, and load information about additional modules from plugin.xml. 
             However, currently this won't work because plugin model v2 requires that there is an XML configuration file for each module
@@ -437,7 +437,7 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
   }
 
   override fun isOptionalProductModule(moduleId: String): Boolean {
-    return productModules.mainModuleGroup.optionalModuleIds.contains(RuntimeModuleId.raw(moduleId))
+    return productModules.mainModuleGroup.optionalModuleIds.contains(RuntimeModuleId.module(moduleId))
   }
 
   override fun findProductContentModuleClassesRoot(moduleId: PluginModuleId, moduleDir: Path): Path? {
