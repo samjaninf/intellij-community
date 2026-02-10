@@ -116,6 +116,10 @@ internal class PerformanceWatcherImpl(private val coroutineScope: CoroutineScope
   private val pooledUnresponsiveIntervalLazy: RegistryValue by lazy {
     RegistryManager.getInstance().get("performance.watcher.pooled.unresponsive.interval.ms")
   }
+  private val maxDumpDurationLazy: RegistryValue by lazy {
+    RegistryManager.getInstance().get("performance.watcher.maxDumpDuration.ms")
+  }
+
 
   private val isActive: Boolean = !ApplicationManager.getApplication().isHeadlessEnvironment
   private var smokeAndMirrorsCounter: Int = 0
@@ -273,7 +277,11 @@ internal class PerformanceWatcherImpl(private val coroutineScope: CoroutineScope
 
   /** to limit the number of dumps and the size of performance snapshot  */
   override val maxDumpDuration: Int
-    get() = (dumpInterval * 20).coerceIn(0, 40000) // 20 files max
+    get() {
+      val value = maxDumpDurationLazy.asInteger()
+      return if (value <= 0) 0 else value
+    }
+
   override val jitProblem: String?
     get() = jitWatcher.jitProblem
 
