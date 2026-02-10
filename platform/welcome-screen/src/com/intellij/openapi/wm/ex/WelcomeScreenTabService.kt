@@ -31,3 +31,4 @@ interface WelcomeScreenTabService {
 internal class NoWelcomeScreenTabService : WelcomeScreenTabService {
   override suspend fun openTab() = Unit
 }
+
