@@ -1,4 +1,4 @@
-// Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.wm.impl.welcomeScreen;
 
 import com.intellij.ide.DataManager;
@@ -6,7 +6,6 @@ import com.intellij.openapi.actionSystem.ActionPlaces;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.wm.IdeFocusManager;
-import com.intellij.ui.components.labels.ActionLink;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -29,12 +28,12 @@ import static com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager.
 @ApiStatus.Internal
 public final class WelcomeScreenFocusManager {
 
-  static void installFocusable(final @NotNull Container parentContainer,
-                               final JComponent comp,
-                               final AnAction action,
-                               final int nextKeyCode,
-                               final int prevKeyCode,
-                               final @Nullable Component focusedOnLeft) {
+  public static void installFocusable(final @NotNull Container parentContainer,
+                                      final JComponent comp,
+                                      final AnAction action,
+                                      final int nextKeyCode,
+                                      final int prevKeyCode,
+                                      final @Nullable Component focusedOnLeft) {
     comp.setFocusable(true);
     comp.setFocusTraversalKeysEnabled(true);
     comp.addKeyListener(new KeyAdapter() {
@@ -42,12 +41,10 @@ public final class WelcomeScreenFocusManager {
       public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_SPACE) {
           InputEvent event = e;
-          if (e.getComponent() instanceof JComponent) {
-            ActionLink link = UIUtil.findComponentOfType((JComponent)e.getComponent(), ActionLink.class);
-            if (link != null) {
-              event = new MouseEvent(link, MouseEvent.MOUSE_CLICKED, e.getWhen(), e.getModifiers(), 0, 0, 1, false, MouseEvent.BUTTON1);
+          Component actionLink = findActionLinkComponent(e.getComponent());
+          if (actionLink != null) {
+            event = new MouseEvent(actionLink, MouseEvent.MOUSE_CLICKED, e.getWhen(), e.getModifiers(), 0, 0, 1, false, MouseEvent.BUTTON1);
             }
-          }
           action.actionPerformed(
             AnActionEvent.createFromAnAction(action, event, ActionPlaces.WELCOME_SCREEN, DataManager.getInstance().getDataContext()));
         }
@@ -103,6 +100,21 @@ public final class WelcomeScreenFocusManager {
       if (next != null) {
         IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(next, true));
       }
+    }
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static @Nullable Component findActionLinkComponent(@Nullable Component component) {
+    if (!(component instanceof JComponent)) {
+      return null;
+    }
+
+    try {
+      Class<?> actionLinkClass = Class.forName("com.intellij.ui.components.labels.ActionLink");
+      return UIUtil.findComponentOfType((JComponent)component, (Class)actionLinkClass);
+    }
+    catch (ClassNotFoundException ignore) {
+      return null;
     }
   }
 }
