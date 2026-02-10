@@ -45,7 +45,7 @@ public class ExportEclipseProjectsDialog extends DialogWrapper {
     {
       moduleChooser = new ElementsChooser<>(true) {
         @Override
-        protected String getItemText(final @NotNull java.lang.Module module) {
+        protected String getItemText(final @NotNull Module module) {
           return module.getName();
         }
       };

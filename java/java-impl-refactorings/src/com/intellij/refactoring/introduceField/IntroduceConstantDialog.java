@@ -419,7 +419,7 @@ class IntroduceConstantDialog extends DialogWrapper {
         myCbDeleteVariable.setEnabled(false);
         myCbDeleteVariable.setSelected(true);
       }
-      else if (myCbReplaceAll != null) {
+      else {
         updateCbDeleteVariable();
         myCbReplaceAll.addItemListener(
           new ItemListener() {

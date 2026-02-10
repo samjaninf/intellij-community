@@ -56,12 +56,7 @@ public class ShellcheckOptionsPanel {
     myInspectionsChangeListener = inspectionsChangeListener;
     myDisabledInspections = disabledInspections;
     {
-      myShellcheckDownloadLink = new ActionLink(ShBundle.message("sh.shellcheck.download.label.text"), e -> {
-        ShShellcheckUtil.download(myProject,
-                                  () -> myShellcheckSelector.setText(ShSettings.getShellcheckPath(myProject)),
-                                  () -> myErrorLabel.setVisible(true));
-        EditorNotifications.getInstance(myProject).updateAllNotifications();
-      });
+      myShellcheckDownloadLink = new ActionLink(ShBundle.message("sh.shellcheck.download.label.text"));
 
       myInspectionsCheckboxPanel = new MultipleCheckboxOptionsPanel(new OptionAccessor() {
         @Override
@@ -132,6 +127,13 @@ public class ShellcheckOptionsPanel {
                                                     false));
     }
     myProject = ProjectUtil.getProject(getPanel());
+
+    myShellcheckDownloadLink.addActionListener(e -> {
+      ShShellcheckUtil.download(myProject,
+                                () -> myShellcheckSelector.setText(ShSettings.getShellcheckPath(myProject)),
+                                () -> myErrorLabel.setVisible(true));
+      EditorNotifications.getInstance(myProject).updateAllNotifications();
+    });
 
     myShellcheckSelector.addBrowseFolderListener(myProject, FileChooserDescriptorFactory.createSingleFileDescriptor()
       .withTitle(ShBundle.message("sh.shellcheck.path.label")));

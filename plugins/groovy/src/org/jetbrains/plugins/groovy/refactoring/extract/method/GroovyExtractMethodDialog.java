@@ -71,24 +71,26 @@ public class GroovyExtractMethodDialog extends DialogWrapper {
   private final EditorTextField myNameField;
   private final JCheckBox myCbSpecifyType;
   private final JLabel myNameLabel;
-  private MethodSignatureComponent mySignature;
+  private final MethodSignatureComponent mySignature;
   private final ComboBoxVisibilityPanel<String> myVisibilityPanel;
   private final Splitter mySplitter;
   private final JCheckBox myForceReturnCheckBox;
-  private GrParameterTablePanel myParameterTablePanel;
-  private final Project myProject;
+  private final GrParameterTablePanel myParameterTablePanel;
 
   public GroovyExtractMethodDialog(InitialInfo info, PsiClass owner) {
     super(info.getProject(), true);
+
+    Project project = info.getProject();
+
     {
-      mySignature = new GrMethodSignatureComponent("", myProject);
+      mySignature = new GrMethodSignatureComponent("", project);
       mySignature.setPreferredSize(JBUI.size(500, 100));
       mySignature.setMinimumSize(JBUI.size(500, 100));
       mySignature.setBorder(
         IdeBorderFactory.createTitledBorder(GroovyRefactoringBundle.message("signature.preview.border.title"), false));
       mySignature.setFocusable(false);
 
-      myNameField = new EditorTextField("", myProject, GroovyFileType.GROOVY_FILE_TYPE);
+      myNameField = new EditorTextField("", project, GroovyFileType.GROOVY_FILE_TYPE);
       myVisibilityPanel = new GroovyComboboxVisibilityPanel();
 
       String visibility = GroovyApplicationSettings.getInstance().EXTRACT_METHOD_VISIBILITY;
@@ -172,7 +174,6 @@ public class GroovyExtractMethodDialog extends DialogWrapper {
                                                                  GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED,
                                                                  null, null, null, 0, false));
     }
-    myProject = info.getProject();
     myHelper = new ExtractMethodInfoHelper(info, "", owner, false);
 
     myParameterTablePanel.init(myHelper);
