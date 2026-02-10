@@ -15,6 +15,7 @@ import com.intellij.mcpserver.McpTool
 import com.intellij.mcpserver.McpToolCallResult
 import com.intellij.mcpserver.McpToolCallResultContent
 import com.intellij.mcpserver.McpToolFilter
+import com.intellij.mcpserver.McpToolFilterProvider
 import com.intellij.mcpserver.McpToolSideEffectEvent
 import com.intellij.mcpserver.McpToolsProvider
 import com.intellij.mcpserver.McpToolset
@@ -97,6 +98,7 @@ import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -116,7 +118,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.io.path.Path
 
 
 private val logger = logger<McpServerService>()
