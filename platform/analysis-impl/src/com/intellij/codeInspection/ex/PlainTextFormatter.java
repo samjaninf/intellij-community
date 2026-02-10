@@ -3,12 +3,11 @@ package com.intellij.codeInspection.ex;
 
 import com.intellij.codeInspection.InspectionsReportConverter;
 import com.intellij.codeInspection.InspectionsResultUtil;
+import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.openapi.util.io.FileUtilRt;
 import com.intellij.openapi.util.text.StringUtil;
-import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
-import org.jdom.input.SAXBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,6 +57,13 @@ public final class PlainTextFormatter implements InspectionsReportConverter {
                       final @NotNull Map<String, Tools> tools,
                       final @NotNull List<? extends File> inspectionsResults) throws ConversionException {
     final SAXTransformerFactory transformerFactory = (SAXTransformerFactory)TransformerFactory.newDefaultInstance();
+    try {
+      transformerFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+      transformerFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+      transformerFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+    }
+    catch (TransformerConfigurationException ignored) {
+    }
 
     Source xslSource;
     Transformer transformer;
@@ -110,12 +116,9 @@ public final class PlainTextFormatter implements InspectionsReportConverter {
         // separator before file list
         w.append("\n");
 
-        // parse xml and output results
-        final SAXBuilder builder = new SAXBuilder();
-
         try {
-          final Document doc = builder.build(inspectionData);
-          final Element root = doc.getRootElement();
+          // parse xml and output results
+          final Element root = JDOMUtil.load(inspectionData);
 
           final List problems = root.getChildren(PROBLEM_ELEMENT);
 

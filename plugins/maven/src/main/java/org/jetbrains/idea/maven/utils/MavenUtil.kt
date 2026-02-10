@@ -87,6 +87,7 @@ import org.jetbrains.idea.maven.utils.MavenArtifactUtil.readPluginInfo
 import org.jetbrains.idea.maven.utils.MavenEelUtil.resolveLocalRepositoryBlocking
 import org.jetbrains.idea.maven.utils.MavenEelUtil.resolveM2Dir
 import org.jetbrains.idea.maven.utils.MavenEelUtil.resolveUserSettingsPathBlocking
+import org.jetbrains.idea.maven.utils.MavenUtil.path
 import org.xml.sax.SAXException
 import org.xml.sax.SAXParseException
 import org.xml.sax.helpers.DefaultHandler
@@ -317,7 +318,15 @@ object MavenUtil {
       }
       try {
         child.inputStream.use {
-          val parser = XMLInputFactory.newFactory().createXMLStreamReader(it)
+          val factory = XMLInputFactory.newFactory()
+          try {
+            factory.setProperty("http://apache.org/xml/features/disallow-doctype-decl", true)
+            factory.setProperty("http://xml.org/sax/features/external-general-entities", false)
+            factory.setProperty("http://xml.org/sax/features/external-parameter-entities", false)
+          }
+          catch (_: IllegalArgumentException) {
+          }
+          val parser = factory.createXMLStreamReader(it)
           if (parser.nextTag() != XMLStreamReader.START_ELEMENT
               || parser.getLocalName() != "project") {
             if (MavenLog.LOG.isTraceEnabled) {

@@ -78,7 +78,15 @@ public final class MavenServerUtil {
     File pom = new File(dir, "pom.xml");
     //we cannot use any maven models here, just good old XML parsing
     try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(pom))) {
-      XMLStreamReader parser = XMLInputFactory.newFactory().createXMLStreamReader(is);
+      XMLInputFactory factory = XMLInputFactory.newFactory();
+      try {
+        factory.setProperty("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setProperty("http://xml.org/sax/features/external-general-entities", false);
+        factory.setProperty("http://xml.org/sax/features/external-parameter-entities", false);
+      }
+      catch (IllegalArgumentException ignored) {
+      }
+      XMLStreamReader parser = factory.createXMLStreamReader(is);
       if (parser.nextTag() != XMLStreamConstants.START_ELEMENT || !parser.getLocalName().equals("project")) {
         return false;
       }

@@ -2,6 +2,7 @@
 package com.intellij.tasks.fogbugz;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.tasks.Comment;
 import com.intellij.tasks.Task;
@@ -15,9 +16,7 @@ import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.xmlb.annotations.Tag;
 import icons.TasksCoreIcons;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.jdom.Document;
 import org.jdom.Element;
-import org.jdom.input.SAXBuilder;
 import org.jdom.xpath.XPath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +73,7 @@ public final class FogBugzRepository extends BaseRepositoryImpl {
     if (status != 200) {
       throw new Exception("Error listing cases: " + method.getStatusLine());
     }
-    Document document = new SAXBuilder(false).build(method.getResponseBodyAsStream()).getDocument();
+    Element document = JDOMUtil.load(method.getResponseBodyAsStream());
     List<Element> errorNodes = XPath.newInstance("/response/error").selectNodes(document);
     if (!errorNodes.isEmpty()) {
       throw new Exception("Error listing cases: " + errorNodes.get(0).getText());
@@ -227,7 +226,7 @@ public final class FogBugzRepository extends BaseRepositoryImpl {
     if (status != 200) {
       throw new Exception("Error logging in: " + method.getStatusLine());
     }
-    Document document = new SAXBuilder(false).build(method.getResponseBodyAsStream()).getDocument();
+    Element document = JDOMUtil.load(method.getResponseBodyAsStream());
     XPath path = XPath.newInstance("/response/token");
     Element result = (Element)path.selectSingleNode(document);
     if (result == null) {
