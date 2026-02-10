@@ -20,27 +20,26 @@ import com.intellij.psi.util.CachedValuesManager
 private typealias DetectionResults = Map<String, ChainLanguageDetector.ChainDetectionResult>
 
 object BatchLangDetector {
-  private val RELIABLE_CACHE = Key.create<CachedValue<DetectionResults>>("grazie reliable language detection cache")
-  private val UNRELIABLE_CACHE = Key.create<CachedValue<DetectionResults>>("grazie unreliable language detection cache")
+  private val CACHE = Key.create<CachedValue<DetectionResults>>("grazie reliable language detection cache")
 
   fun getLanguage(content: TextContent, offset: Int): Language? {
     val text = content.substring(offset).take(LanguageDetectorHolder.LIMIT)
     if (!NaturalTextDetector.seemsNatural(text)) return null
-    val language = detectForFile(content.containingFile, false)[text]?.result?.preferred
+    val language = detectForFile(content.containingFile)[text]?.result?.preferred
     return if (language == Language.UNKNOWN) null else language
   }
 
   fun updateContext(file: PsiFile, context: DetectionContext.Local) {
-    detectForFile(file, true).forEach { (text, details) ->
+    detectForFile(file).forEach { (text, details) ->
       val wordsCount = text.words().count()
       context.update(text.length, wordsCount, details)
     }
   }
 
-  private fun detectForFile(file: PsiFile, isReliable: Boolean): DetectionResults =
-    CachedValuesManager.getCachedValue(file, if (isReliable) RELIABLE_CACHE else UNRELIABLE_CACHE) {
+  private fun detectForFile(file: PsiFile): DetectionResults =
+    CachedValuesManager.getCachedValue(file, CACHE) {
       val texts = getCleanTexts(file)
-      val languages = LanguageDetectorHolder.get().detectWithDetails(texts, isReliable) { ProgressManager.checkCanceled() }
+      val languages = LanguageDetectorHolder.get().detectWithDetails(texts,true) { ProgressManager.checkCanceled() }
       CachedValueProvider.Result.create(texts.zip(languages).toMap(), file, grazieConfigTracker())
     }
 
