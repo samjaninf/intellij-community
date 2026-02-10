@@ -15,7 +15,11 @@ import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.util.registry.Registry
-import com.intellij.ui.*
+import com.intellij.ui.CheckboxTree
+import com.intellij.ui.CheckboxTreeTable
+import com.intellij.ui.CheckedTreeNode
+import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.treeStructure.treetable.TreeColumnInfo
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.tree.TreeUtil
