@@ -234,23 +234,10 @@ public final class JUnit5TeamCityRunner {
   }
 
   public static class TCLogRecordListener extends LogRecordListener {
-    private static final List<String> KNOWN_EXCEPTIONAL_WARNINGS = List.of(  // TODO: migrate these tests to JUnit 5
+    private static final List<String> KNOWN_EXCEPTIONAL_WARNINGS = List.of(
       "Discovered 2 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used.",  // https://github.com/junit-team/junit-framework/issues/2794
       "Discovered 3 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used.",
-      "Discovered 4 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used.",
-      "Runner org.jetbrains.plugins.ruby.ruby.runners.GemSuite (used on class ",
-      "Runner org.jetbrains.plugins.ruby.ruby.runners.IndexingModeSuite (used on ",
-      "Runner org.junit.internal.runners.SuiteMethod (used on class com.intellij.codeInsight.template.emmet.HtmlEmmetAbbreviationTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.internal.runners.SuiteMethod (used on class com.intellij.codeInsight.template.emmet.XslEmmetAbbreviationTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.internal.runners.SuiteMethod (used on class com.intellij.codeInsight.template.emmet.filters.BemEmmetFilterTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.internal.runners.SuiteMethod (used on class css.emmet.CssPropertiesEmmetAbbreviationTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.intellij.database.grid.DataGridInsertRowWithValueTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.intellij.lang.ruby.rbs.psi.data.RbsTypeSignatureSubtypeCheckerTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.intellij.selenium.shared.pageobject.englishWordDetector.EnglishWordDetectorTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.intellij.sql.SqlLiveTemplatesTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.intellij.sql.completion.AllSqlCompletionTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.intellij.sql.refactoring.SqlExtractNamedQueryTest) was not able to satisfy all filter requests.",
-      "Runner org.junit.runners.Parameterized (used on class com.jetbrains.rd.platform.codeWithMe.FileManifestUtilTest) was not able to satisfy all filter requests."
+      "Discovered 4 'junit-platform.properties' configuration files on the classpath (see below); only the first (*) will be used."
     );
 
     @Override
