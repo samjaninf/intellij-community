@@ -25,6 +25,7 @@ fleetModule {
 kotlin {
   // KOTLIN__MARKER_START
   compilerOptions.freeCompilerArgs = listOf(
+    "-Xcontext-parameters",
     "-Xjvm-default=all",
     "-Xlambdas=class",
     "-Xconsistent-data-class-copy-visibility",
