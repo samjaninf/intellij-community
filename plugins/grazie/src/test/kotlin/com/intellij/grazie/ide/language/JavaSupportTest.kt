@@ -3,8 +3,6 @@
 
 package com.intellij.grazie.ide.language
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerImpl
 import com.intellij.grazie.GrazieTestBase
 import com.intellij.grazie.jlanguage.Lang
 import com.intellij.grazie.spellcheck.engine.GrazieSpellCheckerEngine
@@ -17,6 +15,7 @@ import com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.PerformanceUnitTest
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
+import com.intellij.testFramework.fixtures.impl.CodeInsightTestFixtureImpl
 import com.intellij.tools.ide.metrics.benchmark.Benchmark
 import java.util.function.Consumer
 
@@ -76,7 +75,7 @@ class JavaSupportTest : GrazieTestBase() {
   fun testCommentIsNotHighlightedIfThereIsReference() {
     runHighlightTestForFile("ide/language/java/VectorablexxClass.java")
 
-    (DaemonCodeAnalyzer.getInstance(project) as DaemonCodeAnalyzerImpl).mustWaitForSmartMode(false, testRootDisposable)
+    CodeInsightTestFixtureImpl.mustWaitForSmartMode(false, testRootDisposable)
     runInDumbModeSynchronously(project) { runHighlightTestForFile("ide/language/java/VectorablexxClass.java") }
   }
 
@@ -224,7 +223,7 @@ class JavaSupportTest : GrazieTestBase() {
   }
 
   fun `test todo in dumb mode`() {
-    (DaemonCodeAnalyzer.getInstance(project) as DaemonCodeAnalyzerImpl).mustWaitForSmartMode(false, testRootDisposable)
+    CodeInsightTestFixtureImpl.mustWaitForSmartMode(false, testRootDisposable)
     runInDumbModeSynchronously(project) {
       myFixture.configureByText("a.java", "// TODO It is an friend of human")
       myFixture.checkHighlighting()

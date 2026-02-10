@@ -51,6 +51,7 @@ import com.intellij.testFramework.DumbModeTestUtils;
 import com.intellij.testFramework.EditorTestUtil;
 import com.intellij.testFramework.PlatformTestUtil;
 import com.intellij.testFramework.SkipSlowTestLocally;
+import com.intellij.testFramework.fixtures.impl.CodeInsightTestFixtureImpl;
 import com.intellij.ui.HintHint;
 import com.intellij.ui.HintListener;
 import com.intellij.ui.LightweightHint;
@@ -428,7 +429,7 @@ public class LightBulbTest extends DaemonAnalyzerTestCase {
       assertTrue(actions.toString(), ContainerUtil.exists(actions, a -> a.getText().equals(MyDumbFix.fixText)));
     }
 
-    myDaemonCodeAnalyzer.mustWaitForSmartMode(false, getTestRootDisposable());
+    CodeInsightTestFixtureImpl.mustWaitForSmartMode(false, getTestRootDisposable());
     DumbModeTestUtils.runInDumbModeSynchronously(myProject, () -> {
       collected.clear();
       applied.clear();
@@ -501,7 +502,7 @@ public class LightBulbTest extends DaemonAnalyzerTestCase {
         assertTrue(actions.toString(), ContainerUtil.exists(actions, a -> a.getText().equals(MyDumbFix.fixText)));
       }
 
-      myDaemonCodeAnalyzer.mustWaitForSmartMode(false, getTestRootDisposable());
+      CodeInsightTestFixtureImpl.mustWaitForSmartMode(false, getTestRootDisposable());
       DumbModeTestUtils.runInDumbModeSynchronously(myProject, () -> {
         myDaemonCodeAnalyzer.restart(getTestName(false));
         HighlightInfo info2 = assertOneElement(highlightErrors());
@@ -538,7 +539,7 @@ public class LightBulbTest extends DaemonAnalyzerTestCase {
       assertTrue(actions.toString(), ContainerUtil.exists(actions, a -> a.getText().equals("Flip ',' (may change semantics)")));
     }
     PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue();
-    myDaemonCodeAnalyzer.mustWaitForSmartMode(false, getTestRootDisposable());
+    CodeInsightTestFixtureImpl.mustWaitForSmartMode(false, getTestRootDisposable());
     DumbModeTestUtils.runInDumbModeSynchronously(myProject, () -> {
       PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue();
       type(' ');

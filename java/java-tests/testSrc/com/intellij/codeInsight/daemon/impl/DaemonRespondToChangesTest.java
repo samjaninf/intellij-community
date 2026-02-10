@@ -1761,7 +1761,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
     collected.clear();
     applied.clear();
 
-    myDaemonCodeAnalyzer.mustWaitForSmartMode(false, getTestRootDisposable());
+    CodeInsightTestFixtureImpl.mustWaitForSmartMode(false, getTestRootDisposable());
     DumbModeTestUtils.runInDumbModeSynchronously(myProject, () -> {
       type(' ');
       waitHighlighting(getProject(), getEditor().getDocument(), HighlightSeverity.ERROR);

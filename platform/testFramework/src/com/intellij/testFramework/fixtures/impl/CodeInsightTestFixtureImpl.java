@@ -7,7 +7,6 @@ import com.intellij.codeHighlighting.RainbowHighlighter;
 import com.intellij.codeInsight.AutoPopupController;
 import com.intellij.codeInsight.TargetElementUtil;
 import com.intellij.codeInsight.completion.CompletionType;
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzerSettings;
 import com.intellij.codeInsight.daemon.GutterMark;
 import com.intellij.codeInsight.daemon.ProblemHighlightFilter;
@@ -301,6 +300,7 @@ public class CodeInsightTestFixtureImpl extends BaseFixture implements CodeInsig
   private LibraryTableTracker myLibraryTableTracker;
   private SelectionAndCaretMarkupApplyPolicy mySelectionAndCaretMarkupApplyPolicy =
     SelectionAndCaretMarkupApplyPolicy.UPDATE_FILE_AND_KEEP_DOCUMENT_CLEAN;
+  private static volatile boolean mustWaitForSmartMode = true;
 
   public CodeInsightTestFixtureImpl(@NotNull IdeaProjectTestFixture projectFixture, @NotNull TempDirTestFixture tempDirTestFixture) {
     myProjectFixture = projectFixture;
@@ -381,7 +381,7 @@ public class CodeInsightTestFixtureImpl extends BaseFixture implements CodeInsig
                          ReadAction.compute(() -> Arrays.toString(ProjectRootManager.getInstance(project).getContentSourceRoots())) + ")"));
     }
 
-    DaemonCodeAnalyzerImpl codeAnalyzer = (DaemonCodeAnalyzerImpl)DaemonCodeAnalyzer.getInstance(project);
+    TestDaemonCodeAnalyzerImpl testDaemonCodeAnalyzer = new TestDaemonCodeAnalyzerImpl(project);
     TextEditor textEditor = TextEditorProvider.getInstance().getTextEditor(editor);
     DaemonCodeAnalyzerSettings settings = DaemonCodeAnalyzerSettings.getInstance();
     ProjectInspectionProfileManager.getInstance(project); // avoid "severities changed, restart" event
@@ -394,9 +394,10 @@ public class CodeInsightTestFixtureImpl extends BaseFixture implements CodeInsig
         EdtTestUtil.runInEdtAndWait(() -> {
           PsiFile file = filePointer.getElement();
           assertNotNull(file);
+          @NotNull Document document = editor.getDocument();
           ThreadingAssertions.assertEventDispatchThread();
           settings.forceUseZeroAutoReparseDelayIn(() -> {
-            codeAnalyzer.runPasses(file, editor.getDocument(), textEditor, toIgnore, canChangeDocument, null);
+            testDaemonCodeAnalyzer.runPasses(file, document, textEditor, toIgnore, canChangeDocument, mustWaitForSmartMode, (Runnable)null);
           });
           IdeaTestExecutionPolicy policy = IdeaTestExecutionPolicy.current();
           if (policy != null) {
@@ -2545,5 +2546,16 @@ public class CodeInsightTestFixtureImpl extends BaseFixture implements CodeInsig
   @Override
   public boolean isOpenedInMyEditor(@NotNull VirtualFile virtualFile) {
     return virtualFile.equals(myVirtualFile) || myAllPsiFiles != null && ContainerUtil.exists(myAllPsiFiles, psiFile -> virtualFile.equals(PsiUtilCore.getVirtualFile(psiFile)));
+  }
+
+  /**
+   * @param mustWait if true then {@link #checkHighlighting} methods will wait for the dumb mode to complete before starting highlighting
+   */
+  @TestOnly
+  public static void mustWaitForSmartMode(boolean mustWait, @NotNull Disposable parent) {
+    assert ApplicationManager.getApplication().isUnitTestMode();
+    boolean old = mustWaitForSmartMode;
+    mustWaitForSmartMode = mustWait;
+    Disposer.register(parent, () -> mustWaitForSmartMode = old);
   }
 }

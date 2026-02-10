@@ -522,32 +522,6 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
     return result;
   }
 
-  private volatile boolean mustWaitForSmartMode = true;
-  @TestOnly
-  public void mustWaitForSmartMode(boolean mustWait, @NotNull Disposable parent) {
-    assert ApplicationManager.getApplication().isUnitTestMode();
-    boolean old = mustWaitForSmartMode;
-    mustWaitForSmartMode = mustWait;
-    Disposer.register(parent, () -> mustWaitForSmartMode = old);
-  }
-
-  /**
-   * do not run in production since it differs slightly from the {@link #runUpdate()}
-   */
-  @TestOnly
-  @ApiStatus.Internal
-  public void runPasses(@NotNull PsiFile psiFile,
-                        @NotNull Document document,
-                        @NotNull TextEditor textEditor,
-                        int @NotNull [] passesToIgnore,
-                        boolean canChangeDocument,
-                        @Nullable Runnable callbackWhileWaiting) throws Exception {
-    ThreadingAssertions.assertEventDispatchThread();
-    assert !myDisposed;
-    new TestDaemonCodeAnalyzerImpl(myProject).runPasses(psiFile, document, textEditor, passesToIgnore, canChangeDocument,
-                                                        mustWaitForSmartMode, callbackWhileWaiting);
-  }
-
   @Override
   public void settingsChanged() {
     //noinspection SpellCheckingInspection
