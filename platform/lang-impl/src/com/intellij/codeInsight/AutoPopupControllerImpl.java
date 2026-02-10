@@ -152,7 +152,7 @@ class AutoPopupControllerImpl extends AutoPopupController {
   }
 
   @Override
-  public void autoPopupParameterInfo(@NotNull Editor editor, @Nullable PsiElement highlightedMethod) {
+  public void autoPopupParameterInfo(@NotNull Editor editor, @Nullable PsiElement highlightedElement) {
     if (PowerSaveMode.isEnabled()) return;
 
     ThreadingAssertions.assertEventDispatchThread();
@@ -179,7 +179,7 @@ class AutoPopupControllerImpl extends AutoPopupController {
             try {
               PsiFile file1 = PsiDocumentManager.getInstance(myProject).getPsiFile(editor.getDocument());
               if (file1 != null) {
-                ShowParameterInfoHandler.invoke(myProject, editor, file1, lbraceOffset, highlightedMethod, false,
+                ShowParameterInfoHandler.invoke(myProject, editor, file1, lbraceOffset, highlightedElement, false,
                                                 true, null);
               }
             }

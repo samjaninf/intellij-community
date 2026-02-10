@@ -88,14 +88,11 @@ a:com.intellij.codeInsight.AutoPopupController
 - sf:AUTO_POPUP_ON_FOCUS_GAINED:com.intellij.openapi.util.Key
 - sf:NO_ADS:com.intellij.openapi.util.Key
 - sf:SHOW_BOTTOM_PANEL_IN_LOOKUP_UI:com.intellij.openapi.util.Key
-- <init>():V
 - a:autoPopupMemberLookup(com.intellij.openapi.editor.Editor,com.intellij.codeInsight.completion.CompletionType,com.intellij.openapi.util.Condition):V
 - a:autoPopupMemberLookup(com.intellij.openapi.editor.Editor,com.intellij.openapi.util.Condition):V
 - a:autoPopupParameterInfo(com.intellij.openapi.editor.Editor,com.intellij.psi.PsiElement):V
-- a:cancelAllRequests():V
 - s:getInstance(com.intellij.openapi.project.Project):com.intellij.codeInsight.AutoPopupController
 - a:scheduleAutoPopup(com.intellij.openapi.editor.Editor,com.intellij.codeInsight.completion.CompletionType,com.intellij.openapi.util.Condition):V
-- a:waitForDelayedActions(J,java.util.concurrent.TimeUnit):V
 a:com.intellij.codeInsight.TargetElementEvaluatorEx2
 - com.intellij.codeInsight.TargetElementEvaluator
 - <init>():V
