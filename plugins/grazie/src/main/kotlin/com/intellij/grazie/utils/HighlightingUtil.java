@@ -11,6 +11,7 @@ import com.intellij.grazie.GrazieConfig;
 import com.intellij.grazie.ide.inspection.grammar.GrazieInspection;
 import com.intellij.grazie.jlanguage.Lang;
 import com.intellij.grazie.text.TextContent;
+import com.intellij.grazie.text.TextContent.TextDomain;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
@@ -33,6 +34,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+import static com.intellij.grazie.ide.inspection.grammar.GrazieInspection.MAX_TEXT_LENGTH_IN_PSI_ELEMENT;
 import static com.intellij.grazie.text.TextExtractor.findAllTextContents;
 
 
@@ -40,7 +42,7 @@ public final class HighlightingUtil {
 
   public static final Comparator<TextContent> BY_TEXT_START = Comparator.comparing(tc -> tc.textOffsetToFile(0));
 
-  public static Set<TextContent.TextDomain> checkedDomains() {
+  public static Set<TextDomain> checkedDomains() {
     return GrazieInspection.Companion.checkedDomains();
   }
 
@@ -53,7 +55,7 @@ public final class HighlightingUtil {
   }
 
   public static boolean isTooLargeText(List<TextContent> texts) {
-    return texts.stream().mapToInt(t -> t.length()).sum() > 50_000;
+    return texts.stream().mapToInt(t -> t.length()).sum() > MAX_TEXT_LENGTH_IN_PSI_ELEMENT;
   }
 
   public static void applyTextChanges(Document document, List<StringOperation> changes) {
@@ -80,8 +82,13 @@ public final class HighlightingUtil {
   }
 
   public static List<TextContent> getCheckedFileTexts(FileViewProvider vp) {
+    Set<TextDomain> domains = checkedDomains();
+    return ContainerUtil.filter(getAllFileTexts(vp), tc -> domains.contains(tc.getDomain()));
+  }
+
+  public static List<TextContent> getAllFileTexts(FileViewProvider vp) {
     return CachedValuesManager.getManager(vp.getManager().getProject()).getCachedValue(vp, () -> {
-      List<TextContent> contents = ContainerUtil.sorted(findAllTextContents(vp, checkedDomains()), BY_TEXT_START);
+      List<TextContent> contents = ContainerUtil.sorted(findAllTextContents(vp, TextDomain.ALL), BY_TEXT_START);
       return CachedValueProvider.Result.create(contents, vp.getAllFiles().getFirst(), grazieConfigTracker());
     });
   }

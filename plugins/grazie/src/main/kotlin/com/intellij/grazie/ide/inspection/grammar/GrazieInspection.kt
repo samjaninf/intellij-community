@@ -15,9 +15,9 @@ import com.intellij.grazie.text.ProofreadingService.Companion.registerProblems
 import com.intellij.grazie.text.TextChecker
 import com.intellij.grazie.text.TextContent
 import com.intellij.grazie.text.TextExtractor
-import com.intellij.grazie.text.TextExtractor.findAllTextContents
 import com.intellij.grazie.text.TextProblem
 import com.intellij.grazie.text.TreeRuleChecker
+import com.intellij.grazie.utils.HighlightingUtil
 import com.intellij.grazie.utils.HighlightingUtil.isInspectionEnabled
 import com.intellij.grazie.utils.isGrammar
 import com.intellij.grazie.utils.isSpelling
@@ -143,7 +143,7 @@ class GrazieInspection : LocalInspectionTool(), DumbAware, UnfairLocalInspection
     private val grammarInspections: List<LocalInspectionTool> = listOf(Grammar(), Style())
     private val spellCheckingInspections: List<LocalInspectionTool> = listOf(GrazieSpellCheckingInspection())
 
-    private const val MAX_TEXT_LENGTH_IN_PSI_ELEMENT: Int = 50_000
+    internal const val MAX_TEXT_LENGTH_IN_PSI_ELEMENT: Int = 50_000
     private const val MAX_TEXT_LENGTH_IN_FILE = 200_000
     const val GRAMMAR_INSPECTION: String = "GrazieInspection"
     const val STYLE_INSPECTION: String = "GrazieStyle"
@@ -169,7 +169,7 @@ class GrazieInspection : LocalInspectionTool(), DumbAware, UnfairLocalInspection
 
       return CachedValuesManager.getCachedValue(file) {
         val checkedDomains = checkedDomains()
-        val contents = findAllTextContents(file.viewProvider, TextContent.TextDomain.ALL)
+        val contents = HighlightingUtil.getAllFileTexts(file.viewProvider)
         logger<GrazieInspection>().debug("Evaluating text length of: ${TextContentRelatedData(file, contents)}")
         val length = contents.asSequence().filter { it.domain in checkedDomains }.sumOf { it.length }
         CachedValueProvider.Result.create(length > MAX_TEXT_LENGTH_IN_FILE, service<GrazieConfig>(), file)
@@ -225,7 +225,7 @@ class GrazieInspection : LocalInspectionTool(), DumbAware, UnfairLocalInspection
       }
     }
 
-    data class TextContentRelatedData(private val psiFile: PsiFile, val contents: Set<TextContent>) {
+    data class TextContentRelatedData(private val psiFile: PsiFile, val contents: Collection<TextContent>) {
       override fun toString(): String {
         return "[fileType = ${psiFile.viewProvider.virtualFile.fileType}, " +
                "fileLanguage = ${psiFile.language}, " +

@@ -12,7 +12,6 @@ import com.intellij.codeInspection.ProblemDescriptorBase
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.util.InspectionMessage
 import com.intellij.grazie.cloud.GrazieCloudConnector.Companion.seemsCloudConnected
-import com.intellij.grazie.grammar.LanguageToolChecker
 import com.intellij.grazie.ide.fus.AcceptanceRateTracker
 import com.intellij.grazie.ide.fus.GrazieFUSCounter
 import com.intellij.grazie.ide.inspection.grammar.GrazieInspection
@@ -26,6 +25,7 @@ import com.intellij.grazie.ide.inspection.grammar.quickfix.GrazieYtReportAction
 import com.intellij.grazie.ide.language.LanguageGrammarChecking
 import com.intellij.grazie.spellcheck.TypoProblem
 import com.intellij.grazie.text.TextChecker.ProofreadingContext
+import com.intellij.grazie.utils.NaturalTextDetector.seemsNatural
 import com.intellij.grazie.utils.getTextDomain
 import com.intellij.grazie.utils.isGrammar
 import com.intellij.grazie.utils.isSpelling
@@ -73,7 +73,7 @@ class CheckerRunner(val text: TextContent) {
 
   fun run(allCheckers: List<TextChecker>, checkedDomains: Set<TextContent.TextDomain>): List<TextProblem> {
     if (text.isBlank() || allCheckers.isEmpty()) return emptyList()
-    val checkers = if (text.domain !in checkedDomains) allCheckers.filterNot { it.isGrammar() } else allCheckers
+    val checkers = if (text.domain in checkedDomains && seemsNatural(text)) allCheckers else allCheckers.filterNot { it.isGrammar() }
     val languageDetectionRequired = checkers.any { it.isGrammar() } || checkers.any { it.isSpelling() } && seemsCloudConnected()
     return filter(doRun(checkers, text.toProofreadingContext(languageDetectionRequired)))
   }

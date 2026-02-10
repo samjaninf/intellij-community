@@ -2,6 +2,7 @@ package com.intellij.grazie.text
 
 import com.intellij.grazie.GrazieConfig
 import com.intellij.grazie.ide.inspection.grammar.GrazieInspection
+import com.intellij.grazie.utils.HighlightingUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
@@ -33,7 +34,7 @@ class ProofreadingService {
      */
     @JvmStatic
     fun covering(file: PsiFile, range: TextRange): ProofreadingProblems {
-      val texts = TextExtractor.findAllTextContents(file.viewProvider, GrazieInspection.checkedDomains())
+      val texts = HighlightingUtil.getCheckedFileTexts(file.viewProvider)
         .filter { text -> range.isEmpty || text.rangesInFile.any { it.intersects(range) } }
       if (GrazieInspection.skipCheckingTooLargeTexts(texts)) return ProofreadingProblems(emptyList())
       val problems = texts.flatMap { text ->
