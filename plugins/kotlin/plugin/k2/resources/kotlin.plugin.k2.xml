@@ -61,6 +61,7 @@
     <uastLanguagePlugin implementation="org.jetbrains.uast.kotlin.FirKotlinUastLanguagePlugin"/>
     <analysis.uastAnalysisPlugin implementation="org.jetbrains.uast.kotlin.FirKotlinUastAnalysisPlugin"/>
     <generate.uastCodeGenerationPlugin implementation="org.jetbrains.uast.kotlin.IdeaFirKotlinUastCodeGenerationPlugin"/>
+    <evaluation.uastEvaluatorExtension implementation="org.jetbrains.uast.kotlin.evaluation.KotlinEvaluatorExtension"/>
   </extensions>
 
   <extensions defaultExtensionNs="com.intellij">
