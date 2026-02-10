@@ -5,13 +5,15 @@ import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.xmlb.annotations.Tag;
+import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.xpath.XPath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.StringReader;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +39,8 @@ public final class XPathResponseHandler extends SelectorBasedResponseHandler {
 
   @Override
   protected @NotNull List<Object> selectTasksList(@NotNull String response, int max) throws Exception {
-    Element root = JDOMUtil.load(new StringReader(response));
+    Document document = JDOMUtil.loadDocument(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)));
+    Element root = document.getRootElement();
     XPath xPath = lazyCompile(getSelector(TASKS).getPath());
     @SuppressWarnings("unchecked")
     List<Object> rawTaskElements = xPath.selectNodes(root);

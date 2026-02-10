@@ -16,6 +16,7 @@ import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.xmlb.annotations.Tag;
 import icons.TasksCoreIcons;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.xpath.XPath;
 import org.jetbrains.annotations.NotNull;
@@ -73,7 +74,7 @@ public final class FogBugzRepository extends BaseRepositoryImpl {
     if (status != 200) {
       throw new Exception("Error listing cases: " + method.getStatusLine());
     }
-    Element document = JDOMUtil.load(method.getResponseBodyAsStream());
+    Document document = JDOMUtil.loadDocument(method.getResponseBodyAsStream());
     List<Element> errorNodes = XPath.newInstance("/response/error").selectNodes(document);
     if (!errorNodes.isEmpty()) {
       throw new Exception("Error listing cases: " + errorNodes.get(0).getText());
@@ -226,7 +227,7 @@ public final class FogBugzRepository extends BaseRepositoryImpl {
     if (status != 200) {
       throw new Exception("Error logging in: " + method.getStatusLine());
     }
-    Element document = JDOMUtil.load(method.getResponseBodyAsStream());
+    Document document = JDOMUtil.loadDocument(method.getResponseBodyAsStream());
     XPath path = XPath.newInstance("/response/token");
     Element result = (Element)path.selectSingleNode(document);
     if (result == null) {
