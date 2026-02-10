@@ -515,7 +515,7 @@ internal class ToolWindowInnerDragHelper(parent: Disposable, val pane: JComponen
       })
       pack()
 
-      if (WindowRoundedCornersManager.isAvailable() && InternalUICustomization.getInstance()?.isRoundedTabDuringDrag == true) {
+      if (InternalUICustomization.getInstance()?.isRoundedTabDuringDrag == true) {
         WindowRoundedCornersManager.setRoundedCorners(this, PopupCornerType.RoundedWindow)
       }
     }

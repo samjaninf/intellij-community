@@ -56,6 +56,7 @@ import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Insets
 import java.awt.Rectangle
+import java.awt.RenderingHints
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyAdapter
@@ -319,7 +320,18 @@ open class TabLabel @Internal constructor(
     if (tabs.isDropTarget(info)) {
       if (tabs.dropSide == -1) {
         g.color = JBUI.CurrentTheme.DragAndDrop.Area.BACKGROUND
-        g.fillRect(0, 0, width, height)
+
+        if (IslandsPainterProvider.getInstance()?.isRoundedTabDuringDrag() == true) {
+          val arc = JBUI.CurrentTheme.MainToolbar.Button.hoverArc().get()
+          val offsetTop = JBUI.scale(6)
+          val offsetBottom = offsetTop * 2 + JBUI.scale(1)
+
+          (g as Graphics2D).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+          g.fillRoundRect(0, offsetTop, width, height - offsetBottom, arc, arc)
+        }
+        else {
+          g.fillRect(0, 0, width, height)
+        }
       }
       return
     }

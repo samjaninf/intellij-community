@@ -351,7 +351,7 @@ class DockManagerImpl(@JvmField internal val project: Project, private val corou
       contentPane = imageContainer
       pack()
 
-      if (WindowRoundedCornersManager.isAvailable() && InternalUICustomization.getInstance()?.isRoundedTabDuringDrag == true) {
+      if (InternalUICustomization.getInstance()?.isRoundedTabDuringDrag == true) {
         WindowRoundedCornersManager.setRoundedCorners(this, PopupCornerType.RoundedWindow)
       }
     }

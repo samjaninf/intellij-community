@@ -98,7 +98,10 @@ class TabContentLayout extends ContentLayout implements MorePopupAware {
       @Override
       public void paint(Graphics g) {
         g.setColor(JBUI.CurrentTheme.DragAndDrop.Area.BACKGROUND);
-        RectanglePainter.FILL.paint((Graphics2D)g, 0, 0, getWidth(), getHeight(), null);
+        Integer arc = getDropRoundValue();
+        int offsetTop = arc == null ? 0 : JBUI.scale(6);
+        int offsetBottom = arc == null ? 0 : offsetTop * 2 + JBUI.scale(1);
+        RectanglePainter.FILL.paint((Graphics2D)g, 0, offsetTop, getWidth(), getHeight() - offsetBottom, arc);
       }
 
       @Override
@@ -111,6 +114,14 @@ class TabContentLayout extends ContentLayout implements MorePopupAware {
     for (int i = 0; i < contentManager.getContentCount(); i++) {
       contentAdded(new ContentManagerEvent(this, contentManager.getContent(i), i));
     }
+  }
+
+  private static @Nullable Integer getDropRoundValue() {
+    InternalUICustomization customization = InternalUICustomization.getInstance();
+    if (customization != null && customization.isRoundedTabDuringDrag()) {
+      return JBUI.CurrentTheme.MainToolbar.Button.hoverArc().get();
+    }
+    return null;
   }
 
   @Override

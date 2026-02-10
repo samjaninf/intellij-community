@@ -5,8 +5,10 @@ import com.intellij.ide.HelpTooltip
 import com.intellij.ide.actions.ToolWindowMoveAction
 import com.intellij.ide.ui.UISettings
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.impl.InternalUICustomization
 import com.intellij.openapi.options.advanced.AdvancedSettings
 import com.intellij.openapi.ui.popup.JBPopup
+import com.intellij.openapi.ui.popup.PopupCornerType
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.wm.IdeFrame
 import com.intellij.openapi.wm.IdeGlassPaneUtil
@@ -31,6 +33,7 @@ import com.intellij.ui.ExperimentalUI
 import com.intellij.ui.MouseDragHelper
 import com.intellij.ui.ScreenUtil
 import com.intellij.ui.UIBundle
+import com.intellij.ui.WindowRoundedCornersManager
 import com.intellij.ui.awt.DevicePoint
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.panels.NonOpaquePanel
@@ -93,10 +96,12 @@ internal class ToolWindowDragHelper(parent: Disposable, @JvmField val dragSource
      * Create a potentially scaled image of the component to use as a drag image
      */
     internal fun createThumbnailDragImage(component: JComponent, thumbSize: Int = JBUI.scale(THUMB_SIZE)): BufferedImage {
-      val image = ImageUtil.createImage(component.graphicsConfiguration, component.width, component.height, BufferedImage.TYPE_INT_RGB)
+      val image = ImageUtil.createImage(component.graphicsConfiguration, component.width, component.height, BufferedImage.TYPE_INT_ARGB)
       val graphics = image.graphics
-      graphics.color = UIUtil.getBgFillColor(component)
-      RectanglePainter.FILL.paint(graphics as Graphics2D, 0, 0, component.width, component.height, null)
+      if (InternalUICustomization.getInstance()?.isRoundedTabDuringDrag != true) {
+        graphics.color = UIUtil.getBgFillColor(component)
+        RectanglePainter.FILL.paint(graphics as Graphics2D, 0, 0, component.width, component.height, null)
+      }
       component.paint(graphics)
       graphics.dispose()
       val width: Double = image.getWidth(null).toDouble()
@@ -264,7 +269,9 @@ internal class ToolWindowDragHelper(parent: Disposable, @JvmField val dragSource
   }
 
   private fun createDragImageView(event: MouseEvent): DragImageView = if (StartupUiUtil.isWaylandToolkit()) {
-    GlassPaneDragImageView(IdeGlassPaneUtil.find(event.component))
+    GlassPaneDragImageView(IdeGlassPaneUtil.find(event.component)).also {
+      it.drawRoundRect = false
+    }
   }
   else {
     DialogDragImageView(DragImageDialog(dragSourcePane, this))
@@ -749,16 +756,18 @@ internal class ToolWindowDragHelper(parent: Disposable, @JvmField val dragSource
         return null
       }
 
-      val image = ImageUtil.createImage(component.graphicsConfiguration, areaSize.width, areaSize.height, BufferedImage.TYPE_INT_RGB)
+      val image = ImageUtil.createImage(component.graphicsConfiguration, areaSize.width, areaSize.height, BufferedImage.TYPE_INT_ARGB)
       image.graphics.let {
-        it.color = if (isNewUi) {
-          JBUI.CurrentTheme.ToolWindow.DragAndDrop.BUTTON_FLOATING_BACKGROUND
-        }
-        else {
-          UIUtil.getBgFillColor(component.parent)
-        }
+        if (InternalUICustomization.getInstance()?.isRoundedTabDuringDrag != true) {
+          it.color = if (isNewUi) {
+            JBUI.CurrentTheme.ToolWindow.DragAndDrop.BUTTON_FLOATING_BACKGROUND
+          }
+          else {
+            UIUtil.getBgFillColor(component.parent)
+          }
 
-        it.fillRect(0, 0, areaSize.width, areaSize.height)
+          it.fillRect(0, 0, areaSize.width, areaSize.height)
+        }
 
         when (component) {
           is StripeButton -> component.paint(it)
@@ -827,6 +836,10 @@ internal class ToolWindowDragHelper(parent: Disposable, @JvmField val dragSource
           helper.relocate(e)
         }
       })
+
+      if (InternalUICustomization.getInstance()?.isRoundedTabDuringDrag == true) {
+        WindowRoundedCornersManager.setRoundedCorners(this, PopupCornerType.RoundedWindow)
+      }
     }
 
     override var image: Image? = null
