@@ -65,18 +65,32 @@ private fun KtSimpleNameExpression.isCompanionReferenceToShorten(): Boolean {
     return candidate.canBeRedundantCompanionReference() && candidate.isRedundantCompanionReference()
 }
 
+/**
+ * Checks if [this] reference can **potentially** point to a redundant companion reference.
+ *
+ * Does not do any actual resolve, for that see [isRedundantCompanionReference].
+ */
 @ApiStatus.Internal
 fun KtSimpleNameExpression.canBeRedundantCompanionReference(): Boolean {
     val element = this
 
     val parent = element.parent as? KtDotQualifiedExpression ?: return false
     if (parent.getStrictParentOfType<KtImportDirective>() != null) return false
+
+    /**
+     * See comment about two levels of parents in [isRedundantCompanionReference]
+     */
     val grandParent = parent.parent as? KtElement
     val selectorExpression = parent.selectorExpression
     if (element == selectorExpression && grandParent !is KtDotQualifiedExpression) return false
     return element == selectorExpression || element.text != (selectorExpression as? KtNameReferenceExpression)?.text
 }
 
+/**
+ * Checks if [this] reference is **actually** a redundant companion reference.
+ *
+ * For that, it is required to do resolve to ensure that the semantics of the code do not change.
+ */
 context(_: KaSession)
 @ApiStatus.Internal
 fun KtSimpleNameExpression.isRedundantCompanionReference(): Boolean {
@@ -95,12 +109,20 @@ fun KtSimpleNameExpression.isRedundantCompanionReference(): Boolean {
 
     if (referenceName != objectDeclaration.name) return false
 
+    /**
+     * We need two levels of parents here because we need to reconstruct
+     * expressions like `Foo.Companion.bar()` into `Foo.bar()`.
+     * [grandParent] is responsible for the whole
+     * `Foo.Companion.bar()` expression in this case.
+     */
     val grandParent = parent.parent as? KtElement
     val selectorExpression = parent.selectorExpression
 
     val (oldTargetExpression, simplifiedText) = if (grandParent is KtDotQualifiedExpression && this == selectorExpression) {
+        // Case for `Foo.Companion.bar()` -> `Foo.bar()` transformation
         grandParent.selectorExpression to (parent.receiverExpression.text + "." + grandParent.selectorExpression?.text)
     } else {
+        // Case for `Companion.bar()` -> `bar()` transformation
         parent.selectorExpression to parent.selectorExpression!!.text
     }
 
