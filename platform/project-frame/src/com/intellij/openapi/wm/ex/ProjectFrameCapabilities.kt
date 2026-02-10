@@ -16,6 +16,7 @@ import org.jetbrains.annotations.ApiStatus.Experimental
 import org.jetbrains.annotations.ApiStatus.Internal
 import org.jetbrains.annotations.VisibleForTesting
 import java.util.EnumSet
+import java.util.concurrent.CancellationException
 
 @Internal
 @Experimental
@@ -125,11 +126,16 @@ class ProjectFrameCapabilitiesService(coroutineScope: CoroutineScope) {
       return null
     }
 
+    val providers = EP_NAME.extensionsIfPointIsRegistered
+    if (providers.isEmpty()) {
+      return null
+    }
+
     val capabilities = getOrComputeCapabilities(project)
     var uiPolicy: ProjectFrameUiPolicy? = null
     var uiPolicyProvider: ProjectFrameCapabilitiesProvider? = null
 
-    EP_NAME.forEachExtensionSafe { provider ->
+    forEachProjectFrameCapabilitiesProviderSafe(providers) { provider ->
       val providerUiPolicy = provider.getUiPolicy(project, capabilities)?.takeUnless(ProjectFrameUiPolicy::isEmpty)
       if (providerUiPolicy != null) {
         if (uiPolicy == null) {
@@ -157,11 +163,33 @@ class ProjectFrameCapabilitiesService(coroutineScope: CoroutineScope) {
 }
 
 private fun computeProjectFrameCapabilities(project: Project): Set<ProjectFrameCapability> {
+  val providers = ProjectFrameCapabilitiesService.EP_NAME.extensionsIfPointIsRegistered
+  if (providers.isEmpty()) {
+    return emptySet()
+  }
+
   val capabilities = EnumSet.noneOf(ProjectFrameCapability::class.java)
 
-  ProjectFrameCapabilitiesService.EP_NAME.forEachExtensionSafe { provider ->
+  forEachProjectFrameCapabilitiesProviderSafe(providers) { provider ->
     capabilities.addAll(provider.getCapabilities(project))
   }
 
   return capabilities.takeIf { it.isNotEmpty() }?.toSet() ?: emptySet()
+}
+
+private inline fun forEachProjectFrameCapabilitiesProviderSafe(
+  providers: List<ProjectFrameCapabilitiesProvider>,
+  consumer: (ProjectFrameCapabilitiesProvider) -> Unit,
+) {
+  for (provider in providers) {
+    try {
+      consumer(provider)
+    }
+    catch (e: CancellationException) {
+      throw e
+    }
+    catch (e: Throwable) {
+      LOG.error("Project frame capabilities provider '${provider.javaClass.name}' failed", e)
+    }
+  }
 }
