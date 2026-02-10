@@ -53,7 +53,7 @@ import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
 import org.jetbrains.kotlin.util.ServiceLoaderLite
 import java.io.File
 import java.nio.file.Path
-import java.util.*
+import java.util.Optional
 import java.util.concurrent.ConcurrentMap
 import kotlin.script.experimental.api.ScriptCompilationConfiguration
 import kotlin.script.experimental.api.compilerOptions

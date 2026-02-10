@@ -2,7 +2,11 @@ package com.intellij.driver.sdk.ui.components.settings
 
 import com.intellij.driver.client.Driver
 import com.intellij.driver.client.Remote
-import com.intellij.driver.sdk.*
+import com.intellij.driver.sdk.PluginDescriptor
+import com.intellij.driver.sdk.PluginId
+import com.intellij.driver.sdk.getPlugin
+import com.intellij.driver.sdk.invokeAction
+import com.intellij.driver.sdk.step
 import com.intellij.driver.sdk.ui.Finder
 import com.intellij.driver.sdk.ui.accessibleName
 import com.intellij.driver.sdk.ui.boundsOnScreen
@@ -16,6 +20,7 @@ import com.intellij.driver.sdk.ui.components.elements.checkBox
 import com.intellij.driver.sdk.ui.components.elements.textField
 import com.intellij.driver.sdk.ui.components.elements.waitSelected
 import com.intellij.driver.sdk.ui.xQuery
+import com.intellij.driver.sdk.waitFor
 import java.awt.Point
 import javax.swing.JButton
 import javax.swing.JCheckBox
