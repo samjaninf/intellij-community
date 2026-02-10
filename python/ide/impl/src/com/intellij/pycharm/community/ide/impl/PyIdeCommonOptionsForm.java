@@ -1,6 +1,7 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.pycharm.community.ide.impl;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
@@ -15,6 +16,7 @@ import com.intellij.ui.CollectionComboBoxModel;
 import com.intellij.util.PathMappingSettings;
 import com.jetbrains.python.PyBundle;
 import com.jetbrains.python.configuration.PyConfigurableInterpreterList;
+import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.run.AbstractPyCommonOptionsForm;
 import com.jetbrains.python.run.PyCommonOptionsFormData;
 import com.jetbrains.python.sdk.PySdkListCellRenderer;
@@ -46,6 +48,7 @@ public class PyIdeCommonOptionsForm implements AbstractPyCommonOptionsForm {
 
   private final List<Consumer<Boolean>> myRemoteInterpreterModeListeners = new ArrayList<>();
 
+  private static final Logger LOG = Logger.getInstance(PyIdeCommonOptionsForm.class);
 
   public PyIdeCommonOptionsForm(PyCommonOptionsFormData data) {
     myProject = data.getProject();
@@ -267,6 +270,16 @@ public class PyIdeCommonOptionsForm implements AbstractPyCommonOptionsForm {
   @Override
   public void setAddSourceRoots(boolean flag) {
     content.addSourceRootsCheckbox.setSelected(flag);
+  }
+
+  @Override
+  public boolean shouldDebugJustMyCode() {
+    return false;
+  }
+
+  @Override
+  public void setDebugJustMyCode(boolean flag) {
+    LOG.warn("Tried to set debugJustMyCode flag for common options form, which is an unsupported operation");
   }
 
   private void setRemoteInterpreterMode(boolean isInterpreterRemote) {

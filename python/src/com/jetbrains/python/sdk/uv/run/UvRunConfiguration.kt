@@ -38,7 +38,8 @@ data class UvRunConfigurationOptions(
   var env: Map<String, String> = mapOf(),
   var checkSync: Boolean = true,
   var uvSdkKey: String? = null,
-  var uvArgs: List<String> = listOf()
+  var uvArgs: List<String> = listOf(),
+  var debugJustMyCode: Boolean = false
 ) {
   val uvSdk: Sdk?
     get() = uvSdkKey?.let { PythonSdkUtil.findSdkByKey(it)}
@@ -81,6 +82,10 @@ class UvRunConfiguration(
 
   override fun getSdk(): Sdk? {
     return options.uvSdk
+  }
+
+  override fun shouldDebugJustMyCode(): Boolean {
+    return options.debugJustMyCode
   }
 }
 

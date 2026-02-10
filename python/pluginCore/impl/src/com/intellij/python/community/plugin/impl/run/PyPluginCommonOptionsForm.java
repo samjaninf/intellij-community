@@ -1,6 +1,7 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.python.community.plugin.impl.run;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
@@ -39,6 +40,8 @@ public class PyPluginCommonOptionsForm implements AbstractPyCommonOptionsForm {
   private @NotNull List<String> myEnvPaths = Collections.emptyList();
 
   private final List<Consumer<Boolean>> myRemoteInterpreterModeListeners = new ArrayList<>();
+
+  private static final Logger LOG = Logger.getInstance(PyPluginCommonOptionsForm.class);
 
   public PyPluginCommonOptionsForm(PyCommonOptionsFormData data) {
     // setting modules
@@ -276,6 +279,16 @@ public class PyPluginCommonOptionsForm implements AbstractPyCommonOptionsForm {
   @Override
   public void setAddSourceRoots(boolean flag) {
     content.addSourceRootsCheckbox.setSelected(flag);
+  }
+
+  @Override
+  public void setDebugJustMyCode(boolean flag) {
+    LOG.warn("Tried to set debugJustMyCode flag for common options form, which is an unsupported operation");
+  }
+
+  @Override
+  public boolean shouldDebugJustMyCode() {
+    return false;
   }
 
   @Override

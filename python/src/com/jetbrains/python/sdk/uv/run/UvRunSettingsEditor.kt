@@ -46,6 +46,8 @@ internal class UvRunSettingsEditor() : SettingsEditor<UvRunConfiguration>() {
   private lateinit var uvSdkField: ComboBox<Sdk?>
   private val uvArgsField: RawCommandLineEditor = RawCommandLineEditor().withMonospaced(true)
 
+  private lateinit var debugJustMyCodeCheckbox: JBCheckBox
+
   private val propertyGraph = PropertyGraph()
   private val isScript = propertyGraph.property(true)
   private val isModule = propertyGraph.property(false)
@@ -127,6 +129,10 @@ internal class UvRunSettingsEditor() : SettingsEditor<UvRunConfiguration>() {
         cell(uvArgsField)
           .align(AlignX.FILL)
       }
+      row {
+        debugJustMyCodeCheckbox = checkBox(PyBundle.message("python.debugger.configuration.justMyCode.label"))
+          .component
+      }
     }
   }
 
@@ -138,6 +144,7 @@ internal class UvRunSettingsEditor() : SettingsEditor<UvRunConfiguration>() {
     scriptCheckSyncField.isSelected = uvRunConfiguration.options.checkSync
     uvSdkField.selectedItem = uvRunConfiguration.options.uvSdk
     uvArgsField.text = uvRunConfiguration.options.uvArgs.joinToString(" ")
+    debugJustMyCodeCheckbox.isSelected = uvRunConfiguration.options.debugJustMyCode
   }
 
   override fun applyEditorTo(uvRunConfiguration: UvRunConfiguration) {
@@ -153,6 +160,7 @@ internal class UvRunSettingsEditor() : SettingsEditor<UvRunConfiguration>() {
     uvRunConfiguration.options.checkSync = scriptCheckSyncField.isSelected
     uvRunConfiguration.options.uvSdkKey = uvSdkField.selectedItem.let {it as? Sdk}?.name
     uvRunConfiguration.options.uvArgs = uvArgsField.text.splitParams()
+    uvRunConfiguration.options.debugJustMyCode = debugJustMyCodeCheckbox.isSelected
   }
 
   override fun createEditor(): JComponent = panel
