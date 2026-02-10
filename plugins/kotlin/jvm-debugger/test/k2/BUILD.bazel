@@ -26,7 +26,6 @@ jvm_library(
   srcs = glob([], allow_empty = True),
   runtime_deps = [
     "//platform/core-api:core",
-    "//plugins/kotlin/uast/uast-kotlin",
     "//plugins/kotlin/gradle/gradle",
   ]
 )

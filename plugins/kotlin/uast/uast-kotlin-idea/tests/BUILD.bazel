@@ -17,11 +17,10 @@ jvm_library(
     "//uast/uast-common:uast",
     "//plugins/kotlin/uast/uast-kotlin",
     "//plugins/kotlin/uast/uast-kotlin/tests",
-    "//plugins/kotlin/uast/uast-kotlin-base",
-    "//plugins/kotlin/uast/uast-kotlin-fir:kotlin-uast",
+    "//plugins/kotlin/uast/uast-kotlin-base:kotlin-uast-base",
     "//plugins/kotlin/uast/uast-kotlin-base/tests",
     "//uast/uast-common-ide:ide",
-    "//plugins/kotlin/uast/uast-kotlin-idea-base",
+    "//plugins/kotlin/uast/uast-kotlin-idea-base:kotlin-uast-idea-base",
   ]
 )
 
@@ -52,15 +51,14 @@ jvm_library(
     "//plugins/kotlin/uast/uast-kotlin/tests",
     "//plugins/kotlin/uast/uast-kotlin/tests:tests_test_lib",
     "//plugins/kotlin/test-framework:test-framework_test_lib",
-    "//plugins/kotlin/uast/uast-kotlin-base",
-    "//plugins/kotlin/uast/uast-kotlin-fir:kotlin-uast",
+    "//plugins/kotlin/uast/uast-kotlin-base:kotlin-uast-base",
     "//plugins/kotlin/uast/uast-kotlin-base/tests",
     "//plugins/kotlin/uast/uast-kotlin-base/tests:tests_test_lib",
     "//plugins/kotlin/base/plugin",
     "//plugins/kotlin/base/plugin:plugin_test_lib",
     "//plugins/kotlin/uast/uast-kotlin-idea-base/tests:tests_test_lib",
     "//uast/uast-common-ide:ide",
-    "//plugins/kotlin/uast/uast-kotlin-idea-base",
+    "//plugins/kotlin/uast/uast-kotlin-idea-base:kotlin-uast-idea-base",
   ],
   runtime_deps = [":tests"]
 )

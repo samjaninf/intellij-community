@@ -228,9 +228,9 @@
   - name: intellij.kotlin.jvm.debugger.coroutines
   - name: kotlin.jvm-debugger.sequence.k1
   - name: intellij.kotlin.jvm.debugger.eval4j
-  - name: kotlin.uast.uast-kotlin-base
+  - name: intellij.kotlin.uast.base
   - name: kotlin.uast.uast-kotlin
-  - name: kotlin.uast.uast-kotlin-idea-base
+  - name: intellij.kotlin.uast.idea.base
   - name: kotlin.uast.uast-kotlin-idea
   - name: intellij.kotlin.i18n
   - name: intellij.kotlin.migration

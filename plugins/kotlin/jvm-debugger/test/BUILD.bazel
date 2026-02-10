@@ -33,7 +33,6 @@ jvm_library(
   runtime_deps = [
     "//platform/core-api:core",
     "//java/debugger/openapi:java-debugger",
-    "//plugins/kotlin/uast/uast-kotlin",
     "//plugins/kotlin/gradle/gradle",
     "//plugins/kotlin/plugin/k1",
   ]

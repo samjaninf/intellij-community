@@ -16,7 +16,6 @@ jvm_library(
     "//plugins/kotlin/coverage",
     "//plugins/kotlin/tests-common:common-tests",
     "//plugins/kotlin/test-framework",
-    "//plugins/kotlin/uast/uast-kotlin",
     "//plugins/kotlin/gradle/gradle",
     "//platform/core-impl",
     "//platform/indexing-api:indexing",

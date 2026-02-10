@@ -79,7 +79,7 @@ jvm_library(
     "//platform/projectModel-impl",
     "//plugins/gradle/java",
     "//plugins/kotlin/code-insight/impl-base:kotlin-codeInsight-shared",
-    "//plugins/kotlin/uast/uast-kotlin-base",
+    "//plugins/kotlin/uast/uast-kotlin-base:kotlin-uast-base",
   ]
 )
 
@@ -164,7 +164,7 @@ jvm_library(
     "//plugins/kotlin/code-insight/impl-base:kotlin-codeInsight-shared",
     "//plugins/kotlin/highlighting/highlighting-minimal:kotlin-highlighting-minimal",
     "@lib//:assert_j",
-    "//plugins/kotlin/uast/uast-kotlin-base",
+    "//plugins/kotlin/uast/uast-kotlin-base:kotlin-uast-base",
     "//plugins/gradle/completion",
     "//plugins/gradle/completion:completion_test_lib",
   ]
