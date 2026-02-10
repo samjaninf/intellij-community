@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.ActionPlaces;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.wm.IdeFocusManager;
+import com.intellij.ui.components.labels.ActionLink;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -41,10 +42,12 @@ public final class WelcomeScreenFocusManager {
       public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_SPACE) {
           InputEvent event = e;
-          Component actionLink = findActionLinkComponent(e.getComponent());
-          if (actionLink != null) {
-            event = new MouseEvent(actionLink, MouseEvent.MOUSE_CLICKED, e.getWhen(), e.getModifiers(), 0, 0, 1, false, MouseEvent.BUTTON1);
+          if (e.getComponent() instanceof JComponent) {
+            ActionLink link = UIUtil.findComponentOfType((JComponent)e.getComponent(), ActionLink.class);
+            if (link != null) {
+              event = new MouseEvent(link, MouseEvent.MOUSE_CLICKED, e.getWhen(), e.getModifiers(), 0, 0, 1, false, MouseEvent.BUTTON1);
             }
+          }
           action.actionPerformed(
             AnActionEvent.createFromAnAction(action, event, ActionPlaces.WELCOME_SCREEN, DataManager.getInstance().getDataContext()));
         }
@@ -103,18 +106,4 @@ public final class WelcomeScreenFocusManager {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static @Nullable Component findActionLinkComponent(@Nullable Component component) {
-    if (!(component instanceof JComponent)) {
-      return null;
-    }
-
-    try {
-      Class<?> actionLinkClass = Class.forName("com.intellij.ui.components.labels.ActionLink");
-      return UIUtil.findComponentOfType((JComponent)component, (Class)actionLinkClass);
-    }
-    catch (ClassNotFoundException ignore) {
-      return null;
-    }
-  }
 }

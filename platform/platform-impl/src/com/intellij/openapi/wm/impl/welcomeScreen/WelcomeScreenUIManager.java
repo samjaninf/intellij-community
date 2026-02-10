@@ -1,6 +1,7 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.wm.impl.welcomeScreen;
 
+import com.intellij.ide.plugins.newui.ListPluginComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.ui.Gray;
 import com.intellij.ui.JBColor;
@@ -57,7 +58,7 @@ public final class WelcomeScreenUIManager {
   }
 
   public static Color getProjectsSelectionBackground(boolean hasFocus) {
-    return JBColor.namedColor("Plugins.lightSelectionBackground", new JBColor(0xEDF6FE, 0x464A4D));
+    return ListPluginComponent.SELECTION_COLOR; //use the same as plugins tab use
   }
 
   public static @NotNull Color getProjectsSelectionForeground(boolean isSelected, boolean hasFocus) {

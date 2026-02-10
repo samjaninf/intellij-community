@@ -36,6 +36,7 @@ jvm_library(
     "//libraries/oro-matcher",
     "//libraries/velocity",
     "//platform/platform-impl:ide-impl",
+    "//platform/welcome-screen:welcomeScreen-impl",
     "//platform/lang-core",
     "//platform/lvcs-api:lvcs",
     "//platform/macro",
@@ -135,6 +136,7 @@ jvm_library(
     "//platform/forms_rt:java-guiForms-rt",
   ],
   exports = [
+    "//platform/welcome-screen:welcomeScreen-impl",
     "//platform/analysis-impl",
     "//platform/util",
   ]

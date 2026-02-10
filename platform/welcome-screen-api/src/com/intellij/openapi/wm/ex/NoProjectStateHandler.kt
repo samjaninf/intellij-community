@@ -8,7 +8,7 @@ import org.jetbrains.annotations.ApiStatus.Internal
 private val EP_NAME: ExtensionPointName<NoProjectStateHandler> = ExtensionPointName("com.intellij.noProjectStateHandler")
 
 @Internal
-fun findNoProjectStateHandler(): (suspend () -> Project)? {
+fun findNoProjectStateHandler(): (suspend () -> Project?)? {
   return EP_NAME.extensionList.firstNotNullOfOrNull { it.createHandler() }
 }
 
@@ -17,7 +17,9 @@ suspend fun executeNoProjectStateHandlerExpectingNonWelcomeScreenImplementation(
   val handler = requireNotNull(findNoProjectStateHandler()) {
     "`NoProjectStateHandler` not found, but it must be registered"
   }
-  val project = handler()
+  val project = requireNotNull(handler()) {
+    "Handler returned `null`, but it must return a project"
+  }
   require(!project.isDefault) {
     "Handler returned a default project, but it must return a non-default project"
   }
@@ -26,5 +28,5 @@ suspend fun executeNoProjectStateHandlerExpectingNonWelcomeScreenImplementation(
 
 @Internal
 interface NoProjectStateHandler {
-  fun createHandler(): (suspend () -> Project)?
+  fun createHandler(): (suspend () -> Project?)?
 }

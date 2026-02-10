@@ -1088,6 +1088,20 @@ com.intellij.openapi.wm.impl.content.tabActions.ContentTabActionProvider
 f:com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
 - f:updateWidget(com.intellij.openapi.wm.StatusBarWidgetFactory,kotlin.coroutines.CoroutineContext):V
 - bs:updateWidget$default(com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager,com.intellij.openapi.wm.StatusBarWidgetFactory,kotlin.coroutines.CoroutineContext,I,java.lang.Object):V
+f:com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager
+- <init>():V
+- s:getActionLinkSelectionColor():java.awt.Color
+- s:getActionsButtonBackground(Z):com.intellij.ui.JBColor
+- s:getActionsButtonSelectionBorder():com.intellij.ui.JBColor
+- s:getLinkNormalColor():java.awt.Color
+- s:getMainAssociatedComponentBackground():java.awt.Color
+- s:getMainBackground():java.awt.Color
+- s:getMainTabListBackground():java.awt.Color
+- s:getProductFont(I):java.awt.Font
+- s:getProjectsBackground():java.awt.Color
+- s:getProjectsSelectionBackground(Z):java.awt.Color
+- s:getProjectsSelectionForeground(Z,Z):java.awt.Color
+- s:getSeparatorColor():com.intellij.ui.JBColor
 f:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService
 - f:runCloneTask(java.nio.file.Path,com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$CloneTask):V
 f:com.intellij.openapi.wm.impl.welcomeScreen.cloneableProjects.CloneableProjectsService$CloneableProject
