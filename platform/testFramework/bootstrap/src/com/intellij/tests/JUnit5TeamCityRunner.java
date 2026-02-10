@@ -143,7 +143,7 @@ public final class JUnit5TeamCityRunner {
       else if (args.length == 1) {
         String className = args[0];
         selectors = Collections.singletonList(DiscoverySelectors.selectClass(className));
-        // no filters
+        filters.addAll(List.of(new IgnorePostDiscoveryFilter(), new PerformancePostDiscoveryFilter()));  // filter methods
       }
       else {
         String className = args[0];
@@ -424,6 +424,7 @@ public final class JUnit5TeamCityRunner {
         if (!myReportAsBootstrapTestsSuite) {
           myPrintStream.println(new TestSuiteFinished(getName(testIdentifier)));
         }
+        if (status == TestExecutionResult.Status.ABORTED) myCurrentTestStart = 1;  // mark ignored classes as #smthExecuted
       }
     }
 
