@@ -181,6 +181,11 @@ class IntellijIconClassGeneratorConfig : IconClasses() {
         packageName = "com.intellij.liquibase.core"
       )
 
+      "intellij.flyway.core" -> IntellijIconClassGeneratorModuleConfig(
+        className = "FlywayIcons",
+        packageName = "com.intellij.flyway.core"
+      )
+
       "intellij.android.ml-api" -> IntellijIconClassGeneratorModuleConfig(
         className = "AndroidAIPluginIcons",
         packageName = "com.android.tools.idea.studiobot.icons",
