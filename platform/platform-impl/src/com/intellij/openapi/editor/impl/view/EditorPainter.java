@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.editor.impl.view;
 
 import com.intellij.diagnostic.PluginException;
@@ -83,7 +83,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.SwingUtilities;
-import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -107,7 +106,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 //@ApiStatus.Internal
@@ -169,16 +167,13 @@ public final class EditorPainter implements TextDrawingCallback {
     if (pWidth <= 0 || pHeight <= 0) return;
 
     var oldAA = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-    var oldComposite = g.getComposite();
     g.setTransform(new AffineTransform());
     g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-    g.setComposite(AlphaComposite.Src);
 
     g.setColor(color);
     g.fillRect(left, top, pWidth, pHeight);
 
     g.setTransform(transform);
-    g.setComposite(oldComposite);
     if (oldAA != null) {
       g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
     } else {
