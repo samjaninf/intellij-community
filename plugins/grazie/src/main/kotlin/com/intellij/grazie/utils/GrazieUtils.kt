@@ -29,10 +29,10 @@ import com.intellij.grazie.text.TextChecker.ProofreadingContext
 import com.intellij.grazie.text.TextContent
 import com.intellij.grazie.text.TextContentImpl
 import com.intellij.grazie.utils.HighlightingUtil.findInstalledLang
+import com.intellij.openapi.progress.runBlockingCancellable
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.util.containers.CollectionFactory.createConcurrentSoftValueMap
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 import ai.grazie.text.TextRange as GrazieTextRange
 
@@ -160,14 +160,21 @@ fun Rule.isEnabledInState(state: GrazieConfig.State, domain: TextStyleDomain): B
 
 object LanguageDetectorHolder {
   const val LIMIT: Int = 1_000
-  private val INSTANCE : ChainLanguageDetector<String> by lazy {
-    runBlocking {
-      DefaultLanguageDetectors.standardForLanguages(
-        Language.all.toLinkedSet(),
-        FromResourcesDataLoader
-      )
-    }
-  }
+  
+  @Volatile
+  private var INSTANCE: ChainLanguageDetector<String>? = null
+  private val lock = Any()
 
-  fun get(): ChainLanguageDetector<String> = INSTANCE
+  fun get(): ChainLanguageDetector<String> {
+    if (INSTANCE == null) {
+      synchronized(lock) {
+        if (INSTANCE == null) {
+          INSTANCE = runBlockingCancellable {
+            DefaultLanguageDetectors.standardForLanguages(Language.all.toLinkedSet(), FromResourcesDataLoader)
+          }
+        }
+      }
+    }
+    return INSTANCE!!
+  }
 }
