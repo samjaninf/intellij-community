@@ -1578,6 +1578,7 @@ tools/intellij.tools.ide.starter.junit5
 tools/intellij.tools.ide.util.common
 tools/launcher-generator
 tools/reproducibleBuilds.diff
+tools/tests
 uast/testFramework
 uast/uast-common
 uast/uast-common-ide
