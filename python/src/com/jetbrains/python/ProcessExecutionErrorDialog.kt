@@ -3,6 +3,7 @@ package com.jetbrains.python
 
 import com.intellij.CommonBundle
 import com.intellij.ide.IdeBundle
+import com.intellij.openapi.application.impl.LaterInvocator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
@@ -67,13 +68,18 @@ fun showProcessExecutionErrorDialog(
 
   if (project != null && logId != null) {
     ProcessOutputApi.getInstance()?.also { api ->
-      val foundAndOpened = api.tryOpenLogInToolWindow(project, logId)
+      api.specifyAdditionalInfo(
+        project,
+        logId,
+        execError.additionalMessageToUser,
+        true,
+      )
 
-      if (foundAndOpened) {
-        execError.additionalMessageToUser?.also {
-          api.specifyAdditionalMessageToUser(project, logId, it)
-        }
-
+      // If any modal dialog is currently showing, then we don't want to open the tool window with the error.
+      // If no modal dialog is showing, then we attempt to open the tool window with the error.
+      // If the tool window with the error was opened, return from the function to prevent the modal dialog from showing.
+      // Otherwise, fall through and show the modal error dialog.
+      if (LaterInvocator.getCurrentModalEntities().isEmpty() && api.tryOpenLogInToolWindow(project, logId)) {
         return
       }
     }

@@ -22,6 +22,9 @@
 - name: lib/modules/intellij.python.community.helpersLocator.jar
   contentModules:
   - name: intellij.python.community.helpersLocator
+- name: lib/modules/intellij.python.community.impl.conda.jar
+  contentModules:
+  - name: intellij.python.community.impl.conda
 - name: lib/modules/intellij.python.community.impl.huggingFace.jar
   contentModules:
   - name: intellij.python.community.impl.huggingFace

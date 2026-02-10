@@ -46,7 +46,7 @@ import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
 import org.jetbrains.jewel.ui.component.scrollbarContentSafePadding
 
-private object Styling {
+private object OutputSectionStyling {
     val COPY_SECTION_BUTTON_SPACE_SIZE = 18.dp
     val LINE_START_PADDING = 8.dp
     val LINE_HORIZONTAL_ALIGNMENT = 10.dp
@@ -218,7 +218,7 @@ internal fun OutputSection(controller: ProcessOutputController) {
                                         textStyle = SpanStyle(
                                             color =
                                                 if (exitInfo.exitValue != 0) {
-                                                    Colors.Output.ErrorText
+                                                    Colors.ErrorText
                                                 } else {
                                                     Color.Unspecified
                                                 },
@@ -254,9 +254,9 @@ private fun OutputLine(
             modifier = Modifier.fillMaxWidth()
                 .padding(
                     end = scrollbarContentSafePadding(),
-                    start = Styling.LINE_START_PADDING,
+                    start = OutputSectionStyling.LINE_START_PADDING,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(Styling.LINE_HORIZONTAL_ALIGNMENT),
+            horizontalArrangement = Arrangement.spacedBy(OutputSectionStyling.LINE_HORIZONTAL_ALIGNMENT),
         ) {
             if (displayTags) {
                 DisableSelection {
@@ -293,7 +293,7 @@ private fun OutputLine(
             if (sectionIndicator != null) {
                 ActionIconButton(
                     modifier = Modifier
-                        .size(Styling.COPY_SECTION_BUTTON_SPACE_SIZE)
+                        .size(OutputSectionStyling.COPY_SECTION_BUTTON_SPACE_SIZE)
                         .testTag(sectionIndicator.copyButtonTestTag),
                     iconKey = Icons.Keys.Copy,
                     tooltipText = message("process.output.output.copySection.tooltip"),
@@ -301,7 +301,7 @@ private fun OutputLine(
                 )
             } else {
                 Spacer(
-                    modifier = Modifier.size(Styling.COPY_SECTION_BUTTON_SPACE_SIZE),
+                    modifier = Modifier.size(OutputSectionStyling.COPY_SECTION_BUTTON_SPACE_SIZE),
                 )
             }
         }
@@ -385,9 +385,9 @@ private fun LazyListScope.infoLineItemSingle(
                 modifier = Modifier.fillMaxWidth()
                     .padding(
                         end = scrollbarContentSafePadding(),
-                        start = Styling.LINE_START_PADDING,
+                        start = OutputSectionStyling.LINE_START_PADDING,
                     ),
-                horizontalArrangement = Arrangement.spacedBy(Styling.LINE_HORIZONTAL_ALIGNMENT),
+                horizontalArrangement = Arrangement.spacedBy(OutputSectionStyling.LINE_HORIZONTAL_ALIGNMENT),
             ) {
                 Text(
                     text =
@@ -417,7 +417,7 @@ private fun LazyListScope.infoLineItemSingle(
 
 @Composable
 private fun LineSpacer() {
-    Spacer(modifier = Modifier.height(Styling.LINE_SPACER_HEIGHT))
+    Spacer(modifier = Modifier.height(OutputSectionStyling.LINE_SPACER_HEIGHT))
 }
 
 private sealed class InfoLine {

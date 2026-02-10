@@ -114,8 +114,8 @@ internal abstract class ProcessOutputTest {
             controllerSpy.copyOutputExitInfoToClipboard(loggedProcess)
         }
 
-        override fun specifyAdditionalMessageToUser(logId: Int, message: String) {
-            controllerSpy.specifyAdditionalMessageToUser(logId, message)
+        override fun specifyAdditionalInfo(logId: Int, message: String?, isCritical: Boolean) {
+            controllerSpy.specifyAdditionalInfo(logId, message, isCritical)
         }
 
         override fun tryOpenLogInToolWindow(logId: Int): Boolean {
@@ -175,6 +175,7 @@ internal abstract class ProcessOutputTest {
         exitInfo: LoggedProcessExitInfo? = null,
     ): LoggedProcess =
         LoggedProcess(
+            weight = null,
             traceContext = traceContext ?: TraceContext("some title"),
             pid = 123,
             startedAt = startedAt,
@@ -225,7 +226,7 @@ internal abstract class ProcessOutputTest {
     }
 
     fun TreeGeneratorScope<TreeNode>.addProcess(process: LoggedProcess) {
-        addLeaf(TreeNode.Process(process), process)
+        addLeaf(TreeNode.Process(process, null), process)
     }
 
     fun TreeGeneratorScope<TreeNode>.addContext(

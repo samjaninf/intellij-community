@@ -3,6 +3,7 @@ package com.jetbrains.python.sdk.pipenv
 
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkAdditionalData
+import com.intellij.python.community.impl.pipenv.PIPENV_ICON
 import com.jetbrains.python.PyPsiBundle
 import com.jetbrains.python.sdk.PyInterpreterInspectionQuickFixData
 import com.jetbrains.python.sdk.PySdkProvider

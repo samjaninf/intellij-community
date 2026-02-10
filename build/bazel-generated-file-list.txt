@@ -1492,6 +1492,7 @@ python/aliasProvider
 python/build
 python/build/build-debug-binaries
 python/common
+python/conda
 python/huggingFace
 python/ide/customization.shared
 python/ide/impl

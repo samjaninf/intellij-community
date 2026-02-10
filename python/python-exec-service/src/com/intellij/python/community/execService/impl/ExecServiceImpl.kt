@@ -89,7 +89,7 @@ internal class ExecServiceImpl private constructor() : ExecService {
   ): Result<T, ExecError> {
     val description = options.processDescription
                       ?: PyExecBundle.message("py.exec.defaultName.process", (listOf(processLauncher.exeForError.toString()) + processLauncher.args).joinToString(" "))
-    val process = processLauncher.start().getOr {
+    val process = processLauncher.start(options.weight).getOr {
       val message = PyExecBundle.message("py.exec.start.error", description, it.error.cantExecProcessError, it.error.errNo
                                                                                                             ?: "unknown")
       return processLauncher.createExecError(

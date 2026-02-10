@@ -5,6 +5,7 @@ import com.google.common.io.ByteStreams
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.python.community.execService.ConcurrentProcessWeight
 import com.intellij.util.io.awaitExit
 import com.jetbrains.python.TraceContext
 import com.jetbrains.python.errorProcessing.Exe
@@ -37,6 +38,7 @@ object LoggingLimits {
 
 @ApiStatus.Internal
 data class LoggedProcess(
+  val weight: ConcurrentProcessWeight?,
   val traceContext: TraceContext?,
   val pid: Long?,
   val startedAt: Instant,
@@ -78,6 +80,7 @@ data class LoggedProcessExitInfo(
   val exitedAt: Instant,
   val exitValue: Int,
   val additionalMessageToUser: @Nls String? = null,
+  val isCritical: Boolean = false,
 )
 
 @ApiStatus.Internal
@@ -101,6 +104,7 @@ class ExecLoggerService(val scope: CoroutineScope) {
 @ApiStatus.Internal
 class LoggingProcess(
   private val backingProcess: Process,
+  weight: ConcurrentProcessWeight?,
   traceContext: TraceContext?,
   startedAt: Instant,
   cwd: String?,
@@ -125,6 +129,7 @@ class LoggingProcess(
 
     loggedProcess =
       LoggedProcess(
+        weight,
         traceContext,
         try {
           backingProcess.pid()

@@ -18,7 +18,7 @@
     <toolWindow id="PythonProcessOutput"
                 anchor="bottom"
                 secondary="false"
-                icon="com.intellij.python.processOutput.impl.ui.Icons.CommandQueue"
+                icon="com.intellij.python.processOutput.impl.icons.PythonProcessOutputImplIcons.Process"
                 factoryClass="com.intellij.python.processOutput.impl.ProcessOutputToolWindowFactory"/>
     <statistics.counterUsagesCollector implementationClass="com.intellij.python.processOutput.impl.ProcessOutputUsageCollector"/>
     <python.processOutput.processOutputApi implementation="com.intellij.python.processOutput.impl.ProcessOutputApiImpl"/>
