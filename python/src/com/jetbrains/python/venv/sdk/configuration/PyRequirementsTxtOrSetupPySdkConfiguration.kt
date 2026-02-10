@@ -24,8 +24,6 @@ import com.jetbrains.python.sdk.configuration.PySdkConfigurationCollector
 import com.jetbrains.python.sdk.configuration.PySdkConfigurationCollector.VirtualEnvResult
 import com.jetbrains.python.sdk.configuration.prepareSdkCreator
 
-internal val PY_REQ_TOOL_ID = ToolId("requirements.txt")
-
 internal class PyRequirementsTxtOrSetupPySdkConfiguration : PyProjectSdkConfigurationExtension {
 
   override val toolId: ToolId = PY_REQ_TOOL_ID // This is nonsense, but will be dropped soon
