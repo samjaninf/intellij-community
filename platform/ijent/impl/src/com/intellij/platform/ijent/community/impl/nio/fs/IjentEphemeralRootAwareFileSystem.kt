@@ -13,6 +13,7 @@ import com.intellij.platform.eel.EelOsFamily
 import com.intellij.platform.eel.provider.getEelDescriptor
 import com.intellij.platform.eel.provider.utils.EelPathUtils
  import com.intellij.platform.eel.provider.utils.WindowsPathUtils
+import com.intellij.platform.ijent.community.impl.nio.AbsoluteIjentNioPath
 import com.intellij.platform.ijent.community.impl.nio.IjentNioPath
 import com.intellij.util.text.nullize
 import org.jetbrains.annotations.ApiStatus
@@ -185,7 +186,15 @@ class IjentEphemeralRootAwarePath(
 
   override fun toString(): String {
     return if (isAbsolute) {
-      rootPath.resolve(originalPath.pathString.removePrefix("/").replace("\\", fileSystem.separator)).toString()
+      when (originalPath.fileSystem.ijentFs.descriptor.osFamily) {
+        EelOsFamily.Posix -> {
+          rootPath.resolve(originalPath.pathString.removePrefix("/").replace("\\", fileSystem.separator)).pathString
+        }
+        EelOsFamily.Windows -> {
+          WindowsPathUtils.resolveEelPathOntoRoot(rootPath, (originalPath as AbsoluteIjentNioPath).eelPath).pathString
+        }
+      }
+
     }
     else {
       originalPath.toString()

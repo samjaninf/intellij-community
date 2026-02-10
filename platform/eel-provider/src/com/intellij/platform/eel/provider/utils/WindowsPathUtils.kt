@@ -40,10 +40,10 @@ object WindowsPathUtils {
   }
 
   /**
-   * Performs backward conversion.
+   * Performs backward conversion. Accepts and returns system independent slashes.
    *
-   * `@/C/Users` -> `C:\Users`
-   * `server.share/dir/` -> `\\server.share\dir\`
+   * `@/C/Users` -> `C:/Users`
+   * `server.share/dir/` -> `//server.share/dir/`
    *
    */
   fun rootRelativeToEelPath(relativePath: String): String {
@@ -51,12 +51,12 @@ object WindowsPathUtils {
       "${relativePath[2]}:${relativePath.drop(3)}"
     }
     else {
-      "\\\\$relativePath"
+      "//$relativePath"
     }
   }
 
   /**
-   * Performs backward conversion.
+   * Performs backward conversion. Returns a pair of root and remaining path, both ready for constructing EelPath.
    *
    * `@/C/Users` -> `C:`, `Users`
    * `server.share/dir/tmp` -> `\\server.share\dir`, `tmp`
