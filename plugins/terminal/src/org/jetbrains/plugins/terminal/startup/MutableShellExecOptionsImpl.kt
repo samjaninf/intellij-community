@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.debug
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.platform.eel.EelDescriptor
 import com.intellij.platform.eel.path.EelPath
+import com.intellij.platform.eel.pathSeparator
 import com.intellij.platform.eel.provider.LocalEelDescriptor
 import org.jetbrains.plugins.terminal.util.ShellIntegration
 import java.nio.file.Path
@@ -71,7 +72,13 @@ internal class MutableShellExecOptionsImpl(
       LOG.debug { "$requester: prependEntryToPathLikeEnv('$envName', '$entry') failed, skipping" }
       return
     }
-    mutableEnvs[envName] = translator.joinEntries(remotePath, envs[envName].orEmpty())
+    var value = translator.joinEntries(remotePath, envs[envName].orEmpty())
+    if (value.startsWith(INTELLIJ_FORCE_PREPEND_PREFIX) && !value.endsWith(eelDescriptor.osFamily.pathSeparator)) {
+      // For every `_INTELLIJ_FORCE_PREPEND_FOO=BAR`, we run `export FOO=BAR$FOO`.
+      // Therefore, `BAR` should end with the path separator.
+      value += eelDescriptor.osFamily.pathSeparator
+    }
+    mutableEnvs[envName] = value
     LOG.debug { "$requester: prependEntryToPathLikeEnv('$envName', '$remotePath')" }
   }
 
@@ -107,4 +114,5 @@ internal class MutableShellExecOptionsImpl(
 }
 
 private const val PATH: String = "PATH"
+private const val INTELLIJ_FORCE_PREPEND_PREFIX: String = "_INTELLIJ_FORCE_PREPEND_"
 private val LOG: Logger = logger<MutableShellExecOptionsImpl>()
