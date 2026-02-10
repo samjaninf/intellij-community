@@ -40,7 +40,6 @@ import com.intellij.xdebugger.breakpoints.XBreakpointProperties
 import com.intellij.xdebugger.breakpoints.XBreakpointType
 import com.intellij.xdebugger.breakpoints.XLineBreakpoint
 import com.intellij.xdebugger.breakpoints.XLineBreakpointType
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl
 import com.intellij.xdebugger.impl.XSourcePositionImpl
 import com.intellij.xdebugger.impl.breakpoints.ui.BreakpointItem
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil
@@ -252,7 +251,7 @@ object XBreakpointUtil {
         val lineStart = position.line
         val winPosition = if (lineStart == lineWinner) position else XSourcePositionImpl.create(position.file, lineWinner)
 
-        val res = XDebuggerUtilImpl.toggleAndReturnLineBreakpointProxy(
+        val res = XBreakpointInstallUtils.toggleAndReturnLineBreakpointProxy(
           project, typeWinner, winPosition, selectVariantByPositionColumn, temporary, editor, canRemove, isLogging, logExpression)
         if (lineStart != lineWinner) {
           val offset = editor.document.getLineStartOffset(lineWinner)
