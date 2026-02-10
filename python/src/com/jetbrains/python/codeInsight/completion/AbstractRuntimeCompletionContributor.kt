@@ -21,7 +21,6 @@ import com.jetbrains.python.psi.PyStringElement
 abstract class AbstractRuntimeCompletionContributor : CompletionContributor(), DumbAware {
   override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
     val project = parameters.editor.project ?: return
-    if (parameters.completionType == CompletionType.CLASS_NAME) return
 
     val context = ProcessingContext()
     if (!PlatformPatterns.psiElement().accepts(parameters.position, context)) return
