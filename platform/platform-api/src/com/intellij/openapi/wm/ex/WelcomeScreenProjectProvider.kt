@@ -1,27 +1,27 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.wm.ex
 
-import com.intellij.diagnostic.WindowsDefenderChecker
-import com.intellij.ide.RecentProjectsManager
-import com.intellij.ide.RecentProjectsManagerBase
-import com.intellij.ide.impl.ProjectUtil
-import com.intellij.ide.trustedProjects.TrustedProjects
-import com.intellij.ide.util.TipAndTrickManager
+import com.intellij.ide.GeneralLocalSettings
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ApplicationNamesInfo
+import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.serviceAsync
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
-import com.intellij.platform.PlatformProjectOpenProcessor
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.util.PlatformUtils
 import org.jetbrains.annotations.ApiStatus.Internal
-import java.nio.file.LinkOption
 import java.nio.file.Path
-import java.util.EnumSet
 import kotlin.io.path.absolute
-import kotlin.io.path.createDirectories
-import kotlin.io.path.exists
 
 private val LOG = logger<WelcomeScreenProjectProvider>()
 private val EP_NAME: ExtensionPointName<WelcomeScreenProjectProvider> = ExtensionPointName("com.intellij.welcomeScreenProjectProvider")
+private const val PROJECTS_DIR = "projects"
+private const val PROPERTY_PROJECT_PATH = "%s.project.path"
+
+@Volatile
+private var cachedProjectsBasePath: String? = null
 
 @Internal
 fun getWelcomeScreenProjectProvider(): WelcomeScreenProjectProvider? {
@@ -35,6 +35,13 @@ fun getWelcomeScreenProjectProvider(): WelcomeScreenProjectProvider? {
     return null
   }
   return providers.first()
+}
+
+@Internal
+interface WelcomeScreenProjectSupport {
+  suspend fun createOrOpenWelcomeScreenProject(extension: WelcomeScreenProjectProvider): Project
+
+  suspend fun openProject(path: Path): Project
 }
 
 /**
@@ -54,6 +61,7 @@ abstract class WelcomeScreenProjectProvider {
       return extension.doIsWelcomeScreenProject(project)
     }
 
+    @Suppress("unused")
     fun isEditableWelcomeProject(project: Project): Boolean {
       val extension = getWelcomeScreenProjectProvider() ?: return false
       return extension.doIsWelcomeScreenProject(project) && extension.doIsEditableProject(project)
@@ -73,28 +81,13 @@ abstract class WelcomeScreenProjectProvider {
       return getWelcomeScreenProjectProvider()?.getWelcomeScreenProjectPath()
     }
 
+    @Suppress("unused")
     fun canOpenFilesFromSystemFileManager(filePath: Path): Boolean {
       return getWelcomeScreenProjectProvider()?.canOpenFilesFromSystemFileManager(filePath) ?: false
     }
 
     suspend fun createOrOpenWelcomeScreenProject(extension: WelcomeScreenProjectProvider): Project {
-      val projectPath = extension.getWelcomeScreenProjectPath()
-
-      if (!projectPath.exists(LinkOption.NOFOLLOW_LINKS)) {
-        projectPath.createDirectories()
-      }
-      TrustedProjects.setProjectTrusted(projectPath, true)
-      serviceAsync<WindowsDefenderChecker>().markProjectPath(projectPath, /*skip =*/ true)
-
-      val project = extension.doCreateOrOpenWelcomeScreenProject(projectPath)
-      LOG.info("Opened the welcome screen project at $projectPath")
-      LOG.debug("Project: ", project)
-
-      val recentProjectsManager = serviceAsync<RecentProjectsManager>() as RecentProjectsManagerBase
-      recentProjectsManager.setProjectHidden(project, extension.doIsHiddenInRecentProjects())
-      TipAndTrickManager.DISABLE_TIPS_FOR_PROJECT.set(project, true)
-
-      return project
+      return serviceAsync<WelcomeScreenProjectSupport>().createOrOpenWelcomeScreenProject(extension)
     }
   }
 
@@ -104,7 +97,12 @@ abstract class WelcomeScreenProjectProvider {
   abstract fun canOpenFilesFromSystemFileManager(filePath: Path): Boolean
 
   protected open fun getWelcomeScreenProjectPath(): Path {
-    return ProjectUtil.getProjectPath(getWelcomeScreenProjectName()).absolute()
+    return Path.of(getProjectsBasePath(), getWelcomeScreenProjectName()).absolute()
+  }
+
+  @Internal
+  fun getWelcomeScreenProjectPathForInternalUsage(): Path {
+    return getWelcomeScreenProjectPath()
   }
 
   protected abstract fun getWelcomeScreenProjectName(): String
@@ -125,45 +123,52 @@ abstract class WelcomeScreenProjectProvider {
   protected abstract fun doGetCreateNewFileProjectPrefix(): String
 
   protected open suspend fun doCreateOrOpenWelcomeScreenProject(path: Path): Project {
-    return PlatformProjectOpenProcessor.openProjectAsync(path)
-           ?: throw IllegalStateException("Cannot open project at $path (not expected that user can cancel welcome-project loading)")
+    return serviceAsync<WelcomeScreenProjectSupport>().openProject(path)
+  }
+
+  @Internal
+  suspend fun doCreateOrOpenWelcomeScreenProjectForInternalUsage(path: Path): Project {
+    return doCreateOrOpenWelcomeScreenProject(path)
   }
 
   protected open fun doIsHiddenInRecentProjects(): Boolean = true
+
+  @Internal
+  fun isHiddenInRecentProjectsForInternalUsage(): Boolean = doIsHiddenInRecentProjects()
 }
 
-internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapabilitiesProvider {
-  /**
-   * Maps welcome-screen project classification to generic frame capabilities.
-   *
-   * Startup UI policy is intentionally not provided here; it is contributed by module-specific
-   * providers that consume [ProjectFrameCapability.WELCOME_EXPERIENCE].
-   */
-  override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
-    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
-      return emptySet()
-    }
+@Suppress("DuplicatedCode")
+private fun getProjectsBasePath(): String {
+  val application = ApplicationManager.getApplication()
+  val fromSettings = if (application == null || application.isHeadlessEnvironment) null else GeneralLocalSettings.getInstance().defaultProjectDirectory
+  if (!fromSettings.isNullOrEmpty()) {
+    return PathManager.getAbsolutePath(fromSettings)
+  }
 
-    if (WelcomeScreenProjectProvider.isForceDisabledFileColors()) {
-      return WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS
+  if (cachedProjectsBasePath == null) {
+    val productName = ApplicationNamesInfo.getInstance().productName.lowercase()
+    val propertyName = String.format(PROPERTY_PROJECT_PATH, productName)
+    val propertyValue = System.getProperty(propertyName)
+    cachedProjectsBasePath = if (propertyValue != null) {
+      PathManager.getAbsolutePath(StringUtil.unquoteString(propertyValue, '"'))
     }
     else {
-      return WELCOME_CAPABILITIES
+      projectsDirDefault
     }
   }
-
-  override fun getUiPolicy(project: Project, capabilities: Set<ProjectFrameCapability>): ProjectFrameUiPolicy? {
-    return null
-  }
+  return cachedProjectsBasePath!!
 }
 
-private val WELCOME_CAPABILITIES: EnumSet<ProjectFrameCapability> =
-  EnumSet.of(
-    ProjectFrameCapability.WELCOME_EXPERIENCE,
-    ProjectFrameCapability.SUPPRESS_VCS_UI,
-  )
+private val projectsDirDefault: String
+  get() = if (PlatformUtils.isDataGrip() || PlatformUtils.isDataSpell()) getUserHomeProjectDir() else Path.of(PathManager.getConfigPath(), PROJECTS_DIR).toString()
 
-private val WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS: EnumSet<ProjectFrameCapability> =
-  EnumSet.copyOf(WELCOME_CAPABILITIES).apply {
-    add(ProjectFrameCapability.FORCE_DISABLE_FILE_COLORS)
+private fun getUserHomeProjectDir(): String {
+  val appNamesInfo = ApplicationNamesInfo.getInstance()
+  val productName = if (PlatformUtils.isCLion() || PlatformUtils.isAppCode() || PlatformUtils.isDataGrip() || PlatformUtils.isMPS()) {
+    appNamesInfo.productName
   }
+  else {
+    appNamesInfo.lowercaseProductName
+  }
+  return Path.of(System.getProperty("user.home"), productName + "Projects").toString()
+}

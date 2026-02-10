@@ -50,6 +50,7 @@ jvm_library(
     "//platform/credential-store",
     "//platform/remote-core",
     "//platform/ide-core",
+    "//platform/util/base",
     "//platform/util/text-matching",
     "//platform/diagnostic",
     "//libraries/jackson/jackson",
