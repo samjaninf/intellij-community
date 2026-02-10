@@ -200,9 +200,10 @@ internal class IdeaFreezeReporter : PerformanceListener {
   }
 
   /**
-   * In Diogen, we check that there is at least one method in report.txt which also exists in threadDumps in the thread responsible for
-   * a freeze that lasts 1+ second.
-   * And we add [SamplingTask.dumpInterval] to each method in [buildTree].
+   * In Diogen, we check that there is at least one method in 'report.txt' that lasts 1+ second,
+   * which also exists in threadDumps in the thread responsible for a freeze.
+   *
+   * So the reports shorter than one second shall not be sent.
    */
   private fun SamplingTask.isValid(): Boolean {
     return threadInfos.size > (1000 / dumpInterval)
