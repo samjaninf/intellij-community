@@ -148,7 +148,7 @@ class JavaApiUsageInspection : AbstractBaseUastLocalInspectionTool() {
 
     private fun processMethodOverriding(method: UMethod, overriddenMethods: Array<PsiMethod>) {
       val overrideAnnotation = method.findAnnotation(CommonClassNames.JAVA_LANG_OVERRIDE)
-      val hasOverrideModifier = overrideModifierLanguages.any { method.sourcePsi?.language != Language.findLanguageByID(it) }
+      val hasOverrideModifier = overrideModifierLanguages.contains(method.sourcePsi?.language?.id)
       if (overrideAnnotation == null && !hasOverrideModifier) return
       val sourcePsi = method.sourcePsi ?: return
       val module = ModuleUtilCore.findModuleForPsiElement(sourcePsi) ?: return
