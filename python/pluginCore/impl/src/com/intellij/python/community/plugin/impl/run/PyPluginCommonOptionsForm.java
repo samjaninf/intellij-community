@@ -92,8 +92,7 @@ public class PyPluginCommonOptionsForm implements AbstractPyCommonOptionsForm {
   public void subscribe() {
   }
 
-  @Override
-  public void addInterpreterComboBoxActionListener(ActionListener listener) {
+  private void addInterpreterComboBoxActionListener(ActionListener listener) {
     content.interpreterComboBox.addActionListener(listener);
   }
 

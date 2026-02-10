@@ -5,7 +5,6 @@ import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.configurations.ParamsGroup;
 import com.intellij.remote.RemoteFile;
 import com.intellij.remote.RemoteProcessUtil;
-import com.intellij.remote.RemoteSdkProperties;
 import com.intellij.util.PathMapper;
 import com.jetbrains.python.debugger.PyDebugRunner;
 import com.jetbrains.python.run.PythonCommandLineState;
@@ -25,10 +24,6 @@ public final class PyCommandLineStateUtil {
   private static final String PY_STUFF_TO_RUN = "PY_STUFF_TO_RUN";
 
   private PyCommandLineStateUtil() { }
-
-  public static void remap(@NotNull RemoteSdkProperties sdkProperties, @NotNull GeneralCommandLine commandLine, @NotNull PathMapper pathMapper) {
-    remap(sdkProperties.getInterpreterPath(), commandLine, pathMapper);
-  }
 
   public static void remap(@NotNull String interpreterPath, @NotNull GeneralCommandLine commandLine, @NotNull PathMapper pathMapper) {
     ParamsGroup paramsGroup = commandLine.getParametersList().getParamsGroup(PythonCommandLineState.GROUP_SCRIPT);

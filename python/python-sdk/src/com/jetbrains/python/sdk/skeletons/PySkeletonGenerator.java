@@ -163,16 +163,6 @@ public abstract class PySkeletonGenerator {
       return this;
     }
 
-    public @NotNull Builder timeout(int timeout) {
-      myTimeout = timeout;
-      return this;
-    }
-
-    public @NotNull Builder stdin(@NotNull String content) {
-      myStdin = content;
-      return this;
-    }
-
     public @Nullable String getStdin() {
       return myStdin;
     }

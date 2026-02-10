@@ -756,8 +756,6 @@
     <extensionPoint qualifiedName="Pythonid.remoteInterpreterManager"
                     interface="com.jetbrains.python.remote.PythonRemoteInterpreterManager"
                     dynamic="true"/>
-    <extensionPoint qualifiedName="Pythonid.remoteConsoleProcessCreator"
-                    interface="com.jetbrains.python.console.PythonConsoleRemoteProcessCreator" dynamic="true"/>
     <extensionPoint qualifiedName="Pythonid.breakpointHandler"
                     interface="com.jetbrains.python.debugger.PyBreakpointHandlerFactory"
                     dynamic="true"/>
