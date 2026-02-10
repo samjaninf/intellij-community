@@ -6,7 +6,7 @@ This directory (`community/.ai`) contains the templates and documentation source
 node community/.ai/render-guides.mjs
 ```
 
-The renderer produces guide files (`AGENTS.md`, `CLAUDE.md`), skill stubs, Beads rules, and OpenCode config/skills.
+The renderer produces guide files (`AGENTS.md`, `CLAUDE.md`), skill stubs, and OpenCode config/skills.
 
 ## Quick run
 
@@ -26,7 +26,6 @@ AI_GUIDE_EDITION=ULTIMATE  node community/.ai/render-guides.mjs
 - `AGENTS.md`
 - `community/AGENTS.md` (generated in ultimate workspace)
 - `CLAUDE.md` (ultimate only)
-- `.claude/rules/beads.md` (from `community/build/mcp-servers/task/beads-semantics.md`)
 - `opencode.json` (from `.mcp.json`)
 - `.opencode/skill/*` (mirrored from `.codex/skills/*`)
 - Skill stubs in `.agents/skills/*`, `.claude/skills/*`, `community/.claude/skills/*`
@@ -50,7 +49,6 @@ AI_GUIDE_EDITION=ULTIMATE  node community/.ai/render-guides.mjs
                              +--> AGENTS.md
                              +--> community/AGENTS.md (ultimate workspace)
                              +--> CLAUDE.md (ultimate only)
-                             +--> .claude/rules/beads.md (separate source)
                              +--> opencode.json
                              +--> .opencode/skill/*
                              +--> skill stubs (see next section)
