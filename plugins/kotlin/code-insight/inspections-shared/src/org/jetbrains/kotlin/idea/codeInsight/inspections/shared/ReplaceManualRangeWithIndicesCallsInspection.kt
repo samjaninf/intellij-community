@@ -20,13 +20,14 @@ import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinDeclarationNameValidator
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinNameSuggester
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinNameSuggestionProvider
-import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.idea.base.psi.isAssignmentLHS
+import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.idea.base.psi.replaced
 import org.jetbrains.kotlin.idea.base.psi.safeDeparenthesize
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
 import org.jetbrains.kotlin.idea.codeInsight.inspections.shared.AbstractRangeInspection.Companion.rangeExpressionByPsi
 import org.jetbrains.kotlin.idea.codeInsight.inspections.shared.AbstractRangeInspection.RangeExpression
+import org.jetbrains.kotlin.idea.codeInsight.inspections.shared.utils.isPrimitiveRangeType
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.inspections.KotlinApplicableInspectionBase
 import org.jetbrains.kotlin.idea.codeinsight.api.applicable.inspections.KotlinModCommandQuickFix
 import org.jetbrains.kotlin.idea.codeinsight.utils.ImplicitReceiverInfo
@@ -40,7 +41,7 @@ import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.RANGE_T
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.RANGE_UNTIL
 import org.jetbrains.kotlin.idea.codeinsight.utils.RangeKtExpressionType.UNTIL
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.psi.KtArrayAccessExpression
 import org.jetbrains.kotlin.psi.KtBinaryExpression
@@ -101,6 +102,8 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
         val indexedAccessUsages: List<SmartPsiElementPointer<KtExpression>>,  // Either KtArrayAccessExpression or KtDotQualifiedExpression
     )
 
+    private val RANGE_CALLABLE_NAMES = setOf("until", "rangeTo", "rangeUntil", "downTo")
+
     private fun getProblemDescription(context: Context): @InspectionMessage String {
         return when (context.indexUsagePattern) {
             IndexUsagePattern.ELEMENT_LOOP -> KotlinBundle.message("for.loop.over.indices.could.be.replaced.with.loop.over.elements")
@@ -140,10 +143,24 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
      */
     private fun KaSession.rangeExpressionByAnalyze(expression: KtExpression): RangeExpression? =
         rangeExpressionByPsi(expression)?.takeIf {
-            val call = expression.resolveToCall()?.singleFunctionCallOrNull()
-            val packageName = call?.symbol?.callableId?.packageName
-            packageName != null && packageName.startsWith(Name.identifier("kotlin"))
+            val callableId = expression.resolveToCall()?.singleFunctionCallOrNull()?.symbol?.callableId
+            callableId != null && isStdlibRangeFunction(callableId)
         }
+
+    private fun isStdlibRangeFunction(callableId: CallableId): Boolean {
+        val callableName = callableId.callableName.asString()
+        if (callableName !in RANGE_CALLABLE_NAMES) return false
+
+        // Extension functions in kotlin.ranges (until, rangeUntil, downTo, and some rangeTo overloads)
+        if (callableId.packageName == StandardClassIds.BASE_RANGES_PACKAGE) return true
+
+        // Member functions on primitive types (Int.rangeTo, Int.rangeUntil, etc.)
+        if (callableName == "rangeTo" || callableName == "rangeUntil") {
+            return callableId.classId?.isPrimitiveRangeType() == true
+        }
+
+        return false
+    }
 
     private fun KaSession.prepareContextForRange(range: RangeExpression): Context? {
         val (_, right) = range.arguments
@@ -305,8 +322,26 @@ class ReplaceManualRangeWithIndicesCallsInspection : KotlinApplicableInspectionB
     private fun receiversMatch(accessReceiver: KtExpression?, explicitReceiver: KtExpression?): Boolean {
         if (explicitReceiver == null) return accessReceiver?.safeDeparenthesize() is KtThisExpression
         if (accessReceiver == null) return false
-        return (accessReceiver as? KtNameReferenceExpression)?.mainReference?.resolve() ==
-                (explicitReceiver as? KtNameReferenceExpression)?.mainReference?.resolve()
+
+        val access = accessReceiver.safeDeparenthesize()
+        val explicit = explicitReceiver.safeDeparenthesize()
+
+        return when {
+            access is KtNameReferenceExpression && explicit is KtNameReferenceExpression -> {
+                access.mainReference.resolve() == explicit.mainReference.resolve()
+            }
+
+            access is KtDotQualifiedExpression && explicit is KtDotQualifiedExpression -> {
+                access.selectorExpression?.text == explicit.selectorExpression?.text &&
+                        receiversMatch(access.receiverExpression, explicit.receiverExpression)
+            }
+
+            access is KtThisExpression && explicit is KtThisExpression -> {
+                access.labelQualifier?.text == explicit.labelQualifier?.text
+            }
+
+            else -> false
+        }
     }
 
     private fun createQuickFixes(context: Context): List<KotlinModCommandQuickFix<KtExpression>> {

@@ -1,6 +1,5 @@
 // WITH_STDLIB
 // FIX: Replace with 'withIndex()'
-// IGNORE_K1
 fun test() {
     val element = "existing"
     val list = listOf("a", "b", "c")

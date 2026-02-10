@@ -1,6 +1,5 @@
 // WITH_STDLIB
 // FIX: Replace with loop over elements
-// IGNORE_K1
 fun test() {
     val outer = listOf(listOf("a", "b"), listOf("c", "d"))
     for (element in outer) {

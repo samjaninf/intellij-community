@@ -9802,6 +9802,11 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
             runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/notUsedAsIndex.kt");
         }
 
+        @TestMetadata("qualifiedReceiverDifferentCollection.kt")
+        public void testQualifiedReceiverDifferentCollection() throws Exception {
+            runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/qualifiedReceiverDifferentCollection.kt");
+        }
+
         @TestMetadata("rangeTo.kt")
         public void testRangeTo() throws Exception {
             runTest("../../../idea/tests/testData/inspectionsLocal/replaceManualRangeWithIndicesCalls/rangeTo.kt");

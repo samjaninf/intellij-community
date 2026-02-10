@@ -1,6 +1,5 @@
 // WITH_STDLIB
 // FIX: Replace with loop over elements
-// IGNORE_K1
 fun test() {
     val element = "first"
     val element1 = "second"
