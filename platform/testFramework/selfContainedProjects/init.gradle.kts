@@ -72,6 +72,19 @@ fun rewriteRepositories(repositories: RepositoryHandler, context: String) {
 // before settingsEvaluated fires. Using repositories.all {} sets up a listener that
 // intercepts each repository when it's added.
 beforeSettings {
+  // When pluginManagement.repositories is not explicitly defined in settings.gradle.kts,
+  // Gradle uses default repositories (Gradle Plugin Portal). We need to explicitly add
+  // default repositories here so they get intercepted and rewritten by our listener.
+  // Only add them if no repositories are configured yet to avoid duplication.
+  pluginManagement {
+    if (repositories.isEmpty()) {
+      repositories {
+        maven("https://cache-redirector.jetbrains.com/maven-central")
+        maven("https://cache-redirector.jetbrains.com/plugins.gradle.org")
+      }
+    }
+  }
+
   // Intercept pluginManagement repositories as they are added
   pluginManagement.repositories.all {
     if (this is MavenArtifactRepository) {

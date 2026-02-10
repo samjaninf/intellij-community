@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 }
 
 include(":subproject1")
+includeBuild("subbuild1")
