@@ -1,4 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.psi.util;
 
 import com.intellij.openapi.util.TextRange;
@@ -12,7 +12,6 @@ import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiTypes;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.util.ObjectUtils;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -762,17 +761,10 @@ public final class PsiLiteralUtil {
 
     private static @Nullable TextBlockModel create(@NotNull String text, int indent) {
       if (text.length() < 7 || !text.startsWith("\"\"\"") || !text.endsWith("\"\"\"")) return null;
-      int startPrefixLength = findStartPrefixLength(text);
-      if (startPrefixLength == -1) return null;
-      String[] lines = text.substring(startPrefixLength, text.length() - 3).split("\n", -1);
-      return new TextBlockModel(lines, indent, startPrefixLength);
-    }
-
-    @Contract(pure = true)
-    private static int findStartPrefixLength(@NotNull String text) {
-      int lineBreakIdx = text.indexOf("\n");
-      if (lineBreakIdx == -1) return -1;
-      return lineBreakIdx + 1;
+      int index = text.indexOf("\n");
+      if (index == -1) return null;
+      String[] lines = text.substring(index + 1, text.length() - 3).split("\n", -1);
+      return new TextBlockModel(lines, indent, index + 1);
     }
   }
 }
