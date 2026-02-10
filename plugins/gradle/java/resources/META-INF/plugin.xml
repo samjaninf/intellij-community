@@ -9,8 +9,9 @@
   </description>
 
   <dependencies>
-    <module name="intellij.java.backend"/>
+    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <module name="intellij.gradle"/>
+    <!-- endregion -->
   </dependencies>
 
   <module value="com.intellij.modules.gradle.java"/>

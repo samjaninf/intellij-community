@@ -3123,6 +3123,13 @@ jvm_import(
   visibility = ["//visibility:public"]
 )
 
+java_library(
+  name = "gradle-provided",
+  exports = [":gradle"],
+  neverlink = True,
+  visibility = ["//visibility:public"]
+)
+
 copy_file(
   name = "org.apache.ant/ant-1.10.15.jar_copy",
   src = "@org_apache_ant-ant-1_10_15_http//file",

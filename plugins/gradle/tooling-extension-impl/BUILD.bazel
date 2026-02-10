@@ -42,6 +42,8 @@ jvm_library(
     "//libraries/commons/io",
     "//libraries/guava",
     "//platform/util/trove",
+    "@lib//:org-codehaus-groovy-groovy-provided",
+    "@lib//:org-codehaus-groovy-groovy-ant-provided",
   ],
   exports = [
     "@lib//:slf4j-api",

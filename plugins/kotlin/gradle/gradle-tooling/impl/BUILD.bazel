@@ -33,6 +33,7 @@ jvm_library(
     "//plugins/gradle/tooling-extension-impl:toolingExtension-impl",
     "@lib//:opentelemetry",
     "@lib//:jspecify-provided",
+    "@lib//:gradle",
     ":platform_extensions_provided",
   ]
 )
@@ -60,6 +61,7 @@ jvm_library(
     "@lib//:kotlin-test",
     "@lib//:opentelemetry",
     "@lib//:jspecify-provided",
+    "@lib//:gradle",
     ":platform_extensions_provided",
   ]
 )

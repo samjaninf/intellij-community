@@ -1,8 +1,10 @@
 <idea-plugin>
   <dependencies>
     <module name="intellij.java.backend"/>
-    <module name="intellij.gradle"/>
+    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="org.jetbrains.idea.maven"/>
+    <module name="intellij.gradle"/>
+    <!-- endregion -->
   </dependencies>
 
   <extensions defaultExtensionNs="com.intellij.cce">

@@ -66,5 +66,7 @@
     <orderEntry type="module" module-name="intellij.java.guiForms.rt" />
     <orderEntry type="module" module-name="intellij.libraries.jspecify" />
     <orderEntry type="module" module-name="intellij.platform.util.text.matching" />
+    <orderEntry type="library" scope="PROVIDED" name="org.codehaus.groovy:groovy" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="org.codehaus.groovy:groovy-ant" level="project" />
   </component>
 </module>

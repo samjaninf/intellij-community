@@ -1,6 +1,5 @@
 <idea-plugin package="org.jetbrains.kotlin.idea.compilerPlugin.parcelize.gradleJava">
   <dependencies>
-    <module name="intellij.gradle"/>
     <module name="intellij.kotlin.gradle.tooling"/>
   </dependencies>
 
