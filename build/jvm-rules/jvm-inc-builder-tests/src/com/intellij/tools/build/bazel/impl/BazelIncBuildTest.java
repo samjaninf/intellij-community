@@ -4,6 +4,7 @@ import com.intellij.tools.build.bazel.jvmIncBuilder.DataPaths;
 import com.intellij.tools.build.bazel.jvmIncBuilder.impl.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.jps.util.Iterators;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ComparisonFailure;
@@ -26,6 +27,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -205,7 +207,7 @@ public abstract class BazelIncBuildTest {
     return result;
   }
 
-  private @NotNull Path getTestOutputDir(String testDataPath) {
+  private static @NotNull Path getTestOutputDir(String testDataPath) {
     return ourOutputBinRoot.resolve(testDataPath);
   }
 
@@ -217,12 +219,13 @@ public abstract class BazelIncBuildTest {
         @Override
         public @NotNull FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) throws IOException {
           if (matches(file, DataPaths.DIAGNOSTIC_FILE_NAME_SUFFIX)) {
-            String sessionLog = readLatestEntry(file);
-            if (sessionLog != null) {
+            int stage = 1;
+            for (String sessionLog : readSessionLogs(file)) {
               String targetName = getFileName(file.getParent());
-              content.append("\n").append("--------------------------- BEGIN diagnostic log for \"").append(targetName).append("\" ---------------------------");
+              content.append("\n").append("--------------------------- BEGIN diagnostic log for \"").append(targetName).append(" Stage #").append(stage).append("\" ---------------------------");
               content.append("\n").append(sessionLog);
-              content.append("\n").append("--------------------------- END diagnostic log for \"").append(targetName).append("\" ---------------------------");
+              content.append("\n").append("--------------------------- END diagnostic log for \"").append(targetName).append(" Stage #").append(stage).append("\" ---------------------------");
+              stage += 1;
             }
           }
           return FileVisitResult.CONTINUE;
@@ -237,18 +240,18 @@ public abstract class BazelIncBuildTest {
     return content.toString();
   }
 
-  private static String readLatestEntry(Path diagnostic) throws IOException {
+  private static Iterable<String> readSessionLogs(Path diagnostic) throws IOException {
+    List<String> logs = new ArrayList<>(); // the first description entry corresponds to the most recent build session
     try (var zis = new ZipInputStream(new BufferedInputStream(Files.newInputStream(diagnostic)))) {
       for (ZipEntry entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
         if (entry.getName().endsWith("/description.txt")) {
-          // the first description entry corresponds to the most recent build session
           ByteArrayOutputStream buf = new ByteArrayOutputStream();
           zis.transferTo(buf);
-          return buf.toString(StandardCharsets.UTF_8);
+          logs.add(buf.toString(StandardCharsets.UTF_8));
         }
       }
     }
-    return null;
+    return Iterators.reverse(logs);
   }
 
   protected void modify(Path testDataDir, Path testWorkDir, int stage) throws IOException {
