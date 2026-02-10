@@ -1072,8 +1072,20 @@ object CommunityLibraryLicenses {
       .apache("https://github.com/open-telemetry/opentelemetry-java/blob/main/LICENSE")
       .suppliedByOrganizations("The OpenTelemetry Authors"),
 
+    LibraryLicense(libraryName = "opentelemetry-exporter-otlp-library", url = "https://opentelemetry.io/")
+      .apache("https://github.com/open-telemetry/opentelemetry-java/blob/main/LICENSE")
+      .suppliedByOrganizations("The OpenTelemetry Authors"),
+
+    LibraryLicense(libraryName = "opentelemetry-exporter-sender-jdk", url = "https://opentelemetry.io/")
+      .apache("https://github.com/open-telemetry/opentelemetry-java/blob/main/LICENSE")
+      .suppliedByOrganizations("The OpenTelemetry Authors"),
+
     LibraryLicense(libraryName = "opentelemetry-extension-kotlin", url = "https://opentelemetry.io/")
       .apache("https://github.com/open-telemetry/opentelemetry-java/blob/main/LICENSE")
+      .suppliedByOrganizations("The OpenTelemetry Authors"),
+
+    LibraryLicense(libraryName = "opentelemetry-sdk-autoconfigure-spi", url = "https://opentelemetry.io/")
+      .apache("https://github.com/open-telemetry/semantic-conventions-java/blob/main/LICENSE")
       .suppliedByOrganizations("The OpenTelemetry Authors"),
 
     LibraryLicense(libraryName = "opentelemetry-semconv", url = "https://opentelemetry.io/")

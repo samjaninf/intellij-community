@@ -130,6 +130,7 @@ object CoreModuleSets {
     embeddedModule("intellij.libraries.velocity")
     embeddedModule("intellij.libraries.xtext.xbase")
     embeddedModule("intellij.libraries.xz")
+    // Temporary embedded while opentelemetry-exporter-otlp-common library remains embedded due to a dependency (IJPL-233394)
     embeddedModule("intellij.libraries.opentelemetry.sdk.autoconfigure.spi")
     embeddedModule("intellij.libraries.opentelemetry.exporter.sender.jdk")
   }
