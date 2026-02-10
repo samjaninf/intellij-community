@@ -32,6 +32,8 @@ import org.jetbrains.annotations.ApiStatus
 internal class ProjectModelEntityContextProvider : CodeInsightContextProvider {
 
   override fun getContexts(file: VirtualFile, project: Project): List<CodeInsightContext> {
+    if (project.isDefault) return emptyList()
+
     val workspaceFileIndex = WorkspaceFileIndexEx.getInstance(project)
 
     val fileSets = workspaceFileIndex.findFileSets(
