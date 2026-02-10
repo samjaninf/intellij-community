@@ -244,7 +244,7 @@ public abstract class PySkeletonGenerator {
 
       @Override
       public void onStderrLine(@NotNull String line) {
-        Run.LOG.info(StringUtil.trimTrailing(line));
+        Run.LOG.debug(StringUtil.trimTrailing(line));
       }
     };
 
