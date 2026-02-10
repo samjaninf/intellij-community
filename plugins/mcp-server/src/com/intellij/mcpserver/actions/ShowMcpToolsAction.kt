@@ -7,12 +7,14 @@ import com.intellij.mcpserver.McpToolsMarkdownExporter
 import com.intellij.mcpserver.impl.McpServerService
 import com.intellij.mcpserver.settings.McpToolFilterOptimizer
 import com.intellij.mcpserver.settings.McpToolFilterSettings
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.ui.*
 import com.intellij.ui.treeStructure.treetable.TreeColumnInfo
 import com.intellij.util.ui.ColumnInfo
@@ -36,6 +38,13 @@ class ShowMcpToolsAction : AnAction() {
     val enabledTools = McpServerService.getInstance().getMcpTools().map { it.descriptor.fullyQualifiedName }.toSet()
     McpToolsDialog(project, allMcpTools, enabledTools).show()
   }
+
+  override fun update(e: AnActionEvent) {
+    super.update(e)
+    e.presentation.isEnabledAndVisible = Registry.`is`("mcp.server.show.advanced.filter.options.ui")
+  }
+
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 }
 
 private class CategoryNode(val category: McpToolCategory)
