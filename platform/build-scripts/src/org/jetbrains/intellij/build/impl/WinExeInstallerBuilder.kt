@@ -100,7 +100,8 @@ internal suspend fun buildNsisInstaller(
             "${nsiConfDir}/idea.nsi",
           ),
           workingDir = box,
-          timeout
+          timeout = timeout,
+          attachStdOutToException = true,
         )
       }
       else {
@@ -116,8 +117,9 @@ internal suspend fun buildNsisInstaller(
             "${nsiConfDir}/idea.nsi",
           ),
           workingDir = box,
-          timeout,
+          timeout = timeout,
           additionalEnvVariables = mapOf("NSISDIR" to nsisDir.toString(), "LC_CTYPE" to "C.UTF-8"),
+          attachStdOutToException = true,
         )
       }
     }
