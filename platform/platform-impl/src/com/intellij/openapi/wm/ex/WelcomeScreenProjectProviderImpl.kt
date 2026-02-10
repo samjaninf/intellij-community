@@ -12,7 +12,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.platform.PlatformProjectOpenProcessor
 import java.nio.file.LinkOption
 import java.nio.file.Path
-import java.util.EnumSet
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 
@@ -44,39 +43,3 @@ internal class WelcomeScreenProjectSupportImpl : WelcomeScreenProjectSupport {
            ?: throw IllegalStateException("Cannot open project at $path (not expected that user can cancel welcome-project loading)")
   }
 }
-
-internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapabilitiesProvider {
-  /**
-   * Maps welcome-screen project classification to generic frame capabilities.
-   *
-   * Startup UI policy is intentionally not provided here; it is contributed by module-specific
-   * providers that consume [ProjectFrameCapability.WELCOME_EXPERIENCE].
-   */
-  override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
-    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
-      return emptySet()
-    }
-
-    if (WelcomeScreenProjectProvider.isForceDisabledFileColors()) {
-      return WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS
-    }
-    else {
-      return WELCOME_CAPABILITIES
-    }
-  }
-
-  override fun getUiPolicy(project: Project, capabilities: Set<ProjectFrameCapability>): ProjectFrameUiPolicy? {
-    return null
-  }
-}
-
-private val WELCOME_CAPABILITIES: EnumSet<ProjectFrameCapability> =
-  EnumSet.of(
-    ProjectFrameCapability.WELCOME_EXPERIENCE,
-    ProjectFrameCapability.SUPPRESS_VCS_UI,
-  )
-
-private val WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS: EnumSet<ProjectFrameCapability> =
-  EnumSet.copyOf(WELCOME_CAPABILITIES).apply {
-    add(ProjectFrameCapability.FORCE_DISABLE_FILE_COLORS)
-  }
