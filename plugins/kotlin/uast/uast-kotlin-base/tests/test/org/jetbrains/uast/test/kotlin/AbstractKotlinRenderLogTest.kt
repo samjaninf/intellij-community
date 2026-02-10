@@ -1,14 +1,11 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-@file:OptIn(UnsafeCastFunction::class)
-
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.uast.test.kotlin
 
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiRecursiveElementVisitor
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNotNull
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
+import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -16,14 +13,14 @@ import org.jetbrains.kotlin.utils.addToStdlib.assertedCast
 import org.jetbrains.uast.UAnchorOwner
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UFile
-import org.jetbrains.uast.kotlin.KotlinUastLanguagePlugin
+import org.jetbrains.uast.UastLanguagePlugin
 import org.jetbrains.uast.sourcePsiElement
 import org.jetbrains.uast.test.common.kotlin.RenderLogTestBase
-import org.jetbrains.uast.test.common.kotlin.checkDescriptorsLeak
 import org.jetbrains.uast.visitor.UastVisitor
 import org.junit.Assert
 import java.io.File
 import java.util.Stack
+import kotlin.collections.get
 
 interface AbstractKotlinRenderLogTest : RenderLogTestBase {
     override fun getTestFile(testName: String, ext: String) =
@@ -81,18 +78,23 @@ interface AbstractKotlinRenderLogTest : RenderLogTestBase {
 
         file.psi.accept(object : PsiRecursiveElementVisitor() {
             override fun visitElement(element: PsiElement) {
-                val uElement = KotlinUastLanguagePlugin().convertElementWithParent(element, null)
+                val uElement =  UastLanguagePlugin.byLanguage(KotlinLanguage.INSTANCE)!!.convertElementWithParent(element, null)
                 val expectedParents = parentMap[element, uElement?.asLogString()]
                 if (expectedParents != null) {
-                    assertNotNull("Expected to be able to convert PSI element $element", uElement)
+                    TestCase.assertNotNull("Expected to be able to convert PSI element $element", uElement)
                     val parents = generateSequence(uElement!!.uastParent) { it.uastParent }.joinToString { it.asLogString() }
-                    assertEquals("Inconsistent parents for ${uElement.asRenderString()}(${uElement.asLogString()})(${uElement.javaClass}) (converted from $element[${element.text}])", expectedParents, parents)
+                    TestCase.assertEquals(
+                        "Inconsistent parents for ${uElement.asRenderString()}(${uElement.asLogString()})(${uElement.javaClass}) (converted from $element[${element.text}])",
+                        expectedParents,
+                        parents
+                    )
                 }
                 super.visitElement(element)
             }
         })
     }
 
+    @OptIn(UnsafeCastFunction::class)
     private fun UFile.checkContainingFileForAllElements() {
         accept(object : UastVisitor {
             override fun visitElement(node: UElement): Boolean {
@@ -101,9 +103,7 @@ interface AbstractKotlinRenderLogTest : RenderLogTestBase {
                 }
 
                 val anchorPsi = (node as? UAnchorOwner)?.uastAnchor?.sourcePsi
-                if (anchorPsi != null) {
-                    anchorPsi.containingFile.assertedCast<KtFile> { "uastAnchor.containingFile should be KtFile for ${node.asLogString()}" }
-                }
+                anchorPsi?.containingFile?.assertedCast<KtFile> { "uastAnchor.containingFile should be KtFile for ${node.asLogString()}" }
 
                 return false
             }
@@ -113,11 +113,13 @@ interface AbstractKotlinRenderLogTest : RenderLogTestBase {
     private fun UFile.checkDescriptorsLeak() {
         accept(object : UastVisitor {
             override fun visitElement(node: UElement): Boolean {
-                checkDescriptorsLeak(node)
+                checkLeak(node)
                 return false
             }
         })
     }
+
+    fun checkLeak(node: UElement)
 
     private fun UFile.checkJvmDeclarationsImplementations() {
         accept(object : UastVisitor {
@@ -128,12 +130,17 @@ interface AbstractKotlinRenderLogTest : RenderLogTestBase {
                 }
 
                 node.sourcePsi?.let {
-                    assertTrue("sourcePsi should be physical but ${it.javaClass} found for [${it.text}] " +
-                               "for ${node.javaClass}->${node.uastParent?.javaClass}", it is LeafPsiElement || it is KtElement|| it is LeafPsiElement)
+                    TestCase.assertTrue(
+                        "sourcePsi should be physical but ${it.javaClass} found for [${it.text}] " +
+                                "for ${node.javaClass}->${node.uastParent?.javaClass}",
+                        it is LeafPsiElement || it is KtElement || it is LeafPsiElement
+                    )
                 }
                 node.javaPsi?.let {
-                    assertTrue("javaPsi should be light but ${it.javaClass} found for [${it.text}] " +
-                               "for ${node.javaClass}->${node.uastParent?.javaClass}", it !is KtElement)
+                    TestCase.assertTrue(
+                        "javaPsi should be light but ${it.javaClass} found for [${it.text}] " +
+                                "for ${node.javaClass}->${node.uastParent?.javaClass}", it !is KtElement
+                    )
                 }
 
                 return false

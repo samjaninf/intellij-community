@@ -1,16 +1,18 @@
-// Copyright 2000-2022 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.uast.test.kotlin
 
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.util.io.URLUtil
+import org.jetbrains.kotlin.idea.base.test.KotlinRoot
 import org.jetbrains.kotlin.idea.test.KotlinLightCodeInsightFixtureTestCase
 import org.jetbrains.kotlin.idea.test.KotlinWithJdkAndRuntimeLightProjectDescriptor
 import org.jetbrains.uast.UFile
 import org.jetbrains.uast.UastFacade
 import java.io.File
+
+val TEST_KOTLIN_MODEL_DIR = KotlinRoot.DIR.resolve("uast/uast-kotlin/tests/testData")
 
 abstract class AbstractKotlinUastLightCodeInsightFixtureTest : KotlinLightCodeInsightFixtureTestCase() {
 
