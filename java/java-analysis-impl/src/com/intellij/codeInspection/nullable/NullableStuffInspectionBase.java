@@ -233,7 +233,7 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
       @Override
       public void visitNewExpression(@NotNull PsiNewExpression expression) {
         if (expression.isArrayCreation()) return;
-        if (checkArguments(expression)) return;
+        super.visitNewExpression(expression);
         PsiJavaCodeReferenceElement ref = expression.getClassOrAnonymousClassReference();
         if (ref == null) return;
         if (!(ref.resolve() instanceof PsiClass cls)) return;
@@ -243,10 +243,8 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
         if (list == null) return;
         if (!(expression.getType() instanceof PsiClassType type) || type.getParameterCount() != 1) return;
         PsiType typeParameter = type.getParameters()[0];
-        if (!(typeParameter instanceof PsiClassType classType) ||
-            DfaPsiUtil.getTypeNullability(typeParameter) != Nullability.NOT_NULL) {
-          return;
-        }
+        if (!(typeParameter instanceof PsiClassType classType) || 
+            DfaPsiUtil.getTypeNullability(typeParameter) != Nullability.NOT_NULL) return;
         boolean matched = switch (qualifiedName) {
           case "java.util.concurrent.atomic.AtomicReference" -> list.getExpressionCount() == 0;
           case "java.util.concurrent.atomic.AtomicReferenceArray" ->
@@ -255,7 +253,7 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
           default -> false;
         };
         if (!matched) return;
-
+        
         AddTypeAnnotationFix fix = null;
         if (classType.getPsiContext() instanceof PsiJavaCodeReferenceElement typeRef &&
             typeRef.getParent() instanceof PsiTypeElement typeElement && typeElement.getType().equals(classType) &&
@@ -616,29 +614,23 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
 
       @Override
       public void visitCallExpression(@NotNull PsiCallExpression callExpression) {
-        checkArguments(callExpression);
-      }
-
-      private boolean checkArguments(@NotNull PsiCallExpression callExpression) {
         PsiExpressionList argList = callExpression.getArgumentList();
         JavaResolveResult result = callExpression.resolveMethodGenerics();
         PsiMethod method = (PsiMethod)result.getElement();
-        if (method == null || argList == null) return false;
+        if (method == null || argList == null) return;
 
         PsiSubstitutor substitutor = result.getSubstitutor();
         PsiParameter[] parameters = method.getParameterList().getParameters();
         PsiExpression[] arguments = argList.getExpressions();
-        boolean found = false;
         for (int i = 0; i < arguments.length; i++) {
           PsiExpression argument = arguments[i];
           if (i < parameters.length &&
               (i < parameters.length - 1 || !MethodCallInstruction.isVarArgCall(method, substitutor, arguments, parameters))) {
             PsiType expectedType = substitutor.substitute(parameters[i].getType());
-            found |= checkNestedGenericClasses(holder, argument, expectedType, argument.getType(),
-                                               ConflictNestedTypeProblem.ASSIGNMENT_NESTED_TYPE_PROBLEM);
+            checkNestedGenericClasses(holder, argument, expectedType, argument.getType(),
+                                      ConflictNestedTypeProblem.ASSIGNMENT_NESTED_TYPE_PROBLEM);
           }
         }
-        return found;
       }
     };
   }
