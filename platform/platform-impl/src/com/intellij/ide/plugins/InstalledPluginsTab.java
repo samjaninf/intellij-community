@@ -25,6 +25,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.KeepPopupOnPerform;
 import com.intellij.openapi.actionSystem.ToggleAction;
+import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.util.NlsSafe;
@@ -63,6 +64,9 @@ import static com.intellij.ide.plugins.PluginManagerConfigurablePanel.showRightB
 
 @ApiStatus.Internal
 class InstalledPluginsTab extends PluginsTab {
+  private static final ExtensionPointName<PluginCategoryPriority> EP_NAME =
+    ExtensionPointName.create("com.intellij.pluginCategoryPriority");
+  
   private final @NotNull PluginModelFacade myPluginModelFacade;
   private final @NotNull PluginUpdatesService myPluginUpdatesService;
   private final @NotNull CoroutineScope myCoroutineScope;
@@ -75,8 +79,10 @@ class InstalledPluginsTab extends PluginsTab {
   private final PluginsGroup myBundledUpdateGroup =
     new PluginsGroup(IdeBundle.message("plugins.configurable.bundled.updates"), PluginsGroupType.BUNDLED_UPDATE);
 
-  private final LinkLabel<Object> myUpdateAll = new PluginManagerConfigurablePanel.LinkLabelButton<>(IdeBundle.message("plugin.manager.update.all"), null);
-  private final LinkLabel<Object> myUpdateAllBundled = new PluginManagerConfigurablePanel.LinkLabelButton<>(IdeBundle.message("plugin.manager.update.all"), null);
+  private final LinkLabel<Object> myUpdateAll =
+    new PluginManagerConfigurablePanel.LinkLabelButton<>(IdeBundle.message("plugin.manager.update.all"), null);
+  private final LinkLabel<Object> myUpdateAllBundled =
+    new PluginManagerConfigurablePanel.LinkLabelButton<>(IdeBundle.message("plugin.manager.update.all"), null);
   private final JLabel myUpdateCounter = new CountComponent();
   private final JLabel myUpdateCounterBundled = new CountComponent();
 
@@ -220,8 +226,16 @@ class InstalledPluginsTab extends PluginsTab {
           .entrySet()
           .stream()
           .map(entry -> new ComparablePluginsGroup(entry.getKey(), entry.getValue(), model.getVisiblePluginsRequiresUltimate()))
-          .sorted((o1, o2) ->
-                    defaultCategory.equals(o1.title) ? 1 : defaultCategory.equals(o2.title) ? -1 : o1.compareTo(o2))
+          .sorted((o1, o2) -> {
+            for (PluginCategoryPriority priority : EP_NAME.getExtensionList()) {
+              String priorityCategory = priority.getPriorityCategoryName();
+              if (priorityCategory.equals(o1.title)) return -1;
+              if (priorityCategory.equals(o2.title)) return 1;
+            }
+            if (defaultCategory.equals(o1.title)) return 1;
+            if (defaultCategory.equals(o2.title)) return -1;
+            return o1.compareTo(o2);
+          })
           .forEachOrdered(group -> {
             group.getPreloadedModel().setErrors(model.getErrors());
             group.getPreloadedModel().setPluginInstallationStates(model.getInstallationStates());
