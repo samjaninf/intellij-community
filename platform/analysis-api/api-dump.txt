@@ -874,6 +874,9 @@ com.intellij.psi.search.scope.packageSet.PackageSet
 - a:getNodePriority():I
 - a:getText():java.lang.String
 - map(java.util.function.Function):com.intellij.psi.search.scope.packageSet.PackageSet
+f:com.intellij.psi.util.PsiUtilBase
+- s:getLanguageInModNavigator(com.intellij.openapi.editor.ModNavigator):com.intellij.lang.Language
+- s:getPsiFileInModNavigator(com.intellij.openapi.editor.ModNavigator):com.intellij.psi.PsiFile
 com.intellij.refactoring.listeners.RefactoringElementListener
 - sf:DEAF:com.intellij.refactoring.listeners.RefactoringElementListener
 - a:elementMoved(com.intellij.psi.PsiElement):V

@@ -1041,6 +1041,27 @@ public class JavaLiveTemplateTest extends LiveTemplateTestCase {
                             """);
   }
 
+  public void testModCommandSoutp() {
+    TemplateImpl template = TemplateSettings.getInstance().getTemplate("soutp", "Java");
+    configureByJavaText("Test.java", """
+      class X {
+          void test(String[] arr, int[][] arr2, int p) {
+              <caret>
+          }
+      }
+      """);
+    runModCommand(template);
+    myFixture.checkResult("""
+      import java.util.Arrays;
+      
+      class X {
+          void test(String[] arr, int[][] arr2, int p) {
+              System.out.println("arr = " + Arrays.toString(arr) + ", arr2 = " + Arrays.deepToString(arr2) + ", p = " + p);
+          }
+      }
+      """);
+  }
+
   public void testModCommandMain() {
     TemplateImpl template = TemplateSettings.getInstance().getTemplate("main", "Java");
     configureByJavaText("Test.java", """
