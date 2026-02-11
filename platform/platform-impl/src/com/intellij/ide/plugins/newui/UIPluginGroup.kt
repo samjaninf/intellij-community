@@ -9,7 +9,7 @@ import java.awt.Component
 class UIPluginGroup {
   @JvmField var panel: Component? = null
   @JvmField var plugins: MutableList<ListPluginComponent> = ArrayList()
-  @JvmField var excluded: Boolean = false
+  @JvmField var isBundledUpdatesGroup: Boolean = false
 
   fun findComponent(pluginId: PluginId): ListPluginComponent? =
     plugins.find { pluginId == it.getPluginDescriptor().getPluginId() }

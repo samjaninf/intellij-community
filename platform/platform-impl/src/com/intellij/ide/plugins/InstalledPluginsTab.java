@@ -162,7 +162,7 @@ class InstalledPluginsTab extends PluginsTab {
         myUpdateAllBundled.setEnabled(false);
 
         for (UIPluginGroup group : getInstalledGroups()) {
-          if (group.excluded) {
+          if (group.isBundledUpdatesGroup) {
             continue;
           }
           for (ListPluginComponent plugin : group.plugins) {
@@ -422,7 +422,7 @@ class InstalledPluginsTab extends PluginsTab {
       }
       if (!myBundledUpdateGroup.getModels().isEmpty()) {
         getInstalledPanel().addGroup(myBundledUpdateGroup, 0);
-        myBundledUpdateGroup.ui.excluded = true;
+        myBundledUpdateGroup.ui.isBundledUpdatesGroup = true;
 
         for (PluginUiModel descriptor : updates) {
           ListPluginComponent component = myBundledUpdateGroup.ui.findComponent(descriptor.getPluginId());

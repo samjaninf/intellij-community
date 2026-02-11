@@ -699,7 +699,7 @@ open class MyPluginModel(project: Project?) : InstalledPluginsTableModel(project
       val panel = myInstalledPanel ?: return mutableListOf()
       return panel
         .groups
-        .filterNot { it.excluded }
+        .filterNot { it.isBundledUpdatesGroup }
         .flatMap { it.plugins }
         .map { it.pluginModel }
         .toMutableList()
