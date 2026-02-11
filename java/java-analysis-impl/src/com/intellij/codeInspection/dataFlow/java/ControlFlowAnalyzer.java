@@ -117,6 +117,7 @@ import com.intellij.codeInspection.dataFlow.value.DfaValueFactory;
 import com.intellij.codeInspection.dataFlow.value.DfaVariableValue;
 import com.intellij.codeInspection.dataFlow.value.RelationType;
 import com.intellij.codeInspection.dataFlow.value.VariableDescriptor;
+import com.intellij.java.codeserver.core.JavaPsiSwitchUtil;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.pom.java.JavaFeature;
 import com.intellij.psi.JavaCodeFragment;
@@ -264,6 +265,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.intellij.codeInspection.dataFlow.NullabilityProblemKind.deconstructionMatchException;
 import static com.intellij.psi.CommonClassNames.JAVA_LANG_ASSERTION_ERROR;
 import static com.intellij.psi.CommonClassNames.JAVA_LANG_ERROR;
 import static com.intellij.psi.CommonClassNames.JAVA_LANG_RUNTIME_EXCEPTION;
@@ -1362,6 +1364,9 @@ public class ControlFlowAnalyzer extends JavaElementVisitor {
               VariableDescriptor descriptor = field == null ? new GetterDescriptor(accessor) : new PlainDescriptor(field);
               DfaVariableValue accessorDfaVar = getFactory().getVarFactory().createVariableValue(descriptor, patternDfaVar);
               addInstruction(new PushInstruction(accessorDfaVar, null));
+              if (JavaPsiSwitchUtil.mayCauseMatchExceptionDuringDeconstruction(deconstructionPattern, recordComponent, patternComponent, Set.of())) {
+                addNullCheck(deconstructionMatchException.problem(patternComponent, null));
+              }
               processPattern(sourcePattern, patternComponent, substitutor.substitute(recordComponent.getType()), null, endPatternOffset);
             }
           }

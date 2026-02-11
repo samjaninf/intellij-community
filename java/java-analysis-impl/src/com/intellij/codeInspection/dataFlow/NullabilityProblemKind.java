@@ -41,6 +41,7 @@ import com.intellij.psi.PsiNewExpression;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiParameterList;
 import com.intellij.psi.PsiParenthesizedExpression;
+import com.intellij.psi.PsiPattern;
 import com.intellij.psi.PsiPolyadicExpression;
 import com.intellij.psi.PsiPrimitiveType;
 import com.intellij.psi.PsiReferenceExpression;
@@ -100,6 +101,7 @@ import static com.intellij.util.ObjectUtils.tryCast;
 public final class NullabilityProblemKind<T extends PsiElement> {
   private static final String NPE = JAVA_LANG_NULL_POINTER_EXCEPTION;
   private static final String RE = JAVA_LANG_RUNTIME_EXCEPTION;
+  private static final String MATCH_EXCEPTION = "java.lang.MatchException";
 
   private final String myName;
   private final Supplier<@Nls String> myAlwaysNullMessage;
@@ -169,6 +171,11 @@ public final class NullabilityProblemKind<T extends PsiElement> {
                                  "dataflow.message.passing.nullable.argument.methodref.nonannotated");
   // assumeNotNull problem is not reported, just used to force the argument to be not null
   public static final NullabilityProblemKind<PsiExpression> assumeNotNull = new NullabilityProblemKind<>(RE, "assumeNotNull");
+  public static final NullabilityProblemKind<PsiPattern> deconstructionMatchException =
+    new NullabilityProblemKind<>(MATCH_EXCEPTION, "deconstructionMatchException",
+                                 "dataflow.message.deconstruction.match.exception",
+                                 "dataflow.message.may.deconstruction.match.exception");
+
   /**
    * noProblem is not reported and used to override another problem
    * @see ControlFlowAnalyzer#addCustomNullabilityProblem(PsiExpression, NullabilityProblemKind)

@@ -19,7 +19,7 @@ class TestExample2 {
   record RI2(@Nullable II value) {
   }
 
-  private static II getII(RI ri) {
+  public static II getII(RI ri) {
     return switch (ri) {
       case RI(RI2(<warning descr="Pattern matching may throw 'MatchException'">II.BI bi</warning>)) -> bi;
       case RI(RI2(II.AI ai)) -> ai;

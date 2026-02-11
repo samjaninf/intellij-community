@@ -7,10 +7,12 @@ class Test {
     System.out.println(getLevel3(nullLevel2));
   }
 
+  @Nullable
   private static Level3 getLevel3(@Nullable final Level1 level1) {
     return switch (level1) {
-      case Level1(<warning descr="Pattern matching may throw 'MatchException'">Level2(var something)</warning>) -> something;
+      case Level1(Level2(var something)) -> something;
       case null -> null;
+      default -> null;
     };
   }
 
