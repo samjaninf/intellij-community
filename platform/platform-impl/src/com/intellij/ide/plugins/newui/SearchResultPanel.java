@@ -33,7 +33,7 @@ public abstract class SearchResultPanel {
   private PluginsGroup myGroup;
   private String myQuery;
   private AtomicBoolean myRunQuery;
-  private boolean myEmpty = true;
+  private boolean isQueryEmpty = true;
   private boolean isMarketplace;
   private boolean isLoading;
   private SingleAlarm myAnnounceSearchResultsAlarm;
@@ -89,12 +89,12 @@ public abstract class SearchResultPanel {
     myPanel.getEmptyText().setText(IdeBundle.message("empty.text.nothing.found"));
   }
 
-  public boolean isEmpty() {
-    return myEmpty;
+  public boolean isQueryEmpty() {
+    return isQueryEmpty;
   }
 
-  public void setEmpty() {
-    myEmpty = true;
+  public void setEmptyQuery() {
+    isQueryEmpty = true;
     myQuery = "";
   }
 
@@ -108,7 +108,7 @@ public abstract class SearchResultPanel {
     setEmptyText(query);
 
     if (query.equals(myQuery)) {
-      myEmpty = query.isEmpty();
+      isQueryEmpty = query.isEmpty();
       return;
     }
 
@@ -121,7 +121,7 @@ public abstract class SearchResultPanel {
     removeGroup();
     myQuery = query;
 
-    if (!(myEmpty = query.isEmpty())) {
+    if (!(isQueryEmpty = query.isEmpty())) {
       handleQuery(query);
     }
   }

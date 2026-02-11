@@ -617,7 +617,7 @@ public final class PluginManagerConfigurablePanel implements Disposable {
 
   public @Nullable Runnable enableSearch(String option, boolean ignoreTagMarketplaceTab) {
     if (StringUtil.isEmpty(option) &&
-        (myTabHeaderComponent.getSelectionTab() == MARKETPLACE_TAB || myInstalledTab.getInstalledSearchPanel().isEmpty())) {
+        (myTabHeaderComponent.getSelectionTab() == MARKETPLACE_TAB || myInstalledTab.getInstalledSearchPanel().isQueryEmpty())) {
       return null;
     }
 
