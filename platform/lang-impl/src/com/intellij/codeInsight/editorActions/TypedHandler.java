@@ -273,12 +273,8 @@ public final class TypedHandler extends TypedActionHandlerBase {
   }
 
   private static void setTypedEvent(@NotNull Editor editor, char charTyped, @Nullable TypedEvent.TypedHandlerPhase phase) {
-    if (phase == null) {
-      editor.putUserData(CompletionPhase.AUTO_POPUP_TYPED_EVENT, null);
-    }
-    else {
-      editor.putUserData(CompletionPhase.AUTO_POPUP_TYPED_EVENT, new TypedEvent(charTyped, editor.getCaretModel().getOffset(), phase));
-    }
+    TypedEvent event = phase == null ? null : new TypedEvent(charTyped, editor.getCaretModel().getOffset(), phase);
+    editor.putUserData(CompletionPhase.AUTO_POPUP_TYPED_EVENT, event);
   }
 
   @FunctionalInterface
