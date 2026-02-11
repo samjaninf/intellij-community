@@ -1,6 +1,7 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.runtime.repository.serialization.impl;
 
+import com.intellij.platform.runtime.repository.RuntimeModuleId;
 import com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +32,7 @@ public final class CompactFileWriter {
       out.writeBoolean(hasBootstrap);
       if (hasBootstrap) {
         out.writeUTF(bootstrapModuleName);
-        Collection<String> bootstrapClasspath = CachedClasspathComputation.computeClasspath(originalDescriptors, bootstrapModuleName);
+        Collection<String> bootstrapClasspath = CachedClasspathComputation.computeClasspath(originalDescriptors, RuntimeModuleId.module(bootstrapModuleName));
         out.writeInt(bootstrapClasspath.size());
         for (String path : bootstrapClasspath) {
           out.writeUTF(path);
@@ -45,14 +46,14 @@ public final class CompactFileWriter {
       }
       
       List<RawRuntimeModuleDescriptor> descriptors = new ArrayList<>(originalDescriptors);
-      Collections.sort(descriptors, Comparator.comparing(RawRuntimeModuleDescriptor::getId));
-      Map<String, Integer> indexes = new HashMap<>(descriptors.size());
+      Collections.sort(descriptors, Comparator.comparing(descriptor -> descriptor.getModuleId().getStringId()));
+      Map<RuntimeModuleId, Integer> indexes = new HashMap<>(descriptors.size());
       for (int i = 0; i < descriptors.size(); i++) {
-        indexes.put(descriptors.get(i).getId(), i);
+        indexes.put(descriptors.get(i).getModuleId(), i);
       }
-      List<String> unresolvedDependencies = new ArrayList<>();
+      List<RuntimeModuleId> unresolvedDependencies = new ArrayList<>();
       for (RawRuntimeModuleDescriptor descriptor : descriptors) {
-        for (String dependency : descriptor.getDependencies()) {
+        for (RuntimeModuleId dependency : descriptor.getDependencyIds()) {
           if (!indexes.containsKey(dependency)) {
             unresolvedDependencies.add(dependency);
             int nextId = indexes.size();
@@ -64,19 +65,19 @@ public final class CompactFileWriter {
       out.writeInt(descriptors.size());
       out.writeInt(unresolvedDependencies.size());
       for (RawRuntimeModuleDescriptor descriptor : descriptors) {
-        out.writeUTF(descriptor.getId());
+        out.writeUTF(descriptor.getModuleId().getStringId());
       }
       
-      for (String dependency : unresolvedDependencies) {
-        out.writeUTF(dependency);
+      for (RuntimeModuleId dependency : unresolvedDependencies) {
+        out.writeUTF(dependency.getStringId());
       }
       
       for (RawRuntimeModuleDescriptor descriptor : descriptors) {
-        out.writeInt(descriptor.getDependencies().size());
-        for (String dependency : descriptor.getDependencies()) {
+        out.writeInt(descriptor.getDependencyIds().size());
+        for (RuntimeModuleId dependency : descriptor.getDependencyIds()) {
           Integer index = indexes.get(dependency);
           if (index == null) {
-            throw new AssertionError("Unknown dependency '" + dependency + "' in '" + descriptor.getId() + "'");
+            throw new AssertionError("Unknown dependency '" + dependency.getPresentableName() + "' in '" + descriptor.getModuleId().getPresentableName() + "'");
           }
           out.writeInt(index);
         }

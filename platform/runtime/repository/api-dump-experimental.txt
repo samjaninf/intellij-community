@@ -26,15 +26,20 @@
 - a:getResolvedModule():com.intellij.platform.runtime.repository.RuntimeModuleDescriptor
 *f:com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleDescriptor
 - <init>(java.lang.String,java.util.List,java.util.List):V
+- s:create(com.intellij.platform.runtime.repository.RuntimeModuleId,java.util.List,java.util.List):com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleDescriptor
 - s:create(java.lang.String,java.util.List,java.util.List):com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleDescriptor
 - equals(java.lang.Object):Z
 - getDependencies():java.util.List
+- getDependencyIds():java.util.List
 - getId():java.lang.String
+- getModuleId():com.intellij.platform.runtime.repository.RuntimeModuleId
 - getResourcePaths():java.util.List
 - hashCode():I
 *f:com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleRepositoryData
+- findDescriptor(com.intellij.platform.runtime.repository.RuntimeModuleId):com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleDescriptor
 - findDescriptor(java.lang.String):com.intellij.platform.runtime.repository.serialization.RawRuntimeModuleDescriptor
 - getAllIds():java.util.Set
+- getAllModuleIds():java.util.Set
 - getBasePath():java.nio.file.Path
 - getMainPluginModuleId():java.lang.String
 *f:com.intellij.platform.runtime.repository.serialization.RuntimeModuleRepositorySerialization

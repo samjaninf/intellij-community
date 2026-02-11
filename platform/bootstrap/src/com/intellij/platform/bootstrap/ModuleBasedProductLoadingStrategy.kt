@@ -303,9 +303,9 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
           */
           val descriptors = ArrayList<RuntimeModuleDescriptor>()
           descriptors.add(mainModule)
-          repositoryData.allIds.asSequence()
-            .filter { it != mainModuleId }
-            .mapTo(descriptors) { moduleRepository.getModule(RuntimeModuleId.raw(it)) }
+          repositoryData.allModuleIds.asSequence()
+            .filter { it != mainModule.moduleId }
+            .mapTo(descriptors) { moduleRepository.getModule(it) }
           val moduleGroup = CustomPluginModuleGroup(descriptors, mainModule)
           loadPluginDescriptorFromRuntimeModule(
             pluginModuleGroup = moduleGroup,

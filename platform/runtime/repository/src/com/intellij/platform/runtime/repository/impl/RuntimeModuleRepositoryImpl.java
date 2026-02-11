@@ -26,7 +26,6 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
   private volatile RawRuntimeModuleRepositoryData myMainData;
   private volatile List<RawRuntimeModuleRepositoryData> myAdditionalData;
   private final Path myDescriptorsFilePath;
-  private final Map<String, RuntimeModuleId> myInternedModuleIds;
 
   public RuntimeModuleRepositoryImpl(@NotNull Path descriptorsFilePath) {
     this(descriptorsFilePath, null);
@@ -35,7 +34,6 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
   public RuntimeModuleRepositoryImpl(@NotNull Path descriptorsFilePath, @Nullable RawRuntimeModuleRepositoryData preloadedMainData) {
     myDescriptorsFilePath = descriptorsFilePath;
     myResolveResults = new ConcurrentHashMap<>();
-    myInternedModuleIds = new ConcurrentHashMap<>();
     myMainData = preloadedMainData;
   }
 
@@ -53,11 +51,11 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
     if (cached != null) return cached;
 
     RawRuntimeModuleRepositoryData rawData = getMainData();
-    RawRuntimeModuleDescriptor rawDescriptor = rawData.findDescriptor(moduleId.getStringId());
+    RawRuntimeModuleDescriptor rawDescriptor = rawData.findDescriptor(moduleId);
     if (rawDescriptor == null) {
       if (myAdditionalData != null) {
         for (RawRuntimeModuleRepositoryData data : myAdditionalData) {
-          rawDescriptor = data.findDescriptor(moduleId.getStringId());
+          rawDescriptor = data.findDescriptor(moduleId);
           if (rawDescriptor != null) {
             rawData = data;
             break;
@@ -72,12 +70,11 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
       }
     }
     
-    List<String> rawDependencies = rawDescriptor.getDependencies();
+    List<RuntimeModuleId> rawDependencies = rawDescriptor.getDependencyIds();
     List<RuntimeModuleDescriptor> resolvedDependencies = new ArrayList<>(rawDependencies.size());
     RuntimeModuleDescriptorImpl descriptor = new RuntimeModuleDescriptorImpl(moduleId, rawData.getBasePath(), rawDescriptor.getResourcePaths(), resolvedDependencies);
     dependencyPath.put(moduleId, descriptor);
-    for (String dependency : rawDependencies) {
-      RuntimeModuleId dependencyId = myInternedModuleIds.computeIfAbsent(dependency, RuntimeModuleId::raw);
+    for (RuntimeModuleId dependencyId : rawDependencies) {
       RuntimeModuleDescriptor circularDependency = dependencyPath.get(dependencyId);
       if (circularDependency != null) {
         //the circularDependency instance isn't fully constructed, but it's ok given that RuntimeModuleDescriptorImpl's constructor just stores the passed values 
@@ -124,11 +121,11 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
   @Override
   public @NotNull List<Path> getModuleResourcePaths(@NotNull RuntimeModuleId moduleId) {
     RawRuntimeModuleRepositoryData rawData = getMainData();
-    RawRuntimeModuleDescriptor rawDescriptor = rawData.findDescriptor(moduleId.getStringId());
+    RawRuntimeModuleDescriptor rawDescriptor = rawData.findDescriptor(moduleId);
     if (rawDescriptor == null) {
       if (myAdditionalData != null) {
         for (RawRuntimeModuleRepositoryData repository : myAdditionalData) {
-          rawDescriptor = repository.findDescriptor(moduleId.getStringId());
+          rawDescriptor = repository.findDescriptor(moduleId);
           if (rawDescriptor != null) {
             rawData = repository;
             break;

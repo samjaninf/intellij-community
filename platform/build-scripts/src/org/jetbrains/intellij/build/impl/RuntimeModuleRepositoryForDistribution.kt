@@ -110,15 +110,15 @@ internal fun generateCrossPlatformRepository(distAllPath: Path, osSpecificDistPa
     }
     RuntimeModuleRepositorySerialization.loadFromCompactFile(repositoryFile)
   }
-  val commonIds = repositories.map { it.allIds }.reduce { a, b -> a.intersect(b) }
+  val commonIds = repositories.map { it.allModuleIds }.reduce { a, b -> a.intersect(b) }
   val commonDescriptors = ArrayList<RawRuntimeModuleDescriptor>()
   for (moduleId in commonIds) {
     val descriptors = repositories.map { it.findDescriptor(moduleId)!! }
     val commonResourcePaths = descriptors.map { it.resourcePaths.toSet() }.reduce { a, b -> a.intersect(b) }
-    val commonDependencies = descriptors.first().dependencies
+    val commonDependencies = descriptors.first().dependencyIds
     for (descriptor in descriptors) {
-      if (descriptor.dependencies != commonDependencies) {
-        context.messages.logErrorAndThrow("Cannot generate runtime module repository for cross-platform distribution: different dependencies for module '$moduleId', ${descriptor.dependencies} and $commonDependencies")
+      if (descriptor.dependencyIds != commonDependencies) {
+        context.messages.logErrorAndThrow("Cannot generate runtime module repository for cross-platform distribution: different dependencies for module '${moduleId.presentableName}', ${descriptor.dependencyIds} and $commonDependencies")
       }
     }
     commonDescriptors.add(RawRuntimeModuleDescriptor.create(moduleId, commonResourcePaths.toList(), commonDependencies))
@@ -188,15 +188,15 @@ private suspend fun generateRepositoryForDistribution(
     resourcePathsSchema = DistributionResourcePathsSchema(moduleProductionPaths, moduleTestPaths, libraryPaths), 
   ).map { descriptor ->
     //this is a temporary workaround to skip optional dependencies which aren't included in the distribution
-    val dependenciesToSkip = dependenciesToSkip[descriptor.id] ?: return@map descriptor
-    val actualDependencies = descriptor.dependencies.filterNot { it in dependenciesToSkip}
-    RawRuntimeModuleDescriptor.create(descriptor.id, descriptor.resourcePaths, actualDependencies)
+    val dependenciesToSkip = dependenciesToSkip[descriptor.moduleId] ?: return@map descriptor
+    val actualDependencies = descriptor.dependencyIds.filterNot { it in dependenciesToSkip}
+    RawRuntimeModuleDescriptor.create(descriptor.moduleId, descriptor.resourcePaths, actualDependencies)
   }
 
   val errors = ArrayList<String>()
   val errorReporter = object : RuntimeModuleRepositoryValidator.ErrorReporter {
-    override fun reportDuplicatingId(moduleId: String) {
-      errors.add("Module '$moduleId' is included several times in the runtime module repository")
+    override fun reportDuplicatingId(moduleId: RuntimeModuleId) {
+      errors.add("Module '${moduleId.presentableName}' is included several times in the runtime module repository")
     }
   }
   RuntimeModuleRepositoryValidator.validate(distDescriptors, errorReporter)
@@ -344,7 +344,7 @@ private fun collectTransitiveDependencies(moduleIds: Collection<RuntimeModuleId>
     if (result.add(moduleId)) {
       val descriptor = descriptorMap[moduleId]
       if (descriptor != null) {
-        collectTransitiveDependencies(descriptor.dependencies.map { RuntimeModuleId.raw(it) }, descriptorMap, result)
+        collectTransitiveDependencies(descriptor.dependencyIds, descriptorMap, result)
       }
     }
   }
@@ -356,5 +356,5 @@ const val MODULE_DESCRIPTORS_COMPACT_PATH: String = "$RUNTIME_REPOSITORY_MODULES
 
 private val dependenciesToSkip = mapOf(
   //may be removed when IJPL-125 is fixed
-  "intellij.platform.buildScripts.downloader" to setOf("lib.zstd-jni"),
+  RuntimeModuleId.module("intellij.platform.buildScripts.downloader") to setOf(RuntimeModuleId.projectLibrary("zstd-jni")),
 )
