@@ -215,22 +215,21 @@ public final class PsiLiteralUtil {
     int length = s.length();
     StringBuilder result = new StringBuilder(length);
     while (i < length) {
-      int nextIdx = parseQuotes(i, s, result, escapeStartQuote, escapeEndQuote);
+      char c = s.charAt(i);
+      if (c == '"') {
+        i = parseQuotes(i, s, result, escapeStartQuote, escapeEndQuote);
+        continue;
+      }
+      if (c == ' ') {
+        i = parseSpaces(i, s, result, escapeSpacesInTheEnd);
+        continue;
+      }
+      int nextIdx = parseBackSlashes(i, s, result);
       if (nextIdx != -1) {
         i = nextIdx;
         continue;
       }
-      nextIdx = parseSpaces(i, s, result, escapeSpacesInTheEnd);
-      if (nextIdx != -1) {
-        i = nextIdx;
-        continue;
-      }
-      nextIdx = parseBackSlashes(i, s, result);
-      if (nextIdx != -1) {
-        i = nextIdx;
-        continue;
-      }
-      result.append(s.charAt(i));
+      result.append(c);
       i++;
     }
     return result.toString();
@@ -238,8 +237,6 @@ public final class PsiLiteralUtil {
 
   private static int parseQuotes(int start, @NotNull String s, @NotNull StringBuilder result,
                                  boolean escapeStartQuote, boolean escapeEndQuote) {
-    char c = s.charAt(start);
-    if (c != '"') return -1;
     int nQuotes = 1;
     int i = start;
     while (true) {
@@ -263,8 +260,6 @@ public final class PsiLiteralUtil {
   }
 
   private static int parseSpaces(int start, @NotNull String s, @NotNull StringBuilder result, boolean escapeSpacesInTheEnd) {
-    char c = s.charAt(start);
-    if (c != ' ') return -1;
     int i = start;
     int nSpaces = 0;
     while (i < s.length() && s.charAt(i) == ' ') {
