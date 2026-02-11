@@ -9,6 +9,7 @@ import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.extensions.ExtensionPointListener;
 import com.intellij.openapi.extensions.PluginDescriptor;
 import com.intellij.openapi.progress.ProgressManager;
@@ -42,6 +43,7 @@ import com.intellij.xdebugger.breakpoints.XLineBreakpoint;
 import com.intellij.xdebugger.breakpoints.XLineBreakpointType;
 import com.intellij.xdebugger.impl.BreakpointManagerState;
 import com.intellij.xdebugger.impl.XDebuggerManagerImpl;
+import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.proxy.MonolithBreakpointManagerKt;
 import kotlinx.coroutines.CoroutineScope;
 import one.util.streamex.StreamEx;
@@ -724,6 +726,11 @@ public final class XBreakpointManagerImpl implements XBreakpointManager {
     state.setTypeId(type.getId());
     state.setSuspendPolicy(type.getDefaultSuspendPolicy());
     return state;
+  }
+
+  public void removeBreakpointsInDocument(Document document) {
+    var breakpoints = XDebuggerUtilImpl.getDocumentBreakpoints(document, myLineBreakpointManager);
+    removeBreakpoints(breakpoints);
   }
 
   public void rememberRemovedBreakpoint(@NotNull XBreakpointBase breakpoint) {

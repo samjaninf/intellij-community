@@ -15,7 +15,6 @@ import com.intellij.xdebugger.XDebugSession;
 import com.intellij.xdebugger.XDebuggerBundle;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.frame.XStackFrame;
-import com.intellij.xdebugger.impl.XDebugSessionImpl;
 import com.intellij.xdebugger.impl.inline.InlineDebugRenderer;
 import com.intellij.xdebugger.impl.ui.tree.XDebuggerTree;
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueContainerNode;
@@ -106,7 +105,7 @@ public class XVariablesView extends XVariablesViewBase {
    */
   @Deprecated
   @ApiStatus.Internal
-  public final @Nullable XDebugSessionImpl getSession() {
+  public final @Nullable XDebugSession getSession() {
     XDebugSessionProxy proxy = getSessionProxy();
     if (proxy == null) return null;
     XDebugSession xDebugSession = XDebuggerEntityConverter.getSessionNonSplitOnly(proxy);
@@ -114,10 +113,7 @@ public class XVariablesView extends XVariablesViewBase {
       Logger.getInstance(XVariablesView.class).error("This method can be used only with monolith session proxies, got: " +
                                                      proxy + " of type " + proxy.getClass() + " instead");
     }
-    if (xDebugSession instanceof XDebugSessionImpl session) {
-      return session;
-    }
-    return null;
+    return xDebugSession;
   }
 
   @ApiStatus.Internal

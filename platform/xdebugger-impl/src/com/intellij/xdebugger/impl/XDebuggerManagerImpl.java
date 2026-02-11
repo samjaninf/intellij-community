@@ -18,13 +18,11 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.idea.ActionsBundle;
 import com.intellij.idea.AppMode;
 import com.intellij.notification.NotificationGroup;
-import com.intellij.notification.NotificationGroupManager;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionPlaces;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.DataKey;
 import com.intellij.openapi.actionSystem.IdeActions;
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx;
 import com.intellij.openapi.application.ApplicationManager;
@@ -74,6 +72,7 @@ import com.intellij.xdebugger.impl.evaluate.ValueLookupManagerController;
 import com.intellij.xdebugger.impl.pinned.items.XDebuggerPinToTopManager;
 import com.intellij.xdebugger.impl.settings.ShowBreakpointsOverLineNumbersAction;
 import com.intellij.xdebugger.impl.settings.XDebuggerSettingManagerImpl;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.ui.DebuggerColors;
 import kotlinx.coroutines.CoroutineScope;
 import kotlinx.coroutines.flow.MutableStateFlow;
@@ -99,7 +98,6 @@ import static com.intellij.platform.debugger.impl.shared.CoroutineUtilsKt.create
 @ApiStatus.Internal
 @State(name = "XDebuggerManager", storages = @Storage(StoragePathMacros.WORKSPACE_FILE))
 public final class XDebuggerManagerImpl extends XDebuggerManager implements PersistentStateComponent<XDebuggerState>, Disposable {
-  public static final DataKey<Integer> ACTIVE_LINE_NUMBER = DataKey.create("active.line.number");
   private static final ExecutorService EXECUTION_POINT_ICON_EXECUTOR =
     AppExecutorUtil.createBoundedApplicationPoolExecutor("Execution point icon updater", 1);
 
@@ -443,7 +441,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   }
 
   public static @NotNull NotificationGroup getNotificationGroup() {
-    return NotificationGroupManager.getInstance().getNotificationGroup("Debugger messages");
+    return DebuggerUIUtil.getNotificationGroup();
   }
 
   private final class GutterUiRunToCursorEditorListener implements EditorMouseMotionListener, EditorMouseListener {

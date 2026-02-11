@@ -37,7 +37,7 @@ final class XDebuggerConfigurableProvider extends DebuggerConfigurableProvider {
 
   @Override
   public void generalApplied(@NotNull DebuggerSettingsCategory category) {
-    XDebuggerSettingManagerImpl.getInstanceImpl().forEachSettings(settings -> settings.generalApplied(category));
+    XDebuggerSettingsManager.getInstance().forEachSettings(settings -> settings.generalApplied(category));
   }
 
   @Override

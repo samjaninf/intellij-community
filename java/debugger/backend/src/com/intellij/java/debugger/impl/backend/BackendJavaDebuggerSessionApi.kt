@@ -98,7 +98,7 @@ internal class BackendJavaDebuggerSessionApi : JavaDebuggerSessionApi {
 
     for (javaValue in javaValues) {
       withDebugContext(javaValue.evaluationContext.suspendContext) {
-        javaValue.setRenderer(renderer, null)
+        javaValue.setRenderer(renderer)
       }
     }
     for (xValueModel in xValueModels) {

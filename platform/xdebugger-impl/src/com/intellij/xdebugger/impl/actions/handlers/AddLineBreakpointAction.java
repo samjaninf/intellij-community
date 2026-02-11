@@ -18,7 +18,6 @@ import com.intellij.ui.ExperimentalUI;
 import com.intellij.util.ModalityUiUtil;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.breakpoints.SuspendPolicy;
-import com.intellij.xdebugger.impl.XDebuggerManagerImpl;
 import com.intellij.xdebugger.impl.XSourcePositionImpl;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointUtil;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
@@ -75,7 +74,7 @@ public class AddLineBreakpointAction extends DumbAwareAction implements SplitDeb
       if (gutter instanceof EditorGutterComponentEx) {
         Object lineNumber = ((EditorGutterComponentEx)gutter).getClientProperty("active.line.number");
         if (!(lineNumber instanceof Integer)) {
-          lineNumber = e.getData(XDebuggerManagerImpl.ACTIVE_LINE_NUMBER);
+          lineNumber = e.getData(DebuggerUIUtil.ACTIVE_LINE_NUMBER);
         }
         if (lineNumber != null) {
           LogicalPosition pos = new LogicalPosition((Integer)lineNumber, 0);

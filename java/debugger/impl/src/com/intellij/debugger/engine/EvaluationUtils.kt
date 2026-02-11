@@ -1,6 +1,7 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.debugger.engine
 
+import com.intellij.debugger.JvmDebuggerUtils
 import com.intellij.debugger.engine.events.SuspendContextCommandImpl
 import com.intellij.debugger.impl.DebuggerContextImpl
 import com.intellij.debugger.impl.DebuggerUtilsAsync
@@ -150,7 +151,7 @@ private suspend fun <R> tryToBreakOnAnyMethodAndEvaluate(
 
 @ApiStatus.Internal
 fun <Self : XBreakpoint<P>, P : XBreakpointProperties<*>, S : BreakpointState> shouldInstrumentBreakpoint(xB: XBreakpointBase<Self, P, S>): Boolean {
-  if (!XBreakpointUtil.isBreakpointInstrumentationSwitchedOn()) {
+  if (!JvmDebuggerUtils.isBreakpointInstrumentationSwitchedOn()) {
     return false
   }
   if (xB.isLogMessage || xB.isLogStack) return false

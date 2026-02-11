@@ -5,13 +5,13 @@ import com.intellij.codeInsight.inline.completion.InlineCompletion;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.project.Project;
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy;
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy;
 import com.intellij.ui.JBSplitter;
 import com.intellij.xdebugger.XDebuggerBundle;
-import com.intellij.xdebugger.XDebuggerManager;
 import com.intellij.xdebugger.XExpression;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
-import com.intellij.xdebugger.impl.XDebugSessionImpl;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
 import com.intellij.xdebugger.impl.ui.XDebuggerEditorBase;
 import com.intellij.xdebugger.impl.ui.XDebuggerExpressionEditor;
@@ -38,9 +38,9 @@ public class CodeFragmentInputComponent extends EvaluationInputComponent {
       @Override
       protected void prepareEditor(EditorEx editor) {
         super.prepareEditor(editor);
-        XDebugSessionImpl session = (XDebugSessionImpl)XDebuggerManager.getInstance(project).getCurrentSession();
-        if (session != null) {
-          InlineCompletion.INSTANCE.install(editor, session.getCoroutineScope());
+        XDebugSessionProxy proxy = XDebugManagerProxy.getInstance().getCurrentSessionProxy(project);
+        if (proxy != null) {
+          InlineCompletion.INSTANCE.install(editor, proxy.getCoroutineScope());
         }
       }
     };

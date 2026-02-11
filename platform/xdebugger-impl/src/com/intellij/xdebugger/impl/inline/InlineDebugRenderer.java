@@ -309,7 +309,8 @@ public final class InlineDebugRenderer extends InlineDebugRendererBase {
       return attributes;
     }
 
-    static class Variable {
+    @ApiStatus.Internal
+    public static class Variable {
       private final int lineNumber;
       private final String name;
 
@@ -337,7 +338,8 @@ public final class InlineDebugRenderer extends InlineDebugRendererBase {
       }
     }
 
-    static class VariableValue {
+    @ApiStatus.Internal
+    public static class VariableValue {
       // TODO: this has to be specified somewhere in XValuePresentation
       private static final java.util.List<Couple<String>> ARRAYS_WRAPPERS = java.util.List.of(Couple.of("[", "]"), Couple.of("{", "}"));
       private static final String ARRAY_DELIMITER = ", ";

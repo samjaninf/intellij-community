@@ -720,6 +720,11 @@ public class JavaValue extends XNamedValue implements NodeDescriptorProvider, XV
     };
   }
 
+  @ApiStatus.Internal
+  public void setRenderer(NodeRenderer nodeRenderer) {
+    setRenderer(nodeRenderer, null);
+  }
+
   public void setRenderer(NodeRenderer nodeRenderer, @Nullable final XValueNodeImpl node) {
     DebuggerManagerThreadImpl.assertIsManagerThread();
     myValueDescriptor.setRenderer(nodeRenderer);

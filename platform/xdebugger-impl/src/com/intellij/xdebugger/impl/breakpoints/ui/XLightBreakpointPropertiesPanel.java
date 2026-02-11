@@ -24,16 +24,11 @@ import com.intellij.xdebugger.XExpression;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.breakpoints.SuspendPolicy;
 import com.intellij.xdebugger.breakpoints.XBreakpoint;
-import com.intellij.xdebugger.breakpoints.XBreakpointManager;
 import com.intellij.xdebugger.breakpoints.XBreakpointType;
 import com.intellij.xdebugger.breakpoints.XLineBreakpoint;
 import com.intellij.xdebugger.breakpoints.XLineBreakpointType;
 import com.intellij.xdebugger.breakpoints.ui.XBreakpointCustomPropertiesPanel;
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
-import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase;
-import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
-import com.intellij.xdebugger.impl.proxy.MonolithBreakpointManagerKt;
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.XDebuggerExpressionComboBox;
 import org.jetbrains.annotations.ApiStatus;
@@ -134,16 +129,6 @@ public class XLightBreakpointPropertiesPanel implements XSuspendPolicyPanel.Dele
   public XLightBreakpointPropertiesPanel(Project project, XBreakpointManagerProxy breakpointManager, XBreakpointProxy breakpoint,
                                          boolean showAllOptions, boolean isEditorBalloon) {
     this(project, breakpointManager, breakpoint, showAllOptions, showAllOptions, isEditorBalloon);
-  }
-
-  /**
-   * @deprecated Use the proxy option instead
-   */
-  @Deprecated
-  public XLightBreakpointPropertiesPanel(Project project, XBreakpointManager breakpointManager, XBreakpointBase breakpoint,
-                                         boolean showActionOptions, boolean showAllOptions, boolean isEditorBalloon) {
-    this(project, MonolithBreakpointManagerKt.asProxy((XBreakpointManagerImpl)breakpointManager),
-         XDebuggerEntityConverter.asProxy(breakpoint), showActionOptions, showAllOptions, isEditorBalloon);
   }
 
   private final @NotNull XBreakpointManagerProxy myBreakpointManager;

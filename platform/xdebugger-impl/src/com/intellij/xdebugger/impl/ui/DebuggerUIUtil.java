@@ -6,6 +6,8 @@ import com.intellij.codeWithMe.ClientId;
 import com.intellij.frontend.FrontendApplicationInfo;
 import com.intellij.frontend.FrontendType;
 import com.intellij.ide.nls.NlsMessages;
+import com.intellij.notification.NotificationGroup;
+import com.intellij.notification.NotificationGroupManager;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionPlaces;
@@ -116,12 +118,20 @@ public final class DebuggerUIUtil {
   private final static Logger LOG = Logger.getInstance(DebuggerUIUtil.class);
 
   @ApiStatus.Internal
+  public static final DataKey<Integer> ACTIVE_LINE_NUMBER = DataKey.create("active.line.number");
+
+  @ApiStatus.Internal
   public static final DataKey<Integer> LINE_NUMBER = DataKey.create("x.debugger.line.number");
 
   @ApiStatus.Internal
   public static final DataKey<Integer> OFFSET = DataKey.create("x.debugger.offset");
 
   private DebuggerUIUtil() {
+  }
+
+  @ApiStatus.Internal
+  public static @NotNull NotificationGroup getNotificationGroup() {
+    return NotificationGroupManager.getInstance().getNotificationGroup("Debugger messages");
   }
 
   public static void enableEditorOnCheck(final JCheckBox checkbox, final JComponent textfield) {
