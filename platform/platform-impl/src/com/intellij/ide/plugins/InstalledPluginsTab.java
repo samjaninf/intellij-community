@@ -147,10 +147,39 @@ class InstalledPluginsTab extends PluginsTab {
     ((SearchUpDownPopupController)myInstalledSearchPanel.controller).setEventHandler(eventHandler);
     myInstalledPanel.showLoadingIcon();
 
-    PluginsGroup userInstalled =
-      new PluginsGroup(IdeBundle.message("plugins.configurable.userInstalled"), PluginsGroupType.INSTALLED);
-
+    PluginsGroup userInstalled = new PluginsGroup(IdeBundle.message("plugins.configurable.userInstalled"), PluginsGroupType.INSTALLED);
     PluginsGroup installing = new PluginsGroup(IdeBundle.message("plugins.configurable.installing"), PluginsGroupType.INSTALLING);
+
+    myUpdateAll.setVisible(false);
+    myUpdateAllBundled.setVisible(false);
+    myUpdateCounter.setVisible(false);
+    myUpdateCounterBundled.setVisible(false);
+
+    LinkListener<Object> updateAllListener = new LinkListener<>() {
+      @Override
+      public void linkSelected(LinkLabel<Object> aSource, Object aLinkData) {
+        myUpdateAll.setEnabled(false);
+        myUpdateAllBundled.setEnabled(false);
+
+        for (UIPluginGroup group : getInstalledGroups()) {
+          if (group.excluded) {
+            continue;
+          }
+          for (ListPluginComponent plugin : group.plugins) {
+            plugin.updatePlugin();
+          }
+        }
+      }
+    };
+
+    myUpdateAll.setListener(updateAllListener, null);
+    userInstalled.addSecondaryAction(myUpdateAll);
+    userInstalled.addSecondaryAction(myUpdateCounter);
+
+    myUpdateAllBundled.setListener(updateAllListener, null);
+    myBundledUpdateGroup.addSecondaryAction(myUpdateAllBundled);
+    myBundledUpdateGroup.addSecondaryAction(myUpdateCounterBundled);
+
     PluginManagerPanelFactory.INSTANCE.createInstalledPanel(myCoroutineScope, myPluginModelFacade.getModel(), model -> {
       try {
         myPluginModelFacade.getModel().setDownloadedGroup(myInstalledPanel, userInstalled, installing);
@@ -184,32 +213,6 @@ class InstalledPluginsTab extends PluginsTab {
           ContainerUtil.filter(visibleNonBundledPlugins, it -> !installedPluginIds.contains(it.getPluginId()));
         userInstalled.addModels(nonBundledPlugins);
 
-        LinkListener<Object> updateAllListener = new LinkListener<>() {
-          @Override
-          public void linkSelected(LinkLabel<Object> aSource, Object aLinkData) {
-            myUpdateAll.setEnabled(false);
-            myUpdateAllBundled.setEnabled(false);
-
-            for (UIPluginGroup group : getInstalledGroups()) {
-              if (group.excluded) {
-                continue;
-              }
-              for (ListPluginComponent plugin : group.plugins) {
-                plugin.updatePlugin();
-              }
-            }
-          }
-        };
-
-        myUpdateAll.setVisible(false);
-        myUpdateAllBundled.setVisible(false);
-        myUpdateCounter.setVisible(false);
-        myUpdateCounterBundled.setVisible(false);
-
-        myUpdateAll.setListener(updateAllListener, null);
-        userInstalled.addSecondaryAction(myUpdateAll);
-        userInstalled.addSecondaryAction(myUpdateCounter);
-
         if (!userInstalled.getModels().isEmpty()) {
           userInstalled.sortByName();
 
@@ -238,10 +241,6 @@ class InstalledPluginsTab extends PluginsTab {
             myInstalledPanel.addGroup(group);
             myPluginModelFacade.getModel().addEnabledGroup(group);
           });
-
-        myUpdateAllBundled.setListener(updateAllListener, null);
-        myBundledUpdateGroup.addSecondaryAction(myUpdateAllBundled);
-        myBundledUpdateGroup.addSecondaryAction(myUpdateCounterBundled);
 
         myPluginUpdatesService.calculateUpdates(updates -> {
           if (ContainerUtil.isEmpty(updates)) {
