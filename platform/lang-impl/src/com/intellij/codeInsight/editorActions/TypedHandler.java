@@ -261,7 +261,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
         }
       }
       finally {
-        editor.putUserData(CompletionPhase.AUTO_POPUP_TYPED_EVENT, null);
+        setTypedEvent(editor, charTyped, null);
       }
     });
   }
