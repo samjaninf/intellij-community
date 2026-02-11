@@ -2,13 +2,12 @@
 package com.intellij.openapi.project
 
 import com.intellij.internal.statistic.StructuredIdeActivity
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.coroutineToIndicator
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.ProgressManagerImpl
 import com.intellij.openapi.progress.impl.ProgressSuspender
 import com.intellij.openapi.progress.util.AbstractProgressIndicatorExBase
@@ -21,13 +20,8 @@ import com.intellij.openapi.util.NlsContexts.ProgressText
 import com.intellij.openapi.util.NlsContexts.ProgressTitle
 import com.intellij.openapi.util.UserDataHolder
 import com.intellij.openapi.wm.ex.ProgressIndicatorEx
-import com.intellij.platform.ide.progress.withBackgroundProgress
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.TestOnly
 import java.util.concurrent.atomic.AtomicBoolean
@@ -202,27 +196,37 @@ open class MergingQueueGuiExecutor<T : MergeableQueueTask<T>> protected construc
     }
   }
 
+  open fun shouldShowProgressIndicator(): Boolean = true
+
   protected open val taskId: Any? = null
 
-  private val schedulingDispatcher = Dispatchers.IO.limitedParallelism(1)
-
-  @OptIn(InternalCoroutinesApi::class)
   private fun startInBackgroundWithVisibleOrInvisibleProgress(
     onCancellation: () -> Unit,
     task: (ProgressIndicator) -> Unit,
   ) {
     val actionStarted = AtomicBoolean(false)
-    project.service<ScopeHolder>().scope.launch(schedulingDispatcher) {
-      withBackgroundProgress(project, myProgressTitle) {
-        coroutineToIndicator { indicator ->
-          actionStarted.set(true)
-          task(indicator)
+    val backgroundableTask = object : Task.Backgroundable(project, myProgressTitle, false) {
+      override fun run(visibleIndicator: ProgressIndicator) {
+        actionStarted.set(true)
+        task(visibleIndicator)
+      }
+
+      override fun onCancel() {
+        if (!actionStarted.get()) {
+          onCancellation()
         }
       }
-    }.invokeOnCompletion(onCancelling = true) {
-      if (!actionStarted.get()) {
-        onCancellation()
-      }
+
+      override fun getId() = taskId
+
+      override fun isHeadless(): Boolean = false
+    }
+
+    if (shouldShowProgressIndicator()) {
+      ProgressManager.getInstance().run(backgroundableTask)
+    }
+    else {
+      ProgressManager.getInstance().runProcessWithProgressAsynchronously(backgroundableTask, EmptyProgressIndicator())
     }
   }
 
@@ -339,7 +343,4 @@ open class MergingQueueGuiExecutor<T : MergeableQueueTask<T>> protected construc
   companion object {
     private val LOG = Logger.getInstance(MergingQueueGuiExecutor::class.java)
   }
-
-  @Service(Service.Level.PROJECT)
-  private class ScopeHolder(val scope: CoroutineScope)
 }
