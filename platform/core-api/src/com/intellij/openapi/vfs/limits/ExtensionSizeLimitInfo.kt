@@ -21,4 +21,8 @@ data class ExtensionSizeLimitInfo(
    * (editor may show a truncated read-only view of the file)
    */
   val preview: Int? = null,
+  /**
+   * Maximum number of bytes to use for charset/encoding detection.
+   */
+  val encodingDetectionLimit: Int? = null,
 )

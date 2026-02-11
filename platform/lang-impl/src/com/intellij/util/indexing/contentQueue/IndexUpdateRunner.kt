@@ -57,7 +57,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.TestOnly
 import java.io.FileNotFoundException
@@ -592,7 +591,9 @@ private class UsedMemorySoftLimiter(private val softLimitOfTotalBytesUsed: Long)
     while (true) { //CAS-loop
       val _totalBytesUsed = totalBytesUsed.get()
       if (_totalBytesUsed > softLimitOfTotalBytesUsed) {
-        yield()
+        //Without this delay most of cpu time is spent inside coroutine scheduler since it is spinning non-stop
+        //This bug is reproducible with big Jupyter files 100mb or more, we need a time to parse it and other coroutines wait the parse finish
+        delay(10)
         continue
       }
 

@@ -117,6 +117,11 @@ interface FileSizeLimit {
       return getValue(extension, ExtensionSizeLimitInfo::preview, getDefaultPreviewLimit())
     }
 
+    @JvmStatic
+    fun getEncodingDetectionLimit(extension: String?): Int {
+      return findApplicable(extension ?: "")?.encodingDetectionLimit ?: Int.MAX_VALUE
+    }
+
 
     /** @return `getter( getLimitsByExtension()[extension] )`, but no less than [minValue] */
     private fun getValue(extension: String?, getter: (ExtensionSizeLimitInfo) -> Int?, minValue: Int): Int {
@@ -130,7 +135,8 @@ interface FileSizeLimit {
     private fun getLimits(): Map<String, ExtensionSizeLimitInfo> {
       val extensions = EP.extensionsIfPointIsRegistered
 
-      val duplicates: Map<String, Int> = extensions.flatMap { it.acceptableExtensions }.groupingBy { it }.eachCount().filter { it.value > 1 }
+      val duplicates: Map<String, Int> =
+        extensions.flatMap { it.acceptableExtensions }.groupingBy { it }.eachCount().filter { it.value > 1 }
       duplicates.forEach { (element, count) ->
         thisLogger().warn("For file type $element $count limits are registered. Extensions: ${
           extensions
