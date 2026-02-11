@@ -21,7 +21,6 @@ import com.intellij.openapi.util.NlsContexts.ProgressText
 import com.intellij.openapi.util.NlsContexts.ProgressTitle
 import com.intellij.openapi.util.UserDataHolder
 import com.intellij.openapi.wm.ex.ProgressIndicatorEx
-import com.intellij.platform.ide.progress.suspender.TaskSuspender
 import com.intellij.platform.ide.progress.withBackgroundProgress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -214,7 +213,7 @@ open class MergingQueueGuiExecutor<T : MergeableQueueTask<T>> protected construc
   ) {
     val actionStarted = AtomicBoolean(false)
     project.service<ScopeHolder>().scope.launch(schedulingDispatcher) {
-      withBackgroundProgress(project, myProgressTitle, TaskSuspender.suspendable(mySuspendedText)) {
+      withBackgroundProgress(project, myProgressTitle) {
         coroutineToIndicator { indicator ->
           actionStarted.set(true)
           task(indicator)
