@@ -166,7 +166,8 @@ public final class TestLocationStorage {
    * Extracts module name from META-INF/*.kotlin_module file in the JAR containing the test class.
    */
   private static String getModuleNameFromKotlinModule(Class<?> testClass) {
-    URL classUrl = testClass.getResource(testClass.getSimpleName() + ".class");
+    String fileName = testClass.getName().substring(testClass.getName().lastIndexOf('.') + 1) + ".class";
+    URL classUrl = testClass.getResource(fileName);
     if (classUrl == null || !"jar".equals(classUrl.getProtocol())) {
       return null;
     }
