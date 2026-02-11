@@ -100,6 +100,7 @@ class GitRepositoryImpl private constructor(
     return untrackedFilesHolder
   }
 
+  @ApiStatus.Internal
   override fun getResolvedConflictsFilesHolder(): GitResolvedMergeConflictsFilesHolder {
     return resolvedFilesHolder
   }
