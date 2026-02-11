@@ -578,6 +578,12 @@ class PyCallableParameterMappingTest : PyTestCase() {
     checkNotMatch("(a: float)", "(*args: int, **kwargs: str)")
   }
 
+  // PY-87556
+  fun testKwargsVsPrecedingOptionalPositionalOnlyParameter() {
+    checkMatch("(**kwargs)", "(a=1, /, **kwargs)")
+    checkNotMatch("(**kwargs)", "(a, /, **kwargs)")
+  }
+
   fun checkNotMatch(expectedSignature: String, actualSignature: String) {
     checkMatch(expectedSignature, actualSignature, false)
   }
