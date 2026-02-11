@@ -15,6 +15,7 @@ import com.intellij.util.SingleAlarm
 import com.intellij.util.ui.EDT
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.accessibility.AccessibleAnnouncerUtil
+import kotlinx.coroutines.CoroutineScope
 import org.jetbrains.annotations.ApiStatus
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JComponent
@@ -23,6 +24,7 @@ import javax.swing.ScrollPaneConstants
 
 @ApiStatus.Internal
 abstract class SearchResultPanel(
+  private val coroutineScope: CoroutineScope,
   @JvmField val controller: SearchPopupController,
   @JvmField protected val myPanel: PluginsGroupComponentWithProgress,
   private val isMarketplace: Boolean,
