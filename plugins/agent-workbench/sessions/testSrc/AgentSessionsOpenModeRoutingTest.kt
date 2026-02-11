@@ -4,59 +4,59 @@ package com.intellij.agent.workbench.sessions
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CodexSessionsOpenModeRoutingTest {
+class AgentSessionsOpenModeRoutingTest {
   @Test
   fun dedicatedModeRoutesToDedicatedFrameWhenSourceProjectIsOpen() {
-    val route = resolveChatOpenRoute(
+    val route = resolveAgentChatOpenRoute(
       openInDedicatedFrame = true,
       hasOpenSourceProject = true,
     )
 
-    assertEquals(CodexChatOpenRoute.DedicatedFrame, route)
+    assertEquals(AgentChatOpenRoute.DedicatedFrame, route)
   }
 
   @Test
   fun dedicatedModeRoutesToDedicatedFrameWhenSourceProjectIsClosed() {
-    val route = resolveChatOpenRoute(
+    val route = resolveAgentChatOpenRoute(
       openInDedicatedFrame = true,
       hasOpenSourceProject = false,
     )
 
-    assertEquals(CodexChatOpenRoute.DedicatedFrame, route)
+    assertEquals(AgentChatOpenRoute.DedicatedFrame, route)
   }
 
   @Test
   fun currentProjectModeRoutesToOpenProjectWhenAlreadyOpen() {
-    val route = resolveChatOpenRoute(
+    val route = resolveAgentChatOpenRoute(
       openInDedicatedFrame = false,
       hasOpenSourceProject = true,
     )
 
-    assertEquals(CodexChatOpenRoute.CurrentProject, route)
+    assertEquals(AgentChatOpenRoute.CurrentProject, route)
   }
 
   @Test
   fun currentProjectModeRoutesToOpenSourceProjectWhenClosedAndPathValid() {
-    val route = resolveChatOpenRoute(
+    val route = resolveAgentChatOpenRoute(
       openInDedicatedFrame = false,
       hasOpenSourceProject = false,
     )
 
-    assertEquals(CodexChatOpenRoute.OpenSourceProject, route)
+    assertEquals(AgentChatOpenRoute.OpenSourceProject, route)
   }
 
   @Test
   fun threadAndSubAgentUseTheSameRouteDecision() {
-    val threadRoute = resolveChatOpenRoute(
+    val threadRoute = resolveAgentChatOpenRoute(
       openInDedicatedFrame = false,
       hasOpenSourceProject = false,
     )
-    val subAgentRoute = resolveChatOpenRoute(
+    val subAgentRoute = resolveAgentChatOpenRoute(
       openInDedicatedFrame = false,
       hasOpenSourceProject = false,
     )
 
-    assertEquals(CodexChatOpenRoute.OpenSourceProject, threadRoute)
+    assertEquals(AgentChatOpenRoute.OpenSourceProject, threadRoute)
     assertEquals(threadRoute, subAgentRoute)
   }
 }

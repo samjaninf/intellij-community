@@ -52,7 +52,7 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
   - Claude: `claude --resume <threadId>`
 
 [@test] ../sessions/testSrc/AgentSessionsGearActionsTest.kt
-[@test] ../sessions/testSrc/CodexSessionsOpenModeRoutingTest.kt
+[@test] ../sessions/testSrc/AgentSessionsOpenModeRoutingTest.kt
 [@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 
 ## User Experience

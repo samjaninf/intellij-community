@@ -41,7 +41,7 @@ Define how thread/sub-agent selections open chat editor tabs. Routing honors ded
   - Codex: `codex resume <threadId>`
   - Claude: `claude --resume <threadId>`
 
-[@test] ../sessions/testSrc/CodexSessionsOpenModeRoutingTest.kt
+[@test] ../sessions/testSrc/AgentSessionsOpenModeRoutingTest.kt
 [@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 
 ## User Experience
@@ -60,7 +60,7 @@ Define how thread/sub-agent selections open chat editor tabs. Routing honors ded
 - If provider/session identity cannot be resolved, fail safely without crashing the UI.
 
 ## Testing / Local Run
-- `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.CodexSessionsOpenModeRoutingTest'`
+- `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionsOpenModeRoutingTest'`
 - `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionsToolWindowTest'`
 
 ## Open Questions / Risks

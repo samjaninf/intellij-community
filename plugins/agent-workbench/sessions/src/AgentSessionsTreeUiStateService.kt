@@ -106,8 +106,8 @@ internal class InMemorySessionsTreeUiState : SessionsTreeUiState {
 
 @Service(Service.Level.APP)
 @State(name = "CodexSessionsTreeUiState", storages = [Storage("other.xml")], category = SettingsCategory.TOOLS)
-internal class CodexSessionsTreeUiStateService
-  : SerializablePersistentStateComponent<CodexSessionsTreeUiStateService.SessionsTreeUiStateState>(SessionsTreeUiStateState()),
+internal class AgentSessionsTreeUiStateService
+  : SerializablePersistentStateComponent<AgentSessionsTreeUiStateService.SessionsTreeUiStateState>(SessionsTreeUiStateState()),
     SessionsTreeUiState {
 
   override fun isProjectCollapsed(path: String): Boolean {

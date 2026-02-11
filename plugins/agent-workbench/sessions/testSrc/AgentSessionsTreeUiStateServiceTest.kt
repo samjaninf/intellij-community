@@ -7,10 +7,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CodexSessionsTreeUiStateServiceTest {
+class AgentSessionsTreeUiStateServiceTest {
   @Test
   fun projectCollapseStateRoundTrip() {
-    val uiState = CodexSessionsTreeUiStateService()
+    val uiState = AgentSessionsTreeUiStateService()
 
     assertTrue(uiState.setProjectCollapsed("/work/project-a", collapsed = true))
     assertTrue(uiState.isProjectCollapsed("/work/project-a"))
@@ -22,7 +22,7 @@ class CodexSessionsTreeUiStateServiceTest {
 
   @Test
   fun visibleThreadCountStateRoundTrip() {
-    val uiState = CodexSessionsTreeUiStateService()
+    val uiState = AgentSessionsTreeUiStateService()
 
     assertEquals(DEFAULT_VISIBLE_THREAD_COUNT, uiState.getVisibleThreadCount("/work/project-a"))
 
@@ -36,7 +36,7 @@ class CodexSessionsTreeUiStateServiceTest {
 
   @Test
   fun pathNormalizationIsAppliedToStoredState() {
-    val uiState = CodexSessionsTreeUiStateService()
+    val uiState = AgentSessionsTreeUiStateService()
 
     uiState.setProjectCollapsed("/work/project-a/", collapsed = true)
     assertTrue(uiState.isProjectCollapsed("/work/project-a"))
@@ -47,7 +47,7 @@ class CodexSessionsTreeUiStateServiceTest {
 
   @Test
   fun openProjectThreadPreviewCacheRoundTrip() {
-    val uiState = CodexSessionsTreeUiStateService()
+    val uiState = AgentSessionsTreeUiStateService()
     val threads = listOf(
       CodexThread(id = "thread-1", title = "Thread 1", updatedAt = 5L, archived = false),
       CodexThread(id = "thread-2", title = "Thread 2", updatedAt = 10L, archived = false),

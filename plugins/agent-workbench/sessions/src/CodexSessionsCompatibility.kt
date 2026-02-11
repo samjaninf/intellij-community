@@ -4,19 +4,19 @@ package com.intellij.agent.workbench.sessions
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.agent.workbench.codex.common.CodexThreadPage
 
-internal enum class CodexChatOpenRoute {
+internal enum class AgentChatOpenRoute {
   DedicatedFrame,
   CurrentProject,
   OpenSourceProject,
 }
 
-internal fun resolveChatOpenRoute(
+internal fun resolveAgentChatOpenRoute(
   openInDedicatedFrame: Boolean,
   hasOpenSourceProject: Boolean,
-): CodexChatOpenRoute {
-  if (openInDedicatedFrame) return CodexChatOpenRoute.DedicatedFrame
-  if (hasOpenSourceProject) return CodexChatOpenRoute.CurrentProject
-  return CodexChatOpenRoute.OpenSourceProject
+): AgentChatOpenRoute {
+  if (openInDedicatedFrame) return AgentChatOpenRoute.DedicatedFrame
+  if (hasOpenSourceProject) return AgentChatOpenRoute.CurrentProject
+  return AgentChatOpenRoute.OpenSourceProject
 }
 
 internal suspend fun seedInitialVisibleThreads(
