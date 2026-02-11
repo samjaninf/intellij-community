@@ -32,7 +32,8 @@ abstract class SearchResultPanel(
   private var myVerticalScrollBar: JScrollBar? = null
   var group: PluginsGroup
     private set
-  private var myQuery = ""
+  var query: String = ""
+    private set
   private var myRunQuery: AtomicBoolean? = null
   private var isLoading = false
   private var myAnnounceSearchResultsAlarm: SingleAlarm? = null
@@ -71,36 +72,34 @@ abstract class SearchResultPanel(
   }
 
   val isQueryEmpty: Boolean
-    get() = myQuery.isEmpty()
+    get() = query.isEmpty()
 
   fun setEmptyQuery() {
-    myQuery = ""
+    query = ""
   }
 
-  var query: String
-    get() = StringUtil.defaultIfEmpty(myQuery, "")
-    set(query) {
-      assert(EDT.isCurrentThreadEdt())
+  fun setQuery(query: String) {
+    assert(EDT.isCurrentThreadEdt())
 
-      setEmptyText(query)
+    setEmptyText(query)
 
-      if (query == myQuery) {
-        return
-      }
-
-      if (myRunQuery != null) {
-        myRunQuery!!.set(false)
-        myRunQuery = null
-        loading(false)
-      }
-
-      removeGroup()
-      myQuery = query
-
-      if (!this.isQueryEmpty) {
-        handleQuery(query)
-      }
+    if (query == this.query) {
+      return
     }
+
+    if (myRunQuery != null) {
+      myRunQuery!!.set(false)
+      myRunQuery = null
+      loading(false)
+    }
+
+    removeGroup()
+    this.query = query
+
+    if (!isQueryEmpty) {
+      handleQuery(query)
+    }
+  }
 
   private fun handleQuery(query: String) {
     loading(true)
