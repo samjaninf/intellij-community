@@ -72,6 +72,9 @@
     <applicationService serviceImplementation="com.intellij.notebooks.visualization.settings.NotebookSettings"/>
     <applicationSettings service="com.intellij.notebooks.visualization.settings.NotebookSettings"/>
   </extensions>
+  <extensions defaultExtensionNs="org.intellij.markdown">
+    <actionPromoterExtension implementation="com.intellij.notebooks.visualization.ui.NotebookMarkdownCellActionPromoterExtension"/>
+  </extensions>
 
   <!-- New output inlays -->
   <extensionPoints>
