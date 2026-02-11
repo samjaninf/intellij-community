@@ -57,6 +57,7 @@ public class CodeStyleXmlPanel extends CodeStyleAbstractPanel {
   private final JPanel myRightMarginPanel;
   private RightMarginForm myRightMarginForm;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public CodeStyleXmlPanel(CodeStyleSettings settings) {
     super(settings);
     {

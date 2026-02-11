@@ -75,6 +75,7 @@ public class GenericRepositoryEditor<T extends GenericRepository> extends BaseRe
   private Map<JTextField, TemplateVariable> myField2Variable;
   private final Map<JRadioButton, ResponseType> myRadio2ResponseType;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public GenericRepositoryEditor(final Project project,
                                  final T repository,
                                  final Consumer<? super T> changeListener) {

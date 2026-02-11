@@ -82,6 +82,7 @@ public class KotlinFirExtractFunctionDialog extends DialogWrapper {
 
   private final Function1<ExtractableCodeDescriptor, Unit> onAccept;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public KotlinFirExtractFunctionDialog(
     @NotNull Project project,
     @NotNull ExtractableCodeDescriptorWithConflicts originalDescriptor,

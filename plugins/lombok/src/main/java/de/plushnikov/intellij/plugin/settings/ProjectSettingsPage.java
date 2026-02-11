@@ -31,6 +31,7 @@ public final class ProjectSettingsPage implements SearchableConfigurable, Config
   private final JCheckBox myEnableJSPFix;
   private final Project myProject;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public ProjectSettingsPage(Project project) {
     myProject = project;
     {

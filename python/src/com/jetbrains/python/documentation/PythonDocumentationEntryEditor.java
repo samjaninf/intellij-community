@@ -39,6 +39,7 @@ public class PythonDocumentationEntryEditor extends DialogWrapper {
   private final JButton myInsertButton;
   private final JBList myMacroList;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public PythonDocumentationEntryEditor(Component parent) {
     super(parent, true);
     {

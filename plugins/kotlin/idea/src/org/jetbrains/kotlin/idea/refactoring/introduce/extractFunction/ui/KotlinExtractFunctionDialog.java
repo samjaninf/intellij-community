@@ -81,6 +81,7 @@ public class KotlinExtractFunctionDialog extends DialogWrapper {
 
   private final Function1<KotlinExtractFunctionDialog, Unit> onAccept;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public KotlinExtractFunctionDialog(
     @NotNull Project project,
     @NotNull ExtractableCodeDescriptorWithConflicts originalDescriptor,

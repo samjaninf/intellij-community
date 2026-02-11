@@ -52,6 +52,7 @@ public abstract class ElementWithManifestPropertiesPanel<E extends CompositeElem
   private final JLabel myManifestNotFoundLabel;
   private ManifestFileConfiguration myManifestFileConfiguration;
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public ElementWithManifestPropertiesPanel(E element, final ArtifactEditorContext context) {
     myElement = element;
     myContext = context;

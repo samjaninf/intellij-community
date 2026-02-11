@@ -254,6 +254,7 @@ public class PsiViewerDialog extends DialogWrapper implements UiDataProvider {
     }
   }
 
+  @SuppressWarnings("HardCodedStringLiteral")
   public PsiViewerDialog(@NotNull Project project, @Nullable Editor selectedEditor) {
     super(project, true, IdeModalityType.MODELESS);
     {
