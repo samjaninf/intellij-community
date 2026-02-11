@@ -8,7 +8,6 @@ import com.intellij.ide.plugins.newui.PluginLogo.startBatchMode
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.Alarm
 import com.intellij.util.SingleAlarm
@@ -46,7 +45,7 @@ abstract class SearchResultPanel(
       IdeBundle.message("title.search.results"),
       if (isMarketplace) PluginsGroupType.SEARCH else PluginsGroupType.SEARCH_INSTALLED
     )
-    setEmptyText("")
+    setupEmptyText()
     loading(false)
   }
 
@@ -67,7 +66,7 @@ abstract class SearchResultPanel(
     return pane
   }
 
-  protected open fun setEmptyText(query: String) {
+  protected open fun setupEmptyText() {
     myPanel.getEmptyText().setText(IdeBundle.message("empty.text.nothing.found"))
   }
 
@@ -80,9 +79,6 @@ abstract class SearchResultPanel(
 
   fun setQuery(query: String) {
     assert(EDT.isCurrentThreadEdt())
-
-    setEmptyText(query)
-
     if (query == this.query) {
       return
     }
@@ -95,6 +91,7 @@ abstract class SearchResultPanel(
 
     removeGroup()
     this.query = query
+    setupEmptyText()
 
     if (!isQueryEmpty) {
       handleQuery(query)

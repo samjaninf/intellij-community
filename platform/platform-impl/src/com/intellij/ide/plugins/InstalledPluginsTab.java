@@ -621,8 +621,9 @@ class InstalledPluginsTab extends PluginsTab {
     }
 
     @Override
-    protected void setEmptyText(@NotNull String query) {
+    protected void setupEmptyText() {
       myPanel.getEmptyText().setText(IdeBundle.message("plugins.configurable.nothing.found"));
+      var query = getQuery();
       if (query.contains("/downloaded") || query.contains("/userInstalled") ||
           query.contains("/outdated") ||
           query.contains("/enabled") || query.contains("/disabled") ||
