@@ -1,6 +1,8 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.jetbrains.python.venvReader
 
+import com.intellij.execution.Platform
+import com.intellij.execution.target.FullPathOnTarget
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.runBlockingMaybeCancellable
 import com.intellij.openapi.util.io.toCanonicalPath
@@ -160,6 +162,23 @@ class VirtualEnvReader private constructor(
     return findInterpreter(pathOrDir)
   }
 
+  /**
+   * [binaryOrDir] is either a venv root or a python binary
+   */
+  fun findPythonInPythonRootForTarget(binaryOrDir: FullPathOnTarget, platform: Platform): FullPathOnTarget {
+    val pythonPattern = getPythonBinaryPattern(platform)
+    val separator = platform.fileSeparator
+    val binaryOrDirWithoutSeparatorSuffix = binaryOrDir.removeSuffix(separator.toString())
+    if (pythonPattern.matches(binaryOrDirWithoutSeparatorSuffix.substringAfterLast(separator))) {
+      return binaryOrDir
+    }
+
+    return when (platform) {
+      Platform.WINDOWS -> "${binaryOrDirWithoutSeparatorSuffix}${separator}Scripts${separator}python.exe"
+      Platform.UNIX -> "${binaryOrDirWithoutSeparatorSuffix}${separator}bin${separator}python"
+    }
+  }
+
   fun getVenvRootPath(path: Path): Path? {
     val bin = path.parent
 
@@ -254,6 +273,11 @@ class VirtualEnvReader private constructor(
         EelOsFamily.Posix -> POSIX_PYTHON_PATTERN
         EelOsFamily.Windows -> WIN_PYTHON_PATTERN
       }
+    }
+
+    private fun getPythonBinaryPattern(platform: Platform): Regex = when (platform) {
+      Platform.UNIX -> POSIX_PYTHON_PATTERN
+      Platform.WINDOWS -> WIN_PYTHON_PATTERN
     }
   }
 }

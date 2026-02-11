@@ -45,7 +45,9 @@ import com.jetbrains.python.util.ShowingMessageErrorSync
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.Nls
 import java.util.function.Consumer
@@ -149,13 +151,14 @@ internal class AddInterpreterOnTargetAction(
     if (dialogWrapper.exitCode != OK_EXIT_CODE) return
     val sdk = (dialogWrapper.currentStepObject as? TargetCustomToolWizardStep)?.customTool as? Sdk ?: return
 
-    PythonNewInterpreterAddedCollector.logPythonNewInterpreterAdded(sdk, isPreviouslyConfigured = true)
+    service<LogCollectorService>().coroutineScope.launch(Dispatchers.Default) {
+      PythonNewInterpreterAddedCollector.logPythonNewInterpreterAdded(sdk, isPreviouslyConfigured = true)
+    }
     onSdkCreated(sdk)
   }
 }
 
 @ApiStatus.Internal
-
 fun switchToSdk(module: Module, sdk: Sdk, currentSdk: Sdk?) {
   val project = module.project
   (sdk.sdkType as PythonSdkType).setupSdkPaths(sdk)
@@ -170,6 +173,9 @@ fun switchToSdk(module: Module, sdk: Sdk, currentSdk: Sdk?) {
 
   module.excludeInnerVirtualEnv(sdk)
 }
+
+@Service
+private class LogCollectorService(val coroutineScope: CoroutineScope)
 
 @Service(Service.Level.PROJECT)
 @ApiStatus.Internal
