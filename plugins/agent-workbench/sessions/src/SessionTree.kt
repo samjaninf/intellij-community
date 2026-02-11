@@ -26,21 +26,23 @@ internal fun sessionTree(
   onOpenThread: (String, AgentSessionThread) -> Unit,
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit,
   nowProvider: () -> Long,
+  visibleProjectCount: Int = Int.MAX_VALUE,
+  onShowMoreProjects: () -> Unit = {},
 ) {
   val stateHolder = rememberSessionTreeStateHolder(
     onProjectExpanded = onProjectExpanded,
     onProjectCollapsed = {},
   )
   val treeState = stateHolder.treeState
-  val autoOpenNodes = remember(projects) {
-    projects
+  val autoOpenNodes = remember(projects, visibleProjectCount) {
+    projects.take(visibleProjectCount)
       .filter { it.isOpen || it.errorMessage != null || it.threads.isNotEmpty() }
       .map { SessionTreeId.Project(it.path) }
   }
   LaunchedEffect(autoOpenNodes) {
     stateHolder.applyDefaultOpenProjects(autoOpenNodes)
   }
-  val tree = remember(projects) { buildSessionTree(projects) }
+  val tree = remember(projects, visibleProjectCount) { buildSessionTree(projects, visibleProjectCount) }
   val treeStyle = run {
     val baseStyle = JewelTheme.treeStyle
     val metrics = baseStyle.metrics
@@ -70,6 +72,7 @@ internal fun sessionTree(
           is SessionTreeNode.Project -> onOpenProject(node.project.path)
           is SessionTreeNode.Thread -> onOpenThread(node.project.path, node.thread)
           is SessionTreeNode.SubAgent -> onOpenSubAgent(node.project.path, node.thread, node.subAgent)
+          is SessionTreeNode.MoreProjects -> onShowMoreProjects()
           is SessionTreeNode.Error -> Unit
           is SessionTreeNode.Empty -> Unit
         }
@@ -87,9 +90,11 @@ internal fun sessionTree(
   }
 }
 
-private fun buildSessionTree(projects: List<AgentProjectSessions>): Tree<SessionTreeNode> =
+private fun buildSessionTree(projects: List<AgentProjectSessions>, visibleProjectCount: Int): Tree<SessionTreeNode> =
   buildTree {
-    projects.forEach { project ->
+    val visibleProjects = projects.take(visibleProjectCount)
+    val hiddenCount = (projects.size - visibleProjectCount).coerceAtLeast(0)
+    visibleProjects.forEach { project ->
       val projectId = SessionTreeId.Project(project.path)
       addNode(
         data = SessionTreeNode.Project(project),
@@ -131,6 +136,12 @@ private fun buildSessionTree(projects: List<AgentProjectSessions>): Tree<Session
         }
       }
     }
+    if (hiddenCount > 0) {
+      addLeaf(
+        data = SessionTreeNode.MoreProjects(hiddenCount),
+        id = SessionTreeId.MoreProjects,
+      )
+    }
   }
 
 private fun sessionTreeNodeText(node: SessionTreeNode): String? =
@@ -140,6 +151,7 @@ private fun sessionTreeNodeText(node: SessionTreeNode): String? =
     is SessionTreeNode.SubAgent -> node.subAgent.name.ifBlank { node.subAgent.id }
     is SessionTreeNode.Error -> null
     is SessionTreeNode.Empty -> node.message
+    is SessionTreeNode.MoreProjects -> null
   }
 
 internal sealed interface SessionTreeNode {
@@ -152,6 +164,7 @@ internal sealed interface SessionTreeNode {
   ) : SessionTreeNode
   data class Error(val project: AgentProjectSessions, val message: String) : SessionTreeNode
   data class Empty(val project: AgentProjectSessions, val message: String) : SessionTreeNode
+  data class MoreProjects(val hiddenCount: Int) : SessionTreeNode
 }
 
 internal sealed interface SessionTreeId {
@@ -165,4 +178,5 @@ internal sealed interface SessionTreeId {
   ) : SessionTreeId
   data class Error(val projectPath: String) : SessionTreeId
   data class Empty(val projectPath: String) : SessionTreeId
+  data object MoreProjects : SessionTreeId
 }

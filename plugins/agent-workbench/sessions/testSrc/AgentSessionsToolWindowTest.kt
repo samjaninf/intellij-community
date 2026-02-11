@@ -235,6 +235,57 @@ class AgentSessionsToolWindowTest {
     composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
       .assertIsDisplayed()
   }
+
+  @Test
+  fun moreProjectsRowShownWhenProjectsExceedLimit() {
+    val projects = (1..12).map { i ->
+      AgentProjectSessions(
+        path = "/work/project-$i",
+        name = "Project $i",
+        isOpen = false,
+      )
+    }
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        visibleProjectCount = 10,
+      )
+    }
+
+    composeRule.onNodeWithText("Project 1").assertIsDisplayed()
+    composeRule.onNodeWithText("Project 10").assertIsDisplayed()
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.action.more.count", 2))
+      .assertIsDisplayed()
+    composeRule.onAllNodesWithText("Project 11").assertCountEquals(0)
+    composeRule.onAllNodesWithText("Project 12").assertCountEquals(0)
+  }
+
+  @Test
+  fun moreProjectsRowNotShownWhenWithinLimit() {
+    val projects = (1..5).map { i ->
+      AgentProjectSessions(
+        path = "/work/project-$i",
+        name = "Project $i",
+        isOpen = false,
+      )
+    }
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        visibleProjectCount = 10,
+      )
+    }
+
+    composeRule.onNodeWithText("Project 1").assertIsDisplayed()
+    composeRule.onNodeWithText("Project 5").assertIsDisplayed()
+    composeRule.onAllNodesWithText("More", substring = true).assertCountEquals(0)
+  }
 }
 
 private fun ComposeContentTestRule.setContentWithTheme(content: @Composable () -> Unit) {

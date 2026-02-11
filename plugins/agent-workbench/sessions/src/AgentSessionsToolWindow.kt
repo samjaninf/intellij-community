@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -21,6 +23,7 @@ import org.jetbrains.jewel.ui.component.Text
 internal fun agentSessionsToolWindow() {
   val service = remember { service<AgentSessionsService>() }
   val state by service.state.collectAsState()
+  var visibleProjectCount by remember { mutableIntStateOf(DEFAULT_VISIBLE_PROJECT_COUNT) }
 
   LaunchedEffect(Unit) {
     service.refresh()
@@ -33,6 +36,10 @@ internal fun agentSessionsToolWindow() {
     onProjectExpanded = { service.loadProjectThreadsOnDemand(it) },
     onOpenThread = { path, thread -> service.openChatThread(path, thread) },
     onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent) },
+    visibleProjectCount = visibleProjectCount,
+    onShowMoreProjects = {
+      visibleProjectCount += DEFAULT_VISIBLE_PROJECT_COUNT
+    },
   )
 }
 
@@ -45,6 +52,8 @@ internal fun agentSessionsToolWindowContent(
   onOpenThread: (String, AgentSessionThread) -> Unit = { _, _ -> },
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit = { _, _, _ -> },
   nowProvider: () -> Long = { System.currentTimeMillis() },
+  visibleProjectCount: Int = Int.MAX_VALUE,
+  onShowMoreProjects: () -> Unit = {},
 ) {
   Column(
     modifier = Modifier
@@ -62,6 +71,8 @@ internal fun agentSessionsToolWindowContent(
         onOpenThread = onOpenThread,
         onOpenSubAgent = onOpenSubAgent,
         nowProvider = nowProvider,
+        visibleProjectCount = visibleProjectCount,
+        onShowMoreProjects = onShowMoreProjects,
       )
     }
   }

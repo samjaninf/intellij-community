@@ -66,6 +66,9 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     is SessionTreeNode.Empty -> emptyNodeRow(
       message = node.message,
     )
+    is SessionTreeNode.MoreProjects -> moreProjectsRow(
+      hiddenCount = node.hiddenCount,
+    )
   }
 }
 
@@ -284,6 +287,17 @@ private fun emptyNodeRow(message: String) {
       text = message,
       color = JewelTheme.globalColors.text.disabled,
       style = AgentSessionsTextStyles.emptyState(),
+    )
+  }
+}
+
+@Composable
+private fun moreProjectsRow(hiddenCount: Int) {
+  Row(modifier = Modifier.fillMaxWidth()) {
+    Text(
+      text = AgentSessionsBundle.message("toolwindow.action.more.count", hiddenCount),
+      color = JewelTheme.globalColors.text.info,
+      style = AgentSessionsTextStyles.threadTitle(),
     )
   }
 }
