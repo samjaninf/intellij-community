@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class SearchResultPanel {
   public final @NotNull SearchPopupController controller;
 
-  protected final PluginsGroupComponent myPanel;
+  protected final @NotNull PluginsGroupComponentWithProgress myPanel;
   private JScrollBar myVerticalScrollBar;
   private PluginsGroup myGroup;
   private @NotNull String myQuery = "";
@@ -38,7 +38,7 @@ public abstract class SearchResultPanel {
   protected Runnable myPostFillGroupCallback;
 
   public SearchResultPanel(@NotNull SearchPopupController controller,
-                           @NotNull PluginsGroupComponent panel,
+                           @NotNull PluginsGroupComponentWithProgress panel,
                            boolean isMarketplace) {
     this.controller = controller;
     myPanel = panel;

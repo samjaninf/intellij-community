@@ -320,7 +320,7 @@ class InstalledPluginsTab extends PluginsTab {
     MultiSelectionEventHandler eventHandler = new MultiSelectionEventHandler();
     installedController.setSearchResultEventHandler(eventHandler);
 
-    PluginsGroupComponent panel = new PluginsGroupComponentWithProgress(eventHandler) {
+    PluginsGroupComponentWithProgress panel = new PluginsGroupComponentWithProgress(eventHandler) {
       @Override
       protected @NotNull ListPluginComponent createListComponent(@NotNull PluginUiModel model,
                                                                  @NotNull PluginsGroup group,
@@ -613,7 +613,7 @@ class InstalledPluginsTab extends PluginsTab {
     private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
 
     InstalledTabSearchResultPanel(SearchUpDownPopupController installedController,
-                                  PluginsGroupComponent panel,
+                                  PluginsGroupComponentWithProgress panel,
                                   @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
       super(installedController, panel, false);
       mySelectionListener = selectionListener;
