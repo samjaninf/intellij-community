@@ -23,6 +23,7 @@ import com.intellij.testFramework.junit5.TestApplication
 import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.write
+import com.intellij.util.xmlb.SettingsInternalApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -63,6 +64,7 @@ internal abstract class SettingsSyncTestBase {
     configDir = mainDir.resolve("rootconfig").createDirectories()
 
     SettingsSyncLocalSettings.getInstance().state.reset()
+    @OptIn(SettingsInternalApi::class)
     SettingsSyncSettings.getInstance().state = SettingsSyncSettings.State()
 
     remoteCommunicator = if (isTestingAgainstRealCloudServer()) {
