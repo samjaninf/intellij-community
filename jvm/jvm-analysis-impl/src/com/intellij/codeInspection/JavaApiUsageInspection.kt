@@ -52,11 +52,9 @@ import org.jetbrains.uast.textRange
 private const val EFFECTIVE_LL = "effectiveLL"
 
 /**
- * In order to add the support for new API in the most recent JDK execute:
- * <ol>
- *   <li>Generate apiXXX.txt by running [com.intellij.codeInspection.tests.JavaApiUsageGenerator#testCollectSinceApiUsages]</li>
- *   <li>Put the generated text file under community/java/java-analysis-api/src/com/intellij/openapi/module</li>
- * </ol>
+ * To add the support for new API in the most recent JDK execute:
+ * - Generate apiXXX.txt by running [com.intellij.codeInspection.tests.JavaApiUsageGenerator#testCollectSinceApiUsages]
+ * - Put the generated text file under community/java/java-analysis-api/src/com/intellij/openapi/module
  */
 class JavaApiUsageInspection : AbstractBaseUastLocalInspectionTool() {
   override fun getDefaultLevel(): HighlightDisplayLevel = HighlightDisplayLevel.ERROR
