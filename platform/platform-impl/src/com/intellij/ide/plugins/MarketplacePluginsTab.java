@@ -476,163 +476,7 @@ class MarketplacePluginsTab extends PluginsTab {
 
     Project project = ProjectUtil.getActiveProject();
 
-    myMarketplaceSearchPanel =
-      new SearchResultPanel(myCoroutineScope, marketplaceController, panel, true) {
-        @Override
-        @SuppressWarnings("unchecked")
-        protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, AtomicBoolean runQuery) {
-          int searchIndex = PluginManagerUsageCollector.updateAndGetSearchIndex();
-
-          SearchQueryParser.Marketplace parser = new SearchQueryParser.Marketplace(query);
-
-          Map<PluginUiModel, Double> pluginToScore = null;
-
-          if (parser.internal) {
-            try {
-              PluginsViewCustomizer.PluginsGroupDescriptor groupDescriptor =
-                PluginsViewCustomizerKt.getPluginsViewCustomizer().getInternalPluginsGroupDescriptor();
-              if (groupDescriptor != null) {
-                if (parser.searchQuery == null) {
-                  result.addDescriptors(groupDescriptor.getPlugins());
-                }
-                else {
-                  for (IdeaPluginDescriptor pluginDescriptor : groupDescriptor.getPlugins()) {
-                    if (StringUtil.containsIgnoreCase(pluginDescriptor.getName(), parser.searchQuery)) {
-                      result.addDescriptor(pluginDescriptor);
-                    }
-                  }
-                }
-                result.removeDuplicates();
-                result.sortByName();
-                return;
-              }
-            }
-            catch (Exception e) {
-              LOG.error("Error while loading internal plugins group", e);
-            }
-          }
-
-          PluginModelAsyncOperationsExecutor.INSTANCE.getCustomRepositoriesPluginMap(myCoroutineScope, map -> {
-            Map<String, List<PluginUiModel>> customRepositoriesMap = (Map<String, List<PluginUiModel>>)map;
-            if (parser.suggested && project != null) {
-              List<@NotNull PluginUiModel> plugins =
-                PluginsAdvertiserStartupActivityKt.findSuggestedPlugins(project, customRepositoriesMap);
-              result.addModels(plugins);
-              updateSearchPanel(result, runQuery, plugins);
-            }
-            else if (!parser.repositories.isEmpty()) {
-              for (String repository : parser.repositories) {
-                List<PluginUiModel> descriptors = customRepositoriesMap.get(repository);
-                if (descriptors == null) {
-                  continue;
-                }
-                if (parser.searchQuery == null) {
-                  result.addModels(descriptors);
-                }
-                else {
-                  for (PluginUiModel descriptor : descriptors) {
-                    if (StringUtil.containsIgnoreCase(descriptor.getName(), parser.searchQuery)) {
-                      result.addModel(descriptor);
-                    }
-                  }
-                }
-              }
-              result.removeDuplicates();
-              result.sortByName();
-              updateSearchPanel(result, runQuery, result.getModels());
-            }
-            else {
-              PluginModelAsyncOperationsExecutor.INSTANCE
-                .performMarketplaceSearch(myCoroutineScope,
-                                          parser.getUrlQuery(),
-                                          !result.getModels().isEmpty(),
-                                          (searchResult, updates) -> {
-                                            applySearchResult(result, searchResult, (List<PluginUiModel>)updates, customRepositoriesMap,
-                                                              parser, pluginToScore, searchIndex);
-                                            updatePanel(runQuery);
-                                            return null;
-                                          });
-            }
-            return null;
-          });
-        }
-
-        private void updateSearchPanel(@NonNull PluginsGroup result, AtomicBoolean runQuery, List<@NotNull PluginUiModel> plugins) {
-          Set<PluginId> ids = plugins.stream().map(it -> it.getPluginId()).collect(Collectors.toSet());
-          result.getPreloadedModel().setInstalledPlugins(UiPluginManager.getInstance().findInstalledPluginsSync(ids));
-          result.getPreloadedModel().setPluginInstallationStates(UiPluginManager.getInstance().getInstallationStatesSync());
-          updatePanel(runQuery);
-        }
-
-        private void applySearchResult(@NotNull PluginsGroup result,
-                                       PluginSearchResult searchResult,
-                                       List<PluginUiModel> updates,
-                                       Map<String, List<PluginUiModel>> customRepositoriesMap,
-                                       SearchQueryParser.Marketplace parser,
-                                       Map<PluginUiModel, Double> pluginToScore,
-                                       int searchIndex) {
-          if (searchResult.getError() != null) {
-            ApplicationManager.getApplication().invokeLater(
-              () -> myPanel.getEmptyText()
-                .setText(IdeBundle.message("plugins.configurable.search.result.not.loaded"))
-                .appendSecondaryText(
-                  IdeBundle.message("plugins.configurable.check.internet"),
-                  StatusText.DEFAULT_ATTRIBUTES, null), ModalityState.any()
-            );
-          }
-          // compare plugin versions between marketplace & custom repositories
-          List<PluginUiModel> customPlugins = ContainerUtil.flatten(customRepositoriesMap.values());
-          Collection<PluginUiModel> plugins =
-            RepositoryHelper.mergePluginModelsFromRepositories(searchResult.getPlugins(),
-                                                               customPlugins,
-                                                               false);
-          result.addModels(0, new ArrayList<>(plugins));
-
-          if (parser.searchQuery != null) {
-            List<PluginUiModel> descriptors = ContainerUtil.filter(customPlugins,
-                                                                   descriptor -> StringUtil.containsIgnoreCase(
-                                                                     descriptor.getName(),
-                                                                     parser.searchQuery));
-            result.addModels(0, descriptors);
-          }
-
-          result.removeDuplicates();
-
-          final var localRanker = MarketplaceLocalRanker.getInstanceIfEnabled();
-          if (localRanker != null) {
-            pluginToScore = localRanker.rankPlugins(parser, result.getModels());
-          }
-
-          if (!result.getModels().isEmpty()) {
-            String title = IdeBundle.message("plugin.manager.action.label.sort.by.1");
-
-            for (AnAction action : myMarketplaceSortByGroup.getChildren(ActionManager.getInstance())) {
-              MarketplaceSortByAction sortByAction = (MarketplaceSortByAction)action;
-              sortByAction.setState(parser);
-              if (sortByAction.myState) {
-                title = IdeBundle.message("plugin.manager.action.label.sort.by",
-                                          sortByAction.myOption.getPresentableNameSupplier().get());
-              }
-            }
-
-            myMarketplaceSortByAction.setText(title);
-            result.addSecondaryAction(myMarketplaceSortByAction);
-
-            if (!ContainerUtil.isEmpty(updates)) {
-              myPostFillGroupCallback = () -> {
-                applyUpdates(myPanel, updates);
-                selectionListener.accept(myMarketplacePanel);
-                selectionListener.accept(myMarketplaceSearchPanel.getPanel());
-              };
-            }
-          }
-          Set<PluginId> ids = result.getModels().stream().map(it -> it.getPluginId()).collect(Collectors.toSet());
-          result.getPreloadedModel().setInstalledPlugins(UiPluginManager.getInstance().findInstalledPluginsSync(ids));
-          result.getPreloadedModel().setPluginInstallationStates(UiPluginManager.getInstance().getInstallationStatesSync());
-          PluginManagerUsageCollector.INSTANCE.performMarketplaceSearch(ProjectUtil.getActiveProject(), parser, result.getModels(),
-                                                                        searchIndex, pluginToScore);
-        }
-      };
+    myMarketplaceSearchPanel = new MarketplaceSearchResultPanel(marketplaceController, panel, project, selectionListener);
     return myMarketplaceSearchPanel;
   }
 
@@ -909,6 +753,175 @@ class MarketplacePluginsTab extends PluginsTab {
     public @Nullable String getQuery() {
       if (myOption == MarketplaceTabSearchSortByOptions.RELEVANCE) return null;
       return SearchWords.SORT_BY.getValue() + myOption.getQuery();
+    }
+  }
+
+  private class MarketplaceSearchResultPanel extends SearchResultPanel {
+    private final Project myProject;
+    private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
+
+    MarketplaceSearchResultPanel(SearchUpDownPopupController marketplaceController,
+                                        PluginsGroupComponentWithProgress panel,
+                                        Project project,
+                                        @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
+      super(MarketplacePluginsTab.this.myCoroutineScope, marketplaceController, panel, true);
+      myProject = project;
+      mySelectionListener = selectionListener;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, AtomicBoolean runQuery) {
+      int searchIndex = PluginManagerUsageCollector.updateAndGetSearchIndex();
+
+      SearchQueryParser.Marketplace parser = new SearchQueryParser.Marketplace(query);
+
+      Map<PluginUiModel, Double> pluginToScore = null;
+
+      if (parser.internal) {
+        try {
+          PluginsViewCustomizer.PluginsGroupDescriptor groupDescriptor =
+            PluginsViewCustomizerKt.getPluginsViewCustomizer().getInternalPluginsGroupDescriptor();
+          if (groupDescriptor != null) {
+            if (parser.searchQuery == null) {
+              result.addDescriptors(groupDescriptor.getPlugins());
+            }
+            else {
+              for (IdeaPluginDescriptor pluginDescriptor : groupDescriptor.getPlugins()) {
+                if (StringUtil.containsIgnoreCase(pluginDescriptor.getName(), parser.searchQuery)) {
+                  result.addDescriptor(pluginDescriptor);
+                }
+              }
+            }
+            result.removeDuplicates();
+            result.sortByName();
+            return;
+          }
+        }
+        catch (Exception e) {
+          LOG.error("Error while loading internal plugins group", e);
+        }
+      }
+
+      PluginModelAsyncOperationsExecutor.INSTANCE.getCustomRepositoriesPluginMap(myCoroutineScope, map -> {
+        Map<String, List<PluginUiModel>> customRepositoriesMap = (Map<String, List<PluginUiModel>>)map;
+        if (parser.suggested && myProject != null) {
+          List<@NotNull PluginUiModel> plugins =
+            PluginsAdvertiserStartupActivityKt.findSuggestedPlugins(myProject, customRepositoriesMap);
+          result.addModels(plugins);
+          updateSearchPanel(result, runQuery, plugins);
+        }
+        else if (!parser.repositories.isEmpty()) {
+          for (String repository : parser.repositories) {
+            List<PluginUiModel> descriptors = customRepositoriesMap.get(repository);
+            if (descriptors == null) {
+              continue;
+            }
+            if (parser.searchQuery == null) {
+              result.addModels(descriptors);
+            }
+            else {
+              for (PluginUiModel descriptor : descriptors) {
+                if (StringUtil.containsIgnoreCase(descriptor.getName(), parser.searchQuery)) {
+                  result.addModel(descriptor);
+                }
+              }
+            }
+          }
+          result.removeDuplicates();
+          result.sortByName();
+          updateSearchPanel(result, runQuery, result.getModels());
+        }
+        else {
+          PluginModelAsyncOperationsExecutor.INSTANCE
+            .performMarketplaceSearch(myCoroutineScope,
+                                      parser.getUrlQuery(),
+                                      !result.getModels().isEmpty(),
+                                      (searchResult, updates) -> {
+                                        applySearchResult(result, searchResult, (List<PluginUiModel>)updates, customRepositoriesMap,
+                                                          parser, pluginToScore, searchIndex);
+                                        updatePanel(runQuery);
+                                        return null;
+                                      });
+        }
+        return null;
+      });
+    }
+
+    private void updateSearchPanel(@NonNull PluginsGroup result, AtomicBoolean runQuery, List<@NotNull PluginUiModel> plugins) {
+      Set<PluginId> ids = plugins.stream().map(it -> it.getPluginId()).collect(Collectors.toSet());
+      result.getPreloadedModel().setInstalledPlugins(UiPluginManager.getInstance().findInstalledPluginsSync(ids));
+      result.getPreloadedModel().setPluginInstallationStates(UiPluginManager.getInstance().getInstallationStatesSync());
+      updatePanel(runQuery);
+    }
+
+    private void applySearchResult(@NotNull PluginsGroup result,
+                                   PluginSearchResult searchResult,
+                                   List<PluginUiModel> updates,
+                                   Map<String, List<PluginUiModel>> customRepositoriesMap,
+                                   SearchQueryParser.Marketplace parser,
+                                   Map<PluginUiModel, Double> pluginToScore,
+                                   int searchIndex) {
+      if (searchResult.getError() != null) {
+        ApplicationManager.getApplication().invokeLater(
+          () -> myPanel.getEmptyText()
+            .setText(IdeBundle.message("plugins.configurable.search.result.not.loaded"))
+            .appendSecondaryText(
+              IdeBundle.message("plugins.configurable.check.internet"),
+              StatusText.DEFAULT_ATTRIBUTES, null), ModalityState.any()
+        );
+      }
+      // compare plugin versions between marketplace & custom repositories
+      List<PluginUiModel> customPlugins = ContainerUtil.flatten(customRepositoriesMap.values());
+      Collection<PluginUiModel> plugins =
+        RepositoryHelper.mergePluginModelsFromRepositories(searchResult.getPlugins(),
+                                                           customPlugins,
+                                                           false);
+      result.addModels(0, new ArrayList<>(plugins));
+
+      if (parser.searchQuery != null) {
+        List<PluginUiModel> descriptors = ContainerUtil.filter(customPlugins,
+                                                               descriptor -> StringUtil.containsIgnoreCase(
+                                                                 descriptor.getName(),
+                                                                 parser.searchQuery));
+        result.addModels(0, descriptors);
+      }
+
+      result.removeDuplicates();
+
+      final var localRanker = MarketplaceLocalRanker.getInstanceIfEnabled();
+      if (localRanker != null) {
+        pluginToScore = localRanker.rankPlugins(parser, result.getModels());
+      }
+
+      if (!result.getModels().isEmpty()) {
+        String title = IdeBundle.message("plugin.manager.action.label.sort.by.1");
+
+        for (AnAction action : myMarketplaceSortByGroup.getChildren(ActionManager.getInstance())) {
+          MarketplaceSortByAction sortByAction = (MarketplaceSortByAction)action;
+          sortByAction.setState(parser);
+          if (sortByAction.myState) {
+            title = IdeBundle.message("plugin.manager.action.label.sort.by",
+                                      sortByAction.myOption.getPresentableNameSupplier().get());
+          }
+        }
+
+        myMarketplaceSortByAction.setText(title);
+        result.addSecondaryAction(myMarketplaceSortByAction);
+
+        if (!ContainerUtil.isEmpty(updates)) {
+          myPostFillGroupCallback = () -> {
+            applyUpdates(myPanel, updates);
+            mySelectionListener.accept(myMarketplacePanel);
+            mySelectionListener.accept(myMarketplaceSearchPanel.getPanel());
+          };
+        }
+      }
+      Set<PluginId> ids = result.getModels().stream().map(it -> it.getPluginId()).collect(Collectors.toSet());
+      result.getPreloadedModel().setInstalledPlugins(UiPluginManager.getInstance().findInstalledPluginsSync(ids));
+      result.getPreloadedModel().setPluginInstallationStates(UiPluginManager.getInstance().getInstallationStatesSync());
+      PluginManagerUsageCollector.INSTANCE.performMarketplaceSearch(ProjectUtil.getActiveProject(), parser, result.getModels(),
+                                                                    searchIndex, pluginToScore);
     }
   }
 }
