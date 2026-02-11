@@ -49,9 +49,7 @@ public abstract class SearchResultPanel {
 
     setEmptyText("");
 
-    if (isProgressMode()) {
-      loading(false);
-    }
+    loading(false);
   }
 
   public @NotNull PluginsGroupComponent getPanel() {
@@ -65,9 +63,7 @@ public abstract class SearchResultPanel {
   public @NotNull JComponent createScrollPane() {
     JBScrollPane pane = new JBScrollPane(myPanel);
     pane.setBorder(JBUI.Borders.empty());
-    if (isProgressMode()) {
-      myVerticalScrollBar = pane.getVerticalScrollBar();
-    }
+    myVerticalScrollBar = pane.getVerticalScrollBar();
     return pane;
   }
 
@@ -118,29 +114,14 @@ public abstract class SearchResultPanel {
   }
 
   private void handleQuery(@NotNull String query) {
-    if (isProgressMode()) {
-      loading(true);
+    loading(true);
 
-      AtomicBoolean runQuery = myRunQuery = new AtomicBoolean(true);
-      PluginsGroup group = myGroup;
+    AtomicBoolean runQuery = myRunQuery = new AtomicBoolean(true);
+    PluginsGroup group = myGroup;
 
-      ApplicationManager.getApplication().executeOnPooledThread(() -> {
-        handleQuery(query, group, runQuery);
-      });
-    }
-    else {
-      handleQuery(query, myGroup, null);
-
-      if (!myGroup.getDescriptors().isEmpty()) {
-        myPanel.addGroup(myGroup);
-        myGroup.titleWithCount();
-        myPanel.initialSelection(false);
-      }
-
-      announceSearchResultsWithDelay();
-      runPostFillGroupCallback();
-      fullRepaint();
-    }
+    ApplicationManager.getApplication().executeOnPooledThread(() -> {
+      handleQuery(query, group, runQuery);
+    });
   }
 
   protected void updatePanel(AtomicBoolean runQuery) {
@@ -182,7 +163,7 @@ public abstract class SearchResultPanel {
   }
 
   private void loading(boolean start) {
-    PluginsGroupComponentWithProgress panel = (PluginsGroupComponentWithProgress)myPanel;
+    PluginsGroupComponentWithProgress panel = myPanel;
     if (start) {
       isLoading = true;
       panel.showLoadingIcon();
@@ -194,16 +175,10 @@ public abstract class SearchResultPanel {
   }
 
   public void dispose() {
-    if (isProgressMode()) {
-      ((PluginsGroupComponentWithProgress)myPanel).dispose();
-    }
+    myPanel.dispose();
     if (myAnnounceSearchResultsAlarm != null) {
       Disposer.dispose(myAnnounceSearchResultsAlarm);
     }
-  }
-
-  private boolean isProgressMode() {
-    return myPanel instanceof PluginsGroupComponentWithProgress;
   }
 
   public void removeGroup() {
