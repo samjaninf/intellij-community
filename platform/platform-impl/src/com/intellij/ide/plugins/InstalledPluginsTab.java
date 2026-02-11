@@ -734,13 +734,13 @@ class InstalledPluginsTab extends PluginsTab {
       if (!result.getModels().isEmpty()) {
         if (parser.invalid) {
           myPluginModelFacade.getModel().setInvalidFixCallback(() -> {
-            PluginsGroup group = myInstalledSearchPanel.getGroup();
+            PluginsGroup group = getGroup();
             if (group.ui == null) {
               myPluginModelFacade.getModel().setInvalidFixCallback(null);
               return;
             }
 
-            PluginsGroupComponent resultPanel = myInstalledSearchPanel.getPanel();
+            PluginsGroupComponent resultPanel = getPanel();
 
             for (PluginUiModel descriptor : new ArrayList<>(group.getModels())) {
               if (myPluginModelFacade.getErrors(descriptor).isEmpty()) {
@@ -749,11 +749,11 @@ class InstalledPluginsTab extends PluginsTab {
             }
 
             group.titleWithCount();
-            myInstalledSearchPanel.fullRepaint();
+            fullRepaint();
 
             if (group.getModels().isEmpty()) {
               myPluginModelFacade.getModel().setInvalidFixCallback(null);
-              myInstalledSearchPanel.removeGroup();
+              removeGroup();
             }
           });
         }
@@ -772,7 +772,7 @@ class InstalledPluginsTab extends PluginsTab {
               //noinspection unchecked
               applyUpdates(myPanel, (Collection<PluginUiModel>)updates);
               mySelectionListener.accept(myInstalledPanel);
-              mySelectionListener.accept(myInstalledSearchPanel.getPanel());
+              mySelectionListener.accept(getPanel());
             };
           }
           return null;
