@@ -85,7 +85,8 @@ class KotlinMPPGradleModelBuilder : AbstractModelBuilderService() {
                 dependencyMap = importingContext.dependencyMapper.toDependencyMap(),
                 dependencies = dependenciesContainer,
                 kotlinGradlePluginVersion = importingContext.kotlinGradlePluginVersion,
-                swiftExport = swiftExportModel
+                swiftExport = swiftExportModel,
+                hasSwiftPMDependencies = kotlinExtensionReflection.hasSwiftPMDependencies,
             ).apply {
                 kotlinImportingDiagnostics += collectDiagnostics(importingContext)
             }

@@ -3,6 +3,7 @@ package org.jetbrains.kotlin.idea.gradleTooling.reflect
 
 import org.gradle.api.Named
 import org.gradle.api.Project
+import org.jetbrains.kotlin.idea.gradleTooling.getMethodOrNull
 
 class KotlinExtensionReflection(
     val project: Project, val kotlinExtension: Any
@@ -15,6 +16,16 @@ class KotlinExtensionReflection(
     val targets: List<KotlinTargetReflection> by lazy {
         kotlinExtension.callReflectiveGetter<Iterable<*>>("getTargets", logger)?.filterNotNull()
             ?.map { KotlinTargetReflection(it) }.orEmpty()
+    }
+
+    val hasSwiftPMDependencies: Boolean by lazy {
+        val swiftPMDependenciesGetter = "getHasSwiftPMDependencies\$kotlin_gradle_plugin_common"
+        val hasGetter = kotlinExtension.javaClass.getMethodOrNull(swiftPMDependenciesGetter) != null
+        return@lazy if (hasGetter) {
+            kotlinExtension.callReflectiveGetter<Boolean>(swiftPMDependenciesGetter, logger) ?: false
+        } else {
+            false
+        }
     }
 
     val sourceSets: List<KotlinSourceSetReflection> by lazy {

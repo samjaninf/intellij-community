@@ -316,7 +316,8 @@ data class KotlinMPPGradleModelImpl @OptIn(KotlinGradlePluginVersionDependentApi
     override val dependencies: IdeaKotlinDependenciesContainer?,
     override val kotlinImportingDiagnostics: KotlinImportingDiagnosticsContainer = mutableSetOf(),
     override val kotlinGradlePluginVersion: KotlinGradlePluginVersion?,
-    override val swiftExport: KotlinSwiftExportModel? = null
+    override val swiftExport: KotlinSwiftExportModel? = null,
+    override val hasSwiftPMDependencies: Boolean = false,
 ) : KotlinMPPGradleModel {
 
     @OptIn(KotlinGradlePluginVersionDependentApi::class)
