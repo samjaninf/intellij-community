@@ -68,11 +68,11 @@ public abstract class PluginsGroupComponent extends JBPanelWithEmptyText {
           PluginsGroup group = component.getGroup();
           if (!addedGroups.contains(group)) {
             addedGroups.add(group);
-            if (UIUtil.isFocusable(group.rightAction)) {
-              orderedComponents.add(group.rightAction);
+            if (UIUtil.isFocusable(group.mainAction)) {
+              orderedComponents.add(group.mainAction);
             }
-            else if (!ContainerUtil.isEmpty(group.rightActions)) {
-              orderedComponents.addAll(ContainerUtil.filter(group.rightActions, UIUtil::isFocusable));
+            else if (!ContainerUtil.isEmpty(group.secondaryActions)) {
+              orderedComponents.addAll(ContainerUtil.filter(group.secondaryActions, UIUtil::isFocusable));
             }
           }
 
@@ -208,14 +208,14 @@ public abstract class PluginsGroupComponent extends JBPanelWithEmptyText {
     panel.add(title, BorderLayout.WEST);
     group.titleLabel = title;
 
-    if (group.rightAction != null) {
-      panel.add(group.rightAction, BorderLayout.EAST);
+    if (group.mainAction != null) {
+      panel.add(group.mainAction, BorderLayout.EAST);
     }
-    else if (!ContainerUtil.isEmpty(group.rightActions)) {
+    else if (!ContainerUtil.isEmpty(group.secondaryActions)) {
       JPanel actions = new NonOpaquePanel(new HorizontalLayout(JBUIScale.scale(5)));
       panel.add(actions, BorderLayout.EAST);
 
-      for (JComponent action : group.rightActions) {
+      for (JComponent action : group.secondaryActions) {
         actions.add(action);
       }
     }

@@ -207,8 +207,8 @@ class InstalledPluginsTab extends PluginsTab {
         myUpdateCounterBundled.setVisible(false);
 
         myUpdateAll.setListener(updateAllListener, null);
-        userInstalled.addRightAction(myUpdateAll);
-        userInstalled.addRightAction(myUpdateCounter);
+        userInstalled.addSecondaryAction(myUpdateAll);
+        userInstalled.addSecondaryAction(myUpdateCounter);
 
         if (!userInstalled.getModels().isEmpty()) {
           userInstalled.sortByName();
@@ -240,8 +240,8 @@ class InstalledPluginsTab extends PluginsTab {
           });
 
         myUpdateAllBundled.setListener(updateAllListener, null);
-        myBundledUpdateGroup.addRightAction(myUpdateAllBundled);
-        myBundledUpdateGroup.addRightAction(myUpdateCounterBundled);
+        myBundledUpdateGroup.addSecondaryAction(myUpdateAllBundled);
+        myBundledUpdateGroup.addSecondaryAction(myUpdateCounterBundled);
 
         myPluginUpdatesService.calculateUpdates(updates -> {
           if (ContainerUtil.isEmpty(updates)) {
@@ -570,12 +570,12 @@ class InstalledPluginsTab extends PluginsTab {
       this.addModels(descriptors);
       sortByName();
 
-      rightAction = new PluginManagerConfigurablePanel.LinkLabelButton<>("",
-                                                                         null,
-                                                                         (__, ___) -> setEnabledState());
+      mainAction = new PluginManagerConfigurablePanel.LinkLabelButton<>("",
+                                                                        null,
+                                                                        (__, ___) -> setEnabledState());
       boolean hasPluginsAvailableForEnableDisable =
         ContainerUtil.exists(descriptors, it -> !pluginsRequiresUltimate.get(it.getPluginId()));
-      rightAction.setVisible(hasPluginsAvailableForEnableDisable);
+      mainAction.setVisible(hasPluginsAvailableForEnableDisable);
       titleWithEnabled(myPluginModelFacade);
     }
 
@@ -588,7 +588,7 @@ class InstalledPluginsTab extends PluginsTab {
     public void titleWithCount(int enabled) {
       myIsEnable = enabled == 0;
       String key = myIsEnable ? "plugins.configurable.enable.all" : "plugins.configurable.disable.all";
-      rightAction.setText(IdeBundle.message(key));
+      mainAction.setText(IdeBundle.message(key));
     }
 
     private void setEnabledState() {
@@ -744,8 +744,8 @@ class InstalledPluginsTab extends PluginsTab {
           });
         }
         else if (parser.needUpdate) {
-          result.rightAction = new LinkLabelButton<>(IdeBundle.message("plugin.manager.update.all"), null, (__, ___) -> {
-            result.rightAction.setEnabled(false);
+          result.mainAction = new LinkLabelButton<>(IdeBundle.message("plugin.manager.update.all"), null, (__, ___) -> {
+            result.mainAction.setEnabled(false);
 
             for (ListPluginComponent plugin : result.ui.plugins) {
               plugin.updatePlugin();

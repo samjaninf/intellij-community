@@ -12,6 +12,7 @@ import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -24,8 +25,9 @@ public class PluginsGroup {
   protected final @Nls String myTitlePrefix;
   public @Nls String title;
   public JLabel titleLabel;
-  public LinkLabel<Object> rightAction;
-  public List<JComponent> rightActions;
+  /** if `mainAction` is not null, it is shown. Otherwise, `secondaryActions` are shown*/
+  public @Nullable LinkLabel<Object> mainAction;
+  public @Nullable List<JComponent> secondaryActions;
   public UIPluginGroup ui;
   public Runnable clearCallback;
   public PluginsGroupType type;
@@ -42,19 +44,19 @@ public class PluginsGroup {
     ui = null;
     models.clear();
     titleLabel = null;
-    rightAction = null;
-    rightActions = null;
+    mainAction = null;
+    secondaryActions = null;
     if (clearCallback != null) {
       clearCallback.run();
       clearCallback = null;
     }
   }
 
-  public void addRightAction(@NotNull JComponent component) {
-    if (rightActions == null) {
-      rightActions = new ArrayList<>();
+  public void addSecondaryAction(@NotNull JComponent component) {
+    if (secondaryActions == null) {
+      secondaryActions = new ArrayList<>();
     }
-    rightActions.add(component);
+    secondaryActions.add(component);
   }
 
   public void titleWithCount() {

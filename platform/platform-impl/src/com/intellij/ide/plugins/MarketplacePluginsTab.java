@@ -616,7 +616,7 @@ class MarketplacePluginsTab extends PluginsTab {
             }
 
             myMarketplaceSortByAction.setText(title);
-            result.addRightAction(myMarketplaceSortByAction);
+            result.addSecondaryAction(myMarketplaceSortByAction);
 
             if (!ContainerUtil.isEmpty(updates)) {
               myPostFillGroupCallback = () -> {
@@ -794,11 +794,11 @@ class MarketplacePluginsTab extends PluginsTab {
     }
 
     if (showAllPredicate.test(group)) {
-      group.rightAction = new PluginManagerConfigurablePanel.LinkLabelButton<>(IdeBundle.message("plugins.configurable.show.all"),
-                                                                               null,
-                                                                               searchListener,
-                                                                               showAllQuery);
-      group.rightAction.setBorder(JBUI.Borders.emptyRight(5));
+      group.mainAction = new PluginManagerConfigurablePanel.LinkLabelButton<>(IdeBundle.message("plugins.configurable.show.all"),
+                                                                              null,
+                                                                              searchListener,
+                                                                              showAllQuery);
+      group.mainAction.setBorder(JBUI.Borders.emptyRight(5));
     }
 
     if (!group.getModels().isEmpty()) {
