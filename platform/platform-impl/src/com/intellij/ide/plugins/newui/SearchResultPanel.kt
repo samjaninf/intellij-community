@@ -1,218 +1,219 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.ide.plugins.newui;
+package com.intellij.ide.plugins.newui
 
-import com.intellij.ide.IdeBundle;
-import com.intellij.ide.plugins.PluginsGroupType;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.ui.components.JBScrollPane;
-import com.intellij.util.Alarm;
-import com.intellij.util.SingleAlarm;
-import com.intellij.util.ui.EDT;
-import com.intellij.util.ui.JBUI;
-import com.intellij.util.ui.accessibility.AccessibleAnnouncerUtil;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.swing.JComponent;
-import javax.swing.JScrollBar;
-import javax.swing.ScrollPaneConstants;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.intellij.ide.IdeBundle
+import com.intellij.ide.plugins.PluginsGroupType
+import com.intellij.ide.plugins.newui.PluginLogo.endBatchMode
+import com.intellij.ide.plugins.newui.PluginLogo.startBatchMode
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.Alarm
+import com.intellij.util.SingleAlarm
+import com.intellij.util.ui.EDT
+import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.accessibility.AccessibleAnnouncerUtil
+import org.jetbrains.annotations.ApiStatus
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.swing.JComponent
+import javax.swing.JScrollBar
+import javax.swing.ScrollPaneConstants
 
 @ApiStatus.Internal
-public abstract class SearchResultPanel {
-  public final @NotNull SearchPopupController controller;
+abstract class SearchResultPanel(
+  @JvmField val controller: SearchPopupController,
+  @JvmField val myPanel: PluginsGroupComponentWithProgress,
+  isMarketplace: Boolean,
+) {
+  private var myVerticalScrollBar: JScrollBar? = null
+  var group: PluginsGroup
+    private set
+  private var myQuery = ""
+  private var myRunQuery: AtomicBoolean? = null
+  private val isMarketplace: Boolean
+  private var isLoading = false
+  private var myAnnounceSearchResultsAlarm: SingleAlarm? = null
 
-  protected final @NotNull PluginsGroupComponentWithProgress myPanel;
-  private JScrollBar myVerticalScrollBar;
-  private PluginsGroup myGroup;
-  private @NotNull String myQuery = "";
-  private AtomicBoolean myRunQuery;
-  private boolean isMarketplace;
-  private boolean isLoading;
-  private SingleAlarm myAnnounceSearchResultsAlarm;
+  @JvmField protected var myPostFillGroupCallback: Runnable? = null
 
-  protected Runnable myPostFillGroupCallback;
+  init {
+    myPanel.getAccessibleContext().setAccessibleName(IdeBundle.message("title.search.results"))
+    this.isMarketplace = isMarketplace
+    this.group = PluginsGroup(
+      IdeBundle.message("title.search.results"),
+      if (isMarketplace) PluginsGroupType.SEARCH else PluginsGroupType.SEARCH_INSTALLED
+    )
 
-  public SearchResultPanel(@NotNull SearchPopupController controller,
-                           @NotNull PluginsGroupComponentWithProgress panel,
-                           boolean isMarketplace) {
-    this.controller = controller;
-    myPanel = panel;
-    myPanel.getAccessibleContext().setAccessibleName(IdeBundle.message("title.search.results"));
-    this.isMarketplace = isMarketplace;
-    myGroup = new PluginsGroup(IdeBundle.message("title.search.results"),
-                               isMarketplace ? PluginsGroupType.SEARCH : PluginsGroupType.SEARCH_INSTALLED);
+    setEmptyText("")
 
-    setEmptyText("");
-
-    loading(false);
+    loading(false)
   }
 
-  public @NotNull PluginsGroupComponent getPanel() {
-    return myPanel;
+  val panel: PluginsGroupComponent
+    get() = myPanel
+
+  fun createScrollPane(): JComponent {
+    val pane = JBScrollPane(myPanel)
+    pane.setBorder(JBUI.Borders.empty())
+    myVerticalScrollBar = pane.getVerticalScrollBar()
+    return pane
   }
 
-  public @NotNull PluginsGroup getGroup() {
-    return myGroup;
+  fun createVScrollPane(): JComponent {
+    val pane = createScrollPane() as JBScrollPane
+    pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED)
+    pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
+    return pane
   }
 
-  public @NotNull JComponent createScrollPane() {
-    JBScrollPane pane = new JBScrollPane(myPanel);
-    pane.setBorder(JBUI.Borders.empty());
-    myVerticalScrollBar = pane.getVerticalScrollBar();
-    return pane;
+  protected open fun setEmptyText(query: String) {
+    myPanel.getEmptyText().setText(IdeBundle.message("empty.text.nothing.found"))
   }
 
-  public @NotNull JComponent createVScrollPane() {
-    JBScrollPane pane = (JBScrollPane)createScrollPane();
-    pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-    pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-    return pane;
+  val isQueryEmpty: Boolean
+    get() = myQuery.isEmpty()
+
+  fun setEmptyQuery() {
+    myQuery = ""
   }
 
-  protected void setEmptyText(@NotNull String query) {
-    myPanel.getEmptyText().setText(IdeBundle.message("empty.text.nothing.found"));
-  }
+  var query: String
+    get() = StringUtil.defaultIfEmpty(myQuery, "")
+    set(query) {
+      assert(EDT.isCurrentThreadEdt())
 
-  public boolean isQueryEmpty() {
-    return myQuery.isEmpty();
-  }
+      setEmptyText(query)
 
-  public void setEmptyQuery() {
-    myQuery = "";
-  }
-
-  public @NotNull String getQuery() {
-    return StringUtil.defaultIfEmpty(myQuery, "");
-  }
-
-  public void setQuery(@NotNull String query) {
-    assert EDT.isCurrentThreadEdt();
-
-    setEmptyText(query);
-
-    if (query.equals(myQuery)) {
-      return;
-    }
-
-    if (myRunQuery != null) {
-      myRunQuery.set(false);
-      myRunQuery = null;
-      loading(false);
-    }
-
-    removeGroup();
-    myQuery = query;
-
-    if (!isQueryEmpty()) {
-      handleQuery(query);
-    }
-  }
-
-  private void handleQuery(@NotNull String query) {
-    loading(true);
-
-    AtomicBoolean runQuery = myRunQuery = new AtomicBoolean(true);
-    PluginsGroup group = myGroup;
-
-    ApplicationManager.getApplication().executeOnPooledThread(() -> {
-      handleQuery(query, group, runQuery);
-    });
-  }
-
-  protected void updatePanel(AtomicBoolean runQuery) {
-    ApplicationManager.getApplication().invokeLater(() -> {
-      assert EDT.isCurrentThreadEdt();
-
-      if (!runQuery.get()) {
-        return;
+      if (query == myQuery) {
+        return
       }
-      myRunQuery = null;
 
-      loading(false);
+      if (myRunQuery != null) {
+        myRunQuery!!.set(false)
+        myRunQuery = null
+        loading(false)
+      }
 
-      if (!myGroup.getDescriptors().isEmpty()) {
-        myGroup.titleWithCount();
+      removeGroup()
+      myQuery = query
+
+      if (!this.isQueryEmpty) {
+        handleQuery(query)
+      }
+    }
+
+  private fun handleQuery(query: String) {
+    loading(true)
+
+    myRunQuery = AtomicBoolean(true)
+    val runQuery = myRunQuery!!
+    val group = this.group
+
+    ApplicationManager.getApplication().executeOnPooledThread(Runnable {
+      handleQuery(query, group, runQuery)
+    })
+  }
+
+  protected fun updatePanel(runQuery: AtomicBoolean) {
+    ApplicationManager.getApplication().invokeLater(Runnable {
+      assert(EDT.isCurrentThreadEdt())
+      if (!runQuery.get()) {
+        return@Runnable
+      }
+      myRunQuery = null
+
+      loading(false)
+
+      if (!group.getDescriptors().isEmpty()) {
+        group.titleWithCount()
         try {
-          PluginLogo.startBatchMode();
-          myPanel.addLazyGroup(myGroup, myVerticalScrollBar, 100, this::fullRepaint);
+          startBatchMode()
+          myPanel.addLazyGroup(this.group, myVerticalScrollBar!!, 100, Runnable { this.fullRepaint() })
         }
         finally {
-          PluginLogo.endBatchMode();
+          endBatchMode()
         }
       }
 
-      announceSearchResultsWithDelay();
-      myPanel.initialSelection(false);
-      runPostFillGroupCallback();
-      fullRepaint();
-    }, ModalityState.any());
+      announceSearchResultsWithDelay()
+      myPanel.initialSelection(false)
+      runPostFillGroupCallback()
+      fullRepaint()
+    }, ModalityState.any())
   }
 
-  protected abstract void handleQuery(@NotNull String query, @NotNull PluginsGroup result, @Nullable AtomicBoolean runQuery);
+  protected abstract fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean?)
 
-  private void runPostFillGroupCallback() {
+  private fun runPostFillGroupCallback() {
     if (myPostFillGroupCallback != null) {
-      myPostFillGroupCallback.run();
-      myPostFillGroupCallback = null;
+      myPostFillGroupCallback!!.run()
+      myPostFillGroupCallback = null
     }
   }
 
-  private void loading(boolean start) {
-    PluginsGroupComponentWithProgress panel = myPanel;
+  private fun loading(start: Boolean) {
+    val panel = myPanel
     if (start) {
-      isLoading = true;
-      panel.showLoadingIcon();
+      isLoading = true
+      panel.showLoadingIcon()
     }
     else {
-      isLoading = false;
-      panel.hideLoadingIcon();
+      isLoading = false
+      panel.hideLoadingIcon()
     }
   }
 
-  public void dispose() {
-    myPanel.dispose();
+  fun dispose() {
+    myPanel.dispose()
     if (myAnnounceSearchResultsAlarm != null) {
-      Disposer.dispose(myAnnounceSearchResultsAlarm);
+      Disposer.dispose(myAnnounceSearchResultsAlarm!!)
     }
   }
 
-  public void removeGroup() {
-    if (myGroup.ui != null) {
-      myPanel.removeGroup(myGroup);
-      fullRepaint();
+  fun removeGroup() {
+    if (group.ui != null) {
+      myPanel.removeGroup(this.group)
+      fullRepaint()
     }
-    myGroup = new PluginsGroup(IdeBundle.message("title.search.results"),
-                               isMarketplace ? PluginsGroupType.SEARCH : PluginsGroupType.SEARCH_INSTALLED);
+    this.group = PluginsGroup(
+      IdeBundle.message("title.search.results"),
+      if (isMarketplace) PluginsGroupType.SEARCH else PluginsGroupType.SEARCH_INSTALLED
+    )
   }
 
-  public void fullRepaint() {
-    myPanel.doLayout();
-    myPanel.revalidate();
-    myPanel.repaint();
+  fun fullRepaint() {
+    myPanel.doLayout()
+    myPanel.revalidate()
+    myPanel.repaint()
   }
 
-  private void announceSearchResultsWithDelay() {
+  private fun announceSearchResultsWithDelay() {
     if (AccessibleAnnouncerUtil.isAnnouncingAvailable()) {
       if (myAnnounceSearchResultsAlarm == null) {
         myAnnounceSearchResultsAlarm =
-          new SingleAlarm(this::announceSearchResults, 250, null, Alarm.ThreadToUse.SWING_THREAD, ModalityState.stateForComponent(myPanel));
+          SingleAlarm(
+            Runnable { this.announceSearchResults() },
+            250,
+            null,
+            Alarm.ThreadToUse.SWING_THREAD,
+            ModalityState.stateForComponent(myPanel)
+          )
       }
 
-      myAnnounceSearchResultsAlarm.cancelAndRequest();
+      myAnnounceSearchResultsAlarm!!.cancelAndRequest()
     }
   }
 
-  private void announceSearchResults() {
+  private fun announceSearchResults() {
     if (myPanel.isShowing() && !isLoading) {
-      String pluginsTabName = IdeBundle.message(isMarketplace ? "plugin.manager.tab.marketplace" : "plugin.manager.tab.installed");
-      String message = IdeBundle.message("plugins.configurable.search.result.0.plugins.found.in.1",
-                                         myGroup.getDescriptors().size(), pluginsTabName);
-      AccessibleAnnouncerUtil.announce(myPanel, message, false);
+      val pluginsTabName = IdeBundle.message(if (isMarketplace) "plugin.manager.tab.marketplace" else "plugin.manager.tab.installed")
+      val message = IdeBundle.message(
+        "plugins.configurable.search.result.0.plugins.found.in.1",
+        group.getDescriptors().size, pluginsTabName
+      )
+      AccessibleAnnouncerUtil.announce(myPanel, message, false)
     }
   }
 }
