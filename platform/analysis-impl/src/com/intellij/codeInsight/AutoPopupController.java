@@ -36,7 +36,10 @@ public abstract class AutoPopupController {
   /**
    * Setting this user data key to the editor with a completion provider
    * allows showing the auto popup for slashes
+   * @deprecated Implement your own {@link com.intellij.codeInsight.editorActions.TypedHandlerDelegate#checkAutoPopup(char, Project, Editor, PsiFile)}
    */
+  @ApiStatus.Internal
+  @Deprecated
   public static final Key<Boolean> ALLOW_AUTO_POPUP_FOR_SLASHES_IN_PATHS = Key.create("Allow Auto-Popup For Slashes In Paths");
 
   /**

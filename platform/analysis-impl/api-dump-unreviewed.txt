@@ -83,7 +83,6 @@ e:com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar$Anchor
 - s:valueOf(java.lang.String):com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar$Anchor
 - s:values():com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar$Anchor[]
 a:com.intellij.codeInsight.AutoPopupController
-- sf:ALLOW_AUTO_POPUP_FOR_SLASHES_IN_PATHS:com.intellij.openapi.util.Key
 - sf:ALWAYS_AUTO_POPUP:com.intellij.openapi.util.Key
 - sf:AUTO_POPUP_ON_FOCUS_GAINED:com.intellij.openapi.util.Key
 - sf:NO_ADS:com.intellij.openapi.util.Key
