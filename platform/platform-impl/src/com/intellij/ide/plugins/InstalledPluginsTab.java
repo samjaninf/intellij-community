@@ -615,7 +615,7 @@ class InstalledPluginsTab extends PluginsTab {
     InstalledTabSearchResultPanel(SearchUpDownPopupController installedController,
                                   PluginsGroupComponent panel,
                                   @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
-      super(installedController, panel, false, 0, 0);
+      super(installedController, panel, false);
       mySelectionListener = selectionListener;
     }
 

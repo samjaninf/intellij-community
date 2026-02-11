@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @ApiStatus.Internal
 public abstract class SearchResultPanel {
   public final @NotNull SearchPopupController controller;
-  public final int tabIndex;
-  public final int backTabIndex;
 
   protected final PluginsGroupComponent myPanel;
   private JScrollBar myVerticalScrollBar;
@@ -42,14 +40,10 @@ public abstract class SearchResultPanel {
 
   public SearchResultPanel(@NotNull SearchPopupController controller,
                            @NotNull PluginsGroupComponent panel,
-                           boolean isMarketplace,
-                           int tabIndex,
-                           int backTabIndex) {
+                           boolean isMarketplace) {
     this.controller = controller;
     myPanel = panel;
     myPanel.getAccessibleContext().setAccessibleName(IdeBundle.message("title.search.results"));
-    this.tabIndex = tabIndex;
-    this.backTabIndex = backTabIndex;
     this.isMarketplace = isMarketplace;
     myGroup = new PluginsGroup(IdeBundle.message("title.search.results"),
                                isMarketplace ? PluginsGroupType.SEARCH : PluginsGroupType.SEARCH_INSTALLED);

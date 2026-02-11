@@ -477,7 +477,7 @@ class MarketplacePluginsTab extends PluginsTab {
     Project project = ProjectUtil.getActiveProject();
 
     myMarketplaceSearchPanel =
-      new SearchResultPanel(marketplaceController, panel, true, 0, 0) {
+      new SearchResultPanel(marketplaceController, panel, true) {
         @Override
         @SuppressWarnings("unchecked")
         protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, AtomicBoolean runQuery) {
