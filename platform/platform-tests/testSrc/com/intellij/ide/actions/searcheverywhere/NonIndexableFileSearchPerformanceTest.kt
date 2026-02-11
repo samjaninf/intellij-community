@@ -92,7 +92,7 @@ open class NonIndexableFileSearchPerformanceTest {
 
   @Test
   fun `search for one last root child`() {
-    val filename = communityVirtualFile.getChildren(true).last().name
+    val filename = communityVirtualFile.getChildren(true)!!.last().name
     val contributor = createContributor()
     newBenchmarkWithVariableInputSize("search \"$filename\"", nonIndexableFilesCount) {
       // elementsLimit = 0, so when the first matching file is found, the search stops.
@@ -105,7 +105,7 @@ open class NonIndexableFileSearchPerformanceTest {
 
   @Test
   fun `search for the first root child`() {
-    val filename = communityVirtualFile.getChildren(true).first().name
+    val filename = communityVirtualFile.getChildren(true)!!.first().name
     val contributor = createContributor()
     newBenchmark("search \"$filename\"") {
       // elementsLimit = 0, so when the first matching file is found, the search stops.

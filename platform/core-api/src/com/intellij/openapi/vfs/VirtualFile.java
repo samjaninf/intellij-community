@@ -329,14 +329,15 @@ public abstract class VirtualFile extends UserDataHolderBase implements Modifica
    * @return array of the child files or {@code null} if this file is not a directory
    * @throws InvalidVirtualFileAccessException if this method is called inside read action on an invalid file
    */
-  public abstract VirtualFile[] getChildren();
+  public abstract VirtualFile /*@Nullable*/ [] getChildren();
 
   /**
-   * {@link #getChildren()} is not formally requires the sorting, but many methods rely on stable sorting provided by it
-   * But sorting is not cheap, hence this method exists for scenarios there order of children doesn't matter.
+   * While {@link #getChildren()} is not formally required to return a sorted result, still many use-cases _rely_ on stable sorting
+   * provided by it. But the sorting is not cheap; hence this method exists for scenarios there order of children doesn't matter,
+   * for implementations that may skip it.
    */
   @ApiStatus.Internal
-  public VirtualFile @NotNull [] getChildren(boolean requireSorting){
+  public VirtualFile @Nullable [] getChildren(boolean requireSorting){
     return getChildren();
   }
 
