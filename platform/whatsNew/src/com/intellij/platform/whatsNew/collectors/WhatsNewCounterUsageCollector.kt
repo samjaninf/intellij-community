@@ -74,6 +74,7 @@ internal enum class OpenedType { Auto, ByClient }
 internal enum class ActionFailedReason { Not_Allowed, Not_Found }
 
 
+@Suppress("UnstableApiUsage")
 internal class WhatsNewMultipageIdValidationRule : CustomValidationRule() {
   override fun getRuleId(): String = "whats_new_multipage_id"
   override fun doValidate(
