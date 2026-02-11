@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.analysis.api.types.KaTypeProjection
 import org.jetbrains.kotlin.idea.completion.ItemPriority
 import org.jetbrains.kotlin.idea.completion.impl.k2.ImportStrategyDetector
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.BracketOperatorInsertionHandler
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.Tail
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.CallableInsertionOptions
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.ImportStrategy
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.detectCallableOptions
@@ -142,4 +143,9 @@ object KotlinFirLookupElementFactory {
     context(_: KaSession)
     fun createTypeLookupElement(classSymbol: KaClassifierSymbol): LookupElement? =
         TypeLookupElementFactory.createLookup(classSymbol)
+
+
+    context(_: KaSession)
+    internal fun createMultipleArgumentsLookupElement(variableSymbols: List<KaNamedSymbol>, tail: Tail): LookupElement =
+        VariableLookupElementFactory.createMultipleArgumentsLookupElement(variableSymbols, tail)
 }

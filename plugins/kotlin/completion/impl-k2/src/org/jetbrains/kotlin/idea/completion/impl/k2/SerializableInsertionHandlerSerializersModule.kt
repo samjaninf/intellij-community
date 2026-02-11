@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.Classifier
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.ClassifierLookupObject
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.FunctionCallLookupObject
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.FunctionInsertionHandler
+import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.MultipleArgumentsLookupObject
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.OperatorNameLookupObject
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.PackagePartInsertionHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.PackagePartLookupObject
@@ -67,6 +68,7 @@ val serializableInsertionHandlerSerializersModule: SerializersModule = Serialize
         subclass(OperatorNameLookupObject::class, OperatorNameLookupObject.serializer())
         subclass(PackagePartLookupObject::class, PackagePartLookupObject.serializer())
         subclass(VariableLookupObject::class, VariableLookupObject.serializer())
+        subclass(MultipleArgumentsLookupObject::class, MultipleArgumentsLookupObject.serializer())
 
         subclass(KeywordLookupObject::class, KeywordLookupObject.serializer())
         subclass(KeywordConstructLookupObject::class, KeywordConstructLookupObject.serializer())
