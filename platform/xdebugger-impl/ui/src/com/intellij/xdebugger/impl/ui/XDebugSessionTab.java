@@ -62,7 +62,7 @@ import com.intellij.xdebugger.impl.frame.XVariablesView;
 import com.intellij.xdebugger.impl.frame.XVariablesViewBase;
 import com.intellij.xdebugger.impl.frame.XWatchesView;
 import com.intellij.xdebugger.impl.frame.XWatchesViewImpl;
-import com.intellij.xdebugger.impl.messages.XDebuggerImplBundle;
+import com.intellij.platform.debugger.impl.ui.XDebuggerUiBundle;
 import com.intellij.xdebugger.settings.XDebuggerSettingsManager;
 import com.intellij.xdebugger.ui.XDebugTabLayouter;
 import org.jetbrains.annotations.ApiStatus;
@@ -482,7 +482,7 @@ public class XDebugSessionTab extends DebuggerSessionTabBase {
 
     leftToolbar.add(myUi.getOptions().getLayoutActions());
     final AnAction[] commonSettings = myUi.getOptions().getSettingsActionsList();
-    DefaultActionGroup settings = DefaultActionGroup.createPopupGroup(XDebuggerImplBundle.lazyMessage("group.XDebugger.settings.text"));
+    DefaultActionGroup settings = DefaultActionGroup.createPopupGroup(XDebuggerUiBundle.lazyMessage("group.XDebugger.settings.text"));
     settings.getTemplatePresentation().setIcon(myUi.getOptions().getSettingsActions().getTemplatePresentation().getIcon());
     settings.addAll(commonSettings);
     leftToolbar.add(settings);

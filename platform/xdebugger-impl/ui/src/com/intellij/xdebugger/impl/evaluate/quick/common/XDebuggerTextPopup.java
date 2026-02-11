@@ -33,7 +33,7 @@ import com.intellij.xdebugger.frame.XValueTextModificationPreparator;
 import com.intellij.xdebugger.frame.presentation.XValuePresentation;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
 import com.intellij.xdebugger.impl.frame.XValueTextModificationPreparatorProviders;
-import com.intellij.xdebugger.impl.messages.XDebuggerImplBundle;
+import com.intellij.platform.debugger.impl.ui.XDebuggerUiBundle;
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.XValueTextProvider;
 import com.intellij.xdebugger.impl.ui.tree.XDebuggerTree;
@@ -337,7 +337,7 @@ public class XDebuggerTextPopup<D> extends XDebuggerPopupPanel {
 
   private class ShowAsObject extends AnAction {
     private ShowAsObject() {
-      super(XDebuggerImplBundle.message("action.Debugger.XDebuggerTextPopup.ShowAsObject.text"));
+      super(XDebuggerUiBundle.message("action.Debugger.XDebuggerTextPopup.ShowAsObject.text"));
     }
 
     @Override

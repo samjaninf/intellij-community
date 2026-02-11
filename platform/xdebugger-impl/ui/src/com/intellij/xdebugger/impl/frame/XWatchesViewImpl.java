@@ -72,7 +72,7 @@ import com.intellij.xdebugger.impl.inline.InlineWatch;
 import com.intellij.xdebugger.impl.inline.InlineWatchNode;
 import com.intellij.xdebugger.impl.inline.InlineWatchesRootNode;
 import com.intellij.xdebugger.impl.inline.XInlineWatchesView;
-import com.intellij.xdebugger.impl.messages.XDebuggerImplBundle;
+import com.intellij.platform.debugger.impl.ui.XDebuggerUiBundle;
 import com.intellij.xdebugger.impl.ui.DebuggerSessionTabBase;
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.XDebugSessionTab;
@@ -249,7 +249,7 @@ public class XWatchesViewImpl extends XVariablesView implements DnDNativeTarget,
         @Override
         protected ComboBox<XExpression> createComboBox(CollectionComboBoxModel<XExpression> model, int width) {
           AnAction addToWatchesAction =
-            new DumbAwareAction(XDebuggerImplBundle.message("action.Debugger.AddToWatch.text"), null, AllIcons.Debugger.AddToWatch) {
+            new DumbAwareAction(XDebuggerUiBundle.message("action.Debugger.AddToWatch.text"), null, AllIcons.Debugger.AddToWatch) {
               @Override
               public void actionPerformed(@NotNull AnActionEvent e) {
                 myEvaluateComboBox.saveTextInHistory();

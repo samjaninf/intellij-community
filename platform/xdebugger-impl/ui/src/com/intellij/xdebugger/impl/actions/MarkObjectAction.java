@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.platform.debugger.impl.shared.SplitDebuggerAction;
 import com.intellij.xdebugger.impl.DebuggerSupport;
 import com.intellij.xdebugger.impl.actions.handlers.XMarkObjectActionHandler;
-import com.intellij.xdebugger.impl.messages.XDebuggerImplBundle;
+import com.intellij.platform.debugger.impl.ui.XDebuggerUiBundle;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,10 +27,10 @@ public class MarkObjectAction extends XDebuggerActionBase implements SplitDebugg
       hidden = ourHandler.isHidden(project, event);
       String text;
       if (ourHandler.isMarked(project, event)) {
-        text = XDebuggerImplBundle.message("action.Debugger.MarkObject.unmark.text");
+        text = XDebuggerUiBundle.message("action.Debugger.MarkObject.unmark.text");
       }
       else {
-        text = XDebuggerImplBundle.message("action.Debugger.MarkObject.text");
+        text = XDebuggerUiBundle.message("action.Debugger.MarkObject.text");
       }
       presentation.setText(text);
     }

@@ -31,7 +31,7 @@ import com.intellij.openapi.wm.impl.content.SingleContentSupplier
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
 import com.intellij.xdebugger.XDebuggerBundle
 import com.intellij.xdebugger.impl.actions.XDebuggerActions
-import com.intellij.xdebugger.impl.messages.XDebuggerImplBundle
+import com.intellij.platform.debugger.impl.ui.XDebuggerUiBundle
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.util.function.Supplier
 import javax.swing.Icon
@@ -120,7 +120,7 @@ open class XDebugSessionTabNewUI(
     more.addSeparator()
 
     val gear = DefaultActionGroup().apply {
-      templatePresentation.text = XDebuggerImplBundle.message("group.XDebugger.settings.text")
+      templatePresentation.text = XDebuggerUiBundle.message("group.XDebugger.settings.text")
       templatePresentation.icon = AllIcons.General.Settings
       isPopup = true
       addAll(*myUi.options.settingsActionsList)

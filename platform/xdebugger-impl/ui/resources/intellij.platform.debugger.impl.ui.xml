@@ -88,7 +88,7 @@
     <xdebugger.textValueVisualizer implementation="com.intellij.xdebugger.impl.ui.visualizedtext.common.UrlEncodedTextVisualizer"/>
   </extensions>
 
-  <actions resource-bundle="messages.XDebuggerImplBundle">
+  <actions resource-bundle="messages.XDebuggerUiBundle">
     <group id="XDebugger.Actions">
       <group id="XDebugger.Threads.View.Popup">
         <reference ref="Debugger.PopFrame"/>
