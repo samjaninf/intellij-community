@@ -19,6 +19,8 @@ import kotlin.coroutines.CoroutineContext
  * Suspends until it's possible to obtain the read lock and then
  * runs the [action] holding the lock **without** preventing write actions.
  *
+ * **[action] can be restarted several times if it gets canceled by write actions! Hence, [action] must be idempotent**
+ *
  * The [action] is dispatched to [Dispatchers.Default], because a read action is expected to be a CPU-bound task.
  *
  * See [constrainedReadAction] for semantic details.
@@ -34,6 +36,8 @@ suspend fun <T> readAction(action: () -> T): T {
  * Suspends until it's possible to obtain the read lock in smart mode and then
  * runs the [action] holding the lock **without** preventing write actions.
  * See [constrainedReadAction] for semantic details.
+ *
+ * **[action] can be restarted several times if it gets canceled by write actions! Hence, [action] must be idempotent**
  *
  * @see smartReadActionBlocking
  */
