@@ -158,6 +158,12 @@ internal class GitWorkingTreeDialog(
     component.isUsePreferredSizeAsMinimum = false
     component.renderer = BranchWithTreeCellRenderer(data.project, data.repository)
 
+    // Set prototype to calculate proper size upfront and prevent resizing on first selection
+    val longestBranch = localBranchesWithTrees.maxByOrNull { it?.branch?.name?.length ?: 0 }
+    if (longestBranch != null) {
+      component.prototypeDisplayValue = longestBranch
+    }
+
     return cell(component)
       .validationRequestor(WHEN_PROPERTY_CHANGED(createNewBranch))
       .validationRequestor(WHEN_PROPERTY_CHANGED(existingBranchWithWorkingTree))
