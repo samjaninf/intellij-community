@@ -148,8 +148,8 @@ public final class TypedHandler extends TypedActionHandlerBase {
   }
 
   private void doExecute(@NotNull Editor originalEditor, char charTyped, @NotNull DataContext dataContext) {
-    final Project project = CommonDataKeys.PROJECT.getData(dataContext);
-    final PsiFile originalFile;
+    Project project = CommonDataKeys.PROJECT.getData(dataContext);
+    PsiFile originalFile;
 
     if (project == null || (originalFile = PsiUtilBase.getPsiFileInEditor(originalEditor, project)) == null) {
       if (myOriginalHandler != null) {
@@ -160,8 +160,8 @@ public final class TypedHandler extends TypedActionHandlerBase {
 
     if (!EditorModificationUtil.checkModificationAllowed(originalEditor)) return;
 
-    final PsiDocumentManager psiDocumentManager = PsiDocumentManager.getInstance(project);
-    final Document originalDocument = originalEditor.getDocument();
+    PsiDocumentManager psiDocumentManager = PsiDocumentManager.getInstance(project);
+    Document originalDocument = originalEditor.getDocument();
     fireNewTypingStarted(originalEditor, charTyped, dataContext);
     originalEditor.getCaretModel().runForEachCaret(caret -> {
       if (psiDocumentManager.isDocumentBlockedByPsi(originalDocument)) {
@@ -349,7 +349,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
    * @return true if auto-popup should be invoked according to deprecated {@link CompletionContributor#invokeAutoPopup)}.
    */
   private static boolean isAutoPopup(@NotNull Editor editor, @NotNull PsiFile file, char charTyped) {
-    final int offset = editor.getCaretModel().getOffset() - 1;
+    int offset = editor.getCaretModel().getOffset() - 1;
     if (offset < 0) {
       return false;
     }
@@ -401,12 +401,12 @@ public final class TypedHandler extends TypedActionHandlerBase {
     int offset = editor.getCaretModel().getOffset();
     PsiElement element = file.findElementAt(offset);
     if (element == null) return false;
-    final ParserDefinition definition = LanguageParserDefinitions.INSTANCE.forLanguage(element.getLanguage());
+    ParserDefinition definition = LanguageParserDefinitions.INSTANCE.forLanguage(element.getLanguage());
     if (definition != null) {
-      final TokenSet stringLiteralElements = definition.getStringLiteralElements();
-      final ASTNode node = element.getNode();
+      TokenSet stringLiteralElements = definition.getStringLiteralElements();
+      ASTNode node = element.getNode();
       if (node == null) return false;
-      final IElementType elementType = node.getElementType();
+      IElementType elementType = node.getElementType();
       if (stringLiteralElements.contains(elementType)) {
         return true;
       }
@@ -469,7 +469,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
     BraceMatcher braceMatcher = BraceMatchingUtil.getBraceMatcher(fileType, iterator);
     if (iterator.atEnd()) return;
     IElementType braceTokenType = iterator.getTokenType();
-    final CharSequence fileText = editor.getDocument().getCharsSequence();
+    CharSequence fileText = editor.getDocument().getCharsSequence();
     if (!braceMatcher.isLBraceToken(iterator, fileText, fileType)) return;
 
     if (!iterator.atEnd()) {
@@ -559,12 +559,12 @@ public final class TypedHandler extends TypedActionHandlerBase {
   @ApiStatus.Internal
   public static boolean handleQuote(@NotNull Project project, @NotNull Editor editor, char quote, @NotNull PsiFile file) {
     if (!CodeInsightSettings.getInstance().AUTOINSERT_PAIR_QUOTE) return false;
-    final QuoteHandler quoteHandler = getQuoteHandler(file, editor);
+    QuoteHandler quoteHandler = getQuoteHandler(file, editor);
     if (quoteHandler == null) return false;
 
     int offset = editor.getCaretModel().getOffset();
 
-    final Document document = editor.getDocument();
+    Document document = editor.getDocument();
     CharSequence chars = document.getCharsSequence();
     int length = document.getTextLength();
     if (isTypingEscapeQuote(editor, quoteHandler, offset)) return false;
@@ -703,14 +703,14 @@ public final class TypedHandler extends TypedActionHandlerBase {
   }
 
   public static void indentBrace(@NotNull Project project, @NotNull Editor editor, char braceChar) {
-    final int offset = editor.getCaretModel().getOffset() - 1;
-    final Document document = editor.getDocument();
+    int offset = editor.getCaretModel().getOffset() - 1;
+    Document document = editor.getDocument();
     CharSequence chars = document.getCharsSequence();
     if (offset < 0 || chars.charAt(offset) != braceChar) return;
 
     int spaceStart = CharArrayUtil.shiftBackward(chars, offset - 1, " \t");
     if (spaceStart < 0 || chars.charAt(spaceStart) == '\n' || chars.charAt(spaceStart) == '\r') {
-      final PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(document);
+      PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(document);
       if (file == null || !file.isWritable()) {
         return;
       }
@@ -718,10 +718,10 @@ public final class TypedHandler extends TypedActionHandlerBase {
       EditorHighlighter highlighter = editor.getHighlighter();
       HighlighterIterator iterator = highlighter.createIterator(offset);
 
-      final FileType fileType = file.getFileType();
+      FileType fileType = file.getFileType();
       BraceMatcher braceMatcher = BraceMatchingUtil.getBraceMatcher(fileType, iterator);
       boolean rBraceToken = braceMatcher.isRBraceToken(iterator, chars, fileType);
-      final boolean isBrace = braceMatcher.isLBraceToken(iterator, chars, fileType) || rBraceToken;
+      boolean isBrace = braceMatcher.isLBraceToken(iterator, chars, fileType) || rBraceToken;
       int lBraceOffset = -1;
 
       if (CodeInsightSettings.getInstance().REFORMAT_BLOCK_ON_RBRACE &&
@@ -738,9 +738,9 @@ public final class TypedHandler extends TypedActionHandlerBase {
         DefaultRawTypedHandler handler = ((TypedActionImpl)TypedAction.getInstance()).getDefaultRawTypedHandler();
         handler.beginUndoablePostProcessing();
 
-        final int finalLBraceOffset = lBraceOffset;
+        int finalLBraceOffset = lBraceOffset;
         ApplicationManager.getApplication().runWriteAction(() -> {
-          final TypingActionsExtension extension = TypingActionsExtension.findForContext(project, editor);
+          TypingActionsExtension extension = TypingActionsExtension.findForContext(project, editor);
           try {
             RangeMarker marker = document.createRangeMarker(offset, offset + 1);
             if (finalLBraceOffset != -1) {
