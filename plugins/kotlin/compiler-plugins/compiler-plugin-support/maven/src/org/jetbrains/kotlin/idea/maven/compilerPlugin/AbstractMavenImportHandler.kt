@@ -11,10 +11,9 @@ import org.jetbrains.kotlin.idea.compiler.configuration.KotlinPluginLayoutServic
 import org.jetbrains.kotlin.idea.compilerPlugin.CompilerPluginSetup
 import org.jetbrains.kotlin.idea.compilerPlugin.CompilerPluginSetup.PluginOption
 import org.jetbrains.kotlin.idea.compilerPlugin.modifyCompilerArgumentsForPluginWithFacetSettings
-import org.jetbrains.kotlin.idea.maven.KotlinMavenImporter.Companion.KOTLIN_PLUGIN_ARTIFACT_ID
-import org.jetbrains.kotlin.idea.maven.KotlinMavenImporter.Companion.KOTLIN_PLUGIN_GROUP_ID
 import org.jetbrains.kotlin.idea.maven.MavenProjectImportHandler
 import java.nio.file.Path
+import org.jetbrains.kotlin.idea.maven.findKotlinPlugin
 
 abstract class AbstractMavenImportHandler(protected val project: Project) : MavenProjectImportHandler {
     abstract val compilerPluginId: String
@@ -37,9 +36,7 @@ abstract class AbstractMavenImportHandler(protected val project: Project) : Mave
     ): List<PluginOption>?
 
     private fun getPluginSetup(mavenProject: MavenProject): CompilerPluginSetup? {
-        val kotlinPlugin = mavenProject.plugins.firstOrNull {
-            it.groupId == KOTLIN_PLUGIN_GROUP_ID && it.artifactId == KOTLIN_PLUGIN_ARTIFACT_ID
-        } ?: return null
+        val kotlinPlugin = mavenProject.findKotlinPlugin() ?: return null
 
         val configuration = kotlinPlugin.configurationElement ?: return null
 

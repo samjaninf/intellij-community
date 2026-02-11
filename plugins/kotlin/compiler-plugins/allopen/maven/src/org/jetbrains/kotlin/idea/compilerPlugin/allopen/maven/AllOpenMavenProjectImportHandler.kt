@@ -3,6 +3,7 @@
 package org.jetbrains.kotlin.idea.compilerPlugin.allopen.maven
 
 import com.intellij.openapi.project.Project
+import com.intellij.util.text.VersionComparatorUtil
 import org.jetbrains.idea.maven.project.MavenProject
 import org.jetbrains.kotlin.allopen.AllOpenPluginNames.ANNOTATION_OPTION_NAME
 import org.jetbrains.kotlin.allopen.AllOpenPluginNames.PLUGIN_ID
@@ -11,6 +12,7 @@ import org.jetbrains.kotlin.idea.base.plugin.artifacts.KotlinArtifacts
 import org.jetbrains.kotlin.idea.compilerPlugin.CompilerPluginSetup.PluginOption
 import org.jetbrains.kotlin.idea.maven.compilerPlugin.AbstractMavenImportHandler
 import java.nio.file.Path
+import org.jetbrains.kotlin.idea.maven.getKotlinPlugin
 
 class AllOpenMavenProjectImportHandler(project: Project) : AbstractMavenImportHandler(project) {
     override val compilerPluginId: String = PLUGIN_ID
@@ -23,7 +25,10 @@ class AllOpenMavenProjectImportHandler(project: Project) : AbstractMavenImportHa
         enabledCompilerPlugins: List<String>,
         compilerPluginOptions: List<String>
     ): List<PluginOption>? {
-        if ("all-open" !in enabledCompilerPlugins && "spring" !in enabledCompilerPlugins) {
+        if ("all-open" !in enabledCompilerPlugins &&
+            "spring" !in enabledCompilerPlugins &&
+            !mavenProject.isJpaWithAllOpenEnabled(enabledCompilerPlugins)
+        ) {
             return null
         }
 
@@ -41,6 +46,15 @@ class AllOpenMavenProjectImportHandler(project: Project) : AbstractMavenImportHa
         })
 
         return annotations.map { PluginOption(ANNOTATION_OPTION_NAME, it) }
+    }
+
+    private fun MavenProject.isJpaWithAllOpenEnabled(
+        enabledCompilerPlugins: List<String>
+    ): Boolean {
+        val kotlinPluginVersion = getKotlinPlugin().version
+
+        return "jpa" in enabledCompilerPlugins &&
+                VersionComparatorUtil.compare(kotlinPluginVersion, "2.3.20-Beta2") >= 0
     }
 }
 

@@ -3921,4 +3921,13 @@ abstract class AbstractKotlinMavenImporterTest(private val createStdProjectFolde
             }
         }
     }
+
+    object TestVersions {
+        object Kotlin {
+            const val KOTLIN_2_3_10 = "2.3.10"
+            const val KOTLIN_2_3_20 = "2.3.20-Beta2"
+
+            const val LATEST_STABLE = "2.3.10"
+        }
+    }
 }
