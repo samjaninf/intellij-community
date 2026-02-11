@@ -332,7 +332,7 @@ class InstalledPluginsTab extends PluginsTab {
     panel.setSelectionListener(selectionListener);
     registerCopyProvider(panel);
 
-    myInstalledSearchPanel = new InstalledTabSearchResultPanel(myCoroutineScope, installedController, panel, selectionListener);
+    myInstalledSearchPanel = new InstalledTabSearchResultPanel(myCoroutineScope, installedController, panel, selectionListener, mySearchInMarketplaceTabHandler);
     return myInstalledSearchPanel;
   }
 
@@ -611,13 +611,16 @@ class InstalledPluginsTab extends PluginsTab {
 
   private class InstalledTabSearchResultPanel extends SearchResultPanel {
     private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
+    private final @Nullable Consumer<String> mySearchInMarketplaceTabHandler;
 
     InstalledTabSearchResultPanel(CoroutineScope coroutineScope,
                                   SearchUpDownPopupController installedController,
                                   PluginsGroupComponentWithProgress panel,
-                                  @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
+                                  @NotNull Consumer<? super PluginsGroupComponent> selectionListener,
+                                  @Nullable Consumer<String> searchInMarketplaceTabHandler) {
       super(coroutineScope, installedController, panel, false);
       mySelectionListener = selectionListener;
+      mySearchInMarketplaceTabHandler = searchInMarketplaceTabHandler;
     }
 
     @Override
