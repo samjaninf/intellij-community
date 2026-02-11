@@ -5,7 +5,6 @@ import com.intellij.notebooks.visualization.ui.providers.bounds.JupyterBoundsCha
 import com.intellij.notebooks.visualization.useG2D
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.impl.EditorImpl
-import com.intellij.openapi.util.Key
 import java.awt.AWTEvent
 import java.awt.AWTEventMulticaster
 import java.awt.BorderLayout
@@ -68,15 +67,15 @@ class EditorComponentWrapper private constructor(private val editor: EditorImpl)
     override fun installUI(c: JComponent) {
       super.installUI(c)
       val layer = c as JLayer<*>
-      layer.setLayerEventMask(AWTEvent.MOUSE_EVENT_MASK or
-                                AWTEvent.MOUSE_MOTION_EVENT_MASK or
-                                AWTEvent.MOUSE_WHEEL_EVENT_MASK)
+      layer.layerEventMask = AWTEvent.MOUSE_EVENT_MASK or
+        AWTEvent.MOUSE_MOTION_EVENT_MASK or
+        AWTEvent.MOUSE_WHEEL_EVENT_MASK
     }
 
     override fun uninstallUI(c: JComponent) {
       super.uninstallUI(c)
       val layer = c as JLayer<*>
-      layer.setLayerEventMask(0)
+      layer.layerEventMask = 0
     }
 
     override fun paint(g: Graphics, c: JComponent) {
@@ -169,15 +168,12 @@ class EditorComponentWrapper private constructor(private val editor: EditorImpl)
   }
 
   companion object {
-    private val EDITOR_COMPONENT_WRAPPER = Key<EditorComponentWrapper>("EDITOR_COMPONENT_WRAPPER")
-
     fun install(editor: EditorImpl): EditorComponentWrapper {
       val wrapper = EditorComponentWrapper(editor)
       editor.scrollPane.viewport.view = wrapper
-      editor.putUserData(EDITOR_COMPONENT_WRAPPER, wrapper)
       return wrapper
     }
 
-    fun get(editor: Editor): EditorComponentWrapper = editor.getUserData(EDITOR_COMPONENT_WRAPPER)!!
+    fun get(editor: Editor): EditorComponentWrapper = (editor as EditorImpl).scrollPane.viewport.view as EditorComponentWrapper
   }
 }

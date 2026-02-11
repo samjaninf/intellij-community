@@ -8,6 +8,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.BulkAwareDocumentListener
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
@@ -45,6 +46,10 @@ class NotebookViewUpdater private constructor(val editor: EditorImpl) : Disposab
       }
     }, this)
     UPDATE_MANAGER_KEY.set(editor, this)
+  }
+
+  override fun dispose() {
+    changedListener = null
   }
 
   fun <T> update(force: Boolean = false, keepScrollingPositon: Boolean = true, block: (updateCtx: UpdateContext) -> T): T {
@@ -97,13 +102,12 @@ class NotebookViewUpdater private constructor(val editor: EditorImpl) : Disposab
     changedListener?.inlaysChanged()
   }
 
-  override fun dispose(): Unit = Unit
-
   companion object {
     fun install(editor: EditorImpl) {
       val notebookViewUpdater = NotebookViewUpdater(editor)
       Disposer.register(editor.disposable, notebookViewUpdater)
       editor.putUserData(UPDATE_MANAGER_KEY, notebookViewUpdater)
+      EditorUtil.disposeWithEditor(editor, notebookViewUpdater)
     }
 
     fun getOrNull(editor: Editor): NotebookViewUpdater? = editor.getUserData(UPDATE_MANAGER_KEY)
