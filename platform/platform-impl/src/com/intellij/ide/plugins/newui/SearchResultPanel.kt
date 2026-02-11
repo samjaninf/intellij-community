@@ -24,15 +24,14 @@ import javax.swing.ScrollPaneConstants
 @ApiStatus.Internal
 abstract class SearchResultPanel(
   @JvmField val controller: SearchPopupController,
-  @JvmField val myPanel: PluginsGroupComponentWithProgress,
-  isMarketplace: Boolean,
+  @JvmField protected val myPanel: PluginsGroupComponentWithProgress,
+  private val isMarketplace: Boolean,
 ) {
   private var myVerticalScrollBar: JScrollBar? = null
   var group: PluginsGroup
     private set
   private var myQuery = ""
   private var myRunQuery: AtomicBoolean? = null
-  private val isMarketplace: Boolean
   private var isLoading = false
   private var myAnnounceSearchResultsAlarm: SingleAlarm? = null
 
@@ -40,14 +39,11 @@ abstract class SearchResultPanel(
 
   init {
     myPanel.getAccessibleContext().setAccessibleName(IdeBundle.message("title.search.results"))
-    this.isMarketplace = isMarketplace
-    this.group = PluginsGroup(
+    group = PluginsGroup(
       IdeBundle.message("title.search.results"),
       if (isMarketplace) PluginsGroupType.SEARCH else PluginsGroupType.SEARCH_INSTALLED
     )
-
     setEmptyText("")
-
     loading(false)
   }
 
