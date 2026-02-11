@@ -172,3 +172,9 @@ common --host_per_file_copt=external/.*grpc.*@--GRPC_WAS_NOT_SUPPOSED_TO_BE_BUIL
 
 # need to use Python from rules_python in rules_pkg in pkg_zip target
 common --@rules_python//python/config_settings:bootstrap_impl=script
+
+# Retry downloads up to 5 times
+common --experimental_repository_downloader_retries=5
+
+# Scale HTTP timeouts by 2x
+common --http_timeout_scaling=2.0
