@@ -233,7 +233,7 @@
             descriptionKey="inlay.kotlin.parameters.hints">
       <option bundle="messages.KotlinBundle"
               optionId="hints.parameters.context"
-              enabledByDefault="true"
+              enabledByDefault="false"
               nameKey="hints.settings.context.parameters"
               descriptionKey="inlay.kotlin.parameters.hints.context"/>
       <option bundle="messages.KotlinBundle"
@@ -301,6 +301,7 @@
 
     <codeInsight.inlayProvider
             language="kotlin"
+            isEnabledByDefault="false"
             implementationClass="org.jetbrains.kotlin.idea.k2.codeinsight.hints.compilerPlugins.declaration.KtCompilerPluginGeneratedDeclarationsInlayHintsProvider"
             id="kotlin.compiler.plugins.declarations"/>
 
