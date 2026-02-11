@@ -25,6 +25,9 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.PathUtil
 
 abstract class AbstractGradleKotlinCompilerPluginProjectConfigurator : KotlinCompilerPluginProjectConfigurator {
+    override fun isApplicable(module: Module): Boolean =
+        module.project.getTopLevelBuildScriptPsiFile() != null
+
     override fun configureModule(module: Module, configurationResultBuilder: ConfigurationResultBuilder) {
         val project = module.project
         val topLevelFile = project.getTopLevelBuildScriptPsiFile() ?: return
