@@ -88,7 +88,7 @@ internal class ModuleBasedPluginXmlPathResolver(
       val inputStream = module.moduleDescriptor.readFile(path)
       if (inputStream != null) {
         val bytes = inputStream.use { it.readBytes() }
-        return LoadedXIncludeReference(bytes, module.moduleDescriptor.moduleId.stringId)
+        return LoadedXIncludeReference(bytes, module.moduleDescriptor.moduleId.presentableName)
       }
     }
     return null

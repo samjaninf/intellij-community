@@ -27,7 +27,7 @@ fun loadPluginModules(
     addedModules.add(mainModule.moduleId.stringId)
     resourceFileResolver.readResourceFile(mainModule.moduleId, PLUGIN_XML_PATH).use { inputStream ->
       if (inputStream == null) {
-        throw MalformedRepositoryException("$PLUGIN_XML_PATH is not found in '${mainModule.moduleId.stringId}' module in $repository " +
+        throw MalformedRepositoryException("$PLUGIN_XML_PATH is not found in '${mainModule.moduleId.presentableName}' module in $repository " +
                                            "using $resourceFileResolver; resources roots: ${mainModule.resourceRootPaths}")
       }
       val reader = XMLInputFactory.newDefaultFactory().createXMLStreamReader(inputStream)
@@ -76,9 +76,9 @@ fun loadPluginModules(
     return modules
   }
   catch (e: IOException) {
-    throw MalformedRepositoryException("Failed to load included modules for ${mainModule.moduleId.stringId}", e)
+    throw MalformedRepositoryException("Failed to load included modules for ${mainModule.moduleId.presentableName}", e)
   }
   catch (e: XMLStreamException) {
-    throw MalformedRepositoryException("Failed to load included modules for ${mainModule.moduleId.stringId}", e)
+    throw MalformedRepositoryException("Failed to load included modules for ${mainModule.moduleId.presentableName}", e)
   }
 }

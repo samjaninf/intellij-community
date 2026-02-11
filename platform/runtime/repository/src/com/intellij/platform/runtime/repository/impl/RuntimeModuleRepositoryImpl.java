@@ -110,13 +110,13 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
     List<RuntimeModuleId> failedDependencyPath = result.getFailedDependencyPath();
     String message;
     if (failedDependencyPath.size() == 1) {
-      message = "Cannot find module '" + failedDependencyPath.get(0).getStringId() + "'";
+      message = "Cannot find module '" + failedDependencyPath.get(0).getPresentableName() + "'";
     }
     else {
       List<RuntimeModuleId> reversed = new ArrayList<>(failedDependencyPath.subList(0, failedDependencyPath.size() - 1));
       Collections.reverse(reversed);
-      message = "Cannot resolve module '" + moduleId.getStringId() + "': module '" + failedDependencyPath.get(failedDependencyPath.size() - 1).getStringId() + "' (" +
-                reversed.stream().map(id -> " <- '" + id.getStringId() + "'").collect(Collectors.joining()).trim() + ") is not found";
+      message = "Cannot resolve module '" + moduleId.getPresentableName() + "': module '" + failedDependencyPath.get(failedDependencyPath.size() - 1).getStringId() + "' (" +
+                reversed.stream().map(id -> " <- '" + id.getPresentableName() + "'").collect(Collectors.joining()).trim() + ") is not found";
     }
     throw new MalformedRepositoryException(message);
   }
@@ -136,7 +136,7 @@ public class RuntimeModuleRepositoryImpl implements RuntimeModuleRepository {
         }
       }
       if (rawDescriptor == null) {
-        throw new MalformedRepositoryException("Cannot find module '" + moduleId.getStringId() + "'");
+        throw new MalformedRepositoryException("Cannot find module '" + moduleId.getPresentableName() + "'");
       }
     }
     //todo improve this to reuse the computed paths if the module is resolved later

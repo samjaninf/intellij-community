@@ -27,6 +27,6 @@ public final class IncludedRuntimeModuleImpl implements IncludedRuntimeModule {
 
   @Override
   public String toString() {
-    return "IncludedRuntimeModule{moduleId=" + myModuleDescriptor.getModuleId().getStringId() + '}';
+    return "IncludedRuntimeModule{moduleId=" + myModuleDescriptor.getModuleId().getPresentableName() + '}';
   }
 }

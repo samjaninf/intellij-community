@@ -161,8 +161,8 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
     productModules.notLoadedBundledPluginModules.forEach { (notLoadedId, failedDependencyPath) ->
       // todo: convert this to an error after fixing the problem with intellij.performanceTesting.async plugin: IJPL-186414
       logger<ModuleBasedProductLoadingStrategy>().warn("""
-        |Bundled plugin module '${notLoadedId.stringId}' couldn't be loaded because of missing dependency:
-        |${failedDependencyPath.joinToString(" -> ") { it.stringId }}
+        |Bundled plugin module '${notLoadedId.presentableName}' couldn't be loaded because of missing dependency:
+        |${failedDependencyPath.joinToString(" -> ") { it.presentableName }}
         |""".trimMargin())
     }
 
@@ -230,7 +230,7 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
       return dataLoader.load(path = PluginManagerCore.PLUGIN_XML_PATH, pluginDescriptorSourceOnly = true)
     }
     catch (e: Throwable) {
-      logger<ModuleBasedProductLoadingStrategy>().warn("Failed to load ${PluginManagerCore.PLUGIN_XML_PATH} from '${pluginModuleGroup.mainModule.moduleId.stringId}' module: $e", e)
+      logger<ModuleBasedProductLoadingStrategy>().warn("Failed to load ${PluginManagerCore.PLUGIN_XML_PATH} from '${pluginModuleGroup.mainModule.moduleId.presentableName}' module: $e", e)
       return null
     }
     finally {
@@ -337,7 +337,7 @@ internal class ModuleBasedProductLoadingStrategy(internal val moduleRepository: 
     val resourceRoots = pluginModuleGroup.mainModule.resourceRootPaths
     if (resourceRoots.isEmpty()) {
       thisLogger().warn(
-        "Main plugin module must have at least one resource root, so '${pluginModuleGroup.mainModule.moduleId.stringId}' won't be loaded"
+        "Main plugin module must have at least one resource root, so '${pluginModuleGroup.mainModule.moduleId.presentableName}' won't be loaded"
       )
       return null
     }

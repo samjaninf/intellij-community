@@ -27,7 +27,14 @@ public final class RuntimeModuleId {
   }
 
   /**
-   * Creates ID from a raw string representation as it's written in the runtime module repository. 
+   * Returns a human-readable name of the module. It can be used for debugging and logging purposes only.
+   */
+  public @NotNull String getPresentableName() {
+    return myStringId;
+  }
+
+  /**
+   * Creates ID from a raw string representation as it's written in the runtime module repository.
    * This method is supposed to be used to generate and transform the module repository only, other code should use other methods.
    */
   @ApiStatus.Internal

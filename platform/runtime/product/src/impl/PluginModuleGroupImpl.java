@@ -90,6 +90,6 @@ public final class PluginModuleGroupImpl implements PluginModuleGroup {
 
   @Override
   public String toString() {
-    return "PluginModuleGroup{mainModule=" + myMainModule.getModuleId().getStringId() + "}";
+    return "PluginModuleGroup{mainModule=" + myMainModule.getModuleId().getPresentableName() + "}";
   }
 }
