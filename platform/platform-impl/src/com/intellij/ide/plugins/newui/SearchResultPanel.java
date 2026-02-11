@@ -29,9 +29,8 @@ public abstract class SearchResultPanel {
   protected final PluginsGroupComponent myPanel;
   private JScrollBar myVerticalScrollBar;
   private PluginsGroup myGroup;
-  private String myQuery;
+  private @NotNull String myQuery = "";
   private AtomicBoolean myRunQuery;
-  private boolean isQueryEmpty = true;
   private boolean isMarketplace;
   private boolean isLoading;
   private SingleAlarm myAnnounceSearchResultsAlarm;
@@ -84,11 +83,10 @@ public abstract class SearchResultPanel {
   }
 
   public boolean isQueryEmpty() {
-    return isQueryEmpty;
+    return myQuery.isEmpty();
   }
 
   public void setEmptyQuery() {
-    isQueryEmpty = true;
     myQuery = "";
   }
 
@@ -102,7 +100,6 @@ public abstract class SearchResultPanel {
     setEmptyText(query);
 
     if (query.equals(myQuery)) {
-      isQueryEmpty = query.isEmpty();
       return;
     }
 
@@ -115,7 +112,7 @@ public abstract class SearchResultPanel {
     removeGroup();
     myQuery = query;
 
-    if (!(isQueryEmpty = query.isEmpty())) {
+    if (!isQueryEmpty()) {
       handleQuery(query);
     }
   }
