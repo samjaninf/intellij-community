@@ -43,6 +43,8 @@ import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.propertyVisitor
 import org.jetbrains.kotlin.psi.psiUtil.allChildren
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
+import org.jetbrains.kotlin.psi.psiUtil.isAbstract
 import org.jetbrains.kotlin.psi.psiUtil.isPrivate
 
 /**
@@ -133,7 +135,7 @@ internal class ConvertToExplicitBackingFieldsInspection :
 
     override fun isApplicableByPsi(element: KtProperty): Boolean {
         if (element.isVar && element.setter != null) return false
-        if (element.hasModifier(KtTokens.OVERRIDE_KEYWORD) && !element.hasModifier(KtTokens.FINAL_KEYWORD)) return false
+        if (element.isMember && element.containingClass()?.isAbstract() == true && !element.hasModifier(KtTokens.FINAL_KEYWORD)) return false
         return !element.isPrivate() && element.getter != null
     }
 
