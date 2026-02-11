@@ -19,7 +19,7 @@ open class WhatsNewMultipageStartIdProvider(val project: Project) {
   }
 
   private fun String.checkSupported(multipageIds: List<String>): String {
-    if (this in multipageIds) return this
+    if (multipageIds.isEmpty() || this in multipageIds) return this
     else {
       logger.warn("What's new multipage id \"$this\" is not supported. Supported ids: ${multipageIds.joinToString()}")
       return this
