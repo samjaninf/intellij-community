@@ -377,6 +377,8 @@ com.intellij.navigation.NavigationItem
 com.intellij.navigation.PsiElementNavigationItem
 - com.intellij.navigation.NavigationItem
 - a:getTargetElement():com.intellij.psi.PsiElement
+f:com.intellij.openapi.application.ActionsKt
+- sf:runReadActionBlocking(kotlin.jvm.functions.Function0):java.lang.Object
 com.intellij.openapi.application.AppUIExecutor
 - com.intellij.openapi.application.BaseExpirableExecutor
 - a:inSmartMode(com.intellij.openapi.project.Project):com.intellij.openapi.application.AppUIExecutor
@@ -480,6 +482,10 @@ com.intellij.openapi.application.NonBlockingReadAction
 com.intellij.openapi.application.PathMacroContributor
 - forceRegisterPathMacros(java.util.Map):V
 - a:registerPathMacros(java.util.Map,java.util.Map):V
+a:com.intellij.openapi.application.ReadAction
+- s:computeBlocking(com.intellij.openapi.util.ThrowableComputable):java.lang.Object
+- s:computeCancellable(com.intellij.openapi.util.ThrowableComputable):java.lang.Object
+- s:runBlocking(com.intellij.util.ThrowableRunnable):V
 com.intellij.openapi.application.ReadActionListener
 - java.util.EventListener
 - afterReadActionFinished(java.lang.Class):V

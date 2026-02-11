@@ -216,8 +216,6 @@ f:com.intellij.openapi.application.CoroutinesKt
 - *sf:readAndEdtWriteActionUndispatched(kotlin.jvm.functions.Function1,kotlin.coroutines.Continuation):java.lang.Object
 - *sf:writeAction(kotlin.jvm.functions.Function0,kotlin.coroutines.Continuation):java.lang.Object
 - *sf:writeIntentReadAction(kotlin.jvm.functions.Function0,kotlin.coroutines.Continuation):java.lang.Object
-a:com.intellij.openapi.application.ReadAction
-- *s:computeCancellable(com.intellij.openapi.util.ThrowableComputable):java.lang.Object
 *a:com.intellij.openapi.application.WriteIntentReadAction
 - <init>():V
 - *s:compute(com.intellij.openapi.util.Computable):java.lang.Object
