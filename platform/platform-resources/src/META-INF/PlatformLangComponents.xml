@@ -5,8 +5,6 @@
     <!--suppress PluginXmlDynamicPlugin -->
     <extensionPoint name="registerToolWindowTaskProvider" interface="com.intellij.toolWindow.RegisterToolWindowTaskProvider"/>
     <extensionPoint qualifiedName="com.intellij.diagnostic.freezeNotifier" interface="com.intellij.diagnostic.FreezeNotifier"/>
-    <extensionPoint name="noProjectStateHandler" interface="com.intellij.openapi.wm.ex.NoProjectStateHandler"/>
-    <extensionPoint name="welcomeScreenProjectProvider" interface="com.intellij.openapi.wm.ex.WelcomeScreenProjectProvider"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
@@ -218,8 +216,6 @@
                     open="true"/>
     <applicationService serviceInterface="com.intellij.openapi.wm.ex.WelcomeScreenProjectSupport"
                         serviceImplementation="com.intellij.openapi.wm.ex.WelcomeScreenProjectSupportImpl"/>
-
-    <projectFrameCapabilitiesProvider implementation="com.intellij.openapi.wm.ex.WelcomeScreenProjectFrameCapabilitiesProvider"/>
 
     <!--XNext-->
     <applicationService serviceInterface="com.intellij.openapi.application.impl.InternalUICustomization"

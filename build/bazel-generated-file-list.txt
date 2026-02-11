@@ -854,7 +854,7 @@ platform/vcs-tests
 platform/warmup
 platform/warmup/performanceTesting
 platform/welcome-screen
-platform/welcome-screen-api
+platform/welcome-screen-impl
 platform/whatsNew
 platform/workspace/jps
 platform/workspace/jps/tests

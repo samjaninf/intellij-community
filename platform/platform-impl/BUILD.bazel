@@ -39,7 +39,7 @@ jvm_library(
     "//platform/credential-store",
     "//platform/editor-ui-api:editor-ui",
     "//platform/platform-api:ide",
-    "//platform/welcome-screen:welcomeScreen-impl",
+    "//platform/welcome-screen-impl:welcomeScreen-impl",
     "//libraries/oro-matcher",
     "//jps/model-api:model",
     "//jps/model-serialization",
@@ -162,7 +162,6 @@ jvm_library(
   ],
   exports = [
     "//platform/platform-api:ide",
-    "//platform/welcome-screen:welcomeScreen-impl",
     "@lib//:kotlin-stdlib",
     "//platform/util:util-ui",
   ],
@@ -203,7 +202,7 @@ jvm_library(
     "//platform/credential-store",
     "//platform/editor-ui-api:editor-ui",
     "//platform/platform-api:ide",
-    "//platform/welcome-screen:welcomeScreen-impl",
+    "//platform/welcome-screen-impl:welcomeScreen-impl",
     "//libraries/oro-matcher",
     "//jps/model-api:model",
     "//jps/model-serialization",
@@ -335,7 +334,6 @@ jvm_library(
   ],
   exports = [
     "//platform/platform-api:ide",
-    "//platform/welcome-screen:welcomeScreen-impl",
     "@lib//:kotlin-stdlib",
     "//platform/util:util-ui",
   ]

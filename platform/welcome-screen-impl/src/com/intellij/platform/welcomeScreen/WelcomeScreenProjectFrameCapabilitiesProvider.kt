@@ -1,7 +1,11 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.openapi.wm.ex
+package com.intellij.platform.welcomeScreen
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesProvider
+import com.intellij.openapi.wm.ex.ProjectFrameCapability
+import com.intellij.openapi.wm.ex.ProjectFrameUiPolicy
+import com.intellij.openapi.wm.ex.WelcomeScreenProjectProvider
 import java.util.EnumSet
 
 internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapabilitiesProvider {
@@ -12,11 +16,11 @@ internal class WelcomeScreenProjectFrameCapabilitiesProvider : ProjectFrameCapab
    * providers that consume [ProjectFrameCapability.WELCOME_EXPERIENCE].
    */
   override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
-    if (!WelcomeScreenProjectProvider.isWelcomeScreenProject(project)) {
+    if (!WelcomeScreenProjectProvider.Companion.isWelcomeScreenProject(project)) {
       return emptySet()
     }
 
-    if (WelcomeScreenProjectProvider.isForceDisabledFileColors()) {
+    if (WelcomeScreenProjectProvider.Companion.isForceDisabledFileColors()) {
       return WELCOME_CAPABILITIES_WITH_DISABLED_FILE_COLORS
     }
     else {

@@ -25,7 +25,7 @@ private var cachedProjectsBasePath: String? = null
 
 @Internal
 fun getWelcomeScreenProjectProvider(): WelcomeScreenProjectProvider? {
-  val providers = EP_NAME.extensionList
+  val providers = EP_NAME.extensionsIfPointIsRegistered
   if (providers.isEmpty()) {
     return null
   }

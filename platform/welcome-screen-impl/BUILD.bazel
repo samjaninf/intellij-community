@@ -22,7 +22,7 @@ jvm_library(
     "//platform/ide-core",
     "//platform/projectModel-api:projectModel",
     "//platform/project-frame",
-    "//platform/welcome-screen-api:welcomeScreen",
+    "//platform/welcome-screen",
     "//platform/util",
     "//platform/util:util-ui",
   ]

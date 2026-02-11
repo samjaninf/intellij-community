@@ -205,6 +205,7 @@ jvm_library(
     "//platform/indexing-api:indexing",
     "//jps/model-api:model",
     "//platform/lang-core",
+    "//platform/welcome-screen-impl:welcomeScreen-impl",
     "//platform/lang-api:lang",
     "//platform/macro",
     "//platform/projectModel-api:projectModel",

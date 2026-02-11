@@ -51,7 +51,7 @@ jvm_library(
     "//platform/remote-core",
     "//platform/ide-core",
     "//platform/project-frame",
-    "//platform/welcome-screen-api:welcomeScreen",
+    "//platform/welcome-screen",
     "//platform/util/text-matching",
     "//platform/diagnostic",
     "//libraries/jackson/jackson",
@@ -67,7 +67,7 @@ jvm_library(
     "//platform/util:util-ui",
     "//platform/ide-core",
     "//platform/project-frame",
-    "//platform/welcome-screen-api:welcomeScreen",
+    "//platform/welcome-screen",
     "//platform/progress/shared:ide-progress",
   ]
 )

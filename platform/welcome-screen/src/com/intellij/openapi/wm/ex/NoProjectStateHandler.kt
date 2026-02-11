@@ -9,7 +9,7 @@ private val EP_NAME: ExtensionPointName<NoProjectStateHandler> = ExtensionPointN
 
 @Internal
 fun findNoProjectStateHandler(): (suspend () -> Project?)? {
-  return EP_NAME.extensionList.firstNotNullOfOrNull { it.createHandler() }
+  return EP_NAME.extensionsIfPointIsRegistered.firstNotNullOfOrNull { it.createHandler() }
 }
 
 @Internal
