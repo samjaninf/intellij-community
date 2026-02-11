@@ -309,9 +309,9 @@ public class LocalFileSystemImpl extends LocalFileSystemBase implements Disposab
 
   @Override
   public byte @NotNull [] contentsToByteArray(@NotNull VirtualFile file) throws IOException {
-    if (SystemInfo.isUnix && file.is(VFileProperty.SPECIAL)) { // avoid opening FIFO files
-      throw new NoSuchFileException(file.getPath(), null, "Not a file");
-    }
+    //if (SystemInfo.isUnix && file.is(VFileProperty.SPECIAL)) { // avoid opening FIFO files
+    //  throw new NoSuchFileException(file.getPath(), null, "Not a file");
+    //}
     var result = myContentGetter.accessDiskWithCheckCanceled(file);
     if (result instanceof IOException e) throw e;
     return (byte[])result;
@@ -416,8 +416,9 @@ public class LocalFileSystemImpl extends LocalFileSystemBase implements Disposab
 
   private static Object readContent(VirtualFile file) {
     try {
-      var nioFile = Path.of(toIoPath(file));
-      return readIfNotTooLarge(nioFile);
+      var nioPath = Path.of(toIoPath(file));
+      checkNotSpecialFile(file, nioPath);
+      return readIfNotTooLarge(nioPath);
     }
     catch (IOException e) {
       return e;

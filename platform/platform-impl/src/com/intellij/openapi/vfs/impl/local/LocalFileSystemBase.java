@@ -112,16 +112,37 @@ public abstract class LocalFileSystemBase extends LocalFileSystem {
     return file.getFileSystem() == this ? Path.of(toIoPath(file)) : null;
   }
 
-  private Path convertToNioFileAndCheck(VirtualFile file, boolean assertSlowOp) throws NoSuchFileException {
+  private Path convertToNioFileAndCheck(VirtualFile file, boolean assertSlowOp) throws IOException {
     if (assertSlowOp) { // remove condition when writes are moved to BGT
       SlowOperations.assertSlowOperationsAreAllowed();
     }
-    if (SystemInfo.isUnix && file.is(VFileProperty.SPECIAL)) { // avoid opening FIFO files
-      throw new NoSuchFileException(file.getPath(), null, "Not a file");
-    }
+
     var path = getNioPath(file);
     if (path == null) throw new NoSuchFileException(file.getPath());
+
+    checkNotSpecialFile(file, path);
+
     return path;
+  }
+
+  protected static void checkNotSpecialFile(@NotNull VirtualFile file,
+                                            @NotNull Path path) throws IOException {
+    if (SystemInfo.isUnix) {
+      //IJPL-234326: we don't want to deal with pipes (and symlinks to pipes), because it blocks IO potentially forever.
+      //  Strictly speaking, we want to prohibit only read/write operations, but right now we prohibit all accesses,
+      //  just to be sure -- could be relaxed later.
+      if (file.is(VFileProperty.SPECIAL)) {
+        throw new NoSuchFileException(file.getPath(), null, "Access to special files (fifo?) is prohibited");
+      }
+      if (file.is(VFileProperty.SYMLINK)) {
+        if (Files.exists(path)) {
+          BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class/*_follows_ symlinks*/);
+          if (attributes.isOther()) {
+            throw new NoSuchFileException(file.getPath(), null, "Access to special files (fifo?) is prohibited");
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -435,7 +456,8 @@ public abstract class LocalFileSystemBase extends LocalFileSystem {
   }
 
   @Override
-  public @NotNull OutputStream getOutputStream(@NotNull VirtualFile file, Object requestor, long modStamp, long timeStamp) throws IOException {
+  public @NotNull OutputStream getOutputStream(@NotNull VirtualFile file, Object requestor, long modStamp, long timeStamp)
+    throws IOException {
     var path = convertToNioFileAndCheck(file, false);
     var stream = !SafeWriteRequestor.shouldUseSafeWrite(requestor) ? Files.newOutputStream(path) :
                  requestor instanceof LargeFileWriteRequestor ? new PreemptiveSafeFileOutputStream(path) :

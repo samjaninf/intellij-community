@@ -821,10 +821,31 @@ public class LocalFileSystemTest extends BareTestFixtureTestCase {
 
     assertThatExceptionOfType(NoSuchFileException.class)
       .isThrownBy(() -> file.getInputStream())
-      .withMessageContaining("Not a file");
+      .withMessageContaining("Access to special files");
     assertThatExceptionOfType(NoSuchFileException.class)
       .isThrownBy(() -> file.contentsToByteArray())
-      .withMessageContaining("Not a file");
+      .withMessageContaining("Access to special files");
+  }
+
+  @Test(timeout = 30_000)
+  public void specialFileDoesNotCauseHangs_evenHiddenBehindSymlink() {
+    IoTestUtil.assumeUnix();
+
+    var fifo = tempDir.getRootPath().resolve("test.fifo");
+    var symlinkToFifo = tempDir.getRootPath().resolve("symlink_to_test.fifo");
+    IoTestUtil.createFifo(fifo.toString());
+    IoTestUtil.createSymLink(fifo.toString(), symlinkToFifo.toString());
+    var file = requireNonNull(myFS.refreshAndFindFileByNioFile(symlinkToFifo));
+    assertThat(file.is(VFileProperty.SPECIAL)).isFalse();
+    assertThat(file.is(VFileProperty.SYMLINK)).isTrue();
+    assertThat(file.getLength()).isEqualTo(0);
+
+    assertThatExceptionOfType(NoSuchFileException.class)
+      .isThrownBy(() -> file.getInputStream())
+      .withMessageContaining("Access to special files");
+    assertThatExceptionOfType(NoSuchFileException.class)
+      .isThrownBy(() -> file.contentsToByteArray())
+      .withMessageContaining("Access to special files");
   }
 
   @Test
