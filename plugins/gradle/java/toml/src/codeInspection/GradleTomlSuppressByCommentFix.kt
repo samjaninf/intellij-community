@@ -1,5 +1,5 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gradle.codeInspection.toml
+package com.intellij.gradle.java.toml.codeInspection
 
 import com.intellij.codeInsight.daemon.impl.actions.SuppressByCommentFix
 import com.intellij.openapi.project.Project

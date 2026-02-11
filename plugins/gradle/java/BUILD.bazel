@@ -43,8 +43,6 @@ jvm_library(
     "//java/compiler/openapi:java-compiler",
     "//plugins/groovy",
     "//platform/workspace/storage",
-    "//plugins/toml",
-    "//plugins/toml/core",
     "//java/execution/impl",
     "//platform/lang-impl",
     "//java/openapi:java",

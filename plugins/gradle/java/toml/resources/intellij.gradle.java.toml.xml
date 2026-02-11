@@ -1,6 +1,10 @@
 <idea-plugin>
   <dependencies>
-    <plugin id="org.toml.lang"/>
+    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
+    <plugin id="org.jetbrains.plugins.gradle"/>
+    <module name="intellij.java.psi"/>
+    <module name="intellij.toml.core"/>
+    <!-- endregion -->
   </dependencies>
 
   <extensions defaultExtensionNs="com.intellij">
@@ -21,9 +25,9 @@
                      bundle="messages.GradleInspectionBundle" key="inspection.display.name.unused.version.catalog.entry"
                      groupBundle="messages.GradleInspectionBundle" groupKey="inspection.style"
                      enabledByDefault="true"
-                     implementationClass="org.jetbrains.plugins.gradle.codeInspection.toml.UnusedVersionCatalogEntryInspection"/>
+                     implementationClass="com.intellij.gradle.java.toml.codeInspection.UnusedVersionCatalogEntryInspection"/>
     <lang.inspectionSuppressor language="TOML"
-                               implementationClass="org.jetbrains.plugins.gradle.codeInspection.toml.GradleTomlInspectionSuppressor"/>
+                               implementationClass="com.intellij.gradle.java.toml.codeInspection.GradleTomlInspectionSuppressor"/>
 
 
   </extensions>

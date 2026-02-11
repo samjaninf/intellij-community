@@ -6,6 +6,7 @@
     <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="org.jetbrains.plugins.gradle"/>
     <plugin id="org.toml.lang"/>
+    <module name="intellij.gradle.java.toml"/>
     <!-- endregion -->
   </dependencies>
 
