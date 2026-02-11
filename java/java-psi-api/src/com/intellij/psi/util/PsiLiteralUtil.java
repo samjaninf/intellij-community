@@ -738,11 +738,14 @@ public final class PsiLiteralUtil {
       return null;
     }
 
-    private static int findLineSuffixLength(@NotNull String line, boolean last) {
-      if (last) return 0;
-      int lastIdx = line.length() - 1;
-      for (int i = lastIdx; i >= 0; i--) if (!Character.isWhitespace(line.charAt(i))) return lastIdx - i;
-      return 0;
+    private static int findLineSuffixLength(@NotNull String line) {
+      int end = line.length();
+      while (true) {
+        int offset = parseWhitespaceBackwards(line, end - 1);
+        if (offset < 0) break;
+        end = offset;
+      }
+      return line.length() - end;
     }
 
     private static @Nullable TextBlockModel create(@NotNull String text, int indent) {
