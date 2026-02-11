@@ -65,6 +65,9 @@ public class FormSourceCodeGeneratorFinalFieldsTest extends JavaPsiTestCase {
   public void testTitledBorder() { doTest(); }
   public void testBorderNullTitle() { doTest(); }
   public void testTitleFromBundle() { doTest(); }
+  public void testNoI18nTextProperty() { doTest(); }
+  public void testNoI18nBorderTitle() { doTest(); }
+  public void testNoI18nMixed() { doTest(); }
 
   public void testTitledBorderInternal() {
     PlatformTestUtil.withSystemProperty(ApplicationManagerEx.IS_INTERNAL_PROPERTY, "true", () -> doTest());

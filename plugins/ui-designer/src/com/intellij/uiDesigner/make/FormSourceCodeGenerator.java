@@ -129,6 +129,7 @@ public final class FormSourceCodeGenerator {
   private final ArrayList<FormErrorInfo> myErrors;
   private boolean myNeedLoadLabelText;
   private boolean myNeedLoadButtonText;
+  private boolean myNeedNonNlsComment;
 
   private static final Map<Class<?>, LayoutSourceGenerator> ourComponentLayoutCodeGenerators = new HashMap<>();
   private static final Map<String, LayoutSourceGenerator> ourContainerLayoutCodeGenerators = new HashMap<>();
@@ -1064,6 +1065,9 @@ public final class FormSourceCodeGenerator {
           continue;
         }
         else {
+          if (descriptor.isNoI18n()) {
+            myNeedNonNlsComment = true;
+          }
           value = descriptor.getValue();
         }
       }
@@ -1365,6 +1369,9 @@ public final class FormSourceCodeGenerator {
 
       Object value = e.getValue();
       if (value instanceof StringDescriptor) {
+        if (((StringDescriptor) value).isNoI18n()) {
+          myNeedNonNlsComment = true;
+        }
         push(((StringDescriptor) value).getValue());
       }
       else if (value instanceof Boolean) {
@@ -1494,6 +1501,9 @@ public final class FormSourceCodeGenerator {
       push((String)null);
     }
     else if (descriptor.getValue() != null) {
+      if (descriptor.isNoI18n()) {
+        myNeedNonNlsComment = true;
+      }
       push(descriptor.getValue());
     }
     else {
@@ -1695,7 +1705,12 @@ public final class FormSourceCodeGenerator {
     myIsFirstParameterStack.pop();
 
     if (myIsFirstParameterStack.isEmpty()) {
-      myBuffer.append(";\n");
+      myBuffer.append(';');
+      if (myNeedNonNlsComment) {
+        myBuffer.append(" //NON-NLS");
+        myNeedNonNlsComment = false;
+      }
+      myBuffer.append('\n');
     }
   }
 
