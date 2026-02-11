@@ -22,12 +22,14 @@ internal data class AgentSessionThread(
   @JvmField val archived: Boolean,
   @JvmField val provider: AgentSessionProvider = AgentSessionProvider.CODEX,
   @JvmField val subAgents: List<AgentSubAgent> = emptyList(),
+  @JvmField val originBranch: String? = null,
 )
 
 @Immutable
-internal data class AgentProjectSessions(
+internal data class AgentWorktree(
   @JvmField val path: String,
   @JvmField val name: String,
+  @JvmField val branch: String?,
   @JvmField val isOpen: Boolean,
   @JvmField val threads: List<AgentSessionThread> = emptyList(),
   @JvmField val isLoading: Boolean = false,
@@ -35,7 +37,22 @@ internal data class AgentProjectSessions(
   @JvmField val errorMessage: String? = null,
 )
 
+@Immutable
+internal data class AgentProjectSessions(
+  @JvmField val path: String,
+  @JvmField val name: String,
+  @JvmField val branch: String? = null,
+  @JvmField val isOpen: Boolean,
+  @JvmField val threads: List<AgentSessionThread> = emptyList(),
+  @JvmField val isLoading: Boolean = false,
+  @JvmField val hasLoaded: Boolean = false,
+  @JvmField val errorMessage: String? = null,
+  @JvmField val worktrees: List<AgentWorktree> = emptyList(),
+)
+
 internal data class AgentSessionsState(
   @JvmField val projects: List<AgentProjectSessions> = emptyList(),
   @JvmField val lastUpdatedAt: Long? = null,
+  @JvmField val visibleProjectCount: Int = DEFAULT_VISIBLE_PROJECT_COUNT,
+  @JvmField val visibleThreadCounts: Map<String, Int> = emptyMap(),
 )

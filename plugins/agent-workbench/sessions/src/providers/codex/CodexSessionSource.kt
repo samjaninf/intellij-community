@@ -3,6 +3,7 @@ package com.intellij.agent.workbench.sessions.providers.codex
 
 import com.intellij.agent.workbench.codex.common.CodexAppServerClient
 import com.intellij.agent.workbench.codex.common.CodexAppServerException
+import com.intellij.agent.workbench.codex.common.CodexSessionBranchStore
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.agent.workbench.sessions.AgentSessionProvider
 import com.intellij.agent.workbench.sessions.AgentSessionThread
@@ -15,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 
 internal class CodexSessionSource(
   private val coroutineScope: CoroutineScope,
+  private val branchStore: CodexSessionBranchStore = CodexSessionBranchStore(),
 ) : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX) {
   override suspend fun listThreads(path: String, openProject: Project?): List<AgentSessionThread> {
     if (openProject != null) {
@@ -28,18 +30,34 @@ internal class CodexSessionSource(
     if (service == null || !service.hasWorkingDirectory()) {
       throw CodexAppServerException("Project directory is not available")
     }
-    return service.listThreads().map { it.toAgentSessionThread() }
+    val threads = service.listThreads()
+    return enrichWithBranches(threads).map { it.toAgentSessionThread() }
   }
 
   private suspend fun listThreadsFromClosedPath(path: String): List<AgentSessionThread> {
     val workingDirectory = resolveProjectDirectoryFromPath(path)
-      ?: throw CodexAppServerException("Project directory is not available")
+      ?: return emptyList()
     val client = CodexAppServerClient(coroutineScope = coroutineScope, workingDirectory = workingDirectory)
     try {
-      return client.listThreads(archived = false).map { it.toAgentSessionThread() }
+      val threads = client.listThreads(archived = false)
+      return enrichWithBranches(threads).map { it.toAgentSessionThread() }
     }
     finally {
       client.shutdown()
+    }
+  }
+
+  private fun enrichWithBranches(threads: List<CodexThread>): List<CodexThread> {
+    val needBranch = threads.filter { it.gitBranch == null }.map { it.id }.toSet()
+    if (needBranch.isEmpty()) return threads
+    val branches = branchStore.resolveBranches(needBranch)
+    if (branches.isEmpty()) return threads
+    return threads.map { thread ->
+      if (thread.gitBranch == null) {
+        val branch = branches[thread.id]
+        if (branch != null) thread.copy(gitBranch = branch) else thread
+      }
+      else thread
     }
   }
 }
@@ -52,5 +70,6 @@ private fun CodexThread.toAgentSessionThread(): AgentSessionThread {
     archived = archived,
     provider = AgentSessionProvider.CODEX,
     subAgents = subAgents.map { AgentSubAgent(it.id, it.name) },
+    originBranch = gitBranch,
   )
 }

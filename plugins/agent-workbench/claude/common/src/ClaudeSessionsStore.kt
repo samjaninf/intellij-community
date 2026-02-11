@@ -20,6 +20,7 @@ data class ClaudeSessionThread(
   val id: String,
   val title: String,
   val updatedAt: Long,
+  val gitBranch: String? = null,
 )
 
 class ClaudeSessionsStore(
@@ -127,6 +128,7 @@ class ClaudeSessionsStore(
     var fullPath: String? = null
     var projectPath: String? = null
     var isSidechain = false
+    var gitBranch: String? = null
 
     forEachJsonObjectField(parser) { fieldName ->
       when (fieldName) {
@@ -138,6 +140,7 @@ class ClaudeSessionsStore(
         "fullPath" -> fullPath = readJsonStringOrNull(parser)
         "projectPath" -> projectPath = readJsonStringOrNull(parser)
         "isSidechain" -> isSidechain = readBooleanOrFalse(parser)
+        "gitBranch" -> gitBranch = readJsonStringOrNull(parser)
         else -> parser.skipChildren()
       }
       true
@@ -153,6 +156,7 @@ class ClaudeSessionsStore(
       fullPath = fullPath,
       projectPath = projectPath,
       isSidechain = isSidechain,
+      gitBranch = gitBranch,
     )
   }
 
@@ -335,6 +339,7 @@ class ClaudeSessionsStore(
       id = sessionId,
       title = resolveThreadTitle(summary = summary, firstPrompt = firstPrompt, sessionId = sessionId),
       updatedAt = updatedAt,
+      gitBranch = gitBranch,
     )
   }
 
@@ -437,6 +442,7 @@ private data class ClaudeSessionsIndexEntry(
   val fullPath: String?,
   val projectPath: String?,
   val isSidechain: Boolean,
+  val gitBranch: String? = null,
 )
 
 private data class ParsedJsonlLine(

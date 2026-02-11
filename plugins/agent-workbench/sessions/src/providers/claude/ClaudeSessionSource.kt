@@ -24,5 +24,6 @@ private fun ClaudeSessionThread.toAgentSessionThread(): AgentSessionThread {
     updatedAt = updatedAt,
     archived = false,
     provider = AgentSessionProvider.CLAUDE,
+    originBranch = gitBranch,
   )
 }

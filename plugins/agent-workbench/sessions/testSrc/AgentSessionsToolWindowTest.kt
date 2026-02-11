@@ -11,10 +11,12 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.jewel.foundation.BorderColors
 import org.jetbrains.jewel.foundation.DisabledAppearanceValues
 import org.jetbrains.jewel.foundation.GlobalColors
@@ -261,6 +263,235 @@ class AgentSessionsToolWindowTest {
       .assertIsDisplayed()
     composeRule.onAllNodesWithText("Project 11").assertCountEquals(0)
     composeRule.onAllNodesWithText("Project 12").assertCountEquals(0)
+  }
+
+  @Test
+  fun worktreeShownWhenProjectHasWorktrees() {
+    val now = 1_700_000_000_000L
+    val worktreeThread = AgentSessionThread(
+      id = "wt-thread-1",
+      title = "Worktree Thread",
+      updatedAt = now - 5 * 60 * 1000L,
+      archived = false,
+    )
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        threads = emptyList(),
+        hasLoaded = true,
+        worktrees = listOf(
+          AgentWorktree(
+            path = "/work/project-feature",
+            name = "project-feature",
+            branch = "feature-x",
+            isOpen = false,
+            threads = listOf(worktreeThread),
+            hasLoaded = true,
+          ),
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        nowProvider = { now },
+      )
+    }
+
+    composeRule.onNodeWithText("Project A").assertIsDisplayed()
+    composeRule.onNodeWithText("project-feature").assertIsDisplayed()
+  }
+
+  @Test
+  fun worktreeNodeNotShownWhenNoWorktrees() {
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+      )
+    }
+
+    composeRule.onNodeWithText("Project A").assertIsDisplayed()
+  }
+
+  @Test
+  fun worktreeNodeShowsBranchLabel() {
+    val now = 1_700_000_000_000L
+    val worktreeThread = AgentSessionThread(id = "wt-thread-1", title = "WT Thread", updatedAt = now, archived = false)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+        worktrees = listOf(
+          AgentWorktree(
+            path = "/work/project-feature",
+            name = "project-feature",
+            branch = "feature-x",
+            isOpen = false,
+            hasLoaded = true,
+            threads = listOf(worktreeThread),
+          ),
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        nowProvider = { now },
+      )
+    }
+
+    composeRule.onNodeWithText("project-feature").assertIsDisplayed()
+    composeRule.onNodeWithText("[feature-x]").assertIsDisplayed()
+  }
+
+  @Test
+  fun projectNodeShowsBranchLabelWhenWorktreesExist() {
+    val now = 1_700_000_000_000L
+    val worktreeThread = AgentSessionThread(id = "wt-thread-1", title = "WT Thread", updatedAt = now, archived = false)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        branch = "main",
+        isOpen = true,
+        hasLoaded = true,
+        worktrees = listOf(
+          AgentWorktree(
+            path = "/work/project-feature",
+            name = "project-feature",
+            branch = "feature-x",
+            isOpen = false,
+            hasLoaded = true,
+            threads = listOf(worktreeThread),
+          ),
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        nowProvider = { now },
+      )
+    }
+
+    composeRule.onNodeWithText("Project A").assertIsDisplayed()
+    composeRule.onNodeWithText("[main]").assertIsDisplayed()
+  }
+
+  @Test
+  fun worktreeNodeShowsDetachedLabelWhenNoBranch() {
+    val now = 1_700_000_000_000L
+    val worktreeThread = AgentSessionThread(id = "wt-thread-1", title = "WT Thread", updatedAt = now, archived = false)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+        worktrees = listOf(
+          AgentWorktree(
+            path = "/work/project-detached",
+            name = "project-detached",
+            branch = null,
+            isOpen = false,
+            hasLoaded = true,
+            threads = listOf(worktreeThread),
+          ),
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        nowProvider = { now },
+      )
+    }
+
+    composeRule.onNodeWithText("project-detached").assertIsDisplayed()
+    composeRule.onAllNodesWithText("[${AgentSessionsBundle.message("toolwindow.worktree.detached")}]")
+      .assertCountEquals(2)
+  }
+
+  @Test
+  fun clickingWorktreeSubAgentUsesWorktreePath() {
+    val now = 1_700_000_000_000L
+    val subAgent = AgentSubAgent(id = "sub-agent-1", name = "Sub Agent")
+    val worktreeThread = AgentSessionThread(
+      id = "wt-thread-1",
+      title = "WT Thread",
+      updatedAt = now,
+      archived = false,
+      subAgents = listOf(subAgent),
+    )
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        branch = "main",
+        isOpen = true,
+        hasLoaded = true,
+        worktrees = listOf(
+          AgentWorktree(
+            path = "/work/project-feature",
+            name = "project-feature",
+            branch = "feature-x",
+            isOpen = false,
+            hasLoaded = true,
+            threads = listOf(worktreeThread),
+          ),
+        ),
+      ),
+    )
+
+    var openedPath: String? = null
+    var openedSubAgentId: String? = null
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        onOpenSubAgent = { path, _, selectedSubAgent ->
+          openedPath = path
+          openedSubAgentId = selectedSubAgent.id
+        },
+        nowProvider = { now },
+      )
+    }
+
+    composeRule.onNodeWithText("project-feature").performMouseInput { doubleClick() }
+    composeRule.onNodeWithText("WT Thread").performMouseInput { doubleClick() }
+    composeRule.onNodeWithText("Sub Agent").performClick()
+
+    assertThat(openedPath).isEqualTo("/work/project-feature")
+    assertThat(openedSubAgentId).isEqualTo("sub-agent-1")
   }
 
   @Test

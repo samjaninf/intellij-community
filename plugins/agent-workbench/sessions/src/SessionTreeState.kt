@@ -21,6 +21,7 @@ internal class SessionTreeStateHolder(
   val treeState: TreeState,
 ) {
   private var openedProjects by mutableStateOf<Set<SessionTreeId.Project>>(emptySet())
+  private var openedWorktrees by mutableStateOf<Set<SessionTreeId.Worktree>>(emptySet())
 
   fun updateOpenedProjects(
     openProjects: Set<SessionTreeId.Project>,
@@ -40,6 +41,19 @@ internal class SessionTreeStateHolder(
     }
   }
 
+  fun updateOpenedWorktrees(
+    openWorktrees: Set<SessionTreeId.Worktree>,
+    onWorktreeExpanded: (String, String) -> Unit,
+  ) {
+    val newlyOpened = openWorktrees - openedWorktrees
+    if (newlyOpened.isNotEmpty()) {
+      newlyOpened.forEach { onWorktreeExpanded(it.projectPath, it.worktreePath) }
+    }
+    if (openWorktrees != openedWorktrees) {
+      openedWorktrees = openWorktrees
+    }
+  }
+
   fun applyDefaultOpenProjects(defaultOpenProjects: List<SessionTreeId.Project>) {
     val currentlyOpenProjects = treeState.openNodes.filterIsInstance<SessionTreeId.Project>().toSet()
     val projectsToOpen = defaultOpenProjects.filterNot { it in currentlyOpenProjects }
@@ -53,14 +67,17 @@ internal class SessionTreeStateHolder(
 internal fun rememberSessionTreeStateHolder(
   onProjectExpanded: (String) -> Unit,
   onProjectCollapsed: (String) -> Unit,
+  onWorktreeExpanded: (String, String) -> Unit = { _, _ -> },
 ): SessionTreeStateHolder {
   val treeState = rememberTreeState()
   val stateHolder = remember(treeState) { SessionTreeStateHolder(treeState) }
-  LaunchedEffect(treeState, stateHolder, onProjectExpanded, onProjectCollapsed) {
+  LaunchedEffect(treeState, stateHolder, onProjectExpanded, onProjectCollapsed, onWorktreeExpanded) {
     snapshotFlow { treeState.openNodes }
       .collect { nodes ->
         val openProjects = nodes.filterIsInstance<SessionTreeId.Project>().toSet()
         stateHolder.updateOpenedProjects(openProjects, onProjectExpanded, onProjectCollapsed)
+        val openWorktrees = nodes.filterIsInstance<SessionTreeId.Worktree>().toSet()
+        stateHolder.updateOpenedWorktrees(openWorktrees, onWorktreeExpanded)
       }
   }
   return stateHolder

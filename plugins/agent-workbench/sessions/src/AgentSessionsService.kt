@@ -17,10 +17,17 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
+import com.intellij.ide.util.PropertiesComponent
+import com.intellij.openapi.ui.DoNotAskOption
+import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.io.FileUtilRt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,19 +42,21 @@ import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
 
 private val LOG = logger<AgentSessionsService>()
+private const val SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY = "agent.workbench.suppress.branch.mismatch.dialog"
 
 @Service(Service.Level.APP)
-internal class AgentSessionsService(private val coroutineScope: CoroutineScope) {
+internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
   private val refreshMutex = Mutex()
   private val onDemandMutex = Mutex()
   private val onDemandLoading = LinkedHashSet<String>()
-  private val sessionSources: List<AgentSessionSource> = createDefaultAgentSessionSources(coroutineScope)
+  private val onDemandWorktreeLoading = LinkedHashSet<String>()
+  private val sessionSources: List<AgentSessionSource> = createDefaultAgentSessionSources(serviceScope)
 
   private val mutableState = MutableStateFlow(AgentSessionsState())
   val state: StateFlow<AgentSessionsState> = mutableState.asStateFlow()
 
   init {
-    ApplicationManager.getApplication().messageBus.connect(coroutineScope)
+    ApplicationManager.getApplication().messageBus.connect(serviceScope)
       .subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
         @Deprecated("Deprecated in Java")
         @Suppress("removal")
@@ -62,28 +71,119 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
   }
 
   fun refresh() {
-    coroutineScope.launch(Dispatchers.IO) {
+    serviceScope.launch(Dispatchers.IO) {
       if (!refreshMutex.tryLock()) return@launch
       try {
         val entries = collectProjects()
+        val currentProjectsByPath = mutableState.value.projects.associateBy { it.path }
         val initialProjects = entries.map { entry ->
+          val existing = currentProjectsByPath[entry.path]
           AgentProjectSessions(
             path = entry.path,
             name = entry.name,
+            branch = entry.branch ?: existing?.branch,
             isOpen = entry.project != null,
             isLoading = entry.project != null,
-            hasLoaded = false,
+            hasLoaded = existing?.hasLoaded ?: false,
+            threads = existing?.threads ?: emptyList(),
+            errorMessage = existing?.errorMessage,
+            worktrees = entry.worktreeEntries.map { wt ->
+              val existingWt = existing?.worktrees?.firstOrNull { it.path == wt.path }
+              val hasExistingData = existingWt != null && existingWt.threads.isNotEmpty()
+              AgentWorktree(
+                path = wt.path,
+                name = wt.name,
+                branch = wt.branch,
+                isOpen = wt.project != null,
+                isLoading = hasExistingData,
+                hasLoaded = existingWt?.hasLoaded ?: false,
+                threads = existingWt?.threads ?: emptyList(),
+                errorMessage = existingWt?.errorMessage,
+              )
+            },
           )
         }
         mutableState.update { it.copy(projects = initialProjects, lastUpdatedAt = System.currentTimeMillis()) }
 
-        for (entry in entries) {
-          val project = entry.project ?: continue
-          val result = loadThreadsForProject(path = entry.path, project = project)
-          updateProject(entry.path) { result }
+        data class ProjectLoadResult(val path: String, val result: AgentSessionLoadResult)
+        data class WorktreeLoadResult(val projectPath: String, val worktreePath: String, val result: AgentSessionLoadResult)
+
+        val projectResults: List<ProjectLoadResult>
+        val worktreeResults: List<WorktreeLoadResult>
+        coroutineScope {
+          val projectDeferreds = entries.filter { it.project != null }.map { entry ->
+            async {
+              try {
+                ProjectLoadResult(entry.path, loadThreadsFromOpenProject(path = entry.path, project = entry.project!!))
+              }
+              catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                LOG.warn("Failed to load project sessions for ${entry.path}", e)
+                ProjectLoadResult(entry.path,
+                                  AgentSessionLoadResult(threads = emptyList(),
+                                                         errorMessage = AgentSessionsBundle.message("toolwindow.error")))
+              }
+            }
+          }
+          val worktreeDeferreds = entries.flatMap { entry ->
+            entry.worktreeEntries.map { wt ->
+              async {
+                try {
+                  val result = if (wt.project != null) {
+                    loadThreadsFromOpenProject(path = wt.path, project = wt.project)
+                  }
+                  else {
+                    loadThreadsFromClosedProject(path = wt.path)
+                  }
+                  WorktreeLoadResult(entry.path, wt.path, result)
+                }
+                catch (e: Throwable) {
+                  if (e is CancellationException) throw e
+                  LOG.warn("Failed to load worktree sessions for ${wt.path}", e)
+                  WorktreeLoadResult(entry.path,
+                                     wt.path,
+                                     AgentSessionLoadResult(threads = emptyList(),
+                                                            errorMessage = AgentSessionsBundle.message("toolwindow.error")))
+                }
+              }
+            }
+          }
+          projectResults = projectDeferreds.awaitAll()
+          worktreeResults = worktreeDeferreds.awaitAll()
+        }
+
+        val projectResultMap = projectResults.associateBy { it.path }
+        val worktreeResultsByProject = worktreeResults.groupBy { it.projectPath }
+        mutableState.update { state ->
+          state.copy(
+            projects = state.projects.map { project ->
+              val pResult = projectResultMap[project.path]
+              val wtResults = (worktreeResultsByProject[project.path] ?: emptyList()).associateBy { it.worktreePath }
+              val updatedWorktrees = project.worktrees.map { wt ->
+                val wtResult = wtResults[wt.path]
+                if (wtResult != null) wt.copy(isLoading = false,
+                                              hasLoaded = true,
+                                              threads = wtResult.result.threads,
+                                              errorMessage = wtResult.result.errorMessage)
+                else wt
+              }
+              if (pResult != null) {
+                project.copy(isLoading = false,
+                             hasLoaded = true,
+                             threads = pResult.result.threads,
+                             errorMessage = pResult.result.errorMessage,
+                             worktrees = updatedWorktrees)
+              }
+              else {
+                project.copy(worktrees = updatedWorktrees)
+              }
+            },
+            lastUpdatedAt = System.currentTimeMillis(),
+          )
         }
       }
       catch (e: Throwable) {
+        if (e is CancellationException) throw e
         LOG.error("Failed to load agent sessions", e)
         mutableState.update {
           it.copy(
@@ -92,6 +192,7 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
                 isLoading = false,
                 hasLoaded = project.isOpen,
                 errorMessage = AgentSessionsBundle.message("toolwindow.error"),
+                worktrees = project.worktrees.map { wt -> wt.copy(isLoading = false) },
               )
             },
             lastUpdatedAt = System.currentTimeMillis(),
@@ -105,12 +206,37 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
   }
 
   fun openOrFocusProject(path: String) {
-    coroutineScope.launch {
+    serviceScope.launch {
       openOrFocusProjectInternal(path)
     }
   }
 
+  fun showMoreProjects() {
+    mutableState.update { it.copy(visibleProjectCount = it.visibleProjectCount + DEFAULT_VISIBLE_PROJECT_COUNT) }
+  }
+
+  fun showMoreThreads(path: String) {
+    mutableState.update { state ->
+      val current = state.visibleThreadCounts[path] ?: DEFAULT_VISIBLE_THREAD_COUNT
+      state.copy(visibleThreadCounts = state.visibleThreadCounts + (path to (current + DEFAULT_VISIBLE_THREAD_COUNT)))
+    }
+  }
+
   fun openChatThread(path: String, thread: AgentSessionThread) {
+    val normalized = normalizePath(path)
+    val worktreeBranch = findWorktreeBranch(normalized)
+    val originBranch = thread.originBranch
+    if (worktreeBranch != null && originBranch != null && originBranch != worktreeBranch && !isBranchMismatchDialogSuppressed()) {
+      serviceScope.launch {
+        val proceed = withContext(Dispatchers.EDT) {
+          showBranchMismatchDialog(originBranch, worktreeBranch)
+        }
+        if (proceed) {
+          openChat(path, thread, subAgent = null)
+        }
+      }
+      return
+    }
     openChat(path, thread, subAgent = null)
   }
 
@@ -119,7 +245,7 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
   }
 
   fun loadProjectThreadsOnDemand(path: String) {
-    coroutineScope.launch(Dispatchers.IO) {
+    serviceScope.launch(Dispatchers.IO) {
       val normalized = normalizePath(path)
       if (!markOnDemandLoading(normalized)) return@launch
       try {
@@ -142,17 +268,29 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
     }
   }
 
-  private suspend fun loadThreadsForProject(path: String, project: Project): AgentProjectSessions {
-    val loadedResult = loadThreadsFromOpenProject(path = path, project = project)
-    return AgentProjectSessions(
-      path = path,
-      name = resolveProjectName(path = path, project = project),
-      isOpen = true,
-      isLoading = false,
-      threads = loadedResult.threads,
-      hasLoaded = true,
-      errorMessage = loadedResult.errorMessage,
-    )
+  fun loadWorktreeThreadsOnDemand(projectPath: String, worktreePath: String) {
+    serviceScope.launch(Dispatchers.IO) {
+      val normalizedProject = normalizePath(projectPath)
+      val normalizedWorktree = normalizePath(worktreePath)
+      if (!markWorktreeOnDemandLoading(normalizedProject, normalizedWorktree)) return@launch
+      try {
+        updateWorktree(normalizedProject, normalizedWorktree) { worktree ->
+          worktree.copy(isLoading = true, errorMessage = null)
+        }
+        val result = loadThreadsFromClosedProject(path = normalizedWorktree)
+        updateWorktree(normalizedProject, normalizedWorktree) { worktree ->
+          worktree.copy(
+            isLoading = false,
+            hasLoaded = true,
+            threads = result.threads,
+            errorMessage = result.errorMessage,
+          )
+        }
+      }
+      finally {
+        clearWorktreeOnDemandLoading(normalizedWorktree)
+      }
+    }
   }
 
   private suspend fun loadThreadsFromOpenProject(path: String, project: Project): AgentSessionLoadResult {
@@ -171,17 +309,20 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
     path: String,
     loadOperation: suspend (AgentSessionSource) -> List<AgentSessionThread>,
   ): AgentSessionLoadResult {
-    val sourceResults = buildList {
-      for (source in sessionSources) {
-        val result = try {
-          Result.success(loadOperation(source))
+    val sourceResults = coroutineScope {
+      sessionSources.map { source ->
+        async {
+          val result = try {
+            Result.success(loadOperation(source))
+          }
+          catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            LOG.warn("Failed to load ${source.provider.name} sessions for $path", throwable)
+            Result.failure(throwable)
+          }
+          AgentSessionSourceLoadResult(provider = source.provider, result = result)
         }
-        catch (throwable: Throwable) {
-          LOG.warn("Failed to load ${source.provider.name} sessions for $path", throwable)
-          Result.failure(throwable)
-        }
-        add(AgentSessionSourceLoadResult(provider = source.provider, result = result))
-      }
+      }.awaitAll()
     }
     return mergeAgentSessionSourceLoadResults(sourceResults, ::resolveErrorMessage)
   }
@@ -217,7 +358,7 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
   }
 
   private fun openChat(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent?) {
-    coroutineScope.launch {
+    serviceScope.launch {
       val normalized = normalizePath(path)
       if (AgentChatOpenModeSettings.openInDedicatedFrame()) {
         openChatInDedicatedFrame(normalized, thread, subAgent)
@@ -235,13 +376,13 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
       catch (_: InvalidPathException) {
         return@launch
       }
-      val connection = ApplicationManager.getApplication().messageBus.connect(coroutineScope)
+      val connection = ApplicationManager.getApplication().messageBus.connect(serviceScope)
       connection.subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
         @Deprecated("Deprecated in Java")
         @Suppress("removal")
         override fun projectOpened(project: Project) {
           if (resolveProjectPath(manager, project) != normalized) return
-          coroutineScope.launch {
+          serviceScope.launch {
             openChatInProject(project, normalized, thread, subAgent)
             connection.disconnect()
           }
@@ -269,13 +410,13 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
       return
     }
 
-    val connection = ApplicationManager.getApplication().messageBus.connect(coroutineScope)
+    val connection = ApplicationManager.getApplication().messageBus.connect(serviceScope)
     connection.subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
       @Deprecated("Deprecated in Java")
       @Suppress("removal")
       override fun projectOpened(project: Project) {
         if (resolveProjectPath(manager, project) != dedicatedProjectPath) return
-        coroutineScope.launch {
+        serviceScope.launch {
           AgentWorkbenchDedicatedFrameProjectManager.configureProject(project)
           openChatInProject(project, path, thread, subAgent)
           connection.disconnect()
@@ -313,6 +454,20 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
     }
   }
 
+  private fun updateWorktree(projectPath: String, worktreePath: String, update: (AgentWorktree) -> AgentWorktree) {
+    mutableState.update { state ->
+      val next = state.projects.map { project ->
+        if (project.path == projectPath) {
+          project.copy(worktrees = project.worktrees.map { wt ->
+            if (wt.path == worktreePath) update(wt) else wt
+          })
+        }
+        else project
+      }
+      state.copy(projects = next, lastUpdatedAt = System.currentTimeMillis())
+    }
+  }
+
   private suspend fun markOnDemandLoading(path: String): Boolean {
     return onDemandMutex.withLock {
       val project = state.value.projects.firstOrNull { it.path == path } ?: return@withLock false
@@ -328,16 +483,133 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
     }
   }
 
-  private fun collectProjects(): List<ProjectEntry> {
+  private suspend fun markWorktreeOnDemandLoading(projectPath: String, worktreePath: String): Boolean {
+    return onDemandMutex.withLock {
+      val project = state.value.projects.firstOrNull { it.path == projectPath } ?: return@withLock false
+      val worktree = project.worktrees.firstOrNull { it.path == worktreePath } ?: return@withLock false
+      if (worktree.isLoading || worktree.hasLoaded) return@withLock false
+      if (!onDemandWorktreeLoading.add(worktreePath)) return@withLock false
+      true
+    }
+  }
+
+  private suspend fun clearWorktreeOnDemandLoading(worktreePath: String) {
+    onDemandMutex.withLock {
+      onDemandWorktreeLoading.remove(worktreePath)
+    }
+  }
+
+  private suspend fun collectProjects(): List<ProjectEntry> {
+    val rawEntries = collectRawProjectEntries()
+    if (rawEntries.isEmpty()) return emptyList()
+
+    val repoRootByPath = rawEntries.associate { entry ->
+      entry.path to GitWorktreeDiscovery.detectRepoRoot(entry.path)
+    }
+
+    data class RepoGroup(
+      val repoRoot: String,
+      val members: MutableList<IndexedValue<ProjectEntry>>,
+    )
+
+    val repoGroups = LinkedHashMap<String, RepoGroup>()
+    val standaloneEntries = mutableListOf<IndexedValue<ProjectEntry>>()
+
+    rawEntries.forEachIndexed { index, entry ->
+      val repoRoot = repoRootByPath[entry.path]
+      if (repoRoot != null) {
+        val group = repoGroups.getOrPut(repoRoot) {
+          RepoGroup(repoRoot, mutableListOf())
+        }
+        group.members.add(IndexedValue(index, entry))
+      }
+      else {
+        standaloneEntries.add(IndexedValue(index, entry))
+      }
+    }
+
+    // Discover all worktrees in parallel across repo roots (main + linked).
+    val discoveredByRepoRoot = coroutineScope {
+      repoGroups.keys.map { repoRoot ->
+        async { repoRoot to GitWorktreeDiscovery.discoverWorktrees(repoRoot) }
+      }.awaitAll().toMap()
+    }
+
+    val resultEntries = mutableListOf<IndexedValue<ProjectEntry>>()
+    for ((repoRoot, group) in repoGroups) {
+      val mainRaw = group.members.firstOrNull { it.value.path == repoRoot }
+      val worktreeRaws = group.members.filter { it.value.path != repoRoot }
+      val firstIndex = group.members.minOf { it.index }
+
+      val discoveredWorktrees = discoveredByRepoRoot[repoRoot] ?: emptyList()
+      val worktreeEntries = buildWorktreeEntries(worktreeRaws.map { it.value }, discoveredWorktrees)
+      val mainBranch = shortBranchName(discoveredWorktrees.firstOrNull { it.isMain }?.branch)
+
+      if (worktreeEntries.isEmpty()) {
+        val raw = mainRaw?.value ?: continue
+        resultEntries.add(IndexedValue(firstIndex, raw))
+      }
+      else {
+        val entry = mainRaw?.value?.copy(worktreeEntries = worktreeEntries, branch = mainBranch)
+                    ?: ProjectEntry(
+                      path = repoRoot,
+                      name = worktreeDisplayName(repoRoot),
+                      project = null,
+                      branch = mainBranch,
+                      worktreeEntries = worktreeEntries,
+                    )
+        resultEntries.add(IndexedValue(firstIndex, entry))
+      }
+    }
+
+    for (indexed in standaloneEntries) {
+      resultEntries.add(indexed)
+    }
+
+    return resultEntries.sortedBy { it.index }.map { it.value }
+  }
+
+  private fun buildWorktreeEntries(
+    openRawEntries: List<ProjectEntry>,
+    discovered: List<GitWorktreeInfo>,
+  ): List<WorktreeEntry> {
+    val openPaths = openRawEntries.mapTo(LinkedHashSet()) { it.path }
+    val result = mutableListOf<WorktreeEntry>()
+
+    for (raw in openRawEntries) {
+      val gitInfo = discovered.firstOrNull { it.path == raw.path }
+      result.add(WorktreeEntry(
+        path = raw.path,
+        name = raw.name,
+        branch = shortBranchName(gitInfo?.branch),
+        project = raw.project,
+      ))
+    }
+
+    for (info in discovered) {
+      if (info.path !in openPaths && !info.isMain) {
+        result.add(WorktreeEntry(
+          path = info.path,
+          name = worktreeDisplayName(info.path),
+          branch = shortBranchName(info.branch),
+          project = null,
+        ))
+      }
+    }
+
+    return result
+  }
+
+  private fun collectRawProjectEntries(): List<ProjectEntry> {
     val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase
-      ?: return emptyList()
+                  ?: return emptyList()
     val dedicatedProjectPath = AgentWorkbenchDedicatedFrameProjectManager.dedicatedProjectPath()
     val openProjects = ProjectManager.getInstance().openProjects
     val openByPath = LinkedHashMap<String, Project>()
     for (project in openProjects) {
       val path = manager.getProjectPath(project)?.invariantSeparatorsPathString
-        ?: project.basePath?.let(::normalizePath)
-        ?: continue
+                 ?: project.basePath?.let(::normalizePath)
+                 ?: continue
       if (path == dedicatedProjectPath || AgentWorkbenchDedicatedFrameProjectManager.isDedicatedProjectPath(path)) continue
       openByPath[path] = project
     }
@@ -366,12 +638,6 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
       )
     }
     return entries
-  }
-
-  private fun resolveProjectName(path: String, project: Project?): String {
-    val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase
-      ?: return resolveProjectNameWithoutManager(path, project)
-    return resolveProjectName(manager, path, project)
   }
 
   private fun resolveProjectName(
@@ -408,7 +674,38 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
 
   private fun resolveProjectPath(manager: RecentProjectsManagerBase, project: Project): String? {
     return manager.getProjectPath(project)?.invariantSeparatorsPathString
-      ?: project.basePath?.let(::normalizePath)
+           ?: project.basePath?.let(::normalizePath)
+  }
+
+  private fun findWorktreeBranch(path: String): String? {
+    for (project in state.value.projects) {
+      for (worktree in project.worktrees) {
+        if (worktree.path == path) return worktree.branch
+      }
+    }
+    return null
+  }
+
+  private fun isBranchMismatchDialogSuppressed(): Boolean {
+    return PropertiesComponent.getInstance().getBoolean(SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY, false)
+  }
+
+  private fun showBranchMismatchDialog(originBranch: String, currentBranch: String): Boolean {
+    return MessageDialogBuilder
+      .okCancel(
+        AgentSessionsBundle.message("toolwindow.thread.branch.mismatch.dialog.title"),
+        AgentSessionsBundle.message("toolwindow.thread.branch.mismatch.dialog.message", originBranch, currentBranch),
+      )
+      .yesText(AgentSessionsBundle.message("toolwindow.thread.branch.mismatch.dialog.continue"))
+      .doNotAsk(object : DoNotAskOption.Adapter() {
+        override fun rememberChoice(isSelected: Boolean, exitCode: Int) {
+          if (isSelected) {
+            PropertiesComponent.getInstance().setValue(SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY, true)
+          }
+        }
+      })
+      .asWarning()
+      .ask(null as Project?)
   }
 
   private fun normalizePath(path: String): String {
@@ -423,6 +720,15 @@ internal class AgentSessionsService(private val coroutineScope: CoroutineScope) 
   private data class ProjectEntry(
     val path: String,
     val name: String,
+    val project: Project?,
+    val branch: String? = null,
+    val worktreeEntries: List<WorktreeEntry> = emptyList(),
+  )
+
+  private data class WorktreeEntry(
+    val path: String,
+    val name: String,
+    val branch: String?,
     val project: Project?,
   )
 }

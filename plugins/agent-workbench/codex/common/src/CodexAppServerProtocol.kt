@@ -133,7 +133,7 @@ private fun parseThreadObject(parser: JsonParser, archived: Boolean, cwdFilter: 
   )
   val previewValue = payload.preview ?: payload.title ?: payload.name ?: payload.summary
   val threadTitle = previewValue?.let { trimTitle(it) }?.takeIf { it.isNotBlank() } ?: "Thread ${threadId.take(8)}"
-  return CodexThread(id = threadId, title = threadTitle, updatedAt = updatedAtValue, archived = archived)
+  return CodexThread(id = threadId, title = threadTitle, updatedAt = updatedAtValue, archived = archived, gitBranch = payload.gitBranch)
 }
 
 private fun parseThreadFromResultObject(parser: JsonParser): CodexThread? {
@@ -150,7 +150,7 @@ private fun parseThreadFromResultObject(parser: JsonParser): CodexThread? {
   )
   val previewValue = payload.preview ?: payload.title ?: payload.name ?: payload.summary
   val threadTitle = previewValue?.let(::trimTitle)?.takeIf { it.isNotBlank() } ?: "Thread ${threadId.take(8)}"
-  return CodexThread(id = threadId, title = threadTitle, updatedAt = updatedAtValue, archived = false)
+  return CodexThread(id = threadId, title = threadTitle, updatedAt = updatedAtValue, archived = false, gitBranch = payload.gitBranch)
 }
 
 private data class ThreadPayload(
@@ -165,6 +165,7 @@ private data class ThreadPayload(
   val summary: String?,
   val cwd: String?,
   val nestedThread: CodexThread?,
+  val gitBranch: String?,
 )
 
 private fun parseThreadPayload(parser: JsonParser, allowNestedThread: Boolean): ThreadPayload {
@@ -179,6 +180,7 @@ private fun parseThreadPayload(parser: JsonParser, allowNestedThread: Boolean): 
   var summary: String? = null
   var cwd: String? = null
   var nestedThread: CodexThread? = null
+  var gitBranch: String? = null
 
   forEachObjectField(parser) { fieldName ->
     when (fieldName) {
@@ -200,6 +202,7 @@ private fun parseThreadPayload(parser: JsonParser, allowNestedThread: Boolean): 
       "name" -> name = readStringOrNull(parser)
       "summary" -> summary = readStringOrNull(parser)
       "cwd" -> cwd = readStringOrNull(parser)
+      "gitBranch", "git_branch" -> gitBranch = readStringOrNull(parser)
       else -> parser.skipChildren()
     }
     true
@@ -217,6 +220,7 @@ private fun parseThreadPayload(parser: JsonParser, allowNestedThread: Boolean): 
     summary = summary,
     cwd = cwd,
     nestedThread = nestedThread,
+    gitBranch = gitBranch,
   )
 }
 

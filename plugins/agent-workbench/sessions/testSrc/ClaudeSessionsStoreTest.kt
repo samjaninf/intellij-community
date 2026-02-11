@@ -108,6 +108,51 @@ class ClaudeSessionsStoreTest {
   }
 
   @Test
+  fun parsesGitBranchFromIndexEntry() {
+    val projectPath = "/work/project-branch"
+    val encodedPath = "-work-project-branch"
+    val projectDir = tempDir.resolve(".claude").resolve("projects").resolve(encodedPath)
+    Files.createDirectories(projectDir)
+    val indexFile = projectDir.resolve("sessions-index.json")
+    Files.writeString(
+      indexFile,
+      """
+      {
+        "version": 1,
+        "originalPath": "$projectPath",
+        "entries": [
+          {
+            "sessionId": "branch-session-1",
+            "summary": "Branch test",
+            "modified": "2026-02-08T00:00:00.000Z",
+            "projectPath": "$projectPath",
+            "isSidechain": false,
+            "gitBranch": "feature-x"
+          },
+          {
+            "sessionId": "branch-session-2",
+            "summary": "No branch",
+            "modified": "2026-02-08T00:00:01.000Z",
+            "projectPath": "$projectPath",
+            "isSidechain": false
+          }
+        ]
+      }
+      """.trimIndent()
+    )
+
+    val store = ClaudeSessionsStore(claudeHomeProvider = { tempDir.resolve(".claude") })
+
+    val threads = runBlocking { store.listThreads(projectPath) }
+
+    assertThat(threads).hasSize(2)
+    val withBranch = threads.first { it.id == "branch-session-1" }
+    assertThat(withBranch.gitBranch).isEqualTo("feature-x")
+    val withoutBranch = threads.first { it.id == "branch-session-2" }
+    assertThat(withoutBranch.gitBranch).isNull()
+  }
+
+  @Test
   fun ignoresSnapshotOnlyJsonlArtifacts() {
     val projectPath = "/work/project-c"
     val encodedPath = "-work-project-c"

@@ -1,6 +1,7 @@
 package com.intellij.agent.workbench.sessions
 
 import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -35,6 +36,7 @@ import org.jetbrains.jewel.ui.component.CircularProgressIndicator
 import org.jetbrains.jewel.ui.component.ContextMenuItemOption
 import org.jetbrains.jewel.ui.component.OutlinedButton
 import org.jetbrains.jewel.ui.component.Text
+import org.jetbrains.jewel.ui.component.Tooltip
 import org.jetbrains.jewel.ui.component.search.highlightSpeedSearchMatches
 import org.jetbrains.jewel.ui.component.search.highlightTextSearch
 
@@ -55,6 +57,7 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     is SessionTreeNode.Thread -> threadNodeRow(
       thread = node.thread,
       nowProvider = nowProvider,
+      parentWorktreeBranch = node.parentWorktreeBranch,
     )
     is SessionTreeNode.SubAgent -> subAgentNodeRow(
       subAgent = node.subAgent,
@@ -68,6 +71,12 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     )
     is SessionTreeNode.MoreProjects -> moreProjectsRow(
       hiddenCount = node.hiddenCount,
+    )
+    is SessionTreeNode.MoreThreads -> moreProjectsRow(
+      hiddenCount = node.hiddenCount,
+    )
+    is SessionTreeNode.Worktree -> worktreeNodeRow(
+      worktree = node.worktree,
     )
   }
 }
@@ -118,6 +127,9 @@ private fun SelectableLazyItemScope.projectNodeRow(
     baseTint = projectRowTint(),
   )
   val openLabel = AgentSessionsBundle.message("toolwindow.action.open")
+  val branchColor = LocalContentColor.current
+    .takeOrElse { JewelTheme.globalColors.text.disabled }
+    .copy(alpha = 0.55f)
   ContextMenuArea(
     items = {
       if (!project.isOpen) {
@@ -152,6 +164,15 @@ private fun SelectableLazyItemScope.projectNodeRow(
           .weight(1f)
           .highlightSpeedSearchMatches(titleLayoutResult),
       )
+      if (project.worktrees.isNotEmpty()) {
+        val branchLabel = project.branch ?: AgentSessionsBundle.message("toolwindow.worktree.detached")
+        Text(
+          text = "[$branchLabel]",
+          color = branchColor,
+          style = AgentSessionsTextStyles.threadTime(),
+          maxLines = 1,
+        )
+      }
       if (project.isLoading) {
         CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
       }
@@ -159,15 +180,18 @@ private fun SelectableLazyItemScope.projectNodeRow(
   }
 }
 
-@OptIn(ExperimentalJewelApi::class)
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SelectableLazyItemScope.threadNodeRow(
   thread: AgentSessionThread,
   nowProvider: () -> Long,
+  parentWorktreeBranch: String? = null,
 ) {
   val timestamp = thread.updatedAt.takeIf { it > 0 }
   val timeLabel = timestamp?.let { formatRelativeTimeShort(it, nowProvider()) }
   val chrome = rememberTreeRowChrome(isSelected = isSelected, isActive = isActive)
+  val originBranch = thread.originBranch
+  val branchMismatch = originBranch != null && parentWorktreeBranch != null && originBranch != parentWorktreeBranch
   val titleColor = if (isSelected || isActive) Color.Unspecified else {
     JewelTheme.globalColors.text.normal.copy(alpha = 0.84f)
   }
@@ -175,43 +199,51 @@ private fun SelectableLazyItemScope.threadNodeRow(
     .takeOrElse { JewelTheme.globalColors.text.disabled }
     .copy(alpha = 0.55f)
   val providerLabel = providerLabel(thread.provider)
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .background(chrome.background, chrome.shape)
-      .hoverable(chrome.interactionSource),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(chrome.spacing)
+  val indicatorColor = if (branchMismatch) JewelTheme.globalColors.text.warning else threadIndicatorColor(thread)
+  Tooltip(
+    tooltip = {
+      Text(AgentSessionsBundle.message("toolwindow.thread.branch.mismatch", originBranch ?: ""))
+    },
+    enabled = branchMismatch,
   ) {
-    Box(
+    Row(
       modifier = Modifier
-        .padding(end = chrome.indicatorPadding)
-        .size(threadIndicatorSize())
-        .background(threadIndicatorColor(thread), CircleShape)
-    )
-    var titleLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
-    Text(
-      text = thread.title.highlightTextSearch(),
-      style = AgentSessionsTextStyles.threadTitle(),
-      color = titleColor,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis,
-      onTextLayout = { titleLayoutResult = it },
-      modifier = Modifier
-        .weight(1f)
-        .highlightSpeedSearchMatches(titleLayoutResult),
-    )
-    Text(
-      text = providerLabel,
-      color = timeColor,
-      style = AgentSessionsTextStyles.threadTime(),
-    )
-    if (timeLabel != null) {
+        .fillMaxWidth()
+        .background(chrome.background, chrome.shape)
+        .hoverable(chrome.interactionSource),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(chrome.spacing)
+    ) {
+      Box(
+        modifier = Modifier
+          .padding(end = chrome.indicatorPadding)
+          .size(threadIndicatorSize())
+          .background(indicatorColor, CircleShape)
+      )
+      var titleLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
       Text(
-        text = timeLabel,
+        text = thread.title.highlightTextSearch(),
+        style = AgentSessionsTextStyles.threadTitle(),
+        color = titleColor,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { titleLayoutResult = it },
+        modifier = Modifier
+          .weight(1f)
+          .highlightSpeedSearchMatches(titleLayoutResult),
+      )
+      Text(
+        text = providerLabel,
         color = timeColor,
         style = AgentSessionsTextStyles.threadTime(),
       )
+      if (timeLabel != null) {
+        Text(
+          text = timeLabel,
+          color = timeColor,
+          style = AgentSessionsTextStyles.threadTime(),
+        )
+      }
     }
   }
 }
@@ -250,6 +282,51 @@ private fun SelectableLazyItemScope.subAgentNodeRow(
         .weight(1f)
         .highlightSpeedSearchMatches(titleLayoutResult),
     )
+  }
+}
+
+@OptIn(ExperimentalJewelApi::class)
+@Composable
+private fun SelectableLazyItemScope.worktreeNodeRow(
+  worktree: AgentWorktree,
+) {
+  val chrome = rememberTreeRowChrome(isSelected = isSelected, isActive = isActive)
+  val titleColor = if (isSelected || isActive) Color.Unspecified else {
+    JewelTheme.globalColors.text.normal.copy(alpha = 0.84f)
+  }
+  val branchColor = LocalContentColor.current
+    .takeOrElse { JewelTheme.globalColors.text.disabled }
+    .copy(alpha = 0.55f)
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .background(chrome.background, chrome.shape)
+      .hoverable(chrome.interactionSource),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(chrome.spacing)
+  ) {
+    var titleLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    Text(
+      text = worktree.name.highlightTextSearch(),
+      style = AgentSessionsTextStyles.projectTitle(),
+      color = titleColor,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      onTextLayout = { titleLayoutResult = it },
+      modifier = Modifier
+        .weight(1f)
+        .highlightSpeedSearchMatches(titleLayoutResult),
+    )
+    val branchLabel = worktree.branch ?: AgentSessionsBundle.message("toolwindow.worktree.detached")
+    Text(
+      text = "[$branchLabel]",
+      color = branchColor,
+      style = AgentSessionsTextStyles.threadTime(),
+      maxLines = 1,
+    )
+    if (worktree.isLoading) {
+      CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
+    }
   }
 }
 
