@@ -62,6 +62,9 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     is SessionTreeNode.SubAgent -> subAgentNodeRow(
       subAgent = node.subAgent,
     )
+    is SessionTreeNode.Warning -> warningNodeRow(
+      message = node.message,
+    )
     is SessionTreeNode.Error -> errorNodeRow(
       message = node.message,
       onRetry = onRefresh,
@@ -72,7 +75,7 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     is SessionTreeNode.MoreProjects -> moreProjectsRow(
       hiddenCount = node.hiddenCount,
     )
-    is SessionTreeNode.MoreThreads -> moreProjectsRow(
+    is SessionTreeNode.MoreThreads -> moreThreadsRow(
       hiddenCount = node.hiddenCount,
     )
     is SessionTreeNode.Worktree -> worktreeNodeRow(
@@ -338,6 +341,17 @@ private fun providerLabel(provider: AgentSessionProvider): String {
 }
 
 @Composable
+private fun warningNodeRow(message: String) {
+  Row(modifier = Modifier.fillMaxWidth()) {
+    Text(
+      text = message,
+      color = JewelTheme.globalColors.text.warning,
+      style = AgentSessionsTextStyles.error(),
+    )
+  }
+}
+
+@Composable
 private fun errorNodeRow(message: String, onRetry: () -> Unit) {
   Row(modifier = Modifier.fillMaxWidth()) {
     val rowSpacing = treeRowSpacing()
@@ -373,6 +387,24 @@ private fun moreProjectsRow(hiddenCount: Int) {
   Row(modifier = Modifier.fillMaxWidth()) {
     Text(
       text = AgentSessionsBundle.message("toolwindow.action.more.count", hiddenCount),
+      color = JewelTheme.globalColors.text.info,
+      style = AgentSessionsTextStyles.threadTitle(),
+    )
+  }
+}
+
+@Composable
+private fun moreThreadsRow(hiddenCount: Int?) {
+  Row(modifier = Modifier.fillMaxWidth()) {
+    val messageKey = if (hiddenCount == null) "toolwindow.action.more" else "toolwindow.action.more.count"
+    val message = if (hiddenCount == null) {
+      AgentSessionsBundle.message(messageKey)
+    }
+    else {
+      AgentSessionsBundle.message(messageKey, hiddenCount)
+    }
+    Text(
+      text = message,
       color = JewelTheme.globalColors.text.info,
       style = AgentSessionsTextStyles.threadTitle(),
     )

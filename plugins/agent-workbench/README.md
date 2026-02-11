@@ -60,8 +60,8 @@ Projects
 
 Detailed requirements and testing contracts are documented in the spec files:
 
-- [Agent Threads Tool Window](spec/codex-sessions.spec.md) - Requirements for the Sessions tool window UI, session management, and user interactions
-- [Testing Contract](spec/codex-sessions-testing.spec.md) - Testing strategy, UI coverage requirements, and verification criteria
+- [Agent Threads Tool Window](spec/agent-sessions.spec.md) - Requirements for the Sessions tool window UI, session management, and user interactions
+- [Testing Contract](spec/agent-sessions-testing.spec.md) - Testing strategy, UI coverage requirements, and verification criteria
 
 ## Test All
 

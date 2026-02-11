@@ -26,6 +26,12 @@ internal data class AgentSessionThread(
 )
 
 @Immutable
+internal data class AgentSessionProviderWarning(
+  @JvmField val provider: AgentSessionProvider,
+  @JvmField val message: String,
+)
+
+@Immutable
 internal data class AgentWorktree(
   @JvmField val path: String,
   @JvmField val name: String,
@@ -34,7 +40,9 @@ internal data class AgentWorktree(
   @JvmField val threads: List<AgentSessionThread> = emptyList(),
   @JvmField val isLoading: Boolean = false,
   @JvmField val hasLoaded: Boolean = false,
+  @JvmField val hasUnknownThreadCount: Boolean = false,
   @JvmField val errorMessage: String? = null,
+  @JvmField val providerWarnings: List<AgentSessionProviderWarning> = emptyList(),
 )
 
 @Immutable
@@ -46,7 +54,9 @@ internal data class AgentProjectSessions(
   @JvmField val threads: List<AgentSessionThread> = emptyList(),
   @JvmField val isLoading: Boolean = false,
   @JvmField val hasLoaded: Boolean = false,
+  @JvmField val hasUnknownThreadCount: Boolean = false,
   @JvmField val errorMessage: String? = null,
+  @JvmField val providerWarnings: List<AgentSessionProviderWarning> = emptyList(),
   @JvmField val worktrees: List<AgentWorktree> = emptyList(),
 )
 

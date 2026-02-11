@@ -20,10 +20,12 @@ class AgentSessionLoadAggregationTest {
 
     assertThat(result.threads).isEmpty()
     assertThat(result.errorMessage).isEqualTo("CODEX unavailable")
+    assertThat(result.hasUnknownThreadCount).isFalse()
+    assertThat(result.providerWarnings).isEmpty()
   }
 
   @Test
-  fun doesNotReportErrorWhenAnySourceSucceeds() {
+  fun reportsProviderWarningWhenAnySourceFailsButAtLeastOneSucceeds() {
     val codexFailure = IllegalStateException("codex failed")
 
     val result = mergeAgentSessionSourceLoadResults(
@@ -32,10 +34,16 @@ class AgentSessionLoadAggregationTest {
         AgentSessionSourceLoadResult(AgentSessionProvider.CLAUDE, Result.success(emptyList())),
       ),
       resolveErrorMessage = { provider, _ -> "${provider.name} unavailable" },
+      resolveWarningMessage = { provider, _ -> "${provider.name} warning" },
     )
 
     assertThat(result.threads).isEmpty()
     assertThat(result.errorMessage).isNull()
+    assertThat(result.hasUnknownThreadCount).isFalse()
+    assertThat(result.providerWarnings).hasSize(1)
+    val warning = result.providerWarnings.single()
+    assertThat(warning.provider).isEqualTo(AgentSessionProvider.CODEX)
+    assertThat(warning.message).isEqualTo("CODEX warning")
   }
 
   @Test
@@ -64,6 +72,34 @@ class AgentSessionLoadAggregationTest {
     )
 
     assertThat(result.errorMessage).isNull()
+    assertThat(result.hasUnknownThreadCount).isFalse()
     assertThat(result.threads.map { it.id }).containsExactly("claude-1", "codex-1")
+    assertThat(result.providerWarnings).isEmpty()
+  }
+
+  @Test
+  fun marksUnknownThreadCountWhenSuccessfulSourceCannotReportExactTotal() {
+    val codexThread = AgentSessionThread(
+      id = "codex-1",
+      title = "Codex Session",
+      updatedAt = 100,
+      archived = false,
+      provider = AgentSessionProvider.CODEX,
+    )
+
+    val result = mergeAgentSessionSourceLoadResults(
+      sourceResults = listOf(
+        AgentSessionSourceLoadResult(
+          provider = AgentSessionProvider.CODEX,
+          result = Result.success(listOf(codexThread)),
+          hasUnknownTotal = true,
+        ),
+      ),
+      resolveErrorMessage = { _, _ -> "error" },
+    )
+
+    assertThat(result.errorMessage).isNull()
+    assertThat(result.hasUnknownThreadCount).isTrue()
+    assertThat(result.providerWarnings).isEmpty()
   }
 }

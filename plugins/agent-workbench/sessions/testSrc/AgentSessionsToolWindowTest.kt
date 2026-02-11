@@ -177,6 +177,112 @@ class AgentSessionsToolWindowTest {
   }
 
   @Test
+  fun projectWarningIsShownWithoutRetryAction() {
+    val now = 1_700_000_000_000L
+    val thread = AgentSessionThread(id = "thread-1", title = "Thread One", updatedAt = now, archived = false)
+    val warningMessage = providerUnavailableMessage(AgentSessionProvider.CODEX)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+        threads = listOf(thread),
+        providerWarnings = listOf(
+          AgentSessionProviderWarning(
+            provider = AgentSessionProvider.CODEX,
+            message = warningMessage,
+          )
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        nowProvider = { now },
+      )
+    }
+
+    composeRule.onNodeWithText("Thread One").assertIsDisplayed()
+    composeRule.onNodeWithText(warningMessage).assertIsDisplayed()
+    composeRule.onAllNodesWithText(AgentSessionsBundle.message("toolwindow.error.retry")).assertCountEquals(0)
+  }
+
+  @Test
+  fun projectErrorTakesPrecedenceOverProviderWarning() {
+    val warningMessage = providerUnavailableMessage(AgentSessionProvider.CLAUDE)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-c",
+        name = "Project C",
+        isOpen = true,
+        hasLoaded = true,
+        errorMessage = "Failed",
+        providerWarnings = listOf(
+          AgentSessionProviderWarning(
+            provider = AgentSessionProvider.CLAUDE,
+            message = warningMessage,
+          )
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+      )
+    }
+
+    composeRule.onNodeWithText("Failed").assertIsDisplayed()
+    composeRule.onAllNodesWithText(warningMessage).assertCountEquals(0)
+  }
+
+  @Test
+  fun worktreeWarningIsShownWhenWorktreeHasNoThreads() {
+    val warningMessage = providerUnavailableMessage(AgentSessionProvider.CLAUDE)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+        worktrees = listOf(
+          AgentWorktree(
+            path = "/work/project-feature",
+            name = "project-feature",
+            branch = "feature-x",
+            isOpen = false,
+            hasLoaded = true,
+            providerWarnings = listOf(
+              AgentSessionProviderWarning(
+                provider = AgentSessionProvider.CLAUDE,
+                message = warningMessage,
+              )
+            ),
+          ),
+        ),
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+      )
+    }
+
+    composeRule.onNodeWithText("project-feature").assertIsDisplayed()
+      .performMouseInput { doubleClick() }
+    composeRule.onNodeWithText(warningMessage).assertIsDisplayed()
+  }
+
+  @Test
   fun openLoadedEmptyProjectIsExpandedByDefault() {
     val projects = listOf(
       AgentProjectSessions(
@@ -263,6 +369,42 @@ class AgentSessionsToolWindowTest {
       .assertIsDisplayed()
     composeRule.onAllNodesWithText("Project 11").assertCountEquals(0)
     composeRule.onAllNodesWithText("Project 12").assertCountEquals(0)
+  }
+
+  @Test
+  fun threadMoreRowShowsPlainMoreWhenCountIsUnknown() {
+    val now = 1_700_000_000_000L
+    val threads = (1..5).map { i ->
+      AgentSessionThread(
+        id = "thread-$i",
+        title = "Thread $i",
+        updatedAt = now - i,
+        archived = false,
+      )
+    }
+    val projects = listOf(
+      AgentProjectSessions(
+        path = "/work/project-a",
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+        hasUnknownThreadCount = true,
+        threads = threads,
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+      )
+    }
+
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.action.more"))
+      .assertIsDisplayed()
+    composeRule.onAllNodesWithText(AgentSessionsBundle.message("toolwindow.action.more.count", 2))
+      .assertCountEquals(0)
   }
 
   @Test
@@ -623,4 +765,12 @@ private object TestTypography : Typography {
 
 private object TestNewUiChecker : NewUiChecker {
   override fun isNewUi(): Boolean = true
+}
+
+private fun providerUnavailableMessage(provider: AgentSessionProvider): String {
+  val providerLabel = when (provider) {
+    AgentSessionProvider.CODEX -> AgentSessionsBundle.message("toolwindow.provider.codex")
+    AgentSessionProvider.CLAUDE -> AgentSessionsBundle.message("toolwindow.provider.claude")
+  }
+  return AgentSessionsBundle.message("toolwindow.warning.provider.unavailable", providerLabel)
 }

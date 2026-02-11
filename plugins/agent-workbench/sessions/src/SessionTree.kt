@@ -41,7 +41,13 @@ internal fun sessionTree(
   val treeState = stateHolder.treeState
   val autoOpenNodes = remember(projects, visibleProjectCount) {
     projects.take(visibleProjectCount)
-      .filter { it.isOpen || it.errorMessage != null || it.threads.isNotEmpty() || it.worktrees.any { wt -> wt.threads.isNotEmpty() } }
+      .filter {
+        it.isOpen ||
+        it.errorMessage != null ||
+        it.providerWarnings.isNotEmpty() ||
+        it.threads.isNotEmpty() ||
+        it.worktrees.any { wt -> wt.errorMessage != null || wt.providerWarnings.isNotEmpty() || wt.threads.isNotEmpty() }
+      }
       .map { SessionTreeId.Project(it.path) }
   }
   LaunchedEffect(autoOpenNodes) {
@@ -100,6 +106,7 @@ internal fun sessionTree(
             }
             if (path != null) onShowMoreThreads(path)
           }
+          is SessionTreeNode.Warning -> Unit
           is SessionTreeNode.Error -> Unit
           is SessionTreeNode.Empty -> Unit
           is SessionTreeNode.Worktree -> onOpenProject(node.worktree.path)
@@ -133,19 +140,28 @@ private fun buildSessionTree(
         id = projectId,
       ) {
         val errorMessage = project.errorMessage
-        val hasVisibleWorktrees = project.worktrees.any { it.threads.isNotEmpty() || it.isLoading || it.errorMessage != null }
+        val hasVisibleWorktrees = project.worktrees.any {
+          it.threads.isNotEmpty() || it.isLoading || it.errorMessage != null || it.providerWarnings.isNotEmpty()
+        }
         if (errorMessage != null) {
           addLeaf(
             data = SessionTreeNode.Error(project, errorMessage),
             id = SessionTreeId.Error(project.path),
           )
-        } else if (project.hasLoaded && project.threads.isEmpty() && !hasVisibleWorktrees) {
+        }
+        else if (project.hasLoaded && project.threads.isEmpty() && !hasVisibleWorktrees && project.providerWarnings.isEmpty()) {
           addLeaf(
             data = SessionTreeNode.Empty(project, AgentSessionsBundle.message("toolwindow.empty.project")),
             id = SessionTreeId.Empty(project.path),
           )
-        } else {
-          val visibleWorktrees = project.worktrees.filter { it.threads.isNotEmpty() || it.isLoading || it.errorMessage != null }
+        }
+        else {
+          addProviderWarningNodes(project.providerWarnings) { provider ->
+            SessionTreeId.Warning(project.path, provider)
+          }
+          val visibleWorktrees = project.worktrees.filter {
+            it.threads.isNotEmpty() || it.isLoading || it.errorMessage != null || it.providerWarnings.isNotEmpty()
+          }
           visibleWorktrees.forEach { worktree ->
             addNode(
               data = SessionTreeNode.Worktree(project, worktree),
@@ -159,6 +175,9 @@ private fun buildSessionTree(
                 )
               }
               else {
+                addProviderWarningNodes(worktree.providerWarnings) { provider ->
+                  SessionTreeId.WorktreeWarning(project.path, worktree.path, provider)
+                }
                 val visibleCount = visibleThreadCounts[worktree.path] ?: DEFAULT_VISIBLE_THREAD_COUNT
                 addThreadNodes(
                   project = project,
@@ -171,7 +190,10 @@ private fun buildSessionTree(
                 }
                 if (worktree.threads.size > visibleCount) {
                   addLeaf(
-                    data = SessionTreeNode.MoreThreads(project, worktree.threads.size - visibleCount),
+                    data = SessionTreeNode.MoreThreads(
+                      project = project,
+                      hiddenCount = if (worktree.hasUnknownThreadCount) null else worktree.threads.size - visibleCount,
+                    ),
                     id = SessionTreeId.WorktreeMoreThreads(project.path, worktree.path),
                   )
                 }
@@ -184,7 +206,10 @@ private fun buildSessionTree(
           }
           if (project.threads.size > visibleCount) {
             addLeaf(
-              data = SessionTreeNode.MoreThreads(project, project.threads.size - visibleCount),
+              data = SessionTreeNode.MoreThreads(
+                project = project,
+                hiddenCount = if (project.hasUnknownThreadCount) null else project.threads.size - visibleCount,
+              ),
               id = SessionTreeId.MoreThreads(project.path),
             )
           }
@@ -238,11 +263,24 @@ private fun TreeGeneratorScope<SessionTreeNode>.addThreadNodes(
   }
 }
 
+private fun TreeGeneratorScope<SessionTreeNode>.addProviderWarningNodes(
+  warnings: List<AgentSessionProviderWarning>,
+  warningIdFactory: (AgentSessionProvider) -> SessionTreeId,
+) {
+  warnings.forEach { warning ->
+    addLeaf(
+      data = SessionTreeNode.Warning(warning.message),
+      id = warningIdFactory(warning.provider),
+    )
+  }
+}
+
 private fun sessionTreeNodeText(node: SessionTreeNode): String? =
   when (node) {
     is SessionTreeNode.Project -> node.project.name
     is SessionTreeNode.Thread -> node.thread.title
     is SessionTreeNode.SubAgent -> node.subAgent.name.ifBlank { node.subAgent.id }
+    is SessionTreeNode.Warning -> null
     is SessionTreeNode.Error -> null
     is SessionTreeNode.Empty -> node.message
     is SessionTreeNode.MoreProjects -> null
@@ -258,10 +296,11 @@ internal sealed interface SessionTreeNode {
     val thread: AgentSessionThread,
     val subAgent: AgentSubAgent,
   ) : SessionTreeNode
+  data class Warning(val message: String) : SessionTreeNode
   data class Error(val project: AgentProjectSessions, val message: String) : SessionTreeNode
   data class Empty(val project: AgentProjectSessions, val message: String) : SessionTreeNode
   data class MoreProjects(val hiddenCount: Int) : SessionTreeNode
-  data class MoreThreads(val project: AgentProjectSessions, val hiddenCount: Int) : SessionTreeNode
+  data class MoreThreads(val project: AgentProjectSessions, val hiddenCount: Int?) : SessionTreeNode
   data class Worktree(val project: AgentProjectSessions, val worktree: AgentWorktree) : SessionTreeNode
 }
 
@@ -274,6 +313,7 @@ internal sealed interface SessionTreeId {
     val threadId: String,
     val subAgentId: String,
   ) : SessionTreeId
+  data class Warning(val projectPath: String, val provider: AgentSessionProvider) : SessionTreeId
   data class Error(val projectPath: String) : SessionTreeId
   data class Empty(val projectPath: String) : SessionTreeId
   data object MoreProjects : SessionTreeId
@@ -291,6 +331,11 @@ internal sealed interface SessionTreeId {
     val provider: AgentSessionProvider,
     val threadId: String,
     val subAgentId: String,
+  ) : SessionTreeId
+  data class WorktreeWarning(
+    val projectPath: String,
+    val worktreePath: String,
+    val provider: AgentSessionProvider,
   ) : SessionTreeId
   data class WorktreeMoreThreads(val projectPath: String, val worktreePath: String) : SessionTreeId
   data class WorktreeError(val projectPath: String, val worktreePath: String) : SessionTreeId

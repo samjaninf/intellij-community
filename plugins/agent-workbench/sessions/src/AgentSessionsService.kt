@@ -9,6 +9,7 @@ import com.intellij.ide.RecentProjectsManager
 import com.intellij.ide.RecentProjectsManagerBase
 import com.intellij.ide.impl.OpenProjectTask
 import com.intellij.ide.impl.ProjectUtilService
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
@@ -17,17 +18,16 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
-import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.ui.DoNotAskOption
 import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.io.FileUtilRt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,36 +45,62 @@ private val LOG = logger<AgentSessionsService>()
 private const val SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY = "agent.workbench.suppress.branch.mismatch.dialog"
 
 @Service(Service.Level.APP)
-internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
+internal class AgentSessionsService private constructor(
+  private val serviceScope: CoroutineScope,
+  private val sessionSources: List<AgentSessionSource>,
+  private val projectEntriesProvider: suspend (AgentSessionsService) -> List<ProjectEntry>,
+  subscribeToProjectLifecycle: Boolean,
+) {
+  @Suppress("unused")
+  constructor(serviceScope: CoroutineScope) : this(
+    serviceScope = serviceScope,
+    sessionSources = createDefaultAgentSessionSources(serviceScope),
+    projectEntriesProvider = { service -> service.collectProjects() },
+    subscribeToProjectLifecycle = true,
+  )
+
+  internal constructor(
+    serviceScope: CoroutineScope,
+    sessionSources: List<AgentSessionSource>,
+    projectEntriesProvider: suspend () -> List<ProjectEntry>,
+    subscribeToProjectLifecycle: Boolean = false,
+  ) : this(
+    serviceScope = serviceScope,
+    sessionSources = sessionSources,
+    projectEntriesProvider = { _ -> projectEntriesProvider() },
+    subscribeToProjectLifecycle = subscribeToProjectLifecycle,
+  )
+
   private val refreshMutex = Mutex()
   private val onDemandMutex = Mutex()
   private val onDemandLoading = LinkedHashSet<String>()
   private val onDemandWorktreeLoading = LinkedHashSet<String>()
-  private val sessionSources: List<AgentSessionSource> = createDefaultAgentSessionSources(serviceScope)
 
   private val mutableState = MutableStateFlow(AgentSessionsState())
   val state: StateFlow<AgentSessionsState> = mutableState.asStateFlow()
 
   init {
-    ApplicationManager.getApplication().messageBus.connect(serviceScope)
-      .subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
-        @Deprecated("Deprecated in Java")
-        @Suppress("removal")
-        override fun projectOpened(project: Project) {
-          refresh()
-        }
+    if (subscribeToProjectLifecycle) {
+      ApplicationManager.getApplication().messageBus.connect(serviceScope)
+        .subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
+          @Deprecated("Deprecated in Java")
+          @Suppress("removal")
+          override fun projectOpened(project: Project) {
+            refresh()
+          }
 
-        override fun projectClosed(project: Project) {
-          refresh()
-        }
-      })
+          override fun projectClosed(project: Project) {
+            refresh()
+          }
+        })
+    }
   }
 
   fun refresh() {
     serviceScope.launch(Dispatchers.IO) {
       if (!refreshMutex.tryLock()) return@launch
       try {
-        val entries = collectProjects()
+        val entries = projectEntriesProvider(this@AgentSessionsService)
         val currentProjectsByPath = mutableState.value.projects.associateBy { it.path }
         val initialProjects = entries.map { entry ->
           val existing = currentProjectsByPath[entry.path]
@@ -85,8 +111,10 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
             isOpen = entry.project != null,
             isLoading = entry.project != null,
             hasLoaded = existing?.hasLoaded ?: false,
+            hasUnknownThreadCount = existing?.hasUnknownThreadCount ?: false,
             threads = existing?.threads ?: emptyList(),
             errorMessage = existing?.errorMessage,
+            providerWarnings = existing?.providerWarnings ?: emptyList(),
             worktrees = entry.worktreeEntries.map { wt ->
               val existingWt = existing?.worktrees?.firstOrNull { it.path == wt.path }
               val hasExistingData = existingWt != null && existingWt.threads.isNotEmpty()
@@ -97,8 +125,10 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
                 isOpen = wt.project != null,
                 isLoading = hasExistingData,
                 hasLoaded = existingWt?.hasLoaded ?: false,
+                hasUnknownThreadCount = existingWt?.hasUnknownThreadCount ?: false,
                 threads = existingWt?.threads ?: emptyList(),
                 errorMessage = existingWt?.errorMessage,
+                providerWarnings = existingWt?.providerWarnings ?: emptyList(),
               )
             },
           )
@@ -163,15 +193,19 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
                 val wtResult = wtResults[wt.path]
                 if (wtResult != null) wt.copy(isLoading = false,
                                               hasLoaded = true,
+                                              hasUnknownThreadCount = wtResult.result.hasUnknownThreadCount,
                                               threads = wtResult.result.threads,
-                                              errorMessage = wtResult.result.errorMessage)
+                                              errorMessage = wtResult.result.errorMessage,
+                                              providerWarnings = wtResult.result.providerWarnings)
                 else wt
               }
               if (pResult != null) {
                 project.copy(isLoading = false,
                              hasLoaded = true,
+                             hasUnknownThreadCount = pResult.result.hasUnknownThreadCount,
                              threads = pResult.result.threads,
                              errorMessage = pResult.result.errorMessage,
+                             providerWarnings = pResult.result.providerWarnings,
                              worktrees = updatedWorktrees)
               }
               else {
@@ -191,8 +225,12 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
               project.copy(
                 isLoading = false,
                 hasLoaded = project.isOpen,
+                hasUnknownThreadCount = false,
                 errorMessage = AgentSessionsBundle.message("toolwindow.error"),
-                worktrees = project.worktrees.map { wt -> wt.copy(isLoading = false) },
+                providerWarnings = emptyList(),
+                worktrees = project.worktrees.map { wt ->
+                  wt.copy(isLoading = false, hasUnknownThreadCount = false, providerWarnings = emptyList())
+                },
               )
             },
             lastUpdatedAt = System.currentTimeMillis(),
@@ -250,15 +288,22 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
       if (!markOnDemandLoading(normalized)) return@launch
       try {
         updateProject(normalized) { project ->
-          project.copy(isLoading = true, errorMessage = null)
+          project.copy(
+            isLoading = true,
+            hasUnknownThreadCount = false,
+            errorMessage = null,
+            providerWarnings = emptyList(),
+          )
         }
         val result = loadThreadsFromClosedProject(path = normalized)
         updateProject(normalized) { project ->
           project.copy(
             isLoading = false,
             hasLoaded = true,
+            hasUnknownThreadCount = result.hasUnknownThreadCount,
             threads = result.threads,
             errorMessage = result.errorMessage,
+            providerWarnings = result.providerWarnings,
           )
         }
       }
@@ -275,15 +320,22 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
       if (!markWorktreeOnDemandLoading(normalizedProject, normalizedWorktree)) return@launch
       try {
         updateWorktree(normalizedProject, normalizedWorktree) { worktree ->
-          worktree.copy(isLoading = true, errorMessage = null)
+          worktree.copy(
+            isLoading = true,
+            hasUnknownThreadCount = false,
+            errorMessage = null,
+            providerWarnings = emptyList(),
+          )
         }
         val result = loadThreadsFromClosedProject(path = normalizedWorktree)
         updateWorktree(normalizedProject, normalizedWorktree) { worktree ->
           worktree.copy(
             isLoading = false,
             hasLoaded = true,
+            hasUnknownThreadCount = result.hasUnknownThreadCount,
             threads = result.threads,
             errorMessage = result.errorMessage,
+            providerWarnings = result.providerWarnings,
           )
         }
       }
@@ -320,11 +372,19 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
             LOG.warn("Failed to load ${source.provider.name} sessions for $path", throwable)
             Result.failure(throwable)
           }
-          AgentSessionSourceLoadResult(provider = source.provider, result = result)
+          AgentSessionSourceLoadResult(
+            provider = source.provider,
+            result = result,
+            hasUnknownTotal = result.isSuccess && !source.canReportExactThreadCount,
+          )
         }
       }.awaitAll()
     }
-    return mergeAgentSessionSourceLoadResults(sourceResults, ::resolveErrorMessage)
+    return mergeAgentSessionSourceLoadResults(
+      sourceResults = sourceResults,
+      resolveErrorMessage = ::resolveErrorMessage,
+      resolveWarningMessage = ::resolveProviderWarningMessage,
+    )
   }
 
   private fun resolveErrorMessage(provider: AgentSessionProvider, t: Throwable): @NlsContexts.DialogMessage String {
@@ -336,6 +396,20 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
 
   private fun resolveCliMissingMessage(provider: AgentSessionProvider): @NlsContexts.DialogMessage String {
     return AgentSessionsBundle.message(agentSessionCliMissingMessageKey(provider))
+  }
+
+  private fun resolveProviderWarningMessage(provider: AgentSessionProvider, t: Throwable): @NlsContexts.DialogMessage String {
+    return when (t) {
+      is CodexCliNotFoundException -> resolveCliMissingMessage(provider)
+      else -> AgentSessionsBundle.message("toolwindow.warning.provider.unavailable", resolveProviderLabel(provider))
+    }
+  }
+
+  private fun resolveProviderLabel(provider: AgentSessionProvider): String {
+    return when (provider) {
+      AgentSessionProvider.CODEX -> AgentSessionsBundle.message("toolwindow.provider.codex")
+      AgentSessionProvider.CLAUDE -> AgentSessionsBundle.message("toolwindow.provider.claude")
+    }
   }
 
   private suspend fun openOrFocusProjectInternal(path: String) {
@@ -717,7 +791,7 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
     }
   }
 
-  private data class ProjectEntry(
+  internal data class ProjectEntry(
     val path: String,
     val name: String,
     val project: Project?,
@@ -725,7 +799,7 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
     val worktreeEntries: List<WorktreeEntry> = emptyList(),
   )
 
-  private data class WorktreeEntry(
+  internal data class WorktreeEntry(
     val path: String,
     val name: String,
     val branch: String?,
@@ -735,23 +809,37 @@ internal class AgentSessionsService(private val serviceScope: CoroutineScope) {
 
 internal data class AgentSessionLoadResult(
   val threads: List<AgentSessionThread>,
-  val errorMessage: String?,
+  val errorMessage: String? = null,
+  val hasUnknownThreadCount: Boolean = false,
+  val providerWarnings: List<AgentSessionProviderWarning> = emptyList(),
 )
 
 internal data class AgentSessionSourceLoadResult(
   val provider: AgentSessionProvider,
   val result: Result<List<AgentSessionThread>>,
+  val hasUnknownTotal: Boolean = false,
 )
 
 internal fun mergeAgentSessionSourceLoadResults(
   sourceResults: List<AgentSessionSourceLoadResult>,
   resolveErrorMessage: (AgentSessionProvider, Throwable) -> String,
+  resolveWarningMessage: (AgentSessionProvider, Throwable) -> String = resolveErrorMessage,
 ): AgentSessionLoadResult {
   val mergedThreads = buildList {
     sourceResults.forEach { sourceResult ->
       addAll(sourceResult.result.getOrElse { emptyList() })
     }
   }.sortedByDescending { it.updatedAt }
+
+  val providerWarnings = sourceResults.mapNotNull { sourceResult ->
+    sourceResult.result.exceptionOrNull()?.let { throwable ->
+      AgentSessionProviderWarning(
+        provider = sourceResult.provider,
+        message = resolveWarningMessage(sourceResult.provider, throwable),
+      )
+    }
+  }
+  val hasUnknownThreadCount = sourceResults.any { it.hasUnknownTotal }
 
   val firstError = sourceResults.firstNotNullOfOrNull { sourceResult ->
     sourceResult.result.exceptionOrNull()?.let { throwable ->
@@ -760,5 +848,10 @@ internal fun mergeAgentSessionSourceLoadResults(
   }
   val allSourcesFailed = sourceResults.isNotEmpty() && sourceResults.all { it.result.isFailure }
   val errorMessage = if (allSourcesFailed) firstError else null
-  return AgentSessionLoadResult(threads = mergedThreads, errorMessage = errorMessage)
+  return AgentSessionLoadResult(
+    threads = mergedThreads,
+    errorMessage = errorMessage,
+    hasUnknownThreadCount = hasUnknownThreadCount,
+    providerWarnings = if (allSourcesFailed) emptyList() else providerWarnings,
+  )
 }

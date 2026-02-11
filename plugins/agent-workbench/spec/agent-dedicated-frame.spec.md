@@ -12,7 +12,7 @@ targets:
 # Agent Chat Dedicated Frame
 
 Status: Draft
-Date: 2026-02-07
+Date: 2026-02-11
 
 ## Summary
 Define dedicated-frame behavior for Agent chat opening. By default, chat opens in a dedicated frame backed by a hidden internal project. Users can switch to current-project-frame mode via Advanced Settings and a Sessions gear toggle.
@@ -47,6 +47,13 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 - Dedicated frame project is excluded from Sessions project registry (both open and recent enumerations).
 - Chat terminal working directory remains the source project path regardless of frame mode.
 - Implementation must stay independent from `welcomeScreenProjectProvider` because that provider model is singleton-like across products.
+- Chat resume command remains provider-specific in dedicated mode as in current-project mode:
+  - Codex: `codex resume <threadId>`
+  - Claude: `claude --resume <threadId>`
+
+[@test] ../sessions/testSrc/AgentSessionsGearActionsTest.kt
+[@test] ../sessions/testSrc/CodexSessionsOpenModeRoutingTest.kt
+[@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 
 ## User Experience
 - Default click on thread opens dedicated chat frame.
@@ -57,7 +64,7 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 ## Data & Backend
 - Mode state is stored via Advanced Settings.
 - Dedicated frame project path is managed by `AgentWorkbenchDedicatedFrameProjectManager`.
-- Chat command remains `codex resume <threadId>` with source-project `cwd`.
+- Chat command remains provider-specific with source-project `cwd`.
 
 ## Error Handling
 - If dedicated frame project path cannot be prepared/opened, log warning and do not open chat tab.
@@ -78,6 +85,6 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 - Additional service-level tests for dedicated routing behavior may be needed.
 
 ## References
-- `spec/codex-chat-editor.spec.md`
-- `spec/codex-sessions.spec.md`
+- `spec/agent-chat-editor.spec.md`
+- `spec/agent-sessions.spec.md`
 - `community/platform/platform-impl/src/com/intellij/openapi/wm/ex/WelcomeScreenProjectProvider.kt`

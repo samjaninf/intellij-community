@@ -17,7 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 internal class CodexSessionSource(
   private val coroutineScope: CoroutineScope,
   private val branchStore: CodexSessionBranchStore = CodexSessionBranchStore(),
-) : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX) {
+) : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX, canReportExactThreadCount = false) {
   override suspend fun listThreads(path: String, openProject: Project?): List<AgentSessionThread> {
     if (openProject != null) {
       return listThreadsFromOpenProject(project = openProject)

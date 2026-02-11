@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 
 internal abstract class BaseAgentSessionSource(
   final override val provider: AgentSessionProvider,
+  final override val canReportExactThreadCount: Boolean = true,
 ) : AgentSessionSource {
   final override suspend fun listThreadsFromOpenProject(path: String, project: Project): List<AgentSessionThread> {
     return listThreads(path = path, openProject = project)

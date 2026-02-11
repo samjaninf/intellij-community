@@ -7,6 +7,8 @@ import com.intellij.openapi.project.Project
 
 internal interface AgentSessionSource {
   val provider: AgentSessionProvider
+  val canReportExactThreadCount: Boolean
+    get() = true
 
   suspend fun listThreadsFromOpenProject(path: String, project: Project): List<AgentSessionThread>
 
