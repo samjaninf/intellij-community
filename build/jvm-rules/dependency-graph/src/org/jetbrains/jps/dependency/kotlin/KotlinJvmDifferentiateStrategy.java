@@ -829,12 +829,17 @@ public final class KotlinJvmDifferentiateStrategy extends JvmDifferentiateStrate
   }
 
   private void affectLookupUsages(DifferentiateContext context, Iterable<JvmNodeReferenceID> symbolOwners, String symbolName, Utils utils, @Nullable Predicate<Node<?, ?>> constraint) {
+    // on source level the lookup symbol can be defined in a companion object
+    Iterable<JvmNodeReferenceID> companions = map(flat(map(symbolOwners, o -> utils.getNodes(o, JvmClass.class))), cls -> {
+      String companionName = KJvmUtils.getCompanionObjectName(cls);
+      return companionName != null? new JvmNodeReferenceID(cls.getName() + "/" + companionName) : null;
+    });
     // since '$' is both a valid bytecode name symbol and inner class name separator, for every class name containing '$' use additional classname with '/'
-    Iterable<JvmNodeReferenceID> owners = filter(flat(symbolOwners, map(symbolOwners, o -> {
+    Iterable<JvmNodeReferenceID> owners = filter(flat(List.of(symbolOwners, companions, map(symbolOwners, o -> {
       String original = o.getNodeName();
       String normalized = original.replace('$', '/'); // inner class names on Kotlin lookups level use '/' separators instead of '$'
       return normalized.equals(original)? null : new JvmNodeReferenceID(normalized);
-    })), Objects::nonNull);
+    }))), Objects::nonNull);
 
     affectUsages(context, "lookup '" + symbolName + "'" , owners, id -> {
       String kotlinName = KJvmUtils.getKotlinName(id, utils);

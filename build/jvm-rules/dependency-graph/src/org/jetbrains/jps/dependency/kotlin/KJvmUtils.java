@@ -91,6 +91,11 @@ final class KJvmUtils {
     return method.getName();
   }
 
+  static @Nullable String getCompanionObjectName(JvmClass cls) {
+    KotlinMeta meta = getKotlinMeta(cls);
+    return meta != null? meta.getCompanionObject() : null;
+  }
+
   static boolean isDeclaresDefaultValue(KmFunction f) {
     return find(f.getValueParameters(), Attributes::getDeclaresDefaultValue) != null;
   }
