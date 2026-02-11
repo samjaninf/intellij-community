@@ -213,7 +213,7 @@ private class IjentFailSafeFileSystemPosixApiImpl(
   override suspend fun createDirectory(
     path: EelPath,
     attributes: List<EelFileSystemPosixApi.CreateDirAttributePosix>,
-  ): EelResult<Unit, EelFileSystemPosixApi.CreateDirectoryError> =
+  ): EelResult<Unit, EelFileSystemApi.CreateDirectoryError> =
     holder.withDelegateRetrying {
       createDirectory(path, attributes)
     }
@@ -376,6 +376,11 @@ private class IjentFailSafeFileSystemWindowsApiImpl(
   ): EelResult<Collection<String>, EelFileSystemApi.ListDirectoryError> =
     holder.withDelegateRetrying {
       listDirectory(path)
+    }
+
+  override suspend fun createDirectory(path: EelPath): EelResult<Unit, EelFileSystemApi.CreateDirectoryError> =
+    holder.withDelegateRetrying {
+      createDirectory(path)
     }
 
   override suspend fun getRootDirectories(): Collection<EelPath> {

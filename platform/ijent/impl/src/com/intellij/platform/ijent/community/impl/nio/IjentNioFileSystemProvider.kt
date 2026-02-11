@@ -291,7 +291,7 @@ class IjentNioFileSystemProvider : FileSystemProvider() {
     fsBlocking {
       when (val fsApi = dir.nioFs.ijentFs) {
         is IjentFileSystemPosixApi -> fsApi.createDirectory(path, emptyList()).getOrThrowFileSystemException()
-        is IjentFileSystemWindowsApi -> TODO()
+        is IjentFileSystemWindowsApi -> fsApi.createDirectory(path).getOrThrowFileSystemException()
       }
     }
   }
