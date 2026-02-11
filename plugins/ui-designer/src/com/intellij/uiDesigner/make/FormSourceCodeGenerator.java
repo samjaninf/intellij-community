@@ -319,7 +319,7 @@ public final class FormSourceCodeGenerator {
 
     PsiElement anchor;
     if (myGenerateFinalFields) {
-      anchor = generateSourceFinalFields(newClass, module, methodText, classToBind, id2component);
+      anchor = generateSourceFinalFields(newClass, module, methodText, classToBind, id2component, rootContainer);
     }
     else {
       anchor = generateSourcesNoFinalFields(rootContainer, newClass, module, methodText);
@@ -459,7 +459,7 @@ public final class FormSourceCodeGenerator {
     return method;
   }
 
-  private static PsiElement generateSourceFinalFields(PsiClass newClass, Module module, String methodText, PsiClass classToBind, HashMap<String, LwComponent> id2component)
+  private static PsiElement generateSourceFinalFields(PsiClass newClass, Module module, String methodText, PsiClass classToBind, HashMap<String, LwComponent> id2component, LwRootContainer rootContainer)
     throws CodeGenerationException {
 
     final PsiManager psiManager = PsiManager.getInstance(module.getProject());
@@ -479,6 +479,20 @@ public final class FormSourceCodeGenerator {
 
         boundFields.add(boundField);
 
+        if (!boundField.hasModifierProperty(PsiModifier.FINAL)) {
+          Objects.requireNonNull(boundField.getModifierList()).setModifierProperty(PsiModifier.FINAL, true);
+        }
+      }
+    }
+
+    for (IButtonGroup group : rootContainer.getButtonGroups()) {
+      if (group.isBound()) {
+        PsiField boundField = newClass.findFieldByName(group.getName(), false);
+        if (boundField == null) {
+          throw new CodeGenerationException(null,
+                                            "Bound field '" + group.getName() + "' not found in class " + classToBind.getQualifiedName());
+        }
+        boundFields.add(boundField);
         if (!boundField.hasModifierProperty(PsiModifier.FINAL)) {
           Objects.requireNonNull(boundField.getModifierList()).setModifierProperty(PsiModifier.FINAL, true);
         }
@@ -1473,6 +1487,10 @@ public final class FormSourceCodeGenerator {
           pushVar(targetVariable);
           endMethod();
         }
+      }
+      if (!haveGroupConstructor && group.isBound()) {
+        append(group.getName());
+        append("= new javax.swing.ButtonGroup();");
       }
     }
   }
