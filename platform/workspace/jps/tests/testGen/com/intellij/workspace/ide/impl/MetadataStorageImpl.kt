@@ -1,5 +1,5 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.workspaceModel.ide.impl
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.workspace.ide.impl
 
 import com.intellij.platform.workspace.storage.WorkspaceEntityInternalApi
 import com.intellij.platform.workspace.storage.metadata.impl.MetadataStorageBase
@@ -14,7 +14,7 @@ internal object MetadataStorageImpl : MetadataStorageBase() {
 
     var typeMetadata: StorageTypeMetadata
 
-    typeMetadata = FinalClassMetadata.ObjectMetadata(fqName = "com.intellij.workspaceModel.ide.Source",
+    typeMetadata = FinalClassMetadata.ObjectMetadata(fqName = "com.intellij.workspace.ide.Source",
                                                      properties = listOf(OwnPropertyMetadata(isComputable = false,
                                                                                              isKey = false,
                                                                                              isOpen = false,
@@ -30,7 +30,7 @@ internal object MetadataStorageImpl : MetadataStorageBase() {
   }
 
   override fun initializeMetadataHash() {
-    addMetadataHash(typeFqn = "com.intellij.platform.workspace.storage.EntitySource", metadataHash = -1468425945)
-    addMetadataHash(typeFqn = "com.intellij.workspaceModel.ide.Source", metadataHash = 1093972899)
+    addMetadataHash(typeFqn = "com.intellij.platform.workspace.storage.EntitySource", metadataHash = 1548610517)
+    addMetadataHash(typeFqn = "com.intellij.workspace.ide.Source", metadataHash = -1554868454)
   }
 }
