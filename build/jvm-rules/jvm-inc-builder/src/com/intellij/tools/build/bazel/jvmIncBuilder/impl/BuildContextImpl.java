@@ -20,7 +20,6 @@ import org.jetbrains.jps.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -121,14 +120,9 @@ public class BuildContextImpl implements BuildContext {
 
     Map<NodeSource, String> sourcesMap = new HashMap<>();
     for (String src : CLFlags.SRCS.getValue(flags)) {
-      try {
-        Path inputPath = baseDir.resolve(src).toRealPath(LinkOption.NOFOLLOW_LINKS); // ensure the input path names have exactly the same case as on the disk
-        assert isSourceDependency(inputPath);
-        sourcesMap.put(myPathMapper.toNodeSource(inputPath), getDigest.apply(src));
-      }
-      catch (IOException e) {
-        report(Message.create(null, Message.Kind.ERROR, "Unable to resolve relative path " + src, e));
-      }
+      Path inputPath = baseDir.resolve(src).normalize();
+      assert isSourceDependency(inputPath);
+      sourcesMap.put(myPathMapper.toNodeSource(inputPath), getDigest.apply(src));
     }
     mySources = new SourceSnapshotImpl(sourcesMap);
 
