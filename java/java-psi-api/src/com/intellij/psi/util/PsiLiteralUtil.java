@@ -712,13 +712,24 @@ public final class PsiLiteralUtil {
         String line = lines[i];
         boolean blank = line.chars().allMatch(Character::isWhitespace);
         int prefix = blank ? line.length() : indent;
-        line = line.substring(prefix);
-        boolean last = i == lines.length - 1;
-        int suffix = findLineSuffixLength(line, last);
-        line = line.substring(0, line.length() - suffix);
-        if (!last) line += '\n';
-
         offset += prefix;
+        if (prefix > 0) line = blank ? "" : line.substring(indent);
+        boolean last = i == lines.length - 1;
+        int suffix = last ? 0 : findLineSuffixLength(line);
+        if (suffix == 0) {
+          if (!last) {
+            if (countBackSlashes(line, line.length() - 1) % 2 != 0) {
+              line = line.substring(0, line.length() - 1);
+              suffix += 2;
+            }
+            else {
+              line += '\n';
+            }
+          }
+        }
+        else {
+          line = line.substring(0, line.length() - suffix) + '\n';
+        }
 
         int charEnd = 0;
         while (true) {
@@ -729,9 +740,11 @@ public final class PsiLiteralUtil {
             return new TextRange(mappedFrom, offset + charEnd);
           }
           charEnd = getCharEndIndex(line, charEnd);
-          if (charEnd == -1) break;
+          if (charEnd == -1) {
+            offset += suffix;
+            break;
+          }
           charsFound++;
-          if (charEnd == line.length()) offset += suffix;
         }
         offset += line.length();
       }

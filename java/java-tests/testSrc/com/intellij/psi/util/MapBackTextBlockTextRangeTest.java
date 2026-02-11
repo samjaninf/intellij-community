@@ -51,6 +51,27 @@ public class MapBackTextBlockTextRangeTest extends LightPlatformCodeInsightTestC
     doTest("\"\"\"\n\"\"\"", 0, 1, null, null);
   }
 
+  public void testEscapedNewlines() {
+    //noinspection TextBlockMigration
+    String text = "\"\"\"   \n" +
+                  "    %s\\\n" +
+                  "    %t\\\\\\\n" + // <- three back-slashes and a newline
+                  "    %u\\u0020\n" + // <- that's a space character
+                  "    %v\\\n" +
+                  "    \"\"\"";
+    doTest(text, 0, 2, new TextRange(11, 13), "%s");
+    doTest(text, 2, 4, new TextRange(19, 21), "%t");
+    doTest(text, 5, 7, new TextRange(29, 31), "%u");
+    doTest(text, 8, 10, new TextRange(42, 44), "%v");
+  }
+
+  public void testEscapedCharRange() {
+    String text = "\"\"\"\n" + 
+                  "    XXX\\uuu0030" +
+                  "    \"\"\"";
+    doTest(text, 3, 4, new TextRange(11, 19), "\\uuu0030");
+  }
+
   private void doTest(String blockText, int from, int to, TextRange expectedRange, String expectedRangeText) {
     PsiElementFactory factory = JavaPsiFacade.getElementFactory(getProject());
     PsiLiteralExpression textBlock = (PsiLiteralExpression)factory.createExpressionFromText(blockText, null);
