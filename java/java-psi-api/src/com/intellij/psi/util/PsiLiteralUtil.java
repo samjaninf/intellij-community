@@ -105,7 +105,7 @@ public final class PsiLiteralUtil {
    * convert text to number according to radix specified
    * if number is more than maxBits bits long, throws NumberFormatException
    */
-  public static long parseDigits(final String text, final int bitsInRadix, final int maxBits) throws NumberFormatException {
+  public static long parseDigits(String text, int bitsInRadix, int maxBits) throws NumberFormatException {
     final int textLength = text.length();
     if (textLength == 0) {
       throw new NumberFormatException(text);
@@ -138,8 +138,7 @@ public final class PsiLiteralUtil {
       return "\"'\"";
     }
     else {
-      return '\"' + charLiteral.substring(1, charLiteral.length() - 1) +
-             '\"';
+      return '\"' + charLiteral.substring(1, charLiteral.length() - 1) + '\"';
     }
   }
 
@@ -155,9 +154,7 @@ public final class PsiLiteralUtil {
     if (!(value instanceof String) || ((CharSequence)value).length() > 1) {
       throw new IllegalArgumentException();
     }
-    final String content = expression.isTextBlock()
-                           ? getTextBlockText(expression)
-                           : getStringLiteralContent(expression);
+    final String content = expression.isTextBlock() ? getTextBlockText(expression) : getStringLiteralContent(expression);
     if (content == null) {
       return null;
     }
@@ -592,8 +589,7 @@ public final class PsiLiteralUtil {
   public static @Nullable TextRange mapBackTextBlockRange(@NotNull String text, int from, int to, int indent) {
     if (from > to || to < 0) return null;
     TextBlockModel model = TextBlockModel.create(text, indent);
-    if (model == null) return null;
-    return model.mapTextBlockRangeBack(from, to);
+    return model == null ? null : model.mapTextBlockRangeBack(from, to);
   }
 
   private static int getCharEndIndex(@NotNull String line, int i) {
@@ -714,46 +710,41 @@ public final class PsiLiteralUtil {
     }
 
     private @Nullable TextRange mapTextBlockRangeBack(int from, int to) {
-      int curOffset = startPrefixLength;
-      int charsSoFar = 0;
+      int offset = startPrefixLength;
+      int charsFound = 0;
       int mappedFrom = -1;
       for (int i = 0; i < lines.length; i++) {
         String line = lines[i];
-        int linePrefixLength = findLinePrefixLength(line, indent);
-        line = line.substring(linePrefixLength);
-        boolean isLastLine = i == lines.length - 1;
-        int lineSuffixLength = findLineSuffixLength(line, isLastLine);
-        line = line.substring(0, line.length() - lineSuffixLength);
-        if (!isLastLine) line += '\n';
+        boolean blank = line.chars().allMatch(Character::isWhitespace);
+        int prefix = blank ? line.length() : indent;
+        line = line.substring(prefix);
+        boolean last = i == lines.length - 1;
+        int suffix = findLineSuffixLength(line, last);
+        line = line.substring(0, line.length() - suffix);
+        if (!last) line += '\n';
 
-        curOffset += linePrefixLength;
+        offset += prefix;
 
-        int nextIdx = 0;
+        int charEnd = 0;
         while (true) {
-          if (from == charsSoFar) {
-            mappedFrom = curOffset + nextIdx;
+          if (from == charsFound) {
+            mappedFrom = offset + charEnd;
           }
-          if (to == charsSoFar) {
-            return new TextRange(mappedFrom, curOffset + nextIdx);
+          if (to == charsFound) {
+            return new TextRange(mappedFrom, offset + charEnd);
           }
-          int charIdx = nextIdx;
-          nextIdx = getCharEndIndex(line, charIdx);
-          if (nextIdx == -1) break;
-          charsSoFar++;
-          if (nextIdx == line.length()) curOffset += lineSuffixLength;
+          charEnd = getCharEndIndex(line, charEnd);
+          if (charEnd == -1) break;
+          charsFound++;
+          if (charEnd == line.length()) offset += suffix;
         }
-        curOffset += line.length();
+        offset += line.length();
       }
       return null;
     }
 
-    private static int findLinePrefixLength(@NotNull String line, int indent) {
-      boolean isBlankLine = line.chars().allMatch(Character::isWhitespace);
-      return isBlankLine ? line.length() : indent;
-    }
-
-    private static int findLineSuffixLength(@NotNull String line, boolean isLastLine) {
-      if (isLastLine) return 0;
+    private static int findLineSuffixLength(@NotNull String line, boolean last) {
+      if (last) return 0;
       int lastIdx = line.length() - 1;
       for (int i = lastIdx; i >= 0; i--) if (!Character.isWhitespace(line.charAt(i))) return lastIdx - i;
       return 0;
