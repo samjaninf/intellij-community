@@ -5,6 +5,8 @@ import com.intellij.codeInspection.CommonQuickFixBundle
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.codeInspection.util.IntentionFamilyName
 import com.intellij.codeInspection.util.IntentionName
+import com.intellij.gradle.java.toml.getResolvedDependency
+import com.intellij.gradle.java.toml.getResolvedPlugin
 import com.intellij.modcommand.ModPsiUpdater
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiMethod
@@ -21,8 +23,6 @@ import org.jetbrains.kotlin.psi.KtValueArgumentList
 import org.jetbrains.kotlin.psi.KtVisitorVoid
 import org.jetbrains.kotlin.utils.PathUtil.KOTLIN_JAVA_STDLIB_NAME
 import org.jetbrains.plugins.gradle.codeInspection.GradleInspectionBundle
-import org.jetbrains.plugins.gradle.toml.getResolvedDependency
-import org.jetbrains.plugins.gradle.toml.getResolvedPlugin
 import org.jetbrains.uast.UExpression
 import org.jetbrains.uast.toUElementOfType
 

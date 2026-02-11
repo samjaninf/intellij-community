@@ -1,7 +1,9 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gradle.service.toml
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.gradle.java.groovy.toml.service
 
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler
+import com.intellij.gradle.java.toml.findOriginInTomlFile
+import com.intellij.gradle.java.toml.findTomlFile
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.psi.PsiElement
@@ -9,8 +11,6 @@ import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parents
 import org.jetbrains.plugins.gradle.service.project.CommonGradleProjectResolverExtension
-import org.jetbrains.plugins.gradle.toml.findOriginInTomlFile
-import org.jetbrains.plugins.gradle.toml.findTomlFile
 import org.jetbrains.plugins.gradle.util.isInVersionCatalogAccessor
 import org.jetbrains.plugins.groovy.lang.psi.GrReferenceElement
 import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyPropertyBase

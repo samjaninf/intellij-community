@@ -22,5 +22,6 @@
     <orderEntry type="module" module-name="intellij.platform.indexing" />
     <orderEntry type="module" module-name="intellij.gradle.java" />
     <orderEntry type="module" module-name="intellij.toml" />
+    <orderEntry type="module" module-name="intellij.gradle.java.toml" />
   </component>
 </module>

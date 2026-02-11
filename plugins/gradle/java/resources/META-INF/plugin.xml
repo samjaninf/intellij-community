@@ -21,7 +21,6 @@
   <depends optional="true" config-file="gradle-coverage-integration.xml">Coverage</depends>
   <depends optional="true" config-file="gradle-groovy-integration.xml">org.intellij.groovy</depends>
   <depends optional="true" config-file="gradle-properties-integration.xml">com.intellij.properties</depends>
-  <depends optional="true" config-file="gradle-toml-integration.xml">org.toml.lang</depends>
 
   <content namespace="jetbrains">
     <module name="intellij.gradle.profiler"/>
@@ -29,6 +28,9 @@
     <module name="intellij.gradle.analysis"/>
     <module name="intellij.gradle.dependencyUpdater"/>
     <module name="intellij.gradle.java.performance"/>
+    <module name="intellij.gradle.java.toml"/>
+    <module name="intellij.gradle.java.groovy"/>
+    <module name="intellij.gradle.java.groovy.toml"/>
   </content>
 
   <resource-bundle>messages.GradleInspectionBundle</resource-bundle>

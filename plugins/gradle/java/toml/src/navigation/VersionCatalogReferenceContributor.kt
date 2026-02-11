@@ -1,5 +1,5 @@
 // Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gradle.toml.navigation
+package com.intellij.gradle.java.toml.navigation
 
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.patterns.ElementPattern
@@ -14,8 +14,8 @@ import com.intellij.psi.PsiReferenceProvider
 import com.intellij.psi.PsiReferenceRegistrar
 import com.intellij.util.ProcessingContext
 import com.intellij.util.asSafely
-import org.jetbrains.plugins.gradle.toml.getLibraries
-import org.jetbrains.plugins.gradle.toml.getVersions
+import com.intellij.gradle.java.toml.getLibraries
+import com.intellij.gradle.java.toml.getVersions
 import org.toml.lang.psi.TomlArray
 import org.toml.lang.psi.TomlInlineTable
 import org.toml.lang.psi.TomlKeySegment

@@ -80,6 +80,7 @@ jvm_library(
     "//plugins/gradle/java",
     "//plugins/kotlin/code-insight/impl-base:kotlin-codeInsight-shared",
     "//plugins/kotlin/uast/uast-kotlin-base:kotlin-uast-base",
+    "//plugins/gradle/java/toml",
   ]
 )
 
@@ -167,6 +168,7 @@ jvm_library(
     "//plugins/kotlin/uast/uast-kotlin-base:kotlin-uast-base",
     "//plugins/gradle/completion",
     "//plugins/gradle/completion:completion_test_lib",
+    "//plugins/gradle/java/toml",
   ]
 )
 ### auto-generated section `build intellij.kotlin.gradle.scripting` end

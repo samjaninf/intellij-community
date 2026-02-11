@@ -1,6 +1,7 @@
-// Copyright 2000-2022 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gradle.service.toml
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.gradle.java.groovy.toml.service
 
+import com.intellij.gradle.java.toml.getVersionCatalogParts
 import com.intellij.lang.java.beans.PropertyKind
 import com.intellij.openapi.application.QueryExecutorBase
 import com.intellij.openapi.application.runReadAction
@@ -14,7 +15,6 @@ import com.intellij.psi.util.PropertyUtilBase
 import com.intellij.psi.util.parentOfType
 import com.intellij.util.Processor
 import com.intellij.util.asSafely
-import org.jetbrains.plugins.gradle.toml.getVersionCatalogParts
 import org.jetbrains.plugins.groovy.findUsages.GroovyScopeUtil
 import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementFactory
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrMethodCall

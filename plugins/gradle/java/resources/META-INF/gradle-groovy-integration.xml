@@ -1,6 +1,5 @@
 <idea-plugin>
   <depends optional="true" config-file="gradle-groovy-ml-integration.xml">com.intellij.completion.ml.ranking</depends>
-  <depends optional="true" config-file="gradle-groovy-toml-integration.xml">org.toml.lang</depends>
 
   <extensionPoints>
     <extensionPoint qualifiedName="org.jetbrains.plugins.gradle.resolve.contributor" interface="org.jetbrains.plugins.gradle.service.resolve.GradleMethodContextContributor"
@@ -24,7 +23,6 @@
     <executionEnvironmentProvider implementation="org.jetbrains.plugins.gradle.execution.build.GroovyGradleApplicationEnvironmentProvider"/>
     <frameworkSupport implementation="org.jetbrains.plugins.gradle.frameworkSupport.GradleGroovyFrameworkSupportProvider"/>
     <kotlinDslFrameworkSupport implementation="org.jetbrains.plugins.gradle.frameworkSupport.KotlinDslGradleGroovyFrameworkSupportProvider" />
-    <dslInspectionProvider language="Groovy" implementationClass="org.jetbrains.plugins.gradle.codeInspection.groovy.GroovyGradleDslInspectionProvider"/>
   </extensions>
 
   <extensions defaultExtensionNs="com.intellij">

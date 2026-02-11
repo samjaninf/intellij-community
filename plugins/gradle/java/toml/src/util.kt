@@ -1,5 +1,6 @@
-// Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gradle.toml
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+@file:ApiStatus.Internal
+package com.intellij.gradle.java.toml
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.module.ModuleUtilCore
@@ -16,6 +17,7 @@ import com.intellij.psi.util.InheritanceUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.util.asSafely
 import com.intellij.util.containers.tail
+import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.plugins.gradle.service.resolve.GradleCommonClassNames.GRADLE_API_PROVIDER_PROVIDER
 import org.jetbrains.plugins.gradle.service.resolve.GradleCommonClassNames.GRADLE_API_PROVIDER_PROVIDER_CONVERTIBLE
 import org.jetbrains.plugins.gradle.service.resolve.VersionCatalogsLocator
@@ -48,7 +50,7 @@ internal fun getVersions(context: PsiElement): List<TomlKeySegment> = getTableEn
 
 internal fun getLibraries(context: PsiElement): List<TomlKeySegment> = getTableEntries(context, "libraries")
 
-internal fun String.getVersionCatalogParts() : List<String> = split("_", "-")
+fun String.getVersionCatalogParts() : List<String> = split("_", "-")
 
 fun findTomlFile(context: PsiElement, name: String): TomlFile? {
   val module = ModuleUtilCore.findModuleForPsiElement(context) ?: return null
@@ -65,7 +67,7 @@ private fun findTomlFileDynamically(context: PsiElement, name: String): VirtualF
 }
 
 /**
- * Given a [TomlFile] and a path, returns the corresponding key element.
+ * Given a [org.toml.lang.psi.TomlFile] and a path, returns the corresponding key element.
  * For example, given "versions.foo", it will locate the `foo =` key/value
  * pair under the `\[versions]` table and return it. As a special case,
  * `libraries` don't have to be explicitly named in the path.
