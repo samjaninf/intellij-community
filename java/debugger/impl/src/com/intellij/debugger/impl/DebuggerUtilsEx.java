@@ -550,12 +550,13 @@ public abstract class DebuggerUtilsEx extends DebuggerUtils {
         fileType = file != null ? file.getFileType() : null;
       }
     }
-    for (CodeFragmentFactory factory : CodeFragmentFactory.EXTENSION_POINT_NAME.getExtensionList()) {
-      if (factory != defaultFactory && (fileType == null || factory.getFileType().equals(fileType)) && factory.isContextAccepted(context)) {
-        return factory;
-      }
-    }
-    return defaultFactory;
+    @Nullable FileType finalFileType = fileType;
+    CodeFragmentFactory factory = CodeFragmentFactory.EXTENSION_POINT_NAME.findFirstSafe(f -> {
+      return f != defaultFactory &&
+             (finalFileType == null || f.getFileType().equals(finalFileType)) &&
+             f.isContextAccepted(context);
+    });
+    return factory != null ? factory : defaultFactory;
   }
 
   public static @NotNull CodeFragmentFactory findAppropriateCodeFragmentFactory(final TextWithImports text, final PsiElement context) {
