@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 
 package com.intellij.codeInsight.completion;
 
@@ -111,15 +111,7 @@ public class CodeCompletionHandlerBase {
                                                                  boolean invokedExplicitly,
                                                                  boolean autopopup,
                                                                  boolean synchronous) {
-    return createHandler(completionType, invokedExplicitly, autopopup, synchronous, IdeActions.ACTION_CODE_COMPLETION);
-  }
-
-  public static @NotNull CodeCompletionHandlerBase createHandler(@NotNull CompletionType completionType,
-                                                                 boolean invokedExplicitly,
-                                                                 boolean autopopup,
-                                                                 boolean synchronous,
-                                                                 @NotNull String actionId) {
-    AnAction codeCompletionAction = ActionManager.getInstance().getAction(actionId);
+    AnAction codeCompletionAction = ActionManager.getInstance().getAction(IdeActions.ACTION_CODE_COMPLETION);
     if (codeCompletionAction instanceof OverridingAction) {
       codeCompletionAction = ((ActionManagerImpl)ActionManager.getInstance()).getBaseAction((OverridingAction)codeCompletionAction);
     }

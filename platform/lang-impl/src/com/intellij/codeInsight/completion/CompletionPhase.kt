@@ -11,7 +11,6 @@ import com.intellij.codeInsight.completion.impl.CompletionServiceImpl.Companion.
 import com.intellij.codeWithMe.ClientId
 import com.intellij.codeWithMe.ClientId.Companion.withExplicitClientId
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.application.ApplicationListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -316,8 +315,7 @@ sealed class CompletionPhase @ApiStatus.Internal constructor(
         phase.requestCompleted()
         val time = phase.indicator?.invocationCount ?: 0
 
-        val customId = completionEditor.getUserData(CUSTOM_CODE_COMPLETION_ACTION_ID) ?: IdeActions.ACTION_CODE_COMPLETION
-        val handler = CodeCompletionHandlerBase.createHandler(completionType, false, autopopup, false, customId)
+        val handler = CodeCompletionHandlerBase.createHandler(completionType, false, autopopup, false)
         handler.invokeCompletion(project, completionEditor, time, false)
       }
 
@@ -558,10 +556,6 @@ sealed class CompletionPhase @ApiStatus.Internal constructor(
     @ApiStatus.Internal
     @JvmField
     internal val AUTO_POPUP_TYPED_EVENT: Key<TypedEvent> = Key.create("AutoPopupTypedEvent")
-
-    @ApiStatus.Internal
-    @JvmField
-    val CUSTOM_CODE_COMPLETION_ACTION_ID: Key<String> = Key.create("CodeCompletionActionID")
 
     @JvmField
     val NoCompletion: CompletionPhase = NoCompletionImpl

@@ -92,8 +92,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.intellij.codeInsight.completion.CompletionPhase.CUSTOM_CODE_COMPLETION_ACTION_ID;
-
 /**
  * See cancellation logic in {@link CompletionPhase.BgCalculation#restartOnWriteAction)}
  *
@@ -910,11 +908,7 @@ public final class CompletionProgressIndicator extends ProgressIndicatorBase imp
     if (handler.isTestingMode() && !TestModeFlags.is(CompletionAutoPopupHandler.ourTestingAutopopup)) {
       closeAndFinish(false);
       PsiDocumentManager.getInstance(getProject()).commitAllDocuments();
-      String customId = myEditor.getUserData(CUSTOM_CODE_COMPLETION_ACTION_ID);
-      if (customId == null) {
-        customId = IdeActions.ACTION_CODE_COMPLETION;
-      }
-      CodeCompletionHandlerBase handler = CodeCompletionHandlerBase.createHandler(myCompletionType, false, false, true, customId);
+      CodeCompletionHandlerBase handler = CodeCompletionHandlerBase.createHandler(myCompletionType, false, false, true);
       handler.invokeCompletion(getProject(), myEditor, myInvocationCount);
       return;
     }
