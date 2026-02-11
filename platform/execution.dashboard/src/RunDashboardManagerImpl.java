@@ -584,7 +584,7 @@ public final class RunDashboardManagerImpl implements RunDashboardManager, Persi
     }
     finally {
       myServiceLock.writeLock().unlock();
-      mySharedState.setConfigurationTypes(new HashSet<>(myState.configurationTypes));
+      mySharedState.setConfigurationTypes(new HashSet<>(myTypes));
       mySharedState.setServices(getRunConfigurations());
     }
   }
