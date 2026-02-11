@@ -44,7 +44,7 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 
-internal abstract class WhatsNewContent() {
+internal abstract class WhatsNewContent {
   companion object {
     suspend fun getWhatsNewContent(): WhatsNewContent? {
       return if (WhatsNewInVisionContentProvider.getInstance().isAvailable() &&
@@ -57,10 +57,6 @@ internal abstract class WhatsNewContent() {
         ExternalProductResourceUrls.getInstance().whatIsNewPageUrl?.toDecodedForm()?.let { WhatsNewUrlContent(it) }
       }
     }
-
-    suspend fun hasWhatsNewContent() = WhatsNewInVisionContentProvider.getInstance().isAvailable()
-                                       || ExternalProductResourceUrls.getInstance().whatIsNewPageUrl != null
-
   }
 
   // Year and release have to be strings, because this is the ApplicationInfo.xml format.
@@ -169,7 +165,7 @@ internal class WhatsNewVisionContent(val contentProvider: WhatsNewInVisionConten
     const val WHATS_NEW_VISION_SCHEME = "whatsnew-vision"
     const val LOCALHOST = "localhost"
 
-    private const val THEME_KEY = "\$__VISION_PAGE_SETTINGS_THEME__$"
+    private const val THEME_KEY = $$"$__VISION_PAGE_SETTINGS_THEME__$"
     private const val DARK_THEME = "dark"
     private const val LIGHT_THEME = "light"
 
