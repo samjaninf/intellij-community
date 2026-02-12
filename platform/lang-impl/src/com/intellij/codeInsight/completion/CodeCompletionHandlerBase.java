@@ -163,16 +163,16 @@ public class CodeCompletionHandlerBase {
     invokeCompletion(project, editor, 1);
   }
 
-  public final void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int time) {
-    invokeCompletion(project, editor, time, false);
+  public final void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int invocationCount) {
+    invokeCompletion(project, editor, invocationCount, false);
   }
 
-  public final void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int time, boolean hasModifiers) {
+  public final void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int invocationCount, boolean hasModifiers) {
     clearCaretMarkers(editor);
-    invokeCompletionWithTracing(project, editor, time, hasModifiers, editor.getCaretModel().getPrimaryCaret());
+    invokeCompletionWithTracing(project, editor, invocationCount, hasModifiers, editor.getCaretModel().getPrimaryCaret());
   }
 
-  private void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int time, boolean hasModifiers, @NotNull Caret caret) {
+  private void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int invocationCount, boolean hasModifiers, @NotNull Caret caret) {
     markCaretAsProcessed(caret);
 
     if (invokedExplicitly) {
@@ -196,17 +196,17 @@ public class CodeCompletionHandlerBase {
     CompletionPhase phase = CompletionServiceImpl.getCompletionPhase();
     boolean repeated = phase.indicator != null && phase.indicator.isRepeatedInvocation(completionType, editor);
 
-    int newTime = phase.newCompletionStarted(time, repeated);
+    int newInvocationCount = phase.newCompletionStarted(invocationCount, repeated);
     if (invokedExplicitly) {
-      time = newTime;
+      invocationCount = newInvocationCount;
     }
-    int invocationCount = time;
+    int effectiveInvocationCount = invocationCount;
     if (CompletionServiceImpl.isPhase(CompletionPhase.InsertedSingleItem.class)) {
       CompletionServiceImpl.setCompletionPhase(CompletionPhase.NoCompletion);
     }
     CompletionServiceImpl.assertPhase(CompletionPhase.NoCompletion.getClass(), CompletionPhase.CommittingDocuments.class);
 
-    if (invocationCount > 1 && completionType == CompletionType.BASIC) {
+    if (effectiveInvocationCount > 1 && completionType == CompletionType.BASIC) {
       FeatureUsageTracker.getInstance().triggerFeatureUsed(CodeCompletionFeatures.SECOND_BASIC_COMPLETION);
     }
 
@@ -214,13 +214,13 @@ public class CodeCompletionHandlerBase {
     Runnable initCmd = () -> {
       WriteAction.run(() -> EditorUtil.fillVirtualSpaceUntilCaret(editor));
       CompletionInitializationContextImpl context = withTimeout(calcSyncTimeOut(startingTime), () -> {
-        return CompletionInitializationUtil.createCompletionInitializationContext(project, editor, caret, invocationCount, completionType);
+        return CompletionInitializationUtil.createCompletionInitializationContext(project, editor, caret, effectiveInvocationCount, completionType);
       });
 
       boolean hasValidContext = context != null;
       if (!hasValidContext) {
         PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(caret, project);
-        context = new CompletionInitializationContextImpl(editor, caret, psiFile, completionType, invocationCount);
+        context = new CompletionInitializationContextImpl(editor, caret, psiFile, completionType, effectiveInvocationCount);
       }
 
       doComplete(context, hasModifiers, hasValidContext, startingTime);
@@ -246,7 +246,7 @@ public class CodeCompletionHandlerBase {
 
   private void invokeCompletionWithTracing(@NotNull Project project,
                                            @NotNull Editor editor,
-                                           int time,
+                                           int invocationCount,
                                            boolean hasModifiers,
                                            @NotNull Caret caret) {
     TraceKt.use(
@@ -254,7 +254,7 @@ public class CodeCompletionHandlerBase {
         .setAttribute("project", project.getName())
         .setAttribute("caretOffset", caret.hasSelection() ? caret.getSelectionStart() : caret.getOffset()),
       span -> {
-        invokeCompletion(project, editor, time, hasModifiers, caret);
+        invokeCompletion(project, editor, invocationCount, hasModifiers, caret);
         return null;
       }
     );
