@@ -5,12 +5,13 @@ import com.intellij.collaboration.async.awaitCancelling
 import com.intellij.collaboration.async.launchNow
 import com.intellij.collaboration.messages.CollaborationToolsBundle
 import com.intellij.collaboration.ui.HorizontalListPanel
+import com.intellij.collaboration.ui.LoadingLabel
 import com.intellij.collaboration.ui.codereview.action.AutoDisablingActionGroup
 import com.intellij.collaboration.ui.codereview.details.CodeReviewDetailsActionsComponentFactory
 import com.intellij.collaboration.ui.codereview.details.CodeReviewDetailsActionsComponentFactory.CodeReviewActions
 import com.intellij.collaboration.ui.codereview.details.data.ReviewRole
 import com.intellij.collaboration.ui.codereview.details.data.ReviewState
-import com.intellij.collaboration.ui.util.bindContentIn
+import com.intellij.collaboration.ui.util.bindChildIn
 import com.intellij.collaboration.ui.util.bindVisibilityIn
 import com.intellij.collaboration.ui.util.toAnAction
 import com.intellij.openapi.actionSystem.ActionGroup
@@ -35,6 +36,7 @@ import org.jetbrains.plugins.gitlab.mergerequest.ui.details.model.GitLabMergeReq
 import org.jetbrains.plugins.gitlab.mergerequest.ui.details.model.GitLabMergeRequestReviewFlowViewModelImpl.Companion.toReviewState
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSubmitReviewPopup
 import org.jetbrains.plugins.gitlab.util.GitLabBundle
+import java.awt.BorderLayout
 import javax.swing.JButton
 import javax.swing.JComponent
 
@@ -55,7 +57,7 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
     )
 
     return Wrapper().apply {
-      bindContentIn(scope, reviewFlowVm.role.distinctUntilChanged()) { role ->
+      bindChildIn(scope, reviewFlowVm.role.distinctUntilChanged(), constraints = BorderLayout.CENTER) { role ->
         val moreActionsGroup = DefaultActionGroup(GitLabBundle.message("merge.request.details.action.review.more.text"), true)
         val mainPanel = when (role) {
           ReviewRole.AUTHOR -> createActionsForAuthor(reviewFlowVm, reviewActions, moreActionsGroup)
@@ -71,6 +73,9 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
           CodeReviewDetailsActionsComponentFactory.createActionsForClosedReview(reviewActions.reopenReviewAction),
           CodeReviewDetailsActionsComponentFactory.createActionsForDraftReview(reviewActions.postReviewAction)
         )
+      }
+      bindChildIn(scope, reviewFlowVm.isBusy, constraints = BorderLayout.EAST) {
+        if (it) LoadingLabel() else null
       }
     }
   }
