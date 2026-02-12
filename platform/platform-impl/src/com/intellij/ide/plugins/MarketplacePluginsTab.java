@@ -113,7 +113,6 @@ class MarketplacePluginsTab extends PluginsTab {
   private Runnable myMarketplaceRunnable;
 
   private final DefaultActionGroup myMarketplaceSortByGroup;
-  private LinkComponent myMarketplaceSortByAction;
 
   private List<String> myTagsSorted;
   private List<String> myVendorsSorted;
@@ -399,60 +398,6 @@ class MarketplacePluginsTab extends PluginsTab {
       }
     };
 
-    myMarketplaceSortByAction = new LinkComponent() {
-      @Override
-      protected boolean isInClickableArea(Point pt) {
-        return true;
-      }
-
-      @Override
-      public AccessibleContext getAccessibleContext() {
-        if (accessibleContext == null) {
-          accessibleContext = new AccessibleLinkComponent();
-        }
-        return accessibleContext;
-      }
-
-      protected class AccessibleLinkComponent extends AccessibleLinkLabel {
-        @Override
-        public AccessibleRole getAccessibleRole() {
-          return AccessibleRole.COMBO_BOX;
-        }
-      }
-    };
-    myMarketplaceSortByAction.setIcon(new Icon() {
-      @Override
-      public void paintIcon(Component c, Graphics g, int x, int y) {
-        getIcon().paintIcon(c, g, x, y + 1);
-      }
-
-      @Override
-      public int getIconWidth() {
-        return getIcon().getIconWidth();
-      }
-
-      @Override
-      public int getIconHeight() {
-        return getIcon().getIconHeight();
-      }
-
-      private static @NotNull Icon getIcon() {
-        return AllIcons.General.ButtonDropTriangle;
-      }
-    }); // TODO: icon
-    myMarketplaceSortByAction.setPaintUnderline(false);
-    myMarketplaceSortByAction.setIconTextGap(JBUIScale.scale(4));
-    myMarketplaceSortByAction.setHorizontalTextPosition(SwingConstants.LEFT);
-    myMarketplaceSortByAction.setForeground(PluginsGroupComponent.SECTION_HEADER_FOREGROUND);
-
-    //noinspection unchecked
-    myMarketplaceSortByAction.setListener(
-      (component, __) -> showRightBottomPopup(component.getParent().getParent(), IdeBundle.message("plugins.configurable.sort.by"),
-                                              myMarketplaceSortByGroup), null);
-
-    DumbAwareAction.create(event -> myMarketplaceSortByAction.doClick())
-      .registerCustomShortcutSet(KeyEvent.VK_DOWN, 0, myMarketplaceSortByAction);
-
     MultiSelectionEventHandler eventHandler = new MultiSelectionEventHandler();
     marketplaceController.setSearchResultEventHandler(eventHandler);
 
@@ -476,7 +421,8 @@ class MarketplacePluginsTab extends PluginsTab {
 
     Project project = ProjectUtil.getActiveProject();
 
-    myMarketplaceSearchPanel = new MarketplaceSearchResultPanel(myCoroutineScope, marketplaceController, panel, project, selectionListener);
+    myMarketplaceSearchPanel = new MarketplaceSearchResultPanel(myCoroutineScope, marketplaceController, panel, project, selectionListener,
+                                                                myMarketplaceSortByGroup);
     return myMarketplaceSearchPanel;
   }
 
@@ -759,15 +705,78 @@ class MarketplacePluginsTab extends PluginsTab {
   private class MarketplaceSearchResultPanel extends SearchResultPanel {
     private final Project myProject;
     private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
+    private final @NotNull DefaultActionGroup myMarketplaceSortByGroup;
+    private final @NotNull LinkComponent myMarketplaceSortByAction;
 
     MarketplaceSearchResultPanel(CoroutineScope coroutineScope,
                                  SearchUpDownPopupController marketplaceController,
                                  PluginsGroupComponentWithProgress panel,
                                  Project project,
-                                 @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
+                                 @NotNull Consumer<? super PluginsGroupComponent> selectionListener,
+                                 @NotNull DefaultActionGroup marketplaceSortByGroup) {
       super(coroutineScope, marketplaceController, panel, true);
       myProject = project;
       mySelectionListener = selectionListener;
+      myMarketplaceSortByGroup = marketplaceSortByGroup;
+      myMarketplaceSortByAction = createSortByAction();
+    }
+
+    private @NotNull LinkComponent createSortByAction() {
+      LinkComponent sortByAction = new LinkComponent() {
+        @Override
+        protected boolean isInClickableArea(Point pt) {
+          return true;
+        }
+
+        @Override
+        public AccessibleContext getAccessibleContext() {
+          if (accessibleContext == null) {
+            accessibleContext = new AccessibleLinkComponent();
+          }
+          return accessibleContext;
+        }
+
+        protected class AccessibleLinkComponent extends AccessibleLinkLabel {
+          @Override
+          public AccessibleRole getAccessibleRole() {
+            return AccessibleRole.COMBO_BOX;
+          }
+        }
+      };
+
+      sortByAction.setIcon(new Icon() {
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+          getIcon().paintIcon(c, g, x, y + 1);
+        }
+
+        @Override
+        public int getIconWidth() {
+          return getIcon().getIconWidth();
+        }
+
+        @Override
+        public int getIconHeight() {
+          return getIcon().getIconHeight();
+        }
+
+        private static @NotNull Icon getIcon() {
+          return AllIcons.General.ButtonDropTriangle;
+        }
+      }); // TODO: icon
+      sortByAction.setPaintUnderline(false);
+      sortByAction.setIconTextGap(JBUIScale.scale(4));
+      sortByAction.setHorizontalTextPosition(SwingConstants.LEFT);
+      sortByAction.setForeground(PluginsGroupComponent.SECTION_HEADER_FOREGROUND);
+
+      //noinspection unchecked
+      sortByAction.setListener(
+        (component, __) -> showRightBottomPopup(component.getParent().getParent(), IdeBundle.message("plugins.configurable.sort.by"),
+                                                myMarketplaceSortByGroup), null);
+
+      DumbAwareAction.create(event -> sortByAction.doClick())
+        .registerCustomShortcutSet(KeyEvent.VK_DOWN, 0, sortByAction);
+      return sortByAction;
     }
 
     @Override
