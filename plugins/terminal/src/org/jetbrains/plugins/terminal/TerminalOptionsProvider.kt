@@ -1,7 +1,6 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.terminal
 
-import com.intellij.ide.util.RunOnceUtil
 import com.intellij.idea.AppMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.PersistentStateComponent
@@ -9,7 +8,6 @@ import com.intellij.openapi.components.SettingsCategory
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.terminal.TerminalUiSettingsManager
 import com.intellij.terminal.TerminalUiSettingsManager.CursorShape
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +15,6 @@ import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.Nls
 import org.jetbrains.plugins.terminal.block.completion.TerminalCommandCompletionShowingMode
 import org.jetbrains.plugins.terminal.block.ui.TerminalContrastRatio
-import org.jetbrains.plugins.terminal.block.ui.updateFrontendSettingsAndSync
 import org.jetbrains.plugins.terminal.settings.TerminalLocalOptions
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -27,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList
        exportable = true,
        presentableName = TerminalOptionsProvider.PresentableNameGetter::class,
        storages = [Storage(value = "terminal.xml")])
-class TerminalOptionsProvider(private val coroutineScope: CoroutineScope) : PersistentStateComponent<TerminalOptionsProvider.State> {
+class TerminalOptionsProvider(internal val coroutineScope: CoroutineScope) : PersistentStateComponent<TerminalOptionsProvider.State> {
   private var state = State()
 
   override fun getState(): State = state
@@ -35,7 +32,7 @@ class TerminalOptionsProvider(private val coroutineScope: CoroutineScope) : Pers
   override fun loadState(newState: State) {
     state = newState
 
-    migrateTerminalEngineOnce()
+    ExperimentalTerminalMigration.migrateTerminalEngineOnce(options = this)
 
     // In the case of RemDev settings are synced from backend to frontend using `loadState` method.
     // So, notify the listeners on every `loadState` to not miss the change.
@@ -271,21 +268,6 @@ class TerminalOptionsProvider(private val coroutineScope: CoroutineScope) : Pers
         fireSettingsChanged()
       }
     }
-
-  /**
-   * Moves deprecated Experimental Terminal users to the Reworked Terminal.
-   */
-  private fun migrateTerminalEngineOnce() {
-    RunOnceUtil.runOnceForApp("TerminalOptionsProvider.TerminalEngineMigration.2026.1") {
-      updateFrontendSettingsAndSync(coroutineScope) {
-        if (terminalEngine == TerminalEngine.NEW_TERMINAL) {
-          terminalEngine = TerminalEngine.REWORKED
-          // Ensure that the Experimental Terminal option is still visible
-          Registry.get("terminal.new.ui.option.visible").setValue(true)
-        }
-      }
-    }
-  }
 
   companion object {
     val instance: TerminalOptionsProvider
