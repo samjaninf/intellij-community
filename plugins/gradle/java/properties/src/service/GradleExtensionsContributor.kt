@@ -1,45 +1,46 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gradle.service.resolve
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.gradle.java.properties.service
 
+import com.intellij.gradle.java.properties.util.gradlePropertiesStream
 import com.intellij.icons.AllIcons
 import com.intellij.lang.properties.IProperty
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.psi.CommonClassNames
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassType
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementFactory
-import com.intellij.psi.PsiSubstitutor
 import com.intellij.psi.PsiType
 import com.intellij.psi.ResolveState
 import com.intellij.psi.scope.PsiScopeProcessor
 import com.intellij.psi.util.InheritanceUtil
-import icons.GradleIcons
 import org.jetbrains.annotations.ApiStatus
-import org.jetbrains.plugins.gradle.service.resolve.GradleCommonClassNames.GRADLE_API_PROJECT
-import org.jetbrains.plugins.gradle.settings.GradleExtensionsSettings
-import org.jetbrains.plugins.gradle.settings.GradleExtensionsSettings.GradleExtensionsData
+import org.jetbrains.plugins.gradle.service.resolve.GradleCommonClassNames
+import org.jetbrains.plugins.gradle.service.resolve.GradleExtensionsContributorUtil
+import org.jetbrains.plugins.gradle.service.resolve.GradleExtensionsContributorUtil.Companion.PROPERTIES_FILE_ORIGINAL_INFO
+import org.jetbrains.plugins.gradle.service.resolve.GradleExtensionsContributorUtil.Companion.getExtensionsFor
+import org.jetbrains.plugins.gradle.service.resolve.GradleGroovyProperty
+import org.jetbrains.plugins.gradle.service.resolve.GradleProjectAwareType
+import org.jetbrains.plugins.gradle.service.resolve.getAccessorsForAllCatalogs
+import org.jetbrains.plugins.gradle.service.resolve.getVersionCatalogAccessor
 import org.jetbrains.plugins.groovy.lang.psi.impl.synthetic.GrLightField
 import org.jetbrains.plugins.groovy.lang.resolve.NonCodeMembersContributor
-import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyPropertyBase
 import org.jetbrains.plugins.groovy.lang.resolve.getName
 import org.jetbrains.plugins.groovy.lang.resolve.processors.inference.type
 import org.jetbrains.plugins.groovy.lang.resolve.shouldProcessProperties
-import javax.swing.Icon
 
 @ApiStatus.Internal
 class GradleExtensionsContributor : NonCodeMembersContributor() {
 
   override fun getClassNames(): Collection<String> {
-    return listOf(GradleCommonClassNames.GRADLE_API_EXTRA_PROPERTIES_EXTENSION, GRADLE_API_PROJECT)
+    return listOf(GradleCommonClassNames.GRADLE_API_EXTRA_PROPERTIES_EXTENSION, GradleCommonClassNames.GRADLE_API_PROJECT)
   }
 
   override fun processDynamicElements(qualifierType: PsiType,
                                       aClass: PsiClass?,
                                       processor: PsiScopeProcessor,
                                       place: PsiElement,
-                                      state: ResolveState) {
+                                      state: ResolveState
+  ) {
     if (qualifierType !is GradleProjectAwareType && !InheritanceUtil.isInheritor(qualifierType, GradleCommonClassNames.GRADLE_API_EXTRA_PROPERTIES_EXTENSION)) return
     if (!processor.shouldProcessProperties()) return
     val file = place.containingFile
@@ -64,7 +65,8 @@ class GradleExtensionsContributor : NonCodeMembersContributor() {
   private fun processPropertiesFromFile(aClass: PsiClass?,
                                         processor: PsiScopeProcessor,
                                         place: PsiElement,
-                                        state: ResolveState) : Set<String> {
+                                        state: ResolveState
+  ) : Set<String> {
     if (aClass == null) {
       return emptySet()
     }
@@ -104,43 +106,23 @@ class GradleExtensionsContributor : NonCodeMembersContributor() {
       return newProperty
     }
 
-
-    class StaticVersionCatalogProperty(place: PsiElement, name: String, val clazz: PsiClass) : GroovyPropertyBase(name, place) {
-      override fun getPropertyType(): PsiType {
-        return PsiElementFactory.getInstance(project).createType(clazz, PsiSubstitutor.EMPTY)
-      }
-
-      override fun getIcon(flags: Int): Icon? {
-        return GradleIcons.Gradle
-      }
-    }
-
     fun processPropertiesFromCatalog(name: String?, place: PsiElement, processor: PsiScopeProcessor, state: ResolveState) : Set<String>? {
       if (name == null) {
         // this case is possible when only a part of a catalog name is written and autocomplete is triggered
         return processAllCatalogsOfBuild(place, processor, state)
       }
       val accessor = getVersionCatalogAccessor(place, name) ?: return emptySet()
-      val element = StaticVersionCatalogProperty(place, name, accessor)
+      val element = GradleExtensionsContributorUtil.Companion.StaticVersionCatalogProperty(place, name, accessor)
       if (!processor.execute(element, state)) {
         return null // to stop processing
       }
       return setOf(name)
     }
 
-    fun getExtensionsFor(psiElement: PsiElement): GradleExtensionsData? {
-      val project = psiElement.project
-      val virtualFile = psiElement.containingFile?.originalFile?.virtualFile ?: return null
-      val module = ProjectFileIndex.getInstance(project).getModuleForFile(virtualFile)
-      return GradleExtensionsSettings.getInstance(project).getExtensionsFor(module)
-    }
-
-    const val PROPERTIES_FILE_ORIGINAL_INFO : String = "by gradle.properties"
-
     private fun processAllCatalogsOfBuild(place: PsiElement, processor: PsiScopeProcessor, state: ResolveState): Set<String>? {
       val catalogNameToAccessor: Map<String, PsiClass> = getAccessorsForAllCatalogs(place)
       catalogNameToAccessor.forEach { (catalogName, accessor) ->
-        if (!processor.execute(StaticVersionCatalogProperty(place, catalogName, accessor), state)) {
+        if (!processor.execute(GradleExtensionsContributorUtil.Companion.StaticVersionCatalogProperty(place, catalogName, accessor), state)) {
           return null // to stop processing
         }
       }

@@ -169,6 +169,7 @@ jvm_library(
     "//plugins/gradle/completion",
     "//plugins/gradle/completion:completion_test_lib",
     "//plugins/gradle/java/toml",
+    "//plugins/gradle/java/properties",
   ]
 )
 ### auto-generated section `build intellij.kotlin.gradle.scripting` end

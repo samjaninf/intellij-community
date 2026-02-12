@@ -1,0 +1,26 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <referencesSearch implementation="com.intellij.gradle.java.properties.findUsages.GradlePropertyReferencesSearcher"/>
+    <properties.implicitPropertyUsageProvider implementation="com.intellij.gradle.java.properties.findUsages.GradleImplicitPropertyUsageProvider"/>
+
+    <localInspection language="Properties" groupPath="Gradle" shortName="LatestMinorVersion"
+                     bundle="messages.GradleInspectionBundle"
+                     key="inspection.display.name.latest.minor.version" groupKey="inspection.best.practises"
+                     groupBundle="messages.GradleInspectionBundle"
+                     enabledByDefault="true" level="WARNING"
+                     implementationClass="org.jetbrains.plugins.gradle.codeInspection.GradleLatestMinorVersionInspection"
+                     isInternal="true"/>
+
+    <localInspection language="UAST" groupPath="Gradle" shortName="RedundantKotlinStdLibDependency"
+                     bundle="messages.GradleInspectionBundle"
+                     key="inspection.display.name.redundant.kotlin.std.lib.dependency" groupKey="inspection.best.practises"
+                     groupBundle="messages.GradleInspectionBundle"
+                     enabledByDefault="true" level="WARNING"
+                     implementationClass="com.intellij.gradle.java.properties.codeInspection.GradleRedundantKotlinStdLibInspection"
+                     isInternal="true"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="org.intellij.groovy">
+    <membersContributor implementation="com.intellij.gradle.java.properties.service.GradleExtensionsContributor"/>
+  </extensions>
+</idea-plugin>

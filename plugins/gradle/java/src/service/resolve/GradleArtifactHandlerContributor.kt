@@ -33,7 +33,7 @@ class GradleArtifactHandlerContributor : NonCodeMembersContributor() {
     if (clazz == null) return
     if (!processor.shouldProcessMethods()) return
 
-    val data = GradleExtensionsContributor.getExtensionsFor(place) ?: return
+    val data = GradleExtensionsContributorUtil.getExtensionsFor(place) ?: return
     val methodName = processor.getName(state)
     val manager = place.manager
     val objectVarargType = PsiEllipsisType(getJavaLangObject(place))

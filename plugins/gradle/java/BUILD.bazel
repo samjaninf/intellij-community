@@ -53,8 +53,6 @@ jvm_library(
     "//libraries/xstream",
     "//plugins/groovy/groovy-psi:psi",
     "//java/execution/openapi:java-execution",
-    "//plugins/properties/properties-psi-api:psi",
-    "//plugins/properties/properties-psi-impl:backend-psi",
     "//jps/model-impl",
     "//platform/statistics",
     "//platform/core-ui",
@@ -73,6 +71,7 @@ jvm_library(
     "//java/debugger/shared",
     "//platform/eel-provider",
     "//platform/execution",
+    "//plugins/properties/properties-psi-impl:backend-psi",
   ],
   exports = ["//plugins/gradle:gradle-common"],
   runtime_deps = ["@lib//ant/lib:ant"]
@@ -172,6 +171,7 @@ jvm_library(
     "//plugins/gradle/java/toml",
     "//plugins/gradle/java/groovy",
     "//plugins/gradle/java/groovy/toml",
+    "//plugins/gradle/java/properties",
   ],
   runtime_deps = [":java-tests"]
 )

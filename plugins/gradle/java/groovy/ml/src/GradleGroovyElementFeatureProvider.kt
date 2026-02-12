@@ -10,7 +10,7 @@ import com.intellij.psi.OriginInfoAwareElement
 import org.jetbrains.plugins.gradle.service.resolve.GradleArtifactHandlerContributor
 import org.jetbrains.plugins.gradle.service.resolve.GradleDependencyHandlerContributor
 import org.jetbrains.plugins.gradle.service.resolve.GradleExtensionProperty
-import org.jetbrains.plugins.gradle.service.resolve.GradleExtensionsContributor
+import org.jetbrains.plugins.gradle.service.resolve.GradleExtensionsContributorUtil
 import org.jetbrains.plugins.gradle.service.resolve.GradleGroovyProperty
 import org.jetbrains.plugins.gradle.service.resolve.GradleNamedDomainCollectionContributor
 import org.jetbrains.plugins.gradle.service.resolve.GradleTaskContainerContributor
@@ -22,7 +22,7 @@ class GradleGroovyElementFeatureProvider : ElementFeatureProvider {
     ARTIFACT_HANDLER(GradleArtifactHandlerContributor.ARTIFACTS_ORIGIN_INFO),
     DEPENDENCY_NOTATION(GradleDependencyHandlerContributor.DEPENDENCY_NOTATION),
     USER_CONTRIBUTED_PROPERTY(GradleGroovyProperty.EXTENSION_PROPERTY),
-    PROPERTIES_FILE_PROPERTY(GradleExtensionsContributor.PROPERTIES_FILE_ORIGINAL_INFO),
+    PROPERTIES_FILE_PROPERTY(GradleExtensionsContributorUtil.PROPERTIES_FILE_ORIGINAL_INFO),
     NAMED_DOMAIN_DECLARATION(GradleNamedDomainCollectionContributor.NAMED_DOMAIN_DECLARATION),
     GRADLE_CONTRIBUTED_PROPERTY(GradleExtensionProperty.GRADLE_EXTENSION_PROPERTY),
     TASK_METHOD(GradleTaskContainerContributor.GRADLE_TASK_INFO),

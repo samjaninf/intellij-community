@@ -43,7 +43,7 @@ class GradleProjectExtensionContributor : NonCodeMembersContributor() {
     }
 
     val containingFile = place.containingFile
-    val extensionsData = GradleExtensionsContributor.getExtensionsFor(containingFile) ?: return
+    val extensionsData = GradleExtensionsContributorUtil.getExtensionsFor(containingFile) ?: return
 
     val name = processor.getName(state)
     val allExtensions = extensionsData.extensions

@@ -46,7 +46,7 @@ interface GradleDslInspectionProvider {
   fun getAvoidDependencyNamedArgumentsNotationInspectionVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor
 
   /**
-   * @see GradleRedundantKotlinStdLibInspection
+   * @see com.intellij.gradle.java.properties.codeInspection.GradleRedundantKotlinStdLibInspection
    */
   fun isRedundantKotlinStdLibInspectionAvailable(file: PsiFile): Boolean
   fun getRedundantKotlinStdLibInspectionVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor

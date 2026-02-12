@@ -40,7 +40,7 @@ class GradleTaskContainerContributor : NonCodeMembersContributor() {
     }
 
     val file = place.containingFile ?: return
-    val data = GradleExtensionsContributor.getExtensionsFor(file) ?: return
+    val data = GradleExtensionsContributorUtil.getExtensionsFor(file) ?: return
 
     val name = processor.getName(state)
     val gradleProjectType = JavaPsiFacade.getInstance(place.project).findClass(GradleCommonClassNames.GRADLE_API_PROJECT,
