@@ -54,9 +54,18 @@ data class ProjectFrameUiPolicy(
 
   /** Toolwindow ids to hide after startup activation. */
   val toolWindowIdsToHideOnStartup: Set<String> = emptySet(),
+
+  /**
+   * Toolwindow layout profile id used to seed project frame layout on first open (when no
+   * project-specific toolwindow layout has been persisted yet).
+   */
+  val toolWindowLayoutProfileId: String? = null,
 ) {
   fun isEmpty(): Boolean {
-    return projectPaneToActivateId == null && startupToolWindowIdToActivate == null && toolWindowIdsToHideOnStartup.isEmpty()
+    return projectPaneToActivateId == null &&
+           startupToolWindowIdToActivate == null &&
+           toolWindowIdsToHideOnStartup.isEmpty() &&
+           toolWindowLayoutProfileId == null
   }
 }
 

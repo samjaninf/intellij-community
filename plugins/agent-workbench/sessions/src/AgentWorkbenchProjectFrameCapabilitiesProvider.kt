@@ -6,6 +6,7 @@ import com.intellij.openapi.wm.ToolWindowId
 import com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesProvider
 import com.intellij.openapi.wm.ex.ProjectFrameCapability
 import com.intellij.openapi.wm.ex.ProjectFrameUiPolicy
+import java.util.EnumSet
 
 internal class AgentWorkbenchProjectFrameCapabilitiesProvider : ProjectFrameCapabilitiesProvider {
   override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
@@ -33,8 +34,10 @@ internal class AgentWorkbenchProjectFrameCapabilitiesProvider : ProjectFrameCapa
   }
 }
 
-private val AGENT_WORKBENCH_FRAME_CAPABILITIES = setOf(ProjectFrameCapability.SUPPRESS_VCS_UI)
+private val AGENT_WORKBENCH_FRAME_CAPABILITIES = EnumSet.of(ProjectFrameCapability.SUPPRESS_VCS_UI)
+
 private val AGENT_WORKBENCH_FRAME_UI_POLICY = ProjectFrameUiPolicy(
-  startupToolWindowIdToActivate = "agent.workbench.sessions",
+  startupToolWindowIdToActivate = AGENT_SESSIONS_TOOL_WINDOW_ID,
   toolWindowIdsToHideOnStartup = setOf(ToolWindowId.PROJECT_VIEW),
+  toolWindowLayoutProfileId = AGENT_WORKBENCH_DEDICATED_LAYOUT_PROFILE_ID,
 )

@@ -10,8 +10,7 @@ import com.intellij.testFramework.junit5.RunInEdt
 import com.intellij.testFramework.junit5.TestApplication
 import com.intellij.testFramework.junit5.TestDisposable
 import com.intellij.testFramework.junit5.fixture.projectFixture
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -26,7 +25,12 @@ class ProjectFrameCapabilitiesServiceTest {
 
   @Test
   fun uiPolicyUsesAggregatedCapabilitiesAndCapabilitiesAreCached() {
-    val uiPolicyRef = AtomicReference(ProjectFrameUiPolicy(projectPaneToActivateId = "pane-1"))
+    val uiPolicyRef = AtomicReference(
+      ProjectFrameUiPolicy(
+        projectPaneToActivateId = "pane-1",
+        toolWindowLayoutProfileId = "layout-profile-1",
+      )
+    )
     val capabilitiesComputationCount = AtomicInteger()
     val capabilitiesRef = AtomicReference(setOf(ProjectFrameCapability.WELCOME_EXPERIENCE))
     ExtensionTestUtil.maskExtensions(
@@ -56,16 +60,23 @@ class ProjectFrameCapabilitiesServiceTest {
     )
 
     val service = ProjectFrameCapabilitiesService(service<CoreUiCoroutineScopeHolder>().coroutineScope)
-    assertEquals("pane-1", service.getUiPolicy(project)?.projectPaneToActivateId)
+    assertThat(service.getUiPolicy(project)?.projectPaneToActivateId).isEqualTo("pane-1")
+    assertThat(service.getUiPolicy(project)?.toolWindowLayoutProfileId).isEqualTo("layout-profile-1")
 
-    uiPolicyRef.set(ProjectFrameUiPolicy(projectPaneToActivateId = "pane-2"))
-    assertEquals("pane-2", service.getUiPolicy(project)?.projectPaneToActivateId)
+    uiPolicyRef.set(
+      ProjectFrameUiPolicy(
+        projectPaneToActivateId = "pane-2",
+        toolWindowLayoutProfileId = "layout-profile-2",
+      )
+    )
+    assertThat(service.getUiPolicy(project)?.projectPaneToActivateId).isEqualTo("pane-2")
+    assertThat(service.getUiPolicy(project)?.toolWindowLayoutProfileId).isEqualTo("layout-profile-2")
 
-    assertEquals(setOf(ProjectFrameCapability.WELCOME_EXPERIENCE), service.getAll(project))
-    assertTrue(service.has(project, ProjectFrameCapability.WELCOME_EXPERIENCE))
+    assertThat(service.getAll(project)).isEqualTo(setOf(ProjectFrameCapability.WELCOME_EXPERIENCE))
+    assertThat(service.has(project, ProjectFrameCapability.WELCOME_EXPERIENCE)).isTrue()
 
     capabilitiesRef.set(emptySet())
-    assertEquals(setOf(ProjectFrameCapability.WELCOME_EXPERIENCE), service.getAll(project))
-    assertEquals(1, capabilitiesComputationCount.get())
+    assertThat(service.getAll(project)).isEqualTo(setOf(ProjectFrameCapability.WELCOME_EXPERIENCE))
+    assertThat(capabilitiesComputationCount.get()).isEqualTo(1)
   }
 }

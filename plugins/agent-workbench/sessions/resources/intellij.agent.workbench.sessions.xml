@@ -23,6 +23,7 @@
       bundle="messages.AgentSessionsBundle"
       groupKey="advanced.settings.agent.workbench"/>
     <projectFrameCapabilitiesProvider implementation="com.intellij.agent.workbench.sessions.AgentWorkbenchProjectFrameCapabilitiesProvider"/>
+    <toolWindowLayoutProfileProvider implementation="com.intellij.agent.workbench.sessions.AgentWorkbenchToolWindowLayoutProfileProvider"/>
   </extensions>
 
   <actions resource-bundle="messages.AgentSessionsBundle">
