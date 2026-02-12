@@ -57,6 +57,8 @@ com.intellij.xdebugger.impl.evaluate.XValueCompactPresentation
 - a:renderValue(com.intellij.xdebugger.frame.presentation.XValuePresentation$XValueTextRenderer,com.intellij.xdebugger.impl.ui.tree.nodes.XValueNodeImpl):V
 f:com.intellij.xdebugger.impl.frame.XDebuggerThreadsList$Companion
 - f:createDefault():com.intellij.xdebugger.impl.frame.XDebuggerThreadsList
+c:com.intellij.xdebugger.impl.frame.XStandaloneVariablesView
+- pf:myStackFrame:com.intellij.xdebugger.frame.XStackFrame
 a:com.intellij.xdebugger.impl.frame.XVariablesViewBase
 - com.intellij.openapi.Disposable
 - pF:doCreateNewRootNode(com.intellij.xdebugger.frame.XStackFrame):com.intellij.xdebugger.impl.ui.tree.nodes.XValueContainerNode
