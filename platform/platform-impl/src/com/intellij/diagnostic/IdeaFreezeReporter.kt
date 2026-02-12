@@ -131,7 +131,7 @@ internal class IdeaFreezeReporter : PerformanceListener {
     val edtStack = dump.edtStackTrace
     if (edtStack != null) {
       stacktraceCommonPart = if (stacktraceCommonPart == null) {
-        @Suppress("ReplaceJavaStaticMethodWithKotlinAnalog", "RemoveRedundantQualifierName")
+        @Suppress("ReplaceJavaStaticMethodWithKotlinAnalog")
         java.util.List.of(*edtStack)
       }
       else {
@@ -373,7 +373,6 @@ private const val DUMP_PREFIX = "dump"
 private const val MESSAGE_FILE_NAME = ".message"
 private const val THROWABLE_FILE_NAME = ".throwable"
 
-@Suppress("SpellCheckingInspection")
 internal const val APP_INFO_FILE_NAME: String = ".appinfo"
 
 // common stack contains more than the specified % samples
