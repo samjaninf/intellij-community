@@ -700,6 +700,7 @@
     <inspection_tool class="Java8MapApi" enabled="true" level="INFORMATION" enabled_by_default="true" />
     <inspection_tool class="Java8MapForEach" enabled="true" level="Strong Warning" enabled_by_default="true" />
     <inspection_tool class="Java8ReplaceMapGet" enabled="true" level="INFORMATION" enabled_by_default="true" />
+    <inspection_tool class="JavaApiUsageInspection" enabled="true" level="Strong Warning" enabled_by_default="true" />
     <inspection_tool class="JavaDoc" enabled="true" level="Strong Warning" enabled_by_default="false">
       <scope name="Tests" level="Strong Warning" enabled="false">
         <option name="TOP_LEVEL_CLASS_OPTIONS">
