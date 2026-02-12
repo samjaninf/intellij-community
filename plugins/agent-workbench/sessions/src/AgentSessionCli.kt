@@ -12,6 +12,19 @@ internal fun buildAgentSessionIdentity(provider: AgentSessionProvider, sessionId
   return "${provider.name}:$sessionId"
 }
 
+internal data class AgentSessionIdentity(
+  val provider: AgentSessionProvider,
+  val sessionId: String,
+)
+
+internal fun parseAgentSessionIdentity(identity: String): AgentSessionIdentity? {
+  val separator = identity.indexOf(':')
+  if (separator <= 0 || separator == identity.lastIndex) return null
+  val provider = AgentSessionProvider.entries.firstOrNull { it.name == identity.substring(0, separator) } ?: return null
+  val sessionId = identity.substring(separator + 1)
+  return AgentSessionIdentity(provider = provider, sessionId = sessionId)
+}
+
 internal fun agentSessionCliMissingMessageKey(provider: AgentSessionProvider): String {
   return when (provider) {
     AgentSessionProvider.CODEX -> "toolwindow.error.cli"

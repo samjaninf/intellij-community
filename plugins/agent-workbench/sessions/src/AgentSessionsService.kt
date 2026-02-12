@@ -18,6 +18,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
+import com.intellij.openapi.project.currentOrDefaultProject
 import com.intellij.openapi.ui.DoNotAskOption
 import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.NlsContexts
@@ -43,6 +44,9 @@ import kotlin.io.path.name
 
 private val LOG = logger<AgentSessionsService>()
 private const val SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY = "agent.workbench.suppress.branch.mismatch.dialog"
+private const val OPEN_PROJECT_ACTION_KEY_PREFIX = "project-open"
+private const val OPEN_THREAD_ACTION_KEY_PREFIX = "thread-open"
+private const val OPEN_SUB_AGENT_ACTION_KEY_PREFIX = "subagent-open"
 
 @Service(Service.Level.APP)
 internal class AgentSessionsService private constructor(
@@ -73,6 +77,7 @@ internal class AgentSessionsService private constructor(
 
   private val refreshMutex = Mutex()
   private val onDemandMutex = Mutex()
+  private val actionGate = SingleFlightActionGate()
   private val onDemandLoading = LinkedHashSet<String>()
   private val onDemandWorktreeLoading = LinkedHashSet<String>()
 
@@ -244,7 +249,14 @@ internal class AgentSessionsService private constructor(
   }
 
   fun openOrFocusProject(path: String) {
-    serviceScope.launch {
+    val normalized = normalizePath(path)
+    val key = buildOpenProjectActionKey(normalized)
+    actionGate.launch(
+      scope = serviceScope,
+      key = key,
+      policy = SingleFlightPolicy.DROP,
+      onDrop = { LOG.debug("Dropped duplicate open project action for $normalized") },
+    ) {
       openOrFocusProjectInternal(path)
     }
   }
@@ -260,26 +272,66 @@ internal class AgentSessionsService private constructor(
     }
   }
 
-  fun openChatThread(path: String, thread: AgentSessionThread) {
+  fun ensureThreadVisible(path: String, provider: AgentSessionProvider, threadId: String) {
+    val normalizedPath = normalizePath(path)
+    mutableState.update { state ->
+      val threadIndex = findThreadIndex(
+        projects = state.projects,
+        normalizedPath = normalizedPath,
+        provider = provider,
+        threadId = threadId,
+      ) ?: return@update state
+      val currentVisible = state.visibleThreadCounts[normalizedPath] ?: DEFAULT_VISIBLE_THREAD_COUNT
+      if (threadIndex < currentVisible) {
+        return@update state
+      }
+      val minVisible = threadIndex + 1
+      var nextVisible = currentVisible
+      while (nextVisible < minVisible) {
+        nextVisible += DEFAULT_VISIBLE_THREAD_COUNT
+      }
+      state.copy(visibleThreadCounts = state.visibleThreadCounts + (normalizedPath to nextVisible))
+    }
+  }
+
+  fun openChatThread(path: String, thread: AgentSessionThread, currentProject: Project? = null) {
     val normalized = normalizePath(path)
-    val worktreeBranch = findWorktreeBranch(normalized)
-    val originBranch = thread.originBranch
-    if (worktreeBranch != null && originBranch != null && originBranch != worktreeBranch && !isBranchMismatchDialogSuppressed()) {
-      serviceScope.launch {
+    val key = buildOpenThreadActionKey(path = normalized, thread = thread)
+    actionGate.launch(
+      scope = serviceScope,
+      key = key,
+      policy = SingleFlightPolicy.DROP,
+      progress = dedicatedFrameOpenProgressRequest(currentProject),
+      onDrop = {
+        LOG.debug("Dropped duplicate open thread action for $normalized:${thread.provider}:${thread.id}")
+      },
+    ) {
+      val worktreeBranch = findWorktreeBranch(normalized)
+      val originBranch = thread.originBranch
+      if (worktreeBranch != null && originBranch != null && originBranch != worktreeBranch && !isBranchMismatchDialogSuppressed()) {
         val proceed = withContext(Dispatchers.EDT) {
           showBranchMismatchDialog(originBranch, worktreeBranch)
         }
-        if (proceed) {
-          openChat(path, thread, subAgent = null)
-        }
+        if (!proceed) return@launch
       }
-      return
+      openChat(path, thread, subAgent = null)
     }
-    openChat(path, thread, subAgent = null)
   }
 
-  fun openChatSubAgent(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent) {
-    openChat(path, thread, subAgent)
+  fun openChatSubAgent(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent, currentProject: Project? = null) {
+    val normalized = normalizePath(path)
+    val key = buildOpenSubAgentActionKey(path = normalized, thread = thread, subAgent = subAgent)
+    actionGate.launch(
+      scope = serviceScope,
+      key = key,
+      policy = SingleFlightPolicy.DROP,
+      progress = dedicatedFrameOpenProgressRequest(currentProject),
+      onDrop = {
+        LOG.debug("Dropped duplicate open sub-agent action for $normalized:${thread.provider}:${thread.id}:${subAgent.id}")
+      },
+    ) {
+      openChat(path, thread, subAgent)
+    }
   }
 
   fun loadProjectThreadsOnDemand(path: String) {
@@ -431,39 +483,57 @@ internal class AgentSessionsService private constructor(
     manager.openProject(projectFile = projectPath, options = OpenProjectTask())
   }
 
-  private fun openChat(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent?) {
-    serviceScope.launch {
-      val normalized = normalizePath(path)
-      if (AgentChatOpenModeSettings.openInDedicatedFrame()) {
-        openChatInDedicatedFrame(normalized, thread, subAgent)
-        return@launch
-      }
-      val openProject = findOpenProject(normalized)
-      if (openProject != null) {
-        openChatInProject(openProject, normalized, thread, subAgent)
-        return@launch
-      }
-      val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase ?: return@launch
-      val projectPath = try {
-        Path.of(path)
-      }
-      catch (_: InvalidPathException) {
-        return@launch
-      }
-      val connection = ApplicationManager.getApplication().messageBus.connect(serviceScope)
-      connection.subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
-        @Deprecated("Deprecated in Java")
-        @Suppress("removal")
-        override fun projectOpened(project: Project) {
-          if (resolveProjectPath(manager, project) != normalized) return
-          serviceScope.launch {
-            openChatInProject(project, normalized, thread, subAgent)
-            connection.disconnect()
-          }
-        }
-      })
-      manager.openProject(projectFile = projectPath, options = OpenProjectTask())
+  private suspend fun openChat(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent?) {
+    val normalized = normalizePath(path)
+    if (AgentChatOpenModeSettings.openInDedicatedFrame()) {
+      openChatInDedicatedFrame(normalized, thread, subAgent)
+      return
     }
+    val openProject = findOpenProject(normalized)
+    if (openProject != null) {
+      openChatInProject(openProject, normalized, thread, subAgent)
+      return
+    }
+    val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase ?: return
+    val projectPath = try {
+      Path.of(path)
+    }
+    catch (_: InvalidPathException) {
+      return
+    }
+    val connection = ApplicationManager.getApplication().messageBus.connect(serviceScope)
+    connection.subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
+      @Deprecated("Deprecated in Java")
+      @Suppress("removal")
+      override fun projectOpened(project: Project) {
+        if (resolveProjectPath(manager, project) != normalized) return
+        serviceScope.launch {
+          openChatInProject(project, normalized, thread, subAgent)
+          connection.disconnect()
+        }
+      }
+    })
+    manager.openProject(projectFile = projectPath, options = OpenProjectTask())
+  }
+
+  private fun buildOpenProjectActionKey(path: String): String {
+    return "$OPEN_PROJECT_ACTION_KEY_PREFIX:$path"
+  }
+
+  private fun buildOpenThreadActionKey(path: String, thread: AgentSessionThread): String {
+    return "$OPEN_THREAD_ACTION_KEY_PREFIX:$path:${thread.provider}:${thread.id}"
+  }
+
+  private fun buildOpenSubAgentActionKey(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent): String {
+    return "$OPEN_SUB_AGENT_ACTION_KEY_PREFIX:$path:${thread.provider}:${thread.id}:${subAgent.id}"
+  }
+
+  private fun dedicatedFrameOpenProgressRequest(currentProject: Project?): SingleFlightProgressRequest? {
+    if (!AgentChatOpenModeSettings.openInDedicatedFrame()) return null
+    return SingleFlightProgressRequest(
+      project = currentOrDefaultProject(currentProject),
+      title = AgentSessionsBundle.message("toolwindow.progress.opening.dedicated.frame"),
+    )
   }
 
   private suspend fun openChatInDedicatedFrame(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent?) {
@@ -789,6 +859,27 @@ internal class AgentSessionsService private constructor(
     catch (_: InvalidPathException) {
       path
     }
+  }
+
+  private fun findThreadIndex(
+    projects: List<AgentProjectSessions>,
+    normalizedPath: String,
+    provider: AgentSessionProvider,
+    threadId: String,
+  ): Int? {
+    val projectThreads = projects.firstOrNull { it.path == normalizedPath }?.threads
+    if (projectThreads != null) {
+      val index = projectThreads.indexOfFirst { it.provider == provider && it.id == threadId }
+      if (index >= 0) return index
+    }
+
+    projects.forEach { project ->
+      val worktreeThreads = project.worktrees.firstOrNull { it.path == normalizedPath }?.threads ?: return@forEach
+      val index = worktreeThreads.indexOfFirst { it.provider == provider && it.id == threadId }
+      if (index >= 0) return index
+    }
+
+    return null
   }
 
   internal data class ProjectEntry(

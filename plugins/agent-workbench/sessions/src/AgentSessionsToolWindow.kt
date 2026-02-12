@@ -13,17 +13,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.intellij.agent.workbench.chat.AgentChatTabSelectionService
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.Text
 
 @Composable
-internal fun agentSessionsToolWindow() {
+internal fun agentSessionsToolWindow(currentProject: Project) {
   val service = remember { service<AgentSessionsService>() }
+  val chatSelectionService = remember(currentProject) { currentProject.service<AgentChatTabSelectionService>() }
   val state by service.state.collectAsState()
+  val selectedChatTab by chatSelectionService.selectedChatTab.collectAsState()
 
   LaunchedEffect(Unit) {
     service.refresh()
+  }
+
+  LaunchedEffect(selectedChatTab, state.projects) {
+    val currentSelection = selectedChatTab ?: return@LaunchedEffect
+    val identity = parseAgentSessionIdentity(currentSelection.threadIdentity) ?: return@LaunchedEffect
+    service.ensureThreadVisible(
+      path = currentSelection.projectPath,
+      provider = identity.provider,
+      threadId = identity.sessionId,
+    )
+  }
+
+  val selectedTreeId = remember(state.projects, selectedChatTab) {
+    resolveSelectedSessionTreeId(state.projects, selectedChatTab)
   }
 
   agentSessionsToolWindowContent(
@@ -34,12 +52,13 @@ internal fun agentSessionsToolWindow() {
     onWorktreeExpanded = { projectPath, worktreePath ->
       service.loadWorktreeThreadsOnDemand(projectPath, worktreePath)
     },
-    onOpenThread = { path, thread -> service.openChatThread(path, thread) },
-    onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent) },
+    onOpenThread = { path, thread -> service.openChatThread(path, thread, currentProject) },
+    onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent, currentProject) },
     visibleProjectCount = state.visibleProjectCount,
     onShowMoreProjects = { service.showMoreProjects() },
     visibleThreadCounts = state.visibleThreadCounts,
     onShowMoreThreads = { path -> service.showMoreThreads(path) },
+    selectedTreeId = selectedTreeId,
   )
 }
 
@@ -57,6 +76,7 @@ internal fun agentSessionsToolWindowContent(
   onShowMoreProjects: () -> Unit = {},
   visibleThreadCounts: Map<String, Int> = emptyMap(),
   onShowMoreThreads: (String) -> Unit = {},
+  selectedTreeId: SessionTreeId? = null,
 ) {
   Column(
     modifier = Modifier
@@ -79,6 +99,7 @@ internal fun agentSessionsToolWindowContent(
         onShowMoreProjects = onShowMoreProjects,
         visibleThreadCounts = visibleThreadCounts,
         onShowMoreThreads = onShowMoreThreads,
+        selectedTreeId = selectedTreeId,
       )
     }
   }

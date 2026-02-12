@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.intellij.agent.workbench.chat.AgentChatTabSelection
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.lazy.tree.Tree
 import org.jetbrains.jewel.foundation.lazy.tree.TreeGeneratorScope
@@ -32,6 +33,7 @@ internal fun sessionTree(
   onShowMoreProjects: () -> Unit = {},
   visibleThreadCounts: Map<String, Int> = emptyMap(),
   onShowMoreThreads: (String) -> Unit = {},
+  selectedTreeId: SessionTreeId? = null,
 ) {
   val stateHolder = rememberSessionTreeStateHolder(
     onProjectExpanded = onProjectExpanded,
@@ -52,6 +54,19 @@ internal fun sessionTree(
   }
   LaunchedEffect(autoOpenNodes) {
     stateHolder.applyDefaultOpenProjects(autoOpenNodes)
+  }
+  LaunchedEffect(selectedTreeId) {
+    if (selectedTreeId == null) {
+      if (treeState.selectedKeys.isNotEmpty()) {
+        treeState.selectedKeys = emptySet()
+      }
+      return@LaunchedEffect
+    }
+    val parentNodes = parentNodesForSelection(selectedTreeId)
+    if (parentNodes.isNotEmpty()) {
+      treeState.openNodes(parentNodes)
+    }
+    treeState.selectedKeys = setOf(selectedTreeId)
   }
   val tree = remember(projects, visibleProjectCount, visibleThreadCounts) {
     buildSessionTree(projects, visibleProjectCount, visibleThreadCounts)
@@ -339,4 +354,87 @@ internal sealed interface SessionTreeId {
   ) : SessionTreeId
   data class WorktreeMoreThreads(val projectPath: String, val worktreePath: String) : SessionTreeId
   data class WorktreeError(val projectPath: String, val worktreePath: String) : SessionTreeId
+}
+
+internal fun resolveSelectedSessionTreeId(
+  projects: List<AgentProjectSessions>,
+  selection: AgentChatTabSelection?,
+): SessionTreeId? {
+  if (selection == null) return null
+  val identity = parseAgentSessionIdentity(selection.threadIdentity) ?: return null
+  val normalizedPath = normalizeSessionsProjectPath(selection.projectPath)
+
+  val worktreeMatch = projects.firstNotNullOfOrNull { project ->
+    project.worktrees.firstOrNull { normalizeSessionsProjectPath(it.path) == normalizedPath }?.let { worktree -> project to worktree }
+  }
+  if (worktreeMatch != null) {
+    val (project, worktree) = worktreeMatch
+    return resolveWorktreeSelection(
+      project = project,
+      worktree = worktree,
+      provider = identity.provider,
+      threadId = identity.sessionId,
+      subAgentId = selection.subAgentId,
+    )
+  }
+
+  val project = projects.firstOrNull { normalizeSessionsProjectPath(it.path) == normalizedPath } ?: return null
+  return resolveProjectSelection(
+    project = project,
+    provider = identity.provider,
+    threadId = identity.sessionId,
+    subAgentId = selection.subAgentId,
+  )
+}
+
+private fun resolveProjectSelection(
+  project: AgentProjectSessions,
+  provider: AgentSessionProvider,
+  threadId: String,
+  subAgentId: String?,
+): SessionTreeId? {
+  val thread = project.threads.firstOrNull { it.provider == provider && it.id == threadId } ?: return null
+  if (subAgentId != null && thread.subAgents.any { it.id == subAgentId }) {
+    return SessionTreeId.SubAgent(project.path, provider, threadId, subAgentId)
+  }
+  return SessionTreeId.Thread(project.path, provider, threadId)
+}
+
+private fun resolveWorktreeSelection(
+  project: AgentProjectSessions,
+  worktree: AgentWorktree,
+  provider: AgentSessionProvider,
+  threadId: String,
+  subAgentId: String?,
+): SessionTreeId? {
+  val thread = worktree.threads.firstOrNull { it.provider == provider && it.id == threadId } ?: return null
+  if (subAgentId != null && thread.subAgents.any { it.id == subAgentId }) {
+    return SessionTreeId.WorktreeSubAgent(project.path, worktree.path, provider, threadId, subAgentId)
+  }
+  return SessionTreeId.WorktreeThread(project.path, worktree.path, provider, threadId)
+}
+
+private fun parentNodesForSelection(selectedTreeId: SessionTreeId): List<SessionTreeId> {
+  return when (selectedTreeId) {
+    is SessionTreeId.Thread -> listOf(SessionTreeId.Project(selectedTreeId.projectPath))
+    is SessionTreeId.SubAgent -> listOf(
+      SessionTreeId.Project(selectedTreeId.projectPath),
+      SessionTreeId.Thread(selectedTreeId.projectPath, selectedTreeId.provider, selectedTreeId.threadId),
+    )
+    is SessionTreeId.WorktreeThread -> listOf(
+      SessionTreeId.Project(selectedTreeId.projectPath),
+      SessionTreeId.Worktree(selectedTreeId.projectPath, selectedTreeId.worktreePath),
+    )
+    is SessionTreeId.WorktreeSubAgent -> listOf(
+      SessionTreeId.Project(selectedTreeId.projectPath),
+      SessionTreeId.Worktree(selectedTreeId.projectPath, selectedTreeId.worktreePath),
+      SessionTreeId.WorktreeThread(
+        selectedTreeId.projectPath,
+        selectedTreeId.worktreePath,
+        selectedTreeId.provider,
+        selectedTreeId.threadId,
+      ),
+    )
+    else -> emptyList()
+  }
 }
