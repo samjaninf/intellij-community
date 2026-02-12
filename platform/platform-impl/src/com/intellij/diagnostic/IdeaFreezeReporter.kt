@@ -148,7 +148,8 @@ internal class IdeaFreezeReporter : PerformanceListener {
       ObjectOutputStream(Files.newOutputStream(dir.resolve(THROWABLE_FILE_NAME))).use { it.writeObject(event.throwable) }
       saveAppInfo(dir.resolve(APP_INFO_FILE_NAME), false)
     }
-    catch (_: IOException) { }
+    catch (_: IOException) {
+    }
   }
 
   override fun uiFreezeFinished(durationMs: Long, reportDir: Path?) {
@@ -174,8 +175,14 @@ internal class IdeaFreezeReporter : PerformanceListener {
 
           val loggingEvent = createEvent(dumpTask, durationMs, attachments, reportDir, PerformanceWatcher.getInstance(), finished = true)
           if (loggingEvent != null && (application.isEAP || application.isInternal)) {
-            // plugins freezes reported separately via com.intellij.diagnostic.FreezeNotifier
-            report(loggingEvent)
+            if (ExceptionAutoReportUtil.isAutoReportEnabled && ExceptionAutoReportUtil.isAutoReportableException(loggingEvent)) {
+              MessagePool.getInstance().addIdeFatalMessage(loggingEvent)
+              return
+            }
+            else if (application.isEAP || application.isInternal) {
+              // plugin freezes are reported separately via com.intellij.diagnostic.FreezeNotifier
+              report(loggingEvent)
+            }
           }
 
           if (reportDir != null && loggingEvent != null && dumps.isNotEmpty()) {
