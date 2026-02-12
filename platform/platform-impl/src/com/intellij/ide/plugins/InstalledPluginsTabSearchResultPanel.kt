@@ -21,13 +21,18 @@ import com.intellij.ide.plugins.newui.UiPluginManager.Companion.getInstance
 import com.intellij.ide.plugins.newui.calculateTags
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.asContextElement
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.labels.LinkListener
 import com.intellij.util.containers.ContainerUtil
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
 import java.awt.event.ActionListener
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Supplier
 
@@ -184,12 +189,17 @@ internal class InstalledPluginsTabSearchResultPanel(
             }
           })
       }
-      PluginModelAsyncOperationsExecutor.loadUpdates(coroutineScope) { updates ->
-        if (!ContainerUtil.isEmpty(updates)) {
-          myPostFillGroupCallback = Runnable {
-            PluginManagerConfigurablePanel.applyUpdates(myPanel, updates)
-            mySelectionListener.accept(myInstalledPanelSupplier.get())
-            mySelectionListener.accept(panel)
+      coroutineScope.launch {
+        PluginModelAsyncOperationsExecutor.loadUpdates().let { updates ->
+          if (!ContainerUtil.isEmpty(updates)) {
+            myPostFillGroupCallback = Runnable {
+              PluginManagerConfigurablePanel.applyUpdates(myPanel, updates)
+              mySelectionListener.accept(myInstalledPanelSupplier.get())
+              mySelectionListener.accept(panel)
+            }
+            withContext(Dispatchers.EDT + ModalityState.any().asContextElement()) {
+              updatePanel()
+            }
           }
         }
       }

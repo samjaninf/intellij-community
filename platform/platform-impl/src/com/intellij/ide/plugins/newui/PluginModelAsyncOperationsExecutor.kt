@@ -65,12 +65,9 @@ internal object PluginModelAsyncOperationsExecutor {
     }
   }
 
-  fun loadUpdates(cs: CoroutineScope, callback: (List<PluginUiModel>) -> Unit) {
-    cs.launch(Dispatchers.IO) {
-      val updates = UiPluginManager.getInstance().getUpdateModels()
-      withContext(Dispatchers.EDT + ModalityState.any().asContextElement()) {
-        callback(updates)
-      }
+  suspend fun loadUpdates(): List<PluginUiModel> {
+    return withContext(Dispatchers.IO) {
+      UiPluginManager.getInstance().getUpdateModels()
     }
   }
 
