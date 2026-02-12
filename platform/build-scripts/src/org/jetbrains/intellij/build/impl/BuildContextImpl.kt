@@ -1,10 +1,8 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 @file:Suppress("ReplaceGetOrSet")
 
 package org.jetbrains.intellij.build.impl
 
-import com.intellij.platform.ijent.community.buildConstants.IJENT_WSL_FILE_SYSTEM_REGISTRY_KEY
-import com.intellij.platform.ijent.community.buildConstants.MULTI_ROUTING_FILE_SYSTEM_VMOPTIONS
 import com.intellij.platform.ijent.community.buildConstants.isMultiRoutingFileSystemEnabledForProduct
 import com.intellij.platform.runtime.product.ProductMode
 import com.intellij.platform.runtime.product.serialization.ProductModulesSerialization
@@ -463,13 +461,6 @@ class BuildContextImpl internal constructor(
 
     if (productProperties.platformPrefix != null) {
       jvmArgs.add("-Didea.platform.prefix=${productProperties.platformPrefix}")
-    }
-
-    if (os == OsFamily.WINDOWS) {
-      jvmArgs.add("-D${IJENT_WSL_FILE_SYSTEM_REGISTRY_KEY}=${useMultiRoutingFs}")
-      if (useMultiRoutingFs) {
-        jvmArgs.addAll(MULTI_ROUTING_FILE_SYSTEM_VMOPTIONS)
-      }
     }
 
     jvmArgs.addAll(productProperties.additionalIdeJvmArguments)
