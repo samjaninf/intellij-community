@@ -33,6 +33,7 @@ public class PluginsGroup {
   public PluginsGroupType type;
   private final List<PluginUiModel> models = new ArrayList<>();
   private final ListPluginModel preloadedModel = new ListPluginModel();
+  public JComponent promotionPanel;
 
   public PluginsGroup(@NotNull @Nls String title, @NotNull PluginsGroupType type) {
     myTitlePrefix = title;
@@ -46,6 +47,7 @@ public class PluginsGroup {
     titleLabel = null;
     mainAction = null;
     secondaryActions = null;
+    promotionPanel = null;
     if (clearCallback != null) {
       clearCallback.run();
       clearCallback = null;
@@ -57,6 +59,10 @@ public class PluginsGroup {
       secondaryActions = new ArrayList<>();
     }
     secondaryActions.add(component);
+  }
+
+  public void setPromotionPanel(@NotNull JComponent panel) {
+    promotionPanel = panel;
   }
 
   public void titleWithCount() {

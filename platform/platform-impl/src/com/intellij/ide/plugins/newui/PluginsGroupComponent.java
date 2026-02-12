@@ -243,6 +243,15 @@ public abstract class PluginsGroupComponent extends JBPanelWithEmptyText {
 
     uiGroup.panel = panel;
 
+    if (group.promotionPanel != null) {
+      if (index == -1) {
+        add(group.promotionPanel);
+      } else {
+        add(group.promotionPanel, index);
+        index++;
+      }
+    }
+
     addToGroup(group, models, index, eventIndex);
   }
 

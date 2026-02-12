@@ -68,19 +68,40 @@ public final class PluginListLayout extends AbstractLayoutManager implements Pag
       int height = component.getPreferredSize().height;
       component.setBounds(0, y, width, height);
       y += height;
+    
+    // Layout promotion panel if it exists
+    PluginsGroup pluginsGroup = findGroupForUI(parent, group);
+    if (pluginsGroup != null && pluginsGroup.promotionPanel != null) {
+      int promotionHeight = pluginsGroup.promotionPanel.getPreferredSize().height;
+      pluginsGroup.promotionPanel.setBounds(0, y, width, promotionHeight);
+      y += promotionHeight;
+    }
 
-      for (ListPluginComponent plugin : group.plugins) {
-        int lineHeight = plugin.getPreferredSize().height;
-        plugin.setBounds(0, y, width, lineHeight);
-        y += lineHeight;
-        myMiddleLineHeight += lineHeight;
-      }
+    for (ListPluginComponent plugin : group.plugins) {
+      int lineHeight = plugin.getPreferredSize().height;
+      plugin.setBounds(0, y, width, lineHeight);
+      y += lineHeight;
+      myMiddleLineHeight += lineHeight;
+    }
 
-      lines += group.plugins.size();
+    lines += group.plugins.size();
       y += groupGap;
     }
 
     calculateLineHeight(lines);
+  }
+
+  private PluginsGroup findGroupForUI(Container parent, UIPluginGroup uiGroup) {
+    for (int i = 0; i < parent.getComponentCount(); i++) {
+      Component comp = parent.getComponent(i);
+      if (comp instanceof ListPluginComponent) {
+        PluginsGroup group = ((ListPluginComponent)comp).getGroup();
+        if (group.ui == uiGroup) {
+          return group;
+        }
+      }
+    }
+    return null;
   }
 
   public void calculateLineHeight(int lines) {

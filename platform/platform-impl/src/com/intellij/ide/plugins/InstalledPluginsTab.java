@@ -47,6 +47,7 @@ import javax.swing.JLabel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -66,7 +67,9 @@ import static com.intellij.ide.plugins.PluginManagerConfigurablePanel.showRightB
 class InstalledPluginsTab extends PluginsTab {
   private static final ExtensionPointName<PluginCategoryPriority> EP_NAME =
     ExtensionPointName.create("com.intellij.pluginCategoryPriority");
-  
+  private static final ExtensionPointName<PluginCategoryPromotionProvider> PROMOTION_EP_NAME =
+    ExtensionPointName.create("com.intellij.pluginCategoryPromotionProvider");
+
   private final @NotNull PluginModelFacade myPluginModelFacade;
   private final @NotNull PluginUpdatesService myPluginUpdatesService;
   private final @NotNull CoroutineScope myCoroutineScope;
@@ -220,12 +223,29 @@ class InstalledPluginsTab extends PluginsTab {
         }
 
         String defaultCategory = IdeBundle.message("plugins.configurable.other.bundled");
+
+        Map<String, JComponent> promotionPanels = new HashMap<>();
+        for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
+          JComponent panel = provider.createPromotionPanel();
+          if (panel != null) {
+            promotionPanels.put(provider.getCategoryName(), panel);
+          }
+        }
+
         visibleBundledPlugins
           .stream()
           .collect(Collectors.groupingBy(descriptor -> StringUtil.defaultIfEmpty(descriptor.getDisplayCategory(), defaultCategory)))
           .entrySet()
           .stream()
-          .map(entry -> new ComparablePluginsGroup(entry.getKey(), entry.getValue(), model.getVisiblePluginsRequiresUltimate()))
+          .map(entry -> {
+            ComparablePluginsGroup group =
+              new ComparablePluginsGroup(entry.getKey(), entry.getValue(), model.getVisiblePluginsRequiresUltimate());
+            JComponent promotionPanel = promotionPanels.get(entry.getKey());
+            if (promotionPanel != null) {
+              group.setPromotionPanel(promotionPanel);
+            }
+            return group;
+          })
           .sorted((o1, o2) -> {
             for (PluginCategoryPriority priority : EP_NAME.getExtensionList()) {
               String priorityCategory = priority.getPriorityCategoryName();
