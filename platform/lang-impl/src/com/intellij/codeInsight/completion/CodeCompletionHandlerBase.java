@@ -219,7 +219,8 @@ public class CodeCompletionHandlerBase {
 
       boolean hasValidContext = context != null;
       if (!hasValidContext) {
-        PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(caret, project);
+        PsiFile psiFile = Objects.requireNonNull(PsiUtilBase.getPsiFileInEditor(caret, project),
+                                                 "PsiFile must exist here, otherwise completion won't even come here");
         context = new CompletionInitializationContextImpl(editor, caret, psiFile, completionType, effectiveInvocationCount);
       }
 
@@ -629,7 +630,8 @@ public class CodeCompletionHandlerBase {
       context = lastContext.get();
     }
     else {
-      PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(editor, project);
+      PsiFile psiFile = Objects.requireNonNull(PsiUtilBase.getPsiFileInEditor(editor, project),
+                                               "PsiFile must exist here, otherwise completion won't even come here");
       context = insertItem(items, item, completionChar, editor, psiFile, caretOffset, idEndOffset, offsetMap);
     }
     return context;
