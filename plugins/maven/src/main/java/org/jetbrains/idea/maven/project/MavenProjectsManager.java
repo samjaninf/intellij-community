@@ -281,6 +281,7 @@ public abstract class MavenProjectsManager extends MavenSimpleProjectComponent
     }
   }
 
+  @RequiresReadLockAbsence
   private void initProjectsTree() {
     if (projectsTreeInitialized.get()) return;
     initLock.lock();
