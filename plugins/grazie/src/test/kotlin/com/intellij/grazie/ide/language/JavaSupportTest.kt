@@ -3,9 +3,11 @@
 
 package com.intellij.grazie.ide.language
 
+import com.intellij.grazie.GrazieConfig
 import com.intellij.grazie.GrazieTestBase
 import com.intellij.grazie.jlanguage.Lang
 import com.intellij.grazie.spellcheck.engine.GrazieSpellCheckerEngine
+import com.intellij.grazie.utils.TextStyleDomain
 import com.intellij.openapi.util.Disposer
 import com.intellij.spellchecker.ProjectDictionaryLayer
 import com.intellij.spellchecker.SpellCheckerManager
@@ -273,6 +275,19 @@ class JavaSupportTest : GrazieTestBase() {
         void foo() {
           // <TYPO descr="Typo: In word 'tagret'">tagret</TYPO>
           // <selection>tar</selection>get
+        }
+      }
+    """)
+    myFixture.checkHighlighting()
+    assertNull(myFixture.getAvailableIntention("Accept all writing suggestions…"))
+  }
+
+  fun `test mass apply is not available if there are no suggestions`() {
+    GrazieConfig.update { it.withDomainEnabledRules(TextStyleDomain.CodeComment, setOf("LanguageTool.EN.IT_IS_OBVIOUS")) }
+    myFixture.configureByText("a.java", """
+      class A {
+        void foo() {
+          // I think <STYLE_SUGGESTION descr="IT_IS_OBVIOUS">it's pretty obvious</STYLE_SUGGESTION> that he likes you.
         }
       }
     """)
