@@ -130,6 +130,13 @@ internal class CoroutineView(project: Project, javaDebugProcess: JavaDebugProces
             }
             false
         }
+        panel.tree.selectNodeOnLoad(
+            { node ->
+                val valueContainer = (node as? XValueNodeImpl)?.valueContainer
+                valueContainer is CoroutineContainer && valueContainer.isCurrent
+            },
+            { node -> (node as? XValueNodeImpl)?.isObsolete == true }
+        )
         panel.tree.setRoot(XCoroutinesRootNode(suspendContext), false)
         if (treeState != null) {
             restorer?.dispose()
