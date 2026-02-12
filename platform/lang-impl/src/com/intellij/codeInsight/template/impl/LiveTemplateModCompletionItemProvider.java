@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/**
+ * A simplified mirror of {@link LiveTemplateCompletionContributor} to provide live templates as {@link ModCompletionItem}'s. 
+ */
 @NotNullByDefault
 final class LiveTemplateModCompletionItemProvider implements ModCompletionItemProvider {
   @Override
@@ -37,7 +40,6 @@ final class LiveTemplateModCompletionItemProvider implements ModCompletionItemPr
     private LiveTemplateModCompletionItem(TemplateImpl template) {
       super(template.getKey(), template);
     }
-
 
     @Override
     public void update(ActionContext actionContext, InsertionContext insertionContext, ModPsiUpdater updater) {

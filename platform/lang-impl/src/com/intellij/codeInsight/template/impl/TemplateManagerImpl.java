@@ -686,8 +686,12 @@ public final class TemplateManagerImpl extends TemplateManager implements Dispos
   }
 
   /**
-   * Performs a template execution within ModCommand context. The template is not actually executed, but
-   * contributes to {@link ModPsiUpdater} to form the final {@link ModCommand}.
+   * Executes the template within ModCommand context. The template is not actually executed,
+   * but contributes to {@link ModPsiUpdater} to form the final {@link ModCommand}.
+   * <p>
+   *   Note that not all the template behavior is implemented yet, and not everything is supported in ModCommands at all,
+   *   so expect that complex templates that use rare features may not work correctly.
+   * </p>
    *
    * @param template template to execute.
    * @param updater {@link ModPsiUpdater} to use.
