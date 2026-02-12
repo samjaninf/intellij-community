@@ -13,6 +13,9 @@
 - name: lib/modules/intellij.gradle.dependencyUpdater.jar
   contentModules:
   - name: intellij.gradle.dependencyUpdater
+- name: lib/modules/intellij.gradle.java.coverage.jar
+  contentModules:
+  - name: intellij.gradle.java.coverage
 - name: lib/modules/intellij.gradle.java.groovy.jar
   contentModules:
   - name: intellij.gradle.java.groovy
