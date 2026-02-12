@@ -31,6 +31,9 @@
 - name: lib/modules/intellij.gradle.java.performance.jar
   contentModules:
   - name: intellij.gradle.java.performance
+- name: lib/modules/intellij.gradle.java.properties.jar
+  contentModules:
+  - name: intellij.gradle.java.properties
 - name: lib/modules/intellij.gradle.java.toml.jar
   contentModules:
   - name: intellij.gradle.java.toml
