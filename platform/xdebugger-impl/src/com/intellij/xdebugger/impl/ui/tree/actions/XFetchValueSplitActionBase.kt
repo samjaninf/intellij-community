@@ -22,8 +22,9 @@ import org.jetbrains.annotations.ApiStatus
  * For backend only Monolith actions use [XFetchValueActionBase] instead, which works with backend [XValue] instances.
  */
 @ApiStatus.Experimental
-abstract class XFetchValueSplitActionBase : XFetchValueActionBase() {
-  internal final override fun getNodes(e: AnActionEvent): List<XValueNodeImpl> {
+abstract class XFetchValueSplitActionBase : AbstractXFetchValueAction(), SplitDebuggerAction {
+  @ApiStatus.Internal
+  protected final override fun getNodes(e: AnActionEvent): List<XValueNodeImpl> {
     return XDebuggerTreeSplitActionBase.getSelectedNodes(e.dataContext)
   }
 
