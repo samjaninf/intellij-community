@@ -927,7 +927,7 @@ class MarketplacePluginsTab extends PluginsTab {
           myPostFillGroupCallback = () -> {
             applyUpdates(myPanel, updates);
             mySelectionListener.accept(myMarketplacePanelSupplier.get());
-            mySelectionListener.accept(myMarketplaceSearchPanel.getPanel());
+            mySelectionListener.accept(getPanel());
           };
         }
       }
