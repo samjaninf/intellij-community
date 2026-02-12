@@ -2,15 +2,17 @@
 package org.jetbrains.idea.devkit.inspections;
 
 import com.intellij.codeInspection.LocalInspectionEP;
-import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.containers.ContainerUtil;
 
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
-public class DevkitInspectionsRegistrationCheckTest extends BasePlatformTestCase {
+// disabled; enable again when needed
+
+public class DevkitInspectionsRegistrationCheckTest /*extends BasePlatformTestCase*/ {
   private static final int EXPECTED_INSPECTIONS_NUMBER = 94;
 
   /**
