@@ -1998,9 +1998,29 @@ public abstract class SharedK1LocalInspectionTestGenerated extends AbstractShare
                 runTest("../testData/inspectionsLocal/coroutines/ambiguousCoroutineScope/functionExtensionReceiver_suspendWrapper_explicitThis.kt");
             }
 
+            @TestMetadata("functionExtensionReceiver_suspendWrapper_funInterface.kt")
+            public void testFunctionExtensionReceiver_suspendWrapper_funInterface() throws Exception {
+                runTest("../testData/inspectionsLocal/coroutines/ambiguousCoroutineScope/functionExtensionReceiver_suspendWrapper_funInterface.kt");
+            }
+
+            @TestMetadata("functionExtensionReceiver_suspendWrapper_funInterface_explicitSamConstructor.kt")
+            public void testFunctionExtensionReceiver_suspendWrapper_funInterface_explicitSamConstructor() throws Exception {
+                runTest("../testData/inspectionsLocal/coroutines/ambiguousCoroutineScope/functionExtensionReceiver_suspendWrapper_funInterface_explicitSamConstructor.kt");
+            }
+
             @TestMetadata("functionExtensionReceiver_suspendWrapper_genericExtension.kt")
             public void testFunctionExtensionReceiver_suspendWrapper_genericExtension() throws Exception {
                 runTest("../testData/inspectionsLocal/coroutines/ambiguousCoroutineScope/functionExtensionReceiver_suspendWrapper_genericExtension.kt");
+            }
+
+            @TestMetadata("functionExtensionReceiver_suspendWrapper_suspendFunInterface.kt")
+            public void testFunctionExtensionReceiver_suspendWrapper_suspendFunInterface() throws Exception {
+                runTest("../testData/inspectionsLocal/coroutines/ambiguousCoroutineScope/functionExtensionReceiver_suspendWrapper_suspendFunInterface.kt");
+            }
+
+            @TestMetadata("functionExtensionReceiver_suspendWrapper_suspendFunInterface_explicitSamConstructor.kt")
+            public void testFunctionExtensionReceiver_suspendWrapper_suspendFunInterface_explicitSamConstructor() throws Exception {
+                runTest("../testData/inspectionsLocal/coroutines/ambiguousCoroutineScope/functionExtensionReceiver_suspendWrapper_suspendFunInterface_explicitSamConstructor.kt");
             }
 
             @TestMetadata("functionExtensionReceiver_suspendWrapper_unrelatedExtension.kt")
