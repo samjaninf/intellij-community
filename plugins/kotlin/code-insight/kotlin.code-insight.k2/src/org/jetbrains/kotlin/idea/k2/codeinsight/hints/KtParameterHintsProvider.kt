@@ -64,12 +64,15 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallElement
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtLabeledExpression
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentList
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
@@ -336,11 +339,15 @@ class KtParameterHintsProvider : AbstractKtInlayHintsProvider() {
                     }
                 } ?: return
             }
+            is KtClass, is KtTypeReference -> "this"
             else -> null
         } ?: return
 
         val targetPsi = when(valueSymbol) {
-            is KaReceiverParameterSymbol -> valueSymbol.owningCallableSymbol.psi
+            is KaReceiverParameterSymbol -> {
+                val element = valueSymbol.owningCallableSymbol.psi
+                (element as? KtNamedFunction)?.receiverTypeReference ?: element
+            }
             else -> valueSymbol.psi
         }
 

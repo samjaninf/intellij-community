@@ -50,6 +50,11 @@ public class KtParameterHintsProviderTestGenerated extends AbstractKtParameterHi
         runTest("../../idea/tests/testData/codeInsight/hints/arguments/contextParametersMultipleWithArgument.kt");
     }
 
+    @TestMetadata("contextParametersReceiverFunction.kt")
+    public void testContextParametersReceiverFunction() throws Exception {
+        runTest("../../idea/tests/testData/codeInsight/hints/arguments/contextParametersReceiverFunction.kt");
+    }
+
     @TestMetadata("contextParametersSimple.kt")
     public void testContextParametersSimple() throws Exception {
         runTest("../../idea/tests/testData/codeInsight/hints/arguments/contextParametersSimple.kt");

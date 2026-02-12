@@ -50,6 +50,11 @@ public class KotlinArgumentsHintsProviderTestGenerated extends AbstractKotlinArg
         runTest("testData/codeInsight/hints/arguments/contextParametersMultipleWithArgument.kt");
     }
 
+    @TestMetadata("contextParametersReceiverFunction.kt")
+    public void testContextParametersReceiverFunction() throws Exception {
+        runTest("testData/codeInsight/hints/arguments/contextParametersReceiverFunction.kt");
+    }
+
     @TestMetadata("contextParametersSimple.kt")
     public void testContextParametersSimple() throws Exception {
         runTest("testData/codeInsight/hints/arguments/contextParametersSimple.kt");
