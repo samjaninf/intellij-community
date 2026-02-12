@@ -229,7 +229,10 @@ f:com.intellij.collaboration.api.json.JsonHttpApiHelperKt
 - <init>(com.intellij.collaboration.auth.ui.login.TokenLoginPanelModel):V
 - f:createIn(kotlinx.coroutines.CoroutineScope,Z,java.lang.String,com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter):com.intellij.openapi.ui.DialogPanel
 - f:createIn(kotlinx.coroutines.CoroutineScope,Z,java.lang.String,com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter,kotlin.jvm.functions.Function1):com.intellij.openapi.ui.DialogPanel
+- f:createIn(kotlinx.coroutines.CoroutineScope,Z,java.lang.String,java.lang.String,com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter):com.intellij.openapi.ui.DialogPanel
+- f:createIn(kotlinx.coroutines.CoroutineScope,Z,java.lang.String,java.lang.String,com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter,kotlin.jvm.functions.Function1):com.intellij.openapi.ui.DialogPanel
 - bs:createIn$default(com.intellij.collaboration.auth.ui.login.TokenLoginInputPanelFactory,kotlinx.coroutines.CoroutineScope,Z,java.lang.String,com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter,kotlin.jvm.functions.Function1,I,java.lang.Object):com.intellij.openapi.ui.DialogPanel
+- bs:createIn$default(com.intellij.collaboration.auth.ui.login.TokenLoginInputPanelFactory,kotlinx.coroutines.CoroutineScope,Z,java.lang.String,java.lang.String,com.intellij.collaboration.ui.codereview.list.error.ErrorStatusPresenter,kotlin.jvm.functions.Function1,I,java.lang.Object):com.intellij.openapi.ui.DialogPanel
 *f:com.intellij.collaboration.auth.ui.login.TokenLoginInputPanelFactory$Companion
 *:com.intellij.collaboration.auth.ui.login.TokenLoginPanelModel
 - com.intellij.collaboration.auth.ui.login.LoginModel
