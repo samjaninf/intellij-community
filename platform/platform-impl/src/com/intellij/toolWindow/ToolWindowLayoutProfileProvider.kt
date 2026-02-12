@@ -23,12 +23,44 @@ interface ToolWindowLayoutProfileProvider {
   }
 
   fun getLayout(project: Project, profileId: String, isNewUi: Boolean): DesktopLayout?
+
+  fun getApplyMode(project: Project, profileId: String, isNewUi: Boolean): ToolWindowLayoutApplyMode {
+    return ToolWindowLayoutApplyMode.SEED_ONLY
+  }
+
+  fun getMigrationVersion(project: Project, profileId: String, isNewUi: Boolean): Int {
+    return 0
+  }
 }
+
+@Internal
+enum class ToolWindowLayoutApplyMode {
+  /**
+   * Apply only when no per-project layout was persisted yet.
+   */
+  SEED_ONLY,
+
+  /**
+   * Apply once for the given profile migration version.
+   */
+  FORCE_ONCE,
+}
+
+@Internal
+data class ToolWindowLayoutProfile(
+  val layout: DesktopLayout,
+  val applyMode: ToolWindowLayoutApplyMode,
+  val migrationVersion: Int,
+)
 
 @Service(Service.Level.APP)
 @Internal
 class ToolWindowLayoutProfileService {
   fun getLayout(project: Project, profileId: String, isNewUi: Boolean): DesktopLayout? {
+    return getProfile(project = project, profileId = profileId, isNewUi = isNewUi)?.layout
+  }
+
+  fun getProfile(project: Project, profileId: String, isNewUi: Boolean): ToolWindowLayoutProfile? {
     if (project.isDisposed) {
       return null
     }
@@ -38,20 +70,24 @@ class ToolWindowLayoutProfileService {
       return null
     }
 
-    var layout: DesktopLayout? = null
-    var layoutProvider: ToolWindowLayoutProfileProvider? = null
+    var profile: ToolWindowLayoutProfile? = null
+    var profileProvider: ToolWindowLayoutProfileProvider? = null
     for (provider in providers) {
       try {
         val providerLayout = provider.getLayout(project = project, profileId = profileId, isNewUi = isNewUi)
         if (providerLayout != null) {
-          if (layout == null) {
-            layout = providerLayout
-            layoutProvider = provider
+          if (profile == null) {
+            profile = ToolWindowLayoutProfile(
+              layout = providerLayout,
+              applyMode = provider.getApplyMode(project = project, profileId = profileId, isNewUi = isNewUi),
+              migrationVersion = provider.getMigrationVersion(project = project, profileId = profileId, isNewUi = isNewUi).coerceAtLeast(0),
+            )
+            profileProvider = provider
           }
           else {
             LOG.error(
               "Multiple tool window layouts are provided for profile '$profileId'. " +
-              "Keeping ${layoutProvider?.javaClass?.name}, ignoring ${provider.javaClass.name}."
+              "Keeping ${profileProvider?.javaClass?.name}, ignoring ${provider.javaClass.name}."
             )
           }
         }
@@ -64,7 +100,7 @@ class ToolWindowLayoutProfileService {
       }
     }
 
-    return layout
+    return profile
   }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 @file:Suppress("ReplaceGetOrSet", "ReplacePutWithAssignment", "OverridingDeprecatedMember", "ReplaceNegatedIsEmptyWithIsNotEmpty",
                "PrivatePropertyName")
 @file:OptIn(FlowPreview::class)
@@ -87,7 +87,6 @@ import com.intellij.openapi.wm.ToolWindowType
 import com.intellij.openapi.wm.WINDOW_INFO_DEFAULT_TOOL_WINDOW_PANE_ID
 import com.intellij.openapi.wm.WindowInfo
 import com.intellij.openapi.wm.WindowManager
-import com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesService
 import com.intellij.openapi.wm.ex.ToolWindowEx
 import com.intellij.openapi.wm.ex.ToolWindowManagerEx
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
@@ -102,7 +101,6 @@ import com.intellij.toolWindow.ToolWindowButtonManager
 import com.intellij.toolWindow.ToolWindowDefaultLayoutManager
 import com.intellij.toolWindow.ToolWindowEntry
 import com.intellij.toolWindow.ToolWindowEventSource
-import com.intellij.toolWindow.ToolWindowLayoutProfileService
 import com.intellij.toolWindow.ToolWindowPane
 import com.intellij.toolWindow.ToolWindowPaneNewButtonManager
 import com.intellij.toolWindow.ToolWindowProperty
@@ -244,14 +242,18 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
         delay = SystemProperties.getIntProperty("actionSystem.keyGestureDblClickTime", 300),
         coroutineScope = coroutineScope,
       )
+      val projectFrameLayoutProfile = resolveProjectFrameToolWindowLayoutProfile(project = project, isNewUi = isNewUi)
       if (state.noStateLoaded) {
-        loadDefault()
+        loadDefault(projectFrameLayoutProfile)
       }
       @Suppress("LeakingThis")
       state.scheduledLayout.afterChange(this) { dl ->
         dl?.let { toolWindowSetInitializer.scheduleSetLayout(it) }
       }
       state.scheduledLayout.get()?.let { toolWindowSetInitializer.scheduleSetLayout(it) }
+      applyProjectFrameLayoutPolicy(projectFrameLayoutProfile) { layout ->
+        toolWindowSetInitializer.scheduleSetLayout(layout)
+      }
     }
   }
 
@@ -775,15 +777,14 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
     }
   }
 
-  private fun loadDefault() {
-    val layout = getLayoutForProjectFrameProfile() ?: ToolWindowDefaultLayoutManager.getInstance().getLayoutCopy()
+  private fun loadDefault(
+    projectFrameLayoutProfile: ProjectFrameToolWindowLayoutProfile? = resolveProjectFrameToolWindowLayoutProfile(
+      project = project,
+      isNewUi = isNewUi,
+    ),
+  ) {
+    val layout = projectFrameLayoutProfile?.profile?.layout ?: ToolWindowDefaultLayoutManager.getInstance().getLayoutCopy()
     toolWindowSetInitializer.scheduleSetLayout(layout)
-  }
-
-  private fun getLayoutForProjectFrameProfile(): DesktopLayout? {
-    val uiPolicy = service<ProjectFrameCapabilitiesService>().getUiPolicy(project) ?: return null
-    val profileId = uiPolicy.toolWindowLayoutProfileId ?: return null
-    return service<ToolWindowLayoutProfileService>().getLayout(project = project, profileId = profileId, isNewUi = isNewUi)
   }
 
   @Deprecated("Use {@link ToolWindowManagerListener#TOPIC}", level = DeprecationLevel.ERROR)

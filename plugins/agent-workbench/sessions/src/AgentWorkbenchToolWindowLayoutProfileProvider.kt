@@ -10,8 +10,8 @@ import com.intellij.openapi.wm.WINDOW_INFO_DEFAULT_TOOL_WINDOW_PANE_ID
 import com.intellij.openapi.wm.impl.DesktopLayout
 import com.intellij.openapi.wm.impl.WindowInfoImpl
 import com.intellij.toolWindow.ToolWindowDefaultLayoutManager
+import com.intellij.toolWindow.ToolWindowLayoutApplyMode
 import com.intellij.toolWindow.ToolWindowLayoutProfileProvider
-import com.intellij.ui.ExperimentalUI
 
 internal class AgentWorkbenchToolWindowLayoutProfileProvider : ToolWindowLayoutProfileProvider {
   override fun getLayout(project: Project, profileId: String, isNewUi: Boolean): DesktopLayout? {
@@ -44,5 +44,23 @@ internal class AgentWorkbenchToolWindowLayoutProfileProvider : ToolWindowLayoutP
     infos.put(AGENT_SESSIONS_TOOL_WINDOW_ID, sessionsInfo)
 
     return DesktopLayout(infos, baseLayout.unifiedWeights.copy())
+  }
+
+  override fun getApplyMode(project: Project, profileId: String, isNewUi: Boolean): ToolWindowLayoutApplyMode {
+    return if (profileId == AGENT_WORKBENCH_DEDICATED_LAYOUT_PROFILE_ID) {
+      ToolWindowLayoutApplyMode.FORCE_ONCE
+    }
+    else {
+      ToolWindowLayoutApplyMode.SEED_ONLY
+    }
+  }
+
+  override fun getMigrationVersion(project: Project, profileId: String, isNewUi: Boolean): Int {
+    return if (profileId == AGENT_WORKBENCH_DEDICATED_LAYOUT_PROFILE_ID) {
+      AGENT_WORKBENCH_LAYOUT_MIGRATION_VERSION
+    }
+    else {
+      0
+    }
   }
 }

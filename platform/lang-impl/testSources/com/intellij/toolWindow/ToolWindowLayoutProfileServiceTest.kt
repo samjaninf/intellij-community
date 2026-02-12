@@ -64,4 +64,65 @@ class ToolWindowLayoutProfileServiceTest {
     val result = service<ToolWindowLayoutProfileService>().getLayout(project = project, profileId = "missing", isNewUi = true)
     assertThat(result).isNull()
   }
+
+  @Test
+  fun returnsProfileMetadataFromMatchingProvider() {
+    val firstLayout = DesktopLayout()
+
+    ExtensionTestUtil.maskExtensions(
+      ToolWindowLayoutProfileProvider.EP_NAME,
+      listOf(
+        object : ToolWindowLayoutProfileProvider {
+          override fun getLayout(project: Project, profileId: String, isNewUi: Boolean): DesktopLayout? {
+            return firstLayout.takeIf { profileId == "dedicated" }
+          }
+
+          override fun getApplyMode(project: Project, profileId: String, isNewUi: Boolean): ToolWindowLayoutApplyMode {
+            return ToolWindowLayoutApplyMode.FORCE_ONCE
+          }
+
+          override fun getMigrationVersion(project: Project, profileId: String, isNewUi: Boolean): Int {
+            return 7
+          }
+        },
+      ),
+      disposable,
+    )
+
+    val result = service<ToolWindowLayoutProfileService>().getProfile(project = project, profileId = "dedicated", isNewUi = true)
+
+    assertThat(result).isNotNull()
+    assertThat(result!!.layout).isSameAs(firstLayout)
+    assertThat(result.applyMode).isEqualTo(ToolWindowLayoutApplyMode.FORCE_ONCE)
+    assertThat(result.migrationVersion).isEqualTo(7)
+  }
+
+  @Test
+  fun clampsNegativeMigrationVersionToZero() {
+    val firstLayout = DesktopLayout()
+
+    ExtensionTestUtil.maskExtensions(
+      ToolWindowLayoutProfileProvider.EP_NAME,
+      listOf(
+        object : ToolWindowLayoutProfileProvider {
+          override fun getLayout(project: Project, profileId: String, isNewUi: Boolean): DesktopLayout? {
+            return firstLayout.takeIf { profileId == "dedicated" }
+          }
+
+          override fun getApplyMode(project: Project, profileId: String, isNewUi: Boolean): ToolWindowLayoutApplyMode {
+            return ToolWindowLayoutApplyMode.FORCE_ONCE
+          }
+
+          override fun getMigrationVersion(project: Project, profileId: String, isNewUi: Boolean): Int {
+            return -1
+          }
+        },
+      ),
+      disposable,
+    )
+
+    val result = service<ToolWindowLayoutProfileService>().getProfile(project = project, profileId = "dedicated", isNewUi = true)
+    assertThat(result).isNotNull()
+    assertThat(result!!.migrationVersion).isEqualTo(0)
+  }
 }
