@@ -84,7 +84,7 @@ internal fun agentSessionsToolWindowContent(
     modifier = Modifier
       .fillMaxSize()
       .padding(horizontal = 10.dp, vertical = 12.dp),
-    verticalArrangement = Arrangement.spacedBy(10.dp)
+    verticalArrangement = Arrangement.spacedBy(10.dp),
   ) {
     when {
       state.projects.isEmpty() -> emptyState(isLoading = state.lastUpdatedAt == null)

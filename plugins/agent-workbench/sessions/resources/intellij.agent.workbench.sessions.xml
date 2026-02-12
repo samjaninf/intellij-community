@@ -24,6 +24,9 @@
       groupKey="advanced.settings.agent.workbench"/>
     <projectFrameCapabilitiesProvider implementation="com.intellij.agent.workbench.sessions.AgentWorkbenchProjectFrameCapabilitiesProvider"/>
     <toolWindowLayoutProfileProvider implementation="com.intellij.agent.workbench.sessions.AgentWorkbenchToolWindowLayoutProfileProvider"/>
+    <statusBarWidgetFactory
+      id="claude.quota"
+      implementation="com.intellij.agent.workbench.sessions.claude.ClaudeQuotaStatusBarWidgetFactory"/>
   </extensions>
 
   <actions resource-bundle="messages.AgentSessionsBundle">
