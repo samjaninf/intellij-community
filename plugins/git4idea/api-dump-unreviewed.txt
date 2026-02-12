@@ -1296,7 +1296,6 @@ f:git4idea.commands.GitCommand
 - sf:SSH_ASKPASS_REQUIRE_ENV:java.lang.String
 - sf:STASH:git4idea.commands.GitCommand
 - sf:STATUS:git4idea.commands.GitCommand
-- sf:STATUS_NO_LOCK:git4idea.commands.GitCommand
 - sf:SUBMODULE:git4idea.commands.GitCommand
 - sf:TAG:git4idea.commands.GitCommand
 - sf:UPDATE_INDEX:git4idea.commands.GitCommand
@@ -2596,9 +2595,8 @@ f:git4idea.index.GitFileStatusNodeProducerBase$Companion
 f:git4idea.index.GitIndexStatusUtilKt
 - sf:NUL:java.lang.String
 - sf:getFilePath(com.intellij.openapi.vfs.VirtualFile,com.intellij.openapi.vcs.FilePath,git4idea.config.GitExecutable):java.lang.String
-- sf:getFileStatus(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile,java.util.List,Z,Z,Z,git4idea.commands.GitCommand):java.util.List
+- sf:getFileStatus(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile,java.util.List,Z,Z,Z):java.util.List
 - sf:getFileStatus(com.intellij.openapi.vfs.VirtualFile,com.intellij.openapi.vcs.FilePath,git4idea.config.GitExecutable):git4idea.index.LightFileStatus
-- bs:getFileStatus$default(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile,java.util.List,Z,Z,Z,git4idea.commands.GitCommand,I,java.lang.Object):java.util.List
 - sf:getRepositoryPath(git4idea.index.LightFileStatus):java.lang.String
 - sf:getStatus(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile,java.util.List,Z,Z,Z):java.util.List
 - bs:getStatus$default(com.intellij.openapi.project.Project,com.intellij.openapi.vfs.VirtualFile,java.util.List,Z,Z,Z,I,java.lang.Object):java.util.List
