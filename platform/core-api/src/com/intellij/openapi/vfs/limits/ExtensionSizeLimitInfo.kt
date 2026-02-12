@@ -25,4 +25,6 @@ data class ExtensionSizeLimitInfo(
    * Maximum number of bytes to use for charset/encoding detection.
    */
   val encodingDetectionLimit: Int? = null,
-)
+) {
+  constructor(content: Int? = null, intellijSense: Int? = null, preview: Int? = null) : this(content, intellijSense, preview, null)
+}
