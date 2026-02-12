@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.idea.projectModel.KotlinGradlePluginVersionDependent
 import org.jetbrains.kotlin.idea.projectModel.KotlinSourceSet
 import org.jetbrains.kotlin.idea.projectModel.KotlinTarget
 import org.jetbrains.kotlin.idea.projectModel.KotlinSwiftExportModel
+import org.jetbrains.kotlin.idea.projectModel.KotlinSwiftPMImportModel
 import java.io.Serializable
 
 interface KotlinMPPGradleModel : KotlinSourceSetContainer, Serializable {
@@ -15,7 +16,6 @@ interface KotlinMPPGradleModel : KotlinSourceSetContainer, Serializable {
     val targets: Collection<KotlinTarget>
     val extraFeatures: ExtraFeatures
     val kotlinNativeHome: String
-    val hasSwiftPMDependencies: Boolean
 
     @Deprecated("Use 'sourceSetsByName' instead", ReplaceWith("sourceSetsByName"), DeprecationLevel.ERROR)
     val sourceSets: Map<String, KotlinSourceSet>
@@ -41,6 +41,7 @@ interface KotlinMPPGradleModel : KotlinSourceSetContainer, Serializable {
      * @see org.jetbrains.kotlin.idea.gradleTooling.reflect.KotlinSwiftExportReflection
      */
     val swiftExport: KotlinSwiftExportModel?
+    val swiftPMImportModel: KotlinSwiftPMImportModel?
 
     companion object {
         const val NO_KOTLIN_NATIVE_HOME = ""

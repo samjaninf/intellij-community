@@ -18,13 +18,13 @@ class KotlinExtensionReflection(
             ?.map { KotlinTargetReflection(it) }.orEmpty()
     }
 
-    val hasSwiftPMDependencies: Boolean by lazy {
-        val swiftPMDependenciesGetter = "getHasSwiftPMDependencies\$kotlin_gradle_plugin_common"
-        val hasGetter = kotlinExtension.javaClass.getMethodOrNull(swiftPMDependenciesGetter) != null
+    val swiftPMImportIdeContext: KotlinSwiftPMImportReflection? by lazy {
+        val swiftPMImportIdeContextGetter = "getSwiftPMImportIdeContext\$kotlin_gradle_plugin_common"
+        val hasGetter = kotlinExtension.javaClass.getMethodOrNull(swiftPMImportIdeContextGetter) != null
         return@lazy if (hasGetter) {
-            kotlinExtension.callReflectiveGetter<Boolean>(swiftPMDependenciesGetter, logger) ?: false
+            kotlinExtension.callReflectiveAnyGetter(swiftPMImportIdeContextGetter, logger)?.let { KotlinSwiftPMImportReflection(it) }
         } else {
-            false
+            null
         }
     }
 
