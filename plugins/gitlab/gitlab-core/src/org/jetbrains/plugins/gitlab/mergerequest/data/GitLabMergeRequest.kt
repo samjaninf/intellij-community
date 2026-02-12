@@ -455,7 +455,7 @@ internal class LoadedGitLabMergeRequest(
       delay(GitLabRegistry.getRequestPollingIntervalMillis().toLong())
       attempts++
     }
-    while (updatedMergeRequest.state != GitLabMergeRequestState.MERGED || attempts == REQUEST_ATTEMPTS_LIMIT_NUMBER)
+    while (updatedMergeRequest.state != GitLabMergeRequestState.MERGED && attempts < REQUEST_ATTEMPTS_LIMIT_NUMBER)
   }
 
   private suspend fun runRebase() {
@@ -467,7 +467,7 @@ internal class LoadedGitLabMergeRequest(
       delay(GitLabRegistry.getRequestPollingIntervalMillis().toLong())
       attempts++
     }
-    while (updatedMergeRequest.rebaseInProgress || attempts == REQUEST_ATTEMPTS_LIMIT_NUMBER)
+    while (updatedMergeRequest.rebaseInProgress && attempts < REQUEST_ATTEMPTS_LIMIT_NUMBER)
   }
 
   companion object {
