@@ -2188,15 +2188,6 @@ f:com.intellij.ide.actions.ToggleToolbarAction
 - s:setToolbarVisible(java.lang.String,com.intellij.ide.util.PropertiesComponent,java.lang.Iterable,java.lang.Boolean):V
 - update(com.intellij.openapi.actionSystem.AnActionEvent):V
 - s:updateToolbarVisibility(com.intellij.openapi.wm.ToolWindow,com.intellij.openapi.actionSystem.ActionToolbar,com.intellij.ide.util.PropertiesComponent):V
-f:com.intellij.ide.actions.ToggleZenModeAction
-- com.intellij.openapi.project.DumbAwareAction
-- sf:Companion:com.intellij.ide.actions.ToggleZenModeAction$Companion
-- <init>():V
-- actionPerformed(com.intellij.openapi.actionSystem.AnActionEvent):V
-- getActionUpdateThread():com.intellij.openapi.actionSystem.ActionUpdateThread
-- update(com.intellij.openapi.actionSystem.AnActionEvent):V
-f:com.intellij.ide.actions.ToggleZenModeAction$Companion
-- f:isZenModeEnabled(com.intellij.openapi.project.Project):Z
 f:com.intellij.ide.actions.ToolWindowMoveAction
 - com.intellij.openapi.actionSystem.impl.FusAwareAction
 - com.intellij.openapi.project.DumbAwareAction
