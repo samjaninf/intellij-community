@@ -1,4 +1,6 @@
-Subject: [PATCH] Add TODO
+Subject: [PATCH] Fix include filegroup to allow empty glob
+Add an alias for llvm-rc tool in order to be able to reuse LLVM to compile .rc files
+Add TODO
 Do not set `-no-canonical-prefixes` when cross-compiling to Windows
 Fix typo in passed Windows compiler args
 Fix cross-compilation from Linux to Windows and macOS
@@ -96,9 +98,9 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 ===================================================================
 diff --git a/toolchain/BUILD.llvm_repo_windows.tpl b/toolchain/BUILD.llvm_repo_windows.tpl
 new file mode 100644
---- /dev/null	(revision 186793fd0824d0950240f790343184899e205171)
-+++ b/toolchain/BUILD.llvm_repo_windows.tpl	(revision 186793fd0824d0950240f790343184899e205171)
-@@ -0,0 +1,209 @@
+--- /dev/null	(revision 856d55de4f9f24312c6dc015aebea15962aff2b6)
++++ b/toolchain/BUILD.llvm_repo_windows.tpl	(revision 856d55de4f9f24312c6dc015aebea15962aff2b6)
+@@ -0,0 +1,210 @@
 +# Copyright 2021 The Bazel Authors.
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -157,6 +159,7 @@ new file mode 100644
 +            "include/**/c++/**",
 +            "lib/clang/*/include/**",
 +        ],
++        allow_empty = True,
 +    ),
 +)
 +
@@ -1050,7 +1053,7 @@ diff --git a/toolchain/internal/repo.bzl b/toolchain/internal/repo.bzl
  load(
 @@ -418,17 +417,16 @@
  })
- 
+
  def llvm_repo_impl(rctx):
 -    os = _os(rctx)
 -    if os == "windows":
@@ -1059,7 +1062,7 @@ diff --git a/toolchain/internal/repo.bzl b/toolchain/internal/repo.bzl
 -
      llvm_version = _required_llvm_version_rctx(rctx)
      major_llvm_version = int(llvm_version.split(".")[0])
- 
+
 +    if rctx.os.name.startswith("windows"):
 +        template_file_label = "//toolchain:BUILD.llvm_repo_windows.tpl"
 +    else:
@@ -1071,3 +1074,17 @@ diff --git a/toolchain/internal/repo.bzl b/toolchain/internal/repo.bzl
              # The versioning changed.
              LLVM_VERSION = major_llvm_version if major_llvm_version >= 16 else llvm_version,
          ),
+Index: toolchain/aliases.bzl
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/toolchain/aliases.bzl b/toolchain/aliases.bzl
+--- a/toolchain/aliases.bzl	(revision 27c0bc7378a3f0bce997f582b5d94ec84af606c7)
++++ b/toolchain/aliases.bzl	(revision 1ac340f92f1ebe3df5ef81053da458bf8a18de9d)
+@@ -27,4 +27,5 @@
+     "llvm-cov",
+     "llvm-profdata",
+     "llvm-symbolizer",
++    "llvm-rc",
+ ]
