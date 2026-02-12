@@ -4,13 +4,13 @@ package com.intellij.xdebugger.impl.pinned.items
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.WriteIntentReadAction
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.util.Alarm
-import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.impl.PinToTopManagerState
-import com.intellij.xdebugger.impl.XDebuggerManagerImpl
 import com.intellij.xdebugger.impl.ui.tree.nodes.XDebuggerTreeNode
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueContainerNode
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueNodeImpl
@@ -18,11 +18,13 @@ import kotlinx.coroutines.CoroutineScope
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.lang.ref.WeakReference
 
+@Service(Service.Level.PROJECT)
 @Internal
-class XDebuggerPinToTopManager(coroutineScope: CoroutineScope) {
+class XDebuggerPinToTopManager private constructor(coroutineScope: CoroutineScope) {
   companion object {
+    @JvmStatic
     fun getInstance(project: Project): XDebuggerPinToTopManager {
-      return (XDebuggerManager.getInstance(project) as XDebuggerManagerImpl).pinToTopManager
+      return project.service()
     }
 
     private const val DEFAULT_ICON_DELAY = 300L

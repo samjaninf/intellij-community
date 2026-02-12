@@ -105,7 +105,6 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   private final CoroutineScope myCoroutineScope;
   private final XBreakpointManagerImpl myBreakpointManager;
   private final XDebuggerWatchesManager myWatchesManager;
-  private final XDebuggerPinToTopManager myPinToTopManager;
   private final Map<ProcessHandler, XDebugSessionImpl> mySessions = Collections.synchronizedMap(new LinkedHashMap<>());
   private final MutableStateFlow<@Nullable XDebugSessionImpl> myActiveSession = createMutableStateFlow(null);
 
@@ -126,7 +125,6 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
 
     myBreakpointManager = new XBreakpointManagerImpl(project, this, messageBusConnection, coroutineScope);
     myWatchesManager = new XDebuggerWatchesManagerImpl(project, coroutineScope);
-    myPinToTopManager = new XDebuggerPinToTopManager(coroutineScope);
 
     if (!SplitDebuggerMode.isSplitDebugger() || AppMode.isRemoteDevHost()) {
       startContentSelectionListening(messageBusConnection);
@@ -205,7 +203,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   }
 
   public @NotNull XDebuggerPinToTopManager getPinToTopManager() {
-    return myPinToTopManager;
+    return XDebuggerPinToTopManager.getInstance(myProject);
   }
 
   public Project getProject() {
@@ -412,7 +410,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
     XDebuggerState state = myState;
     myBreakpointManager.saveState(state.getBreakpointManagerState());
     ((XDebuggerWatchesManagerImpl)myWatchesManager).saveState(state.getWatchesManagerState());
-    myPinToTopManager.saveState(state.getPinToTopManagerState());
+    getPinToTopManager().saveState(state.getPinToTopManagerState());
     return state;
   }
 
@@ -421,7 +419,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
     myState = state;
     myBreakpointManager.loadState(state.getBreakpointManagerState());
     ((XDebuggerWatchesManagerImpl)myWatchesManager).loadState(state.getWatchesManagerState());
-    myPinToTopManager.loadState(state.getPinToTopManagerState());
+    getPinToTopManager().loadState(state.getPinToTopManagerState());
   }
 
   @Override
