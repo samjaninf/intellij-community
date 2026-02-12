@@ -53,7 +53,6 @@ jvm_library(
     "//libraries/xstream",
     "//plugins/groovy/groovy-psi:psi",
     "//java/execution/openapi:java-execution",
-    "//plugins/maven",
     "//plugins/properties/properties-psi-api:psi",
     "//plugins/properties/properties-psi-impl:backend-psi",
     "//jps/model-impl",
