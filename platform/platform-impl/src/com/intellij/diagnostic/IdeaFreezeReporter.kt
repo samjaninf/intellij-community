@@ -384,8 +384,8 @@ private const val COMMON_SUB_STACK_WEIGHT = 0.25
  *
  * By default, freeze detection is off for IDE running from sources -- to filter out freezes during development and especially
  * during debugging.
- * Freeze detection could also be disabled with sys('idea.force.freeze.reports') variable (see [.isEnabled] for details).
- * DEBUG = true overrides all this, and enables freeze detection anyway
+ * Freeze detection could also be disabled with a sys('idea.force.freeze.reports') variable (see [.isEnabled] for details).
+ * DEBUG = true overrides all this and enables freeze detection anyway
  * -- useful, e.g., while developing/debugging freeze detection code itself.
  */
 private val DEBUG = "false".toBoolean()
