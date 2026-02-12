@@ -19,6 +19,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionNotApplicableException
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.platform.eel.fs.EelFiles
 import com.intellij.platform.ide.CoreUiCoroutineScopeHolder
 import com.intellij.util.SmartList
 import com.intellij.util.application
@@ -429,7 +430,7 @@ private suspend fun reportDeadlocks(files: List<Path>, duration: Int, dir: Path)
 
     suspend fun readText(): String {
       return withContext(Dispatchers.IO) {
-        Files.readString(file)
+        EelFiles.readString(file)
       }
     }
 
