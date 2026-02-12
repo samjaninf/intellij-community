@@ -163,7 +163,7 @@ open class EditorTrackerImpl(@JvmField protected val project: Project) : EditorT
     }
   }
 
-  override val activeEditors: List<Editor> get() = localActiveEditors
+  override val activeEditors: List<Editor> get() = localActiveEditors.toList()
 
   private var localActiveEditors: List<Editor> = emptyList()
 
