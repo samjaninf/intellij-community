@@ -13017,6 +13017,11 @@ public abstract class HighLevelQuickFixTestGenerated extends AbstractHighLevelQu
             runTest("../../../idea/tests/testData/quickfix/returnInExpressionBody/explicitTypeInParentProperty.kt");
         }
 
+        @TestMetadata("implicitTypeInLambda.kt")
+        public void testImplicitTypeInLambda() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/returnInExpressionBody/implicitTypeInLambda.kt");
+        }
+
         @TestMetadata("implicitTypeInParent.kt")
         public void testImplicitTypeInParent() throws Exception {
             runTest("../../../idea/tests/testData/quickfix/returnInExpressionBody/implicitTypeInParent.kt");

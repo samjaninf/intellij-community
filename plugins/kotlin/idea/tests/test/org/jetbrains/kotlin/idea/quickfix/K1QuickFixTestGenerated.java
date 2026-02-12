@@ -16508,6 +16508,11 @@ public abstract class K1QuickFixTestGenerated extends AbstractK1QuickFixTest {
             runTest("testData/quickfix/returnInExpressionBody/explicitTypeInParentProperty.kt");
         }
 
+        @TestMetadata("implicitTypeInLambda.kt")
+        public void testImplicitTypeInLambda() throws Exception {
+            runTest("testData/quickfix/returnInExpressionBody/implicitTypeInLambda.kt");
+        }
+
         @TestMetadata("implicitTypeInParent.kt")
         public void testImplicitTypeInParent() throws Exception {
             runTest("testData/quickfix/returnInExpressionBody/implicitTypeInParent.kt");
