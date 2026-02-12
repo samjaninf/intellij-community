@@ -12,6 +12,7 @@ import com.intellij.platform.runtime.repository.MalformedRepositoryException;
 import com.intellij.platform.runtime.repository.RuntimeModuleDescriptor;
 import com.intellij.platform.runtime.repository.RuntimeModuleId;
 import com.intellij.platform.runtime.repository.RuntimeModuleRepository;
+import com.intellij.platform.runtime.repository.serialization.RawIncludedRuntimeModule;
 import org.jetbrains.annotations.NotNull;
 
 import javax.xml.stream.XMLStreamException;

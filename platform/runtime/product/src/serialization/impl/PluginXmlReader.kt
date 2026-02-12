@@ -2,8 +2,8 @@
 @file:JvmName("PluginXmlReader")
 package com.intellij.platform.runtime.product.serialization.impl
 
-import com.intellij.platform.runtime.product.RuntimeModuleLoadingRule
-import com.intellij.platform.runtime.product.serialization.RawIncludedRuntimeModule
+import com.intellij.platform.runtime.repository.RuntimeModuleLoadingRule
+import com.intellij.platform.runtime.repository.serialization.RawIncludedRuntimeModule
 import com.intellij.platform.runtime.product.serialization.ResourceFileResolver
 import com.intellij.platform.runtime.repository.MalformedRepositoryException
 import com.intellij.platform.runtime.repository.RuntimeModuleDescriptor

@@ -1,14 +1,15 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.runtime.product.impl;
 
-import com.intellij.platform.runtime.product.IncludedRuntimeModule;
 import com.intellij.platform.runtime.product.ProductMode;
 import com.intellij.platform.runtime.product.RuntimeModuleGroup;
-import com.intellij.platform.runtime.product.RuntimeModuleLoadingRule;
-import com.intellij.platform.runtime.product.serialization.RawIncludedRuntimeModule;
+import com.intellij.platform.runtime.repository.IncludedRuntimeModule;
 import com.intellij.platform.runtime.repository.RuntimeModuleDescriptor;
 import com.intellij.platform.runtime.repository.RuntimeModuleId;
+import com.intellij.platform.runtime.repository.RuntimeModuleLoadingRule;
 import com.intellij.platform.runtime.repository.RuntimeModuleRepository;
+import com.intellij.platform.runtime.repository.impl.IncludedRuntimeModuleImpl;
+import com.intellij.platform.runtime.repository.serialization.RawIncludedRuntimeModule;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
