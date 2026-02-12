@@ -180,6 +180,10 @@ internal fun createMockClient(
   )
 }
 
+internal fun createMockCodexShim(tempDir: Path, configPath: Path): Path {
+  return createCodexShim(tempDir, configPath)
+}
+
 private fun createCodexShim(tempDir: Path, configPath: Path): Path {
   val javaHome = System.getProperty("java.home")
   val javaBin = Path.of(javaHome, "bin", if (OS.CURRENT == OS.Windows) "java.exe" else "java")

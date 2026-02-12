@@ -3,7 +3,7 @@ package com.intellij.agent.workbench.codex.common
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
-import com.intellij.execution.configurations.PathEnvironmentVariableUtil
+import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.diagnostic.debug
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.io.awaitExit
@@ -20,16 +20,21 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val CODEX_COMMAND = "codex"
 private const val REQUEST_TIMEOUT_MS = 30_000L
+private const val PROCESS_TERMINATION_TIMEOUT_MS = 2_000L
 private const val MAX_PAGES = 10
 private const val PAGE_LIMIT = 50
 
@@ -37,18 +42,17 @@ private val LOG = logger<CodexAppServerClient>()
 
 class CodexAppServerClient(
   private val coroutineScope: CoroutineScope,
-  private val executablePathProvider: () -> String? = {
-    PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS(CODEX_COMMAND)?.absolutePath
-  },
+  private val executablePathProvider: () -> String? = { null },
   private val environmentOverrides: Map<String, String> = emptyMap(),
-  private val workingDirectory: Path? = null,
+  workingDirectory: Path? = null,
 ) {
   private val pending = ConcurrentHashMap<String, CompletableDeferred<String>>()
   private val requestCounter = AtomicLong(0)
   private val writeMutex = Mutex()
   private val startMutex = Mutex()
   private val initMutex = Mutex()
-  private val protocol = CodexAppServerProtocol(workingDirectory)
+  private val workingDirectoryPath = workingDirectory
+  private val protocol = CodexAppServerProtocol(workingDirectoryPath)
 
   @Volatile
   private var process: Process? = null
@@ -152,7 +156,7 @@ class CodexAppServerClient(
     pending[id] = deferred
     try {
       sendRequest(id, method, paramsWriter)
-      val response = withTimeout(REQUEST_TIMEOUT_MS) { deferred.await() }
+      val response = withTimeout(REQUEST_TIMEOUT_MS.milliseconds) { deferred.await() }
       return protocol.parseResponse(response, resultParser, defaultResult)
     }
     catch (t: TimeoutCancellationException) {
@@ -250,26 +254,27 @@ class CodexAppServerClient(
   }
 
   private fun startProcess(): Process {
-    val executable = executablePathProvider() ?: throw CodexCliNotFoundException()
+    val configuredExecutable = executablePathProvider()
+      ?.trim()
+      ?.takeIf { it.isNotEmpty() }
+    val executable = configuredExecutable ?: CODEX_COMMAND
     val process = try {
-      ProcessBuilder(executable, "app-server").apply {
-        if (environmentOverrides.isNotEmpty()) {
-          val env = environment()
-          for ((key, value) in environmentOverrides) {
-            env[key] = value
+      GeneralCommandLine(executable, "app-server")
+        .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
+        .withEnvironment(environmentOverrides)
+        .apply {
+          val directory = workingDirectoryPath
+          if (directory != null && Files.isDirectory(directory)) {
+            withWorkingDirectory(directory)
           }
         }
-        val directory = workingDirectory
-        if (directory != null && Files.isDirectory(directory)) {
-          @Suppress("IO_FILE_USAGE")
-          directory(directory.toFile())
-        }
-      }
-        .redirectErrorStream(false)
-        .start()
+        .createProcess()
     }
     catch (t: Throwable) {
-      throw CodexAppServerException("Failed to start Codex app-server", t)
+      if (configuredExecutable == null && isExecutableNotFound(t)) {
+        throw CodexCliNotFoundException()
+      }
+      throw CodexAppServerException("Failed to start Codex app-server from $executable", t)
     }
     this.process = process
     this.writer = BufferedWriter(OutputStreamWriter(process.outputStream, StandardCharsets.UTF_8))
@@ -400,9 +405,33 @@ class CodexAppServerClient(
     stderrJob?.cancel()
     waitJob?.cancel()
     current.destroy()
+    try {
+      if (!current.waitFor(PROCESS_TERMINATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+        current.destroyForcibly()
+        current.waitFor(PROCESS_TERMINATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+      }
+    }
+    catch (_: Throwable) {
+    }
   }
-
 }
+
+private fun isExecutableNotFound(error: Throwable): Boolean {
+  return generateSequence(error) { it.cause }
+    .any { cause ->
+      when (cause) {
+        is NoSuchFileException -> true
+        is IOException -> {
+          val message = cause.message ?: return@any false
+          message.contains("error=2") ||
+          message.contains("no such file or directory", ignoreCase = true) ||
+          message.contains("cannot find the file", ignoreCase = true)
+        }
+        else -> false
+      }
+    }
+}
+
 
 open class CodexAppServerException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 

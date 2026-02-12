@@ -1,7 +1,9 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.agent.workbench.sessions
 
+import com.intellij.agent.workbench.codex.common.CodexAppServerClient
 import com.intellij.agent.workbench.codex.common.CodexAppServerException
+import com.intellij.agent.workbench.codex.common.CodexCliNotFoundException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -381,6 +383,101 @@ class CodexAppServerClientTest {
       }
       catch (e: CodexAppServerException) {
         assertThat(e.message).contains("boom")
+      }
+    }
+    finally {
+      client.shutdown()
+    }
+  }
+
+  @Test
+  fun listThreadsUsesPathOverrideWhenExecutableProviderMissing(): Unit = runBlocking(Dispatchers.IO) {
+    val workingDir = tempDir.resolve("project-path-override")
+    Files.createDirectories(workingDir)
+    val configPath = workingDir.resolve("codex-config.json")
+    writeConfig(
+      path = configPath,
+      threads = listOf(
+        ThreadSpec(
+          id = "thread-path",
+          title = "Path Thread",
+          cwd = workingDir.toString(),
+          updatedAt = 1_700_000_000_000L,
+          archived = false,
+        ),
+      ),
+    )
+
+    val backendDir = tempDir.resolve("backend-path-override")
+    Files.createDirectories(backendDir)
+    val codexShim = createMockCodexShim(backendDir, configPath)
+    val client = CodexAppServerClient(
+      coroutineScope = this,
+      executablePathProvider = { null },
+      environmentOverrides = mapOf("PATH" to codexShim.parent.toString()),
+      workingDirectory = workingDir,
+    )
+    try {
+      val threads = client.listThreads(archived = false)
+      assertThat(threads.map { it.id }).containsExactly("thread-path")
+    }
+    finally {
+      client.shutdown()
+    }
+  }
+
+  @Test
+  fun listThreadsFailsWithoutFallbackWhenConfiguredExecutableIsInvalid(): Unit = runBlocking(Dispatchers.IO) {
+    val workingDir = tempDir.resolve("project-invalid-exec")
+    Files.createDirectories(workingDir)
+    val configPath = workingDir.resolve("codex-config.json")
+    writeConfig(path = configPath, threads = emptyList())
+
+    val backendDir = tempDir.resolve("backend-invalid-exec")
+    Files.createDirectories(backendDir)
+    val codexShim = createMockCodexShim(backendDir, configPath)
+    val invalidExecutable = tempDir.resolve("missing-codex").toString()
+    val client = CodexAppServerClient(
+      coroutineScope = this,
+      executablePathProvider = { invalidExecutable },
+      environmentOverrides = mapOf("PATH" to codexShim.parent.toString()),
+      workingDirectory = workingDir,
+    )
+    try {
+      try {
+        client.listThreads(archived = false)
+        fail("Expected CodexAppServerException")
+      }
+      catch (e: CodexAppServerException) {
+        assertThat(e.message).contains(invalidExecutable)
+      }
+    }
+    finally {
+      client.shutdown()
+    }
+  }
+
+  @Test
+  fun listThreadsReportsDefaultExecutableStartFailuresWithoutCliMissingError(): Unit = runBlocking(Dispatchers.IO) {
+    val workingDir = tempDir.resolve("project-invalid-env")
+    Files.createDirectories(workingDir)
+    val configPath = workingDir.resolve("codex-config.json")
+    writeConfig(path = configPath, threads = emptyList())
+
+    val client = CodexAppServerClient(
+      coroutineScope = this,
+      executablePathProvider = { null },
+      environmentOverrides = mapOf("INVALID=KEY" to "value"),
+      workingDirectory = workingDir,
+    )
+    try {
+      try {
+        client.listThreads(archived = false)
+        fail("Expected CodexAppServerException")
+      }
+      catch (e: CodexAppServerException) {
+        assertThat(e).isNotInstanceOf(CodexCliNotFoundException::class.java)
+        assertThat(e.message).contains("Failed to start Codex app-server from codex")
       }
     }
     finally {
