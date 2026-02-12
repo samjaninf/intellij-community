@@ -428,16 +428,11 @@ internal object FunctionInsertionHandler : QuotedNamesAwareInsertionHandler() {
                     caretModel.moveToOffset(openingBracketOffset + additionalOffset)
                 }
 
-                context.laterRunnable = if (insertLambda) Runnable {
-                    // We schedule auto-popup after moving the caret into the lambda.
-                    // It needs to be auto-popup rather than invoking completion manually,
-                    // otherwise pressing space will cause completion to insert the item, which is
-                    // not always wanted, see: KTIJ-36825
-                    AutoPopupController.getInstance(project)
-                        .scheduleAutoPopup(editor)
-                } else Runnable {
-                    AutoPopupController.getInstance(project)
-                        .autoPopupParameterInfo(editor, offsetElement)
+                if (!insertLambda) {
+                    context.laterRunnable = Runnable {
+                        AutoPopupController.getInstance(project)
+                            .autoPopupParameterInfo(editor, offsetElement)
+                    }
                 }
             } else {
                 caretModel.moveToOffset(closeBracketOffset + 1)
