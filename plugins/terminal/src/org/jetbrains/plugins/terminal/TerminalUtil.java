@@ -169,6 +169,7 @@ public final class TerminalUtil {
    */
   @ApiStatus.Internal
   public static boolean isGenOneTerminalOptionVisible() {
+    TerminalOptionsProvider.getInstance();  // Ensure that all setting migrations are performed
     return ExperimentalUI.isNewUI() && Registry.is("terminal.new.ui.option.visible", false);
   }
 }
