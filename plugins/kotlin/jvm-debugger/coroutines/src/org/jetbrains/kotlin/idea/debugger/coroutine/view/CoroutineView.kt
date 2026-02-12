@@ -267,9 +267,7 @@ internal class CoroutineView(project: Project, javaDebugProcess: JavaDebugProces
         val isCurrent: Boolean,
         private val parentJobToChildCoroutines: Map<String, List<CoroutineInfoData>> = emptyMap(),
         private val pinnedJobs: Set<String> = emptySet()
-    ) : RendererContainer(
-        presentation = renderer.renderThreadGroup(info.coroutineDescriptor, isCurrent)
-    ) {
+    ) : RendererContainer(renderer.renderCoroutineInfo(info, isCurrent)) {
         val isPinned: Boolean
             get() = info.job?.let { pinnedJobs.contains(it) } ?: false
 

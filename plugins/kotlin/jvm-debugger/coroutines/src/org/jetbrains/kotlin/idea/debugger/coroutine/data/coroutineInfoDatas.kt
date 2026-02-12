@@ -57,7 +57,8 @@ open class CoroutineInfoData(
     }
 
     val coroutineDescriptor: String by lazy {
-        "\"${this.name}:$id\" $state ${if (isRunning) "on thread ${lastObservedThread?.name() ?: UNKNOWN_THREAD }" else "" } $contextSummary"
+        val threadName = lastObservedThread?.name()?.substringBefore(" @${this.name}") ?: UNKNOWN_THREAD
+        "\"${this.name}:$id\" $state ${if (isRunning) "on thread $threadName" else "" } $contextSummary"
     }
 
     private val coroutineStackFrames: CoroutineStacksInfoData? by lazy {
