@@ -476,7 +476,7 @@ class MarketplacePluginsTab extends PluginsTab {
 
     Project project = ProjectUtil.getActiveProject();
 
-    myMarketplaceSearchPanel = new MarketplaceSearchResultPanel(marketplaceController, panel, project, selectionListener);
+    myMarketplaceSearchPanel = new MarketplaceSearchResultPanel(myCoroutineScope, marketplaceController, panel, project, selectionListener);
     return myMarketplaceSearchPanel;
   }
 
@@ -760,11 +760,12 @@ class MarketplacePluginsTab extends PluginsTab {
     private final Project myProject;
     private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
 
-    MarketplaceSearchResultPanel(SearchUpDownPopupController marketplaceController,
-                                        PluginsGroupComponentWithProgress panel,
-                                        Project project,
-                                        @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
-      super(MarketplacePluginsTab.this.myCoroutineScope, marketplaceController, panel, true);
+    MarketplaceSearchResultPanel(CoroutineScope coroutineScope,
+                                 SearchUpDownPopupController marketplaceController,
+                                 PluginsGroupComponentWithProgress panel,
+                                 Project project,
+                                 @NotNull Consumer<? super PluginsGroupComponent> selectionListener) {
+      super(coroutineScope, marketplaceController, panel, true);
       myProject = project;
       mySelectionListener = selectionListener;
     }
@@ -803,7 +804,7 @@ class MarketplacePluginsTab extends PluginsTab {
         }
       }
 
-      PluginModelAsyncOperationsExecutor.INSTANCE.getCustomRepositoriesPluginMap(myCoroutineScope, map -> {
+      PluginModelAsyncOperationsExecutor.INSTANCE.getCustomRepositoriesPluginMap(getCoroutineScope(), map -> {
         Map<String, List<PluginUiModel>> customRepositoriesMap = (Map<String, List<PluginUiModel>>)map;
         if (parser.suggested && myProject != null) {
           List<@NotNull PluginUiModel> plugins =
@@ -834,7 +835,7 @@ class MarketplacePluginsTab extends PluginsTab {
         }
         else {
           PluginModelAsyncOperationsExecutor.INSTANCE
-            .performMarketplaceSearch(myCoroutineScope,
+            .performMarketplaceSearch(getCoroutineScope(),
                                       parser.getUrlQuery(),
                                       !result.getModels().isEmpty(),
                                       (searchResult, updates) -> {
