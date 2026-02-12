@@ -173,6 +173,8 @@ jvm_library(
     "//platform/execution",
     "//platform/refactoring",
     "//plugins/gradle/java/toml",
+    "//plugins/gradle/java/groovy",
+    "//plugins/gradle/java/groovy/toml",
   ],
   runtime_deps = [":java-tests"]
 )
