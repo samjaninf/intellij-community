@@ -22,7 +22,7 @@ internal class KotlinScriptEntityService(val project: Project) {
             entity.configurationEntity?.let { snapshot.resolve(it) } ?: return null
 
         return ResultWithDiagnostics.Success(
-            ScriptCompilationConfigurationWrapper(VirtualFileScriptSource(virtualFile), configurationEntity.bytes.asCompilationConfiguration()),
+            ScriptCompilationConfigurationWrapper(VirtualFileScriptSource(virtualFile), configurationEntity.data.asCompilationConfiguration()),
             diagnostics
         )
     }

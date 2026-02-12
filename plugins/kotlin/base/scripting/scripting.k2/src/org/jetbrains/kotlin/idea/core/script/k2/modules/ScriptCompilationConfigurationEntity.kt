@@ -6,20 +6,20 @@ import com.intellij.platform.workspace.storage.SymbolicEntityId
 import com.intellij.platform.workspace.storage.WorkspaceEntityWithSymbolicId
 
 interface ScriptCompilationConfigurationEntity : WorkspaceEntityWithSymbolicId {
-    val bytes: ByteArray
+    val data: ByteArray
+    val hash: ScriptCompilationConfigurationHash
+    val tag: Int
 
     override val symbolicId: ScriptCompilationConfigurationEntityId
-        get() = ScriptCompilationConfigurationEntityId(bytes)
+        get() = ScriptCompilationConfigurationEntityId(hash, tag)
 }
 
-data class ScriptCompilationConfigurationEntityId(private val bytes: ByteArray) : SymbolicEntityId<ScriptCompilationConfigurationEntity> {
-    private val hash = bytes.contentHashCode()
+data class ScriptCompilationConfigurationHash(val value: Long)
 
-    override val presentableName: @NlsSafe String =
-        "ByteString[size=${bytes.size}, hash=$hash]"
+data class ScriptCompilationConfigurationEntityId(
+    private val hash: ScriptCompilationConfigurationHash,
+    private val tag: Int
+) : SymbolicEntityId<ScriptCompilationConfigurationEntity> {
 
-    override fun hashCode(): Int = hash
-
-    override fun equals(other: Any?): Boolean =
-        other is ScriptCompilationConfigurationEntityId && bytes.contentEquals(other.bytes)
+    override val presentableName: @NlsSafe String = "ScriptCompilationConfigurationEntityId[hash=${hash.value}, tag=$tag]"
 }

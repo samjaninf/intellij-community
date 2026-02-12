@@ -18,6 +18,7 @@ import com.intellij.platform.workspace.storage.metadata.model.EntityMetadata
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationEntity
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationEntityBuilder
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationEntityId
+import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationHash
 
 @GeneratedCodeApiVersion(3)
 @GeneratedCodeImplVersion(7)
@@ -33,10 +34,20 @@ internal class ScriptCompilationConfigurationEntityImpl(private val dataSource: 
 
     override val symbolicId: ScriptCompilationConfigurationEntityId = super.symbolicId
 
-    override val bytes: ByteArray
+    override val data: ByteArray
         get() {
-            readField("bytes")
-            return dataSource.bytes
+            readField("data")
+            return dataSource.data
+        }
+    override val hash: ScriptCompilationConfigurationHash
+        get() {
+            readField("hash")
+            return dataSource.hash
+        }
+    override val tag: Int
+        get() {
+            readField("tag")
+            return dataSource.tag
         }
 
     override val entitySource: EntitySource
@@ -80,8 +91,11 @@ internal class ScriptCompilationConfigurationEntityImpl(private val dataSource: 
             if (!getEntityData().isEntitySourceInitialized()) {
                 error("Field WorkspaceEntity#entitySource should be initialized")
             }
-            if (!getEntityData().isBytesInitialized()) {
-                error("Field ScriptCompilationConfigurationEntity#bytes should be initialized")
+            if (!getEntityData().isDataInitialized()) {
+                error("Field ScriptCompilationConfigurationEntity#data should be initialized")
+            }
+            if (!getEntityData().isHashInitialized()) {
+                error("Field ScriptCompilationConfigurationEntity#hash should be initialized")
             }
         }
 
@@ -93,7 +107,9 @@ internal class ScriptCompilationConfigurationEntityImpl(private val dataSource: 
         override fun relabel(dataSource: WorkspaceEntity, parents: Set<WorkspaceEntity>?) {
             dataSource as ScriptCompilationConfigurationEntity
             if (this.entitySource != dataSource.entitySource) this.entitySource = dataSource.entitySource
-            if (this.bytes != dataSource.bytes) this.bytes = dataSource.bytes
+            if (this.data != dataSource.data) this.data = dataSource.data
+            if (this.hash != dataSource.hash) this.hash = dataSource.hash
+            if (this.tag != dataSource.tag) this.tag = dataSource.tag
             updateChildToParentReferences(parents)
         }
 
@@ -106,13 +122,28 @@ internal class ScriptCompilationConfigurationEntityImpl(private val dataSource: 
                 changedProperty.add("entitySource")
 
             }
-        override var bytes: ByteArray
-            get() = getEntityData().bytes
+        override var data: ByteArray
+            get() = getEntityData().data
             set(value) {
                 checkModificationAllowed()
-                getEntityData(true).bytes = value
-                changedProperty.add("bytes")
+                getEntityData(true).data = value
+                changedProperty.add("data")
 
+            }
+        override var hash: ScriptCompilationConfigurationHash
+            get() = getEntityData().hash
+            set(value) {
+                checkModificationAllowed()
+                getEntityData(true).hash = value
+                changedProperty.add("hash")
+
+            }
+        override var tag: Int
+            get() = getEntityData().tag
+            set(value) {
+                checkModificationAllowed()
+                getEntityData(true).tag = value
+                changedProperty.add("tag")
             }
 
         override fun getEntityClass(): Class<ScriptCompilationConfigurationEntity> = ScriptCompilationConfigurationEntity::class.java
@@ -122,9 +153,13 @@ internal class ScriptCompilationConfigurationEntityImpl(private val dataSource: 
 
 @OptIn(WorkspaceEntityInternalApi::class)
 internal class ScriptCompilationConfigurationEntityData : WorkspaceEntityData<ScriptCompilationConfigurationEntity>() {
-    lateinit var bytes: ByteArray
+    lateinit var data: ByteArray
+    lateinit var hash: ScriptCompilationConfigurationHash
+    var tag: Int = 0
 
-    internal fun isBytesInitialized(): Boolean = ::bytes.isInitialized
+    internal fun isDataInitialized(): Boolean = ::data.isInitialized
+    internal fun isHashInitialized(): Boolean = ::hash.isInitialized
+
 
     override fun wrapAsModifiable(diff: MutableEntityStorage): WorkspaceEntityBuilder<ScriptCompilationConfigurationEntity> {
         val modifiable = ScriptCompilationConfigurationEntityImpl.Builder(null)
@@ -153,7 +188,7 @@ internal class ScriptCompilationConfigurationEntityData : WorkspaceEntityData<Sc
     }
 
     override fun createDetachedEntity(parents: List<WorkspaceEntityBuilder<*>>): WorkspaceEntityBuilder<*> {
-        return ScriptCompilationConfigurationEntity(bytes, entitySource)
+        return ScriptCompilationConfigurationEntity(data, hash, tag, entitySource)
     }
 
     override fun getRequiredParents(): List<Class<out WorkspaceEntity>> {
@@ -166,7 +201,9 @@ internal class ScriptCompilationConfigurationEntityData : WorkspaceEntityData<Sc
         if (this.javaClass != other.javaClass) return false
         other as ScriptCompilationConfigurationEntityData
         if (this.entitySource != other.entitySource) return false
-        if (this.bytes != other.bytes) return false
+        if (this.data != other.data) return false
+        if (this.hash != other.hash) return false
+        if (this.tag != other.tag) return false
         return true
     }
 
@@ -174,19 +211,25 @@ internal class ScriptCompilationConfigurationEntityData : WorkspaceEntityData<Sc
         if (other == null) return false
         if (this.javaClass != other.javaClass) return false
         other as ScriptCompilationConfigurationEntityData
-        if (this.bytes != other.bytes) return false
+        if (this.data != other.data) return false
+        if (this.hash != other.hash) return false
+        if (this.tag != other.tag) return false
         return true
     }
 
     override fun hashCode(): Int {
         var result = entitySource.hashCode()
-        result = 31 * result + bytes.hashCode()
+        result = 31 * result + data.hashCode()
+        result = 31 * result + hash.hashCode()
+        result = 31 * result + tag.hashCode()
         return result
     }
 
     override fun hashCodeIgnoringEntitySource(): Int {
         var result = javaClass.hashCode()
-        result = 31 * result + bytes.hashCode()
+        result = 31 * result + data.hashCode()
+        result = 31 * result + hash.hashCode()
+        result = 31 * result + tag.hashCode()
         return result
     }
 }

@@ -3,10 +3,11 @@ package org.jetbrains.kotlin.idea.core.script.k2
 
 import com.intellij.platform.workspace.storage.EntitySource
 import com.intellij.platform.workspace.storage.MutableEntityStorage
-import org.jetbrains.kotlin.idea.core.script.k2.configurations.DefaultScriptEntitySource
+import com.intellij.util.lang.Xxh3
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationData
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationEntity
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationEntityId
+import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptCompilationConfigurationHash
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptEvaluationConfigurationEntity
 import org.jetbrains.kotlin.idea.core.script.k2.modules.ScriptingHostConfigurationEntity
 import java.io.ByteArrayInputStream
@@ -89,12 +90,53 @@ fun ScriptingHostConfigurationEntity.deserialize(): ScriptingHostConfiguration? 
     }
 }
 
-fun MutableEntityStorage.getOrCreateScriptConfigurationEntityId(configuration: ScriptCompilationConfiguration, entitySource: EntitySource): ScriptCompilationConfigurationEntityId {
-    val bytes = configuration.asBytes()
-    val configurationEntityId = ScriptCompilationConfigurationEntityId(bytes)
-    if (!this.contains(configurationEntityId)) {
-        this addEntity ScriptCompilationConfigurationEntity(bytes, entitySource)
+/**
+ * Gets or creates a unique entity ID for a script compilation configuration using content-based deduplication.
+ *
+ * This function implements a deduplication system that:
+ * 1. Serializes the configuration to bytes
+ * 2. Computes an XXHash3 (64-bit) hash of the serialized data
+ * 3. Uses the hash with a tag-based collision resolution strategy to find or create a unique entity
+ *
+ * If an entity with the same content already exists in storage, its ID is returned (deduplication).
+ * Otherwise, a new entity is created with the next available tag for the given hash.
+ *
+ * **Hash Collision Resolution:**
+ * - The function tries tags from 0 to [Short.MAX_VALUE] to handle hash collisions
+ * - For each candidate ID (hash + tag), it checks if an entity exists
+ * - If exists, performs byte-level comparison to distinguish true duplicates from hash collisions
+ * - If content matches, returns existing ID; if different (collision), tries next tag
+ *
+ * @param configuration The script compilation configuration to store in workspace model
+ * @param entitySource The entity source for tracking changes in the workspace model
+ * @return The entity ID (existing if content matches, newly created otherwise)
+ * @throws IllegalStateException if all tags (0..[Short.MAX_VALUE]) are exhausted for the given hash
+ *         (extremely unlikely in practice)
+ */
+fun MutableEntityStorage.getOrCreateScriptConfigurationEntityId(
+    configuration: ScriptCompilationConfiguration,
+    entitySource: EntitySource
+): ScriptCompilationConfigurationEntityId {
+    val data = configuration.asBytes()
+    val hash = ScriptCompilationConfigurationHash(Xxh3.hash(data))
+
+    for (tag in 0..Short.MAX_VALUE) {
+        val candidateId = ScriptCompilationConfigurationEntityId(hash = hash, tag = tag)
+        val existingEntity = this.resolve(candidateId)
+        if (existingEntity == null) {
+            try {
+                this addEntity ScriptCompilationConfigurationEntity(data, hash, tag, entitySource)
+            } catch (e: Exception) {
+                println(e)
+            }
+            return candidateId
+        } else {
+            val existingBytes = existingEntity.data
+            if (existingBytes.contentEquals(data)) {
+                return candidateId
+            }
+        }
     }
 
-    return configurationEntityId
+    error("Exhausted tags for configuration=$configuration")
 }
