@@ -20,8 +20,9 @@ final class CompactFileReaderForVersion2 {
     CompactFileReader.skipGeneratorVersionAndBootstrapClasspath(in);
 
     boolean hasMainPluginModule = in.readBoolean();
-    String mainPluginModuleName = hasMainPluginModule ? in.readUTF() : null;
-    RuntimeModuleId mainPluginModuleId = mainPluginModuleName != null ? RuntimeModuleId.module(mainPluginModuleName) : null;
+    if (hasMainPluginModule) {
+      in.readUTF();//skip main plugin module name
+    }
 
     Map<RuntimeModuleId, RawRuntimeModuleDescriptor> descriptors = new HashMap<>();
 
@@ -52,6 +53,6 @@ final class CompactFileReaderForVersion2 {
 
       descriptors.put(descriptorId, RawRuntimeModuleDescriptor.create(descriptorId, resourcePaths, dependencies));
     }
-    return RawRuntimeModuleRepositoryData.create(descriptors, filePath.getParent(), mainPluginModuleId);
+    return RawRuntimeModuleRepositoryData.create(descriptors, filePath.getParent());
   }
 }
