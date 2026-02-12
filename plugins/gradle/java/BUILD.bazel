@@ -18,7 +18,6 @@ jvm_library(
     "//plugins/gradle",
     "//plugins/gradle/plugin",
     "//plugins/gradle:gradle-common",
-    "//plugins/coverage",
     "//plugins/gradle/jps-plugin:jps",
     "//java/java-indexing-api:indexing",
     "//platform/analysis-api:analysis",
