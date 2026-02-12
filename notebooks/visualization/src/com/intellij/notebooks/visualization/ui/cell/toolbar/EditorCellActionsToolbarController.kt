@@ -69,11 +69,11 @@ internal class EditorCellActionsToolbarController(
       }
     }.cancelOnDispose(this)
 
-    editor.scrollingModel.addVisibleAreaListener({
-                                                   if (!NotebookSettings.getInstance().cellToolbarStickyVisible) return@addVisibleAreaListener
-                                                   val targetComponent = toolbar?.targetComponent ?: return@addVisibleAreaListener
-                                                   updateToolbarPosition(targetComponent)
-                                                 }, this)
+    editor.scrollingModel.addVisibleAreaListener {
+      if (!NotebookSettings.getInstance().cellToolbarStickyVisible) return@addVisibleAreaListener
+      val targetComponent = toolbar?.targetComponent ?: return@addVisibleAreaListener
+      updateToolbarPosition(targetComponent)
+    }
 
     cell.isSelected.afterDistinctChange(this) {
       updateToolbarVisibility()
@@ -210,8 +210,11 @@ internal class EditorCellActionsToolbarController(
     // We have also EditorInspectionsActionToolbar in the top right editor corner, and we want to protect from overlap.
     val statusComponent = (editor.scrollPane as? JBScrollPane)?.statusComponent
     if (statusComponent != null) {
-      if (result.intersectsEvenIfEmpty(statusComponent.bounds.apply { y += editor.contentComponent.visibleRect.y })) {
-        result.y += statusComponent.height
+      val statusComponentLocation = SwingUtilities.convertPoint(statusComponent, Point(0, 0), editor.contentComponent)
+      val statusComponentBounds = Rectangle(statusComponentLocation, statusComponent.size)
+
+      if (result.intersectsEvenIfEmpty(statusComponentBounds)) {
+        result.y = statusComponentBounds.y + statusComponentBounds.height
       }
     }
 
