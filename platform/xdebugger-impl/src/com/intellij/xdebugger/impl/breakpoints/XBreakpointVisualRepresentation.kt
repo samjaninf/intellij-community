@@ -35,7 +35,6 @@ import com.intellij.platform.debugger.impl.shared.proxy.XLineBreakpointProxy
 import com.intellij.util.DocumentUtil
 import com.intellij.util.ThreeState
 import com.intellij.xdebugger.XDebuggerUtil
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl
 import com.intellij.xdebugger.ui.DebuggerColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -271,7 +270,7 @@ class XBreakpointVisualRepresentation(
       override fun remove() {
         // TODO IJPL-185322 implement DnD remove for light breakpoints?
         if (myBreakpoint is XLineBreakpointProxy) {
-          XBreakpointUtil.removeBreakpointWithConfirmation(myBreakpoint)
+          XBreakpointUIUtil.removeBreakpointWithConfirmation(myBreakpoint)
         }
       }
 

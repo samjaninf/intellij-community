@@ -7,7 +7,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy;
 import com.intellij.xdebugger.XDebuggerBundle;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.SwingUtilities;
@@ -32,7 +31,7 @@ class RemoveBreakpointGutterIconAction extends DumbAwareAction {
       InputEvent event = e.getInputEvent();
       // for mouse events check that no modifiers applied
       if (!(event instanceof MouseEvent) || event.getModifiersEx() == 0 || SwingUtilities.isMiddleMouseButton((MouseEvent)event)) {
-        XBreakpointUtil.removeBreakpointWithConfirmation(myBreakpoint);
+        XBreakpointUIUtil.removeBreakpointWithConfirmation(myBreakpoint);
       }
     });
   }

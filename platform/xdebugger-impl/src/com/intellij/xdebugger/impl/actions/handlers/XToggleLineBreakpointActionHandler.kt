@@ -13,7 +13,7 @@ import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy
 import com.intellij.util.ThreeState
 import com.intellij.xdebugger.impl.actions.DebuggerActionHandler
 import com.intellij.xdebugger.impl.actions.ToggleLineBreakpointAction
-import com.intellij.xdebugger.impl.breakpoints.XBreakpointUtil
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointUIUtil
 import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointManager
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil
 import org.jetbrains.annotations.ApiStatus
@@ -67,7 +67,7 @@ class XToggleLineBreakpointActionHandler(private val myTemporary: Boolean) : Deb
     val futures = mutableListOf<CompletableFuture<*>>()
     for (position in ToggleLineBreakpointAction.getAllPositionsForBreakpoints(project, event.dataContext)) {
       if (processedLines.add(position.getLine())) {
-        val future = XBreakpointUtil.toggleLineBreakpointProxy(
+        val future = XBreakpointUIUtil.toggleLineBreakpointProxy(
           project, position, !isFromGutterClick, position.editor, isAltClick || myTemporary,
           !isFromGutterClick, canRemove, isLoggingBreakpoint, selection
         ).thenAccept { breakpoint ->

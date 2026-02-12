@@ -187,7 +187,7 @@ internal class InlineBreakpointInlayRenderer(
       }
       ClickAction.REMOVE -> {
         val proxy = lightBreakpoint!!.breakpointProxy!!
-        XBreakpointUtil.removeBreakpointWithConfirmation(proxy)
+        XBreakpointUIUtil.removeBreakpointWithConfirmation(proxy)
       }
     }
   }

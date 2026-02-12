@@ -19,7 +19,7 @@ import com.intellij.util.ModalityUiUtil;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.breakpoints.SuspendPolicy;
 import com.intellij.xdebugger.impl.XSourcePositionImpl;
-import com.intellij.xdebugger.impl.breakpoints.XBreakpointUtil;
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointUIUtil;
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl;
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import org.jetbrains.annotations.ApiStatus;
@@ -42,7 +42,7 @@ public class AddLineBreakpointAction extends DumbAwareAction implements SplitDeb
     XSourcePosition position = getLineBreakpointPosition(e);
     assert position != null;
     String selection = editor.getSelectionModel().getSelectedText();
-    XBreakpointUtil.toggleLineBreakpointProxy(project, position, false, editor, false, false, true)
+    XBreakpointUIUtil.toggleLineBreakpointProxy(project, position, false, editor, false, false, true)
       .thenAccept(bp -> {
         if (bp != null && editBreakpointSettings(bp, selection)) {
           ModalityUiUtil.invokeLaterIfNeeded(ModalityState.defaultModalityState(), () -> {

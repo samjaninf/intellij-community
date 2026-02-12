@@ -11,7 +11,7 @@ import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy;
-import com.intellij.xdebugger.impl.breakpoints.XBreakpointUtil;
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointUIUtil;
 import com.intellij.xdebugger.impl.breakpoints.ui.BreakpointItem;
 import com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory;
 import org.jetbrains.annotations.ApiStatus;
@@ -31,7 +31,7 @@ public abstract class EditBreakpointActionHandler extends DebuggerActionHandler 
     Editor editor = CommonDataKeys.EDITOR.getData(dataContext);
     if (editor == null) return;
 
-    final Pair<GutterIconRenderer, XBreakpointProxy> pair = XBreakpointUtil.findSelectedBreakpointProxy(project, editor);
+    final Pair<GutterIconRenderer, XBreakpointProxy> pair = XBreakpointUIUtil.findSelectedBreakpointProxy(project, editor);
 
     XBreakpointProxy breakpoint = pair.second;
     GutterIconRenderer breakpointGutterRenderer = pair.first;

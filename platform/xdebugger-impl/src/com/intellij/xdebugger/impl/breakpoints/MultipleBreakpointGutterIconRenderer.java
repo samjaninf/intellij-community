@@ -13,7 +13,6 @@ import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy;
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.xdebugger.XDebuggerBundle;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +73,7 @@ class MultipleBreakpointGutterIconRenderer extends CommonBreakpointGutterIconRen
   }
 
   private void removeBreakpoints() {
-    XBreakpointUtil.removeBreakpointsWithConfirmation(breakpoints);
+    XBreakpointUIUtil.removeBreakpointsWithConfirmation(breakpoints);
   }
 
   @Override
