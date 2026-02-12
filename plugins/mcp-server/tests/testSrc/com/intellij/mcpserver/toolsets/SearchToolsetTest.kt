@@ -4,6 +4,7 @@ package com.intellij.mcpserver.toolsets
 
 import com.intellij.mcpserver.McpToolsetTestBase
 import com.intellij.mcpserver.toolsets.general.SearchToolset
+import com.intellij.mcpserver.util.awaitExternalChangesAndIndexing
 import com.intellij.openapi.application.edtWriteAction
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.roots.ModuleRootModificationUtil
@@ -316,6 +317,7 @@ class SearchToolsetTest : McpToolsetTestBase() {
 
   @Test
   fun search_text_respects_paths_glob() = runBlocking {
+    awaitExternalChangesAndIndexing(project)
     val query = "Search Everywhere file mask content"
     testMcpTool(
       SearchToolset::search_text.name,
@@ -332,6 +334,8 @@ class SearchToolsetTest : McpToolsetTestBase() {
 
   @Test
   fun search_text_respects_paths_and_exclude() = runBlocking {
+    awaitExternalChangesAndIndexing(project)
+
     testMcpTool(
       SearchToolset::search_text.name,
       buildJsonObject {
@@ -374,6 +378,7 @@ class SearchToolsetTest : McpToolsetTestBase() {
 
   @Test
   fun search_regex_respects_paths_scope() = runBlocking {
+    awaitExternalChangesAndIndexing(project)
     testMcpTool(
       SearchToolset::search_regex.name,
       buildJsonObject {
