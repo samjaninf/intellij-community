@@ -13,10 +13,11 @@ export PYTHONPATH="$PY3ONLY_DIR:$PYCHARM_DIR:$HELPERS_DIR${PYTHONPATH:+:$PYTHONP
 
 [ $# -eq 0 ] && set -- tests
 
-for version in 3.8 3.9 3.10 3.11 3.12 3.13 3.14; do
+for version in 3.9.25 3.10.19 3.11.14 3.12.12 3.13.12 3.14.3 3.15.0a5; do
   # execute new tests
   uv run --python "$version" pytest --junit-xml=.reports/junit-py$version.xml "$@"
 
   # execute legacy tests
   uv run --python "$version" legacy/__main__.py
 done
+cd
