@@ -45,13 +45,13 @@ data class GitLabMergeRequestFullDetails(
     val diffRefs: GitLabDiffRefs?,
     val headPipeline: GitLabPipelineDTO?,
     val userPermissions: GitLabMergeRequestPermissionsDTO,
-    val shouldRemoveSourceBranch: Boolean?,
+    val shouldRemoveSourceBranch: Boolean,
     val shouldBeRebased: Boolean,
     val rebaseInProgress: Boolean
 ) {
 
   companion object {
-    fun fromGraphQL(dto: GitLabMergeRequestDTO) = GitLabMergeRequestFullDetails(
+    fun fromGraphQL(dto: GitLabMergeRequestDTO): GitLabMergeRequestFullDetails = GitLabMergeRequestFullDetails(
       iid = dto.iid,
       title = dto.title,
       createdAt = dto.createdAt,
@@ -71,14 +71,14 @@ data class GitLabMergeRequestFullDetails(
       sourceBranch = dto.sourceBranch,
       approvalsRequired = dto.approvalsRequired ?: 0,
       conflicts = dto.conflicts,
-      onlyAllowMergeIfAllDiscussionsAreResolved = dto.targetProject.onlyAllowMergeIfAllDiscussionsAreResolved,
-      onlyAllowMergeIfPipelineSucceeds = dto.targetProject.onlyAllowMergeIfPipelineSucceeds,
-      allowMergeOnSkippedPipeline = dto.targetProject.allowMergeOnSkippedPipeline,
+      onlyAllowMergeIfAllDiscussionsAreResolved = dto.targetProject.onlyAllowMergeIfAllDiscussionsAreResolved ?: false,
+      onlyAllowMergeIfPipelineSucceeds = dto.targetProject.onlyAllowMergeIfPipelineSucceeds ?: false,
+      allowMergeOnSkippedPipeline = dto.targetProject.allowMergeOnSkippedPipeline ?: true,
       diffRefs = dto.diffRefs,
       headPipeline = dto.headPipeline,
       userPermissions = dto.userPermissions,
       detailedLabels = dto.labels,
-      shouldRemoveSourceBranch = dto.shouldRemoveSourceBranch,
+      shouldRemoveSourceBranch = dto.shouldRemoveSourceBranch ?: false,
       shouldBeRebased = dto.shouldBeRebased,
       rebaseInProgress = dto.rebaseInProgress
     )

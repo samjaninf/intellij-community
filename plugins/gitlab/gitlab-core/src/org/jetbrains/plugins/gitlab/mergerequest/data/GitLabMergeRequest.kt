@@ -447,7 +447,6 @@ internal class LoadedGitLabMergeRequest(
     var attempts = 0
     val sha = mergeRequestDetailsState.value.diffRefs?.headSha ?: return
     val shouldRemoveSourceBranch = mergeRequestDetailsState.value.shouldRemoveSourceBranch
-                                   ?: mergeRequestDetailsState.value.targetProject.removeSourceBranchAfterMerge
     api.graphQL.mergeRequestAccept(projectCoordinates.projectPath, iid, commitMessage, sha, withSquash, shouldRemoveSourceBranch)
       .getResultOrThrow()
     do {

@@ -162,7 +162,7 @@ class LoadedGitLabDiscussion(
           api.rest.changeMergeRequestDiscussionResolve(projectId, mr.iid, id.restId, !resolved).body()
         }
         noteEvents.emit(GitLabNoteEvent.Changed(result.notes))
-        if (mr.details.value.targetProject.onlyAllowMergeIfAllDiscussionsAreResolved) {
+        if (mr.details.value.onlyAllowMergeIfAllDiscussionsAreResolved) {
           mr.refreshData()
         }
       }

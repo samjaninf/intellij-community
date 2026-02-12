@@ -176,8 +176,8 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
     .modelFlow(scope, LOG)
   private val isPipelineSucceeds: SharedFlow<Boolean> = mergeRequest.details.map { details ->
     val ciJobs = details.headPipeline?.jobs ?: return@map true
-    if (!details.targetProject.onlyAllowMergeIfPipelineSucceeds) return@map true
-    ciJobs.areAllJobsSuccessful(details.targetProject.allowMergeOnSkippedPipeline)
+    if (!details.onlyAllowMergeIfPipelineSucceeds) return@map true
+    ciJobs.areAllJobsSuccessful(details.allowMergeOnSkippedPipeline)
   }.modelFlow(scope, LOG)
 
   override val isMergeEnabled: SharedFlow<Boolean> =
