@@ -146,21 +146,25 @@ private suspend fun enableIslandsDarcula(properties: PropertiesComponent) {
 
   properties.setValue("ide.islands.new.darcula", true)
 
-  val lafManager = serviceAsync<LafManager>()
-  val currentTheme = lafManager.currentUIThemeLookAndFeel?.id ?: return
-
-  if (currentTheme != "Darcula") {
-    return
-  }
-
   val id = PluginId.getId("com.intellij.classic.ui")
   if (PluginManagerCore.findPlugin(id) != null && !PluginManagerCore.isDisabled(id)) {
     return
   }
 
+  val lafManager = serviceAsync<LafManager>()
+  val currentTheme = lafManager.currentUIThemeLookAndFeel?.id ?: return
+
   val themeManager = serviceAsync<UiThemeProviderListManager>()
   val newTheme = themeManager.findThemeById("Islands Darcula") ?: return
 
+  if (currentTheme != "Darcula") {
+    if (lafManager.autodetect && JBColor.isBright() && lafManager.preferredDarkThemeId == "Darcula") {
+      lafManager.setPreferredDarkLaf(newTheme)
+    }
+    return
+  }
+
   lafManager.setCurrentLookAndFeel(newTheme, true)
+  lafManager.setPreferredDarkLaf(newTheme)
   lafManager.updateUI()
 }
