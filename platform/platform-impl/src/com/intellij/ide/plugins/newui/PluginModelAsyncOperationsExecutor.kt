@@ -43,28 +43,25 @@ internal object PluginModelAsyncOperationsExecutor {
     }
   }
 
-  fun performMarketplaceSearch(
-    cs: CoroutineScope,
+  suspend fun performMarketplaceSearch(
     query: String,
     loadUpdates: Boolean,
-    callback: (PluginSearchResult, List<PluginUiModel>) -> Unit,
-  ) {
-    cs.launch(Dispatchers.IO) {
+  ): Pair<PluginSearchResult, List<PluginUiModel>> {
+    return withContext(Dispatchers.IO) {
       val pluginManager = UiPluginManager.getInstance()
       val result = pluginManager.executeMarketplaceQuery(query, 10000, true)
       val updates = mutableListOf<PluginUiModel>()
       if (loadUpdates) {
         updates.addAll(pluginManager.getUpdateModels())
       }
-      callback(result, updates)
+      result to updates
     }
   }
 
-  fun getCustomRepositoriesPluginMap(cs: CoroutineScope, callback: (Map<String, List<PluginUiModel>>) -> Unit) {
-    cs.launch(Dispatchers.IO) {
+  suspend fun getCustomRepositoriesPluginMap(): Map<String, List<PluginUiModel>> {
+    return withContext(Dispatchers.IO) {
       val pluginManager = UiPluginManager.getInstance()
-      val result = pluginManager.getCustomRepositoryPluginMap()
-      callback(result)
+      pluginManager.getCustomRepositoryPluginMap()
     }
   }
 

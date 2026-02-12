@@ -6,7 +6,9 @@ import com.intellij.ide.plugins.PluginsGroupType
 import com.intellij.ide.plugins.newui.PluginLogo.endBatchMode
 import com.intellij.ide.plugins.newui.PluginLogo.startBatchMode
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.asContextElement
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.Alarm
@@ -17,7 +19,10 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.accessibility.AccessibleAnnouncerUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JComponent
@@ -36,7 +41,7 @@ abstract class SearchResultPanel(
     private set
   var query: String = ""
     private set
-  private var myRunQuery: AtomicBoolean? = null
+  private var myQueryJob: Job? = null
   private var isLoading = false
   private var myAnnounceSearchResultsAlarm: SingleAlarm? = null
 
@@ -87,9 +92,8 @@ abstract class SearchResultPanel(
       return
     }
 
-    if (myRunQuery != null) {
-      myRunQuery!!.set(false)
-      myRunQuery = null
+    if (myQueryJob != null) {
+      myQueryJob?.cancel()
       loading(false)
     }
 
@@ -105,22 +109,19 @@ abstract class SearchResultPanel(
   private fun handleQuery(query: String) {
     loading(true)
 
-    myRunQuery = AtomicBoolean(true)
-    val runQuery = myRunQuery!!
     val group = this.group
 
-    coroutineScope.launch(Dispatchers.IO) {
-      handleQuery(query, group, runQuery)
+    myQueryJob = coroutineScope.launch(Dispatchers.IO) {
+      handleQuery(query, group)
+      withContext(Dispatchers.EDT + ModalityState.any().asContextElement()) {
+        loading(false)
+      }
     }
   }
 
-  protected fun updatePanel(runQuery: AtomicBoolean) {
-    ApplicationManager.getApplication().invokeLater(Runnable {
-      assert(EDT.isCurrentThreadEdt())
-      if (!runQuery.get()) {
-        return@Runnable
-      }
-      myRunQuery = null
+  protected suspend fun updatePanel() {
+    withContext(Dispatchers.EDT + ModalityState.any().asContextElement()) {
+      ensureActive()
 
       loading(false)
 
@@ -128,7 +129,7 @@ abstract class SearchResultPanel(
         group.titleWithCount()
         try {
           startBatchMode()
-          myPanel.addLazyGroup(this.group, myVerticalScrollBar!!, 100, Runnable { this.fullRepaint() })
+          myPanel.addLazyGroup(group, myVerticalScrollBar!!, 100, Runnable { fullRepaint() })
         }
         finally {
           endBatchMode()
@@ -139,10 +140,10 @@ abstract class SearchResultPanel(
       myPanel.initialSelection(false)
       runPostFillGroupCallback()
       fullRepaint()
-    }, ModalityState.any())
+    }
   }
 
-  protected abstract suspend fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean)
+  protected abstract suspend fun handleQuery(query: String, result: PluginsGroup)
 
   private fun runPostFillGroupCallback() {
     if (myPostFillGroupCallback != null) {

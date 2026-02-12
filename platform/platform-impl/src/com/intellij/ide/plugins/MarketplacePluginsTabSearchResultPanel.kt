@@ -40,7 +40,6 @@ import java.awt.Component
 import java.awt.Graphics
 import java.awt.Point
 import java.awt.event.KeyEvent
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Supplier
 import javax.accessibility.AccessibleContext
@@ -117,7 +116,7 @@ internal class MarketplacePluginsTabSearchResultPanel(
     return sortByAction
   }
 
-  override suspend fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean) {
+  override suspend fun handleQuery(query: String, result: PluginsGroup) {
     val searchIndex = updateAndGetSearchIndex()
 
     val parser = SearchQueryParser.Marketplace(query)
@@ -146,11 +145,11 @@ internal class MarketplacePluginsTabSearchResultPanel(
       }
     }
 
-    PluginModelAsyncOperationsExecutor.getCustomRepositoriesPluginMap(coroutineScope) { customRepositoriesMap ->
+    PluginModelAsyncOperationsExecutor.getCustomRepositoriesPluginMap().let { customRepositoriesMap ->
       if (parser.suggested && myProject != null) {
         val plugins = findSuggestedPlugins(myProject, customRepositoriesMap)
         result.addModels(plugins)
-        updateSearchPanel(result, runQuery, plugins)
+        updateSearchPanel(result, plugins)
       }
       else if (!parser.repositories.isEmpty()) {
         for (repository in parser.repositories) {
@@ -171,30 +170,29 @@ internal class MarketplacePluginsTabSearchResultPanel(
         }
         result.removeDuplicates()
         result.sortByName()
-        updateSearchPanel(result, runQuery, result.getModels())
+        updateSearchPanel(result, result.getModels())
       }
       else {
         PluginModelAsyncOperationsExecutor
           .performMarketplaceSearch(
-            coroutineScope,
             parser.urlQuery,
             !result.getModels().isEmpty()
-          ) { searchResult, updates ->
+          ).let { (searchResult, updates) ->
             applySearchResult(
               result, searchResult, updates, customRepositoriesMap,
               parser, searchIndex
             )
-            updatePanel(runQuery)
+            updatePanel()
           }
       }
     }
   }
 
-  private fun updateSearchPanel(result: PluginsGroup, runQuery: AtomicBoolean, plugins: List<PluginUiModel>) {
+  private suspend fun updateSearchPanel(result: PluginsGroup, plugins: List<PluginUiModel>) {
     val ids = plugins.mapTo(LinkedHashSet()) { it.pluginId }
     result.getPreloadedModel().setInstalledPlugins(getInstance().findInstalledPluginsSync(ids))
     result.getPreloadedModel().setPluginInstallationStates(getInstance().getInstallationStatesSync())
-    updatePanel(runQuery)
+    updatePanel()
   }
 
   private fun applySearchResult(
