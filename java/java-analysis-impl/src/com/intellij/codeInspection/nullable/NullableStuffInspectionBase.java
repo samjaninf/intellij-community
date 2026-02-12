@@ -122,7 +122,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.intellij.codeInsight.AnnotationUtil.CHECK_EXTERNAL;
@@ -349,26 +348,15 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
 
       @Override
       public void visitAnnotation(@NotNull PsiAnnotation annotation) {
-        String qualifiedName = annotation.getQualifiedName();
-        if (qualifiedName == null) return;
-        Optional<Nullability> nullabilityOptional = manager.getAnnotationNullability(qualifiedName);
-        if (nullabilityOptional.isEmpty()) return;
-        Nullability nullability = nullabilityOptional.get();
-        PsiType type = getRelatedType(annotation);
-        PsiAnnotationOwner owner = annotation.getOwner();
-        PsiModifierListOwner listOwner = owner instanceof PsiModifierList modifierList
-                                         ? tryCast(modifierList.getParent(), PsiModifierListOwner.class) : null;
-        PsiType targetType = listOwner == null ? null : PsiUtil.getTypeByPsiElement(listOwner);
-        if (listOwner != null && targetType != null) {
-          checkRedundantInContainerScope(annotation, manager.findContainerAnnotation(listOwner), nullability);
-        }
-        else if (type != null) {
-          PsiElement context = type instanceof PsiClassType classType ? classType.getPsiContext() : annotation;
-          if (context != null) {
-            checkRedundantInContainerScope(annotation, manager.findDefaultTypeUseNullability(context), nullability);
-          }
-        }
-        if (type != null && nullability == Nullability.NOT_NULL && PsiUtil.resolveClassInClassTypeOnly(type) instanceof PsiTypeParameter) {
+        NullabilityAnnotationWrapper wrapper = NullabilityAnnotationWrapper.from(annotation);
+        if (wrapper == null) return;
+        PsiType targetType = wrapper.targetType();
+        PsiType type = wrapper.type();
+        PsiModifierListOwner listOwner = wrapper.listOwner();
+        checkRedundantInContainerScope(wrapper);
+        if (type != null &&
+            wrapper.nullability() == Nullability.NOT_NULL &&
+            PsiUtil.resolveClassInClassTypeOnly(type) instanceof PsiTypeParameter) {
           PsiType notAnnotated = type.annotate(TypeAnnotationProvider.EMPTY);
           TypeNullability notAnnotatedNullability = notAnnotated.getNullability();
           if (notAnnotatedNullability.nullability() == Nullability.NOT_NULL &&
@@ -416,7 +404,7 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
           }
         }
         if (type instanceof PsiArrayType && annotation.getParent() instanceof PsiTypeElement parent &&
-            parent.getType().equals(type) && !manager.canAnnotateLocals(qualifiedName)) {
+            parent.getType().equals(type) && !manager.canAnnotateLocals(wrapper.qualifiedName())) {
           checkIllegalLocalAnnotation(annotation, parent.getParent());
         }
         if (listOwner instanceof PsiMethod method && method.isConstructor()) {
@@ -428,20 +416,20 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
         if (listOwner instanceof PsiEnumConstant) {
           reportIncorrectLocation(holder, annotation, listOwner, "inspection.nullable.problems.at.enum.constant");
         }
-        if (!manager.canAnnotateLocals(qualifiedName) && !(targetType instanceof PsiArrayType)) {
+        if (!manager.canAnnotateLocals(wrapper.qualifiedName()) && !(targetType instanceof PsiArrayType)) {
           checkIllegalLocalAnnotation(annotation, listOwner);
         }
-        if (type instanceof PsiWildcardType && manager.isTypeUseAnnotationLocationRestricted(qualifiedName)) {
+        if (type instanceof PsiWildcardType && manager.isTypeUseAnnotationLocationRestricted(wrapper.qualifiedName())) {
           reportIncorrectLocation(holder, annotation, listOwner, "inspection.nullable.problems.at.wildcard");
         }
-        if (owner instanceof PsiTypeParameter && manager.isTypeUseAnnotationLocationRestricted(qualifiedName)) {
+        if (wrapper.owner() instanceof PsiTypeParameter && manager.isTypeUseAnnotationLocationRestricted(wrapper.qualifiedName())) {
           reportIncorrectLocation(holder, annotation, listOwner, "inspection.nullable.problems.at.type.parameter");
         }
-        if (listOwner instanceof PsiReceiverParameter && nullability != Nullability.NOT_NULL) {
+        if (listOwner instanceof PsiReceiverParameter && wrapper.nullability() != Nullability.NOT_NULL) {
           reportIncorrectLocation(holder, annotation, listOwner, "inspection.nullable.problems.receiver.annotation");
         }
-        checkOppositeAnnotationConflict(annotation, nullability);
-        if (NOT_NULL.equals(qualifiedName)) {
+        checkOppositeAnnotationConflict(annotation, wrapper.nullability());
+        if (NOT_NULL.equals(wrapper.qualifiedName())) {
           PsiAnnotationMemberValue value = annotation.findDeclaredAttributeValue("exception");
           if (value instanceof PsiClassObjectAccessExpression classObjectAccessExpression) {
             PsiClass psiClass = PsiUtil.resolveClassInClassTypeOnly(classObjectAccessExpression.getOperand().getType());
@@ -452,22 +440,26 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
         }
       }
 
-      private void checkRedundantInContainerScope(@NotNull PsiAnnotation annotation,
-                                                  @Nullable NullabilityAnnotationInfo containerInfo,
-                                                  @NotNull Nullability nullability) {
-        if (!REPORT_REDUNDANT_NULLABILITY_ANNOTATION_IN_THE_SCOPE_OF_ANNOTATED_CONTAINER) return;
-        if (containerInfo != null && !containerInfo.getAnnotation().equals(annotation) && containerInfo.getNullability() == nullability) {
-          PsiJavaCodeReferenceElement containerName = containerInfo.getAnnotation().getNameReferenceElement();
-          if (containerName != null) {
-            LocalQuickFix updateOptionFix = LocalQuickFix.from(
-              new UpdateInspectionOptionFix(NullableStuffInspectionBase.this,
-                                            "REPORT_REDUNDANT_NULLABILITY_ANNOTATION_IN_THE_SCOPE_OF_ANNOTATED_CONTAINER",
-                                            JavaAnalysisBundle.message("inspection.nullable.problems.turn.off.redundant.annotation.under.container"),
-                                            false));
-            reportProblem(holder, annotation,
-                          LocalQuickFix.notNullElements(new RemoveAnnotationQuickFix(annotation, null), updateOptionFix),
-                          "inspection.nullable.problems.redundant.annotation.under.container", containerName.getReferenceName());
+      private void checkRedundantInContainerScope(NullabilityAnnotationWrapper wrapper) {
+        if (REPORT_REDUNDANT_NULLABILITY_ANNOTATION_IN_THE_SCOPE_OF_ANNOTATED_CONTAINER) {
+          NullabilityAnnotationInfo containerInfo = wrapper.findContainerInfoForRedundantAnnotation();
+          if (containerInfo != null) {
+            reportRedundantInContainerScope(wrapper.annotation(), containerInfo);
           }
+        }
+      }
+
+      private void reportRedundantInContainerScope(@NotNull PsiAnnotation annotation, @NotNull NullabilityAnnotationInfo containerInfo) {
+        PsiJavaCodeReferenceElement containerName = containerInfo.getAnnotation().getNameReferenceElement();
+        if (containerName != null) {
+          LocalQuickFix updateOptionFix = LocalQuickFix.from(
+            new UpdateInspectionOptionFix(NullableStuffInspectionBase.this,
+                                          "REPORT_REDUNDANT_NULLABILITY_ANNOTATION_IN_THE_SCOPE_OF_ANNOTATED_CONTAINER",
+                                          JavaAnalysisBundle.message("inspection.nullable.problems.turn.off.redundant.annotation.under.container"),
+                                          false));
+          reportProblem(holder, annotation,
+                        LocalQuickFix.notNullElements(new RemoveAnnotationQuickFix(annotation, null), updateOptionFix),
+                        "inspection.nullable.problems.redundant.annotation.under.container", containerName.getReferenceName());
         }
       }
 
