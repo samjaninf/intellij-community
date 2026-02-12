@@ -1,4 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package icons;
 
 import com.intellij.ui.IconManager;
@@ -32,7 +32,17 @@ public final class PlatformDebuggerImplIcons {
   }
 
   public static final class PinToTop {
-    /** 16x16 */ public static final @NotNull Icon PinnedItem = load("icons/pinToTop/pinnedItem.svg", -570469980, 0);
-    /** 16x16 */ public static final @NotNull Icon UnpinnedItem = load("icons/pinToTop/unpinnedItem.svg", -531132107, 0);
+
+    /** @deprecated to be removed (Use AllIcons.Debugger.PinToTop.PinnedItem instead) */
+    @SuppressWarnings("unused")
+    @Deprecated
+    @ScheduledForRemoval
+    public static final @NotNull Icon PinnedItem = load("icons/pinToTop/pinnedItem.svg", 0, 0);
+
+    /** @deprecated to be removed (Use AllIcons.Debugger.PinToTop.UnpinnedItem instead) */
+    @SuppressWarnings("unused")
+    @Deprecated
+    @ScheduledForRemoval
+    public static final @NotNull Icon UnpinnedItem = load("icons/pinToTop/unpinnedItem.svg", 0, 0);
   }
 }

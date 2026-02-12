@@ -2748,6 +2748,10 @@ f:org.jetbrains.jewel.ui.icons.AllIconsKeys$Debugger
 - sf:Watch:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:WatchLastReturnValue:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - <init>():V
+f:org.jetbrains.jewel.ui.icons.AllIconsKeys$Debugger$PinToTop
+- sf:PinnedItem:org.jetbrains.jewel.ui.icon.IntelliJIconKey
+- sf:UnpinnedItem:org.jetbrains.jewel.ui.icon.IntelliJIconKey
+- <init>():V
 f:org.jetbrains.jewel.ui.icons.AllIconsKeys$Debugger$ThreadStates
 - sf:Idle:org.jetbrains.jewel.ui.icon.IntelliJIconKey
 - sf:Socket:org.jetbrains.jewel.ui.icon.IntelliJIconKey

@@ -368,6 +368,10 @@ f:com.intellij.icons.AllIcons$Debugger
 - sf:Watch:javax.swing.Icon
 - sf:WatchLastReturnValue:javax.swing.Icon
 - <init>():V
+f:com.intellij.icons.AllIcons$Debugger$PinToTop
+- sf:PinnedItem:javax.swing.Icon
+- sf:UnpinnedItem:javax.swing.Icon
+- <init>():V
 f:com.intellij.icons.AllIcons$Debugger$ThreadStates
 - sf:Idle:javax.swing.Icon
 - sf:Socket:javax.swing.Icon

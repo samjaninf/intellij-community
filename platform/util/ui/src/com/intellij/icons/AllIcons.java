@@ -367,6 +367,12 @@ public class AllIcons {
     /** 16x16 */ public static final @NotNull Icon MuteBreakpoints = load("expui/run/muteBreakpoints.svg", "debugger/muteBreakpoints.svg", 896463102, 2);
     /** 12x12 */ public static final @NotNull Icon NextStatement = load("expui/debugger/nextStatement.svg", "debugger/nextStatement.svg", -1096276944, 2);
     /** 16x16 */ public static final @NotNull Icon Overhead = load("expui/debugger/overhead.svg", "debugger/overhead.svg", -837590875, 2);
+
+    public static final class PinToTop {
+      /** 16x16 */ public static final @NotNull Icon PinnedItem = load("expui/debugger/pinToTop/pinnedItem.svg", -570469980, 0);
+      /** 16x16 */ public static final @NotNull Icon UnpinnedItem = load("expui/debugger/pinToTop/unpinnedItem.svg", -531132107, 0);
+    }
+
     /** 16x16 */ public static final @NotNull Icon PromptInput = load("expui/debugger/promptInput.svg", "debugger/promptInput.svg", -1485755492, 2);
     /** 16x16 */ public static final @NotNull Icon PromptInputHistory = load("expui/debugger/promptInputHistory.svg", "debugger/promptInputHistory.svg", -526772481, 2);
     /** 7x9 */ public static final @NotNull Icon Question_badge = load("expui/breakpoints/questionBadge.svg", "debugger/question_badge.svg", -1174769014, 2);

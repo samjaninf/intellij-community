@@ -1,6 +1,7 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl.ui.tree;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.HelpTooltipManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.StringUtil;
@@ -18,7 +19,6 @@ import com.intellij.xdebugger.frame.XDebuggerTreeNodeHyperlink;
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.tree.nodes.XDebuggerTreeNode;
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueNodeImpl;
-import icons.PlatformDebuggerImplIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -139,7 +139,7 @@ public class XDebuggerTreeRenderer extends ColoredTreeCellRenderer {
     Icon icon = node instanceof XValueNodeImpl &&
                 node.getTree().getPinToTopManager().isEnabled() &&
                 node.getTree().getPinToTopManager().isItemPinned((XValueNodeImpl)node) ?
-                PlatformDebuggerImplIcons.PinToTop.PinnedItem : node.getIcon();
+                AllIcons.Debugger.PinToTop.PinnedItem : node.getIcon();
     setIcon(icon);
   }
 

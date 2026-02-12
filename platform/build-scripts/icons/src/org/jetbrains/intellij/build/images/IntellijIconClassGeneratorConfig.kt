@@ -219,6 +219,12 @@ class IntellijIconClassGeneratorConfig : IconClasses() {
         packageName = "com.intellij.r.psi.icons",
       )
 
+      "intellij.platform.debugger.impl" -> IntellijIconClassGeneratorModuleConfig(
+        className = "PlatformDebuggerImplIcons",
+        packageName = "icons",
+        iconDirectory = "icons"
+      )
+
       else -> super.getConfigForModule(moduleName)
     }
   }

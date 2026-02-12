@@ -1,6 +1,7 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl.pinned.items
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.project.Project
@@ -13,7 +14,6 @@ import com.intellij.xdebugger.impl.XDebuggerManagerImpl
 import com.intellij.xdebugger.impl.ui.tree.nodes.XDebuggerTreeNode
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueContainerNode
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueNodeImpl
-import icons.PlatformDebuggerImplIcons
 import kotlinx.coroutines.CoroutineScope
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.lang.ref.WeakReference
@@ -65,7 +65,7 @@ class XDebuggerPinToTopManager(coroutineScope: CoroutineScope) {
     val changeIconLifetime = Disposable {
       val node = nodeRef.get() ?: return@Disposable
       val xValuePresentation = node.valuePresentation
-      if (node.icon == PlatformDebuggerImplIcons.PinToTop.UnpinnedItem && xValuePresentation != null) {
+      if (node.icon == AllIcons.Debugger.PinToTop.UnpinnedItem && xValuePresentation != null) {
         WriteIntentReadAction.run {
           node.setPresentation(oldIcon, xValuePresentation, !node.isLeaf)
         }
@@ -81,7 +81,7 @@ class XDebuggerPinToTopManager(coroutineScope: CoroutineScope) {
         val xValuePresentation = node.valuePresentation ?: return@addRequest
         // update icon with actual value
         oldIcon = node.icon
-        node.setPresentation(PlatformDebuggerImplIcons.PinToTop.UnpinnedItem, xValuePresentation, !node.isLeaf)
+        node.setPresentation(AllIcons.Debugger.PinToTop.UnpinnedItem, xValuePresentation, !node.isLeaf)
       },
       delayMillis = DEFAULT_ICON_DELAY,
     )
