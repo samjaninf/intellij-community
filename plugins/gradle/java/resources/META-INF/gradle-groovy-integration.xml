@@ -1,6 +1,4 @@
 <idea-plugin>
-  <depends optional="true" config-file="gradle-groovy-ml-integration.xml">com.intellij.completion.ml.ranking</depends>
-
   <extensionPoints>
     <extensionPoint qualifiedName="org.jetbrains.plugins.gradle.resolve.contributor" interface="org.jetbrains.plugins.gradle.service.resolve.GradleMethodContextContributor"
                     dynamic="true"/>

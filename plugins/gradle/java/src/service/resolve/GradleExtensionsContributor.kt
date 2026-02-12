@@ -16,6 +16,7 @@ import com.intellij.psi.ResolveState
 import com.intellij.psi.scope.PsiScopeProcessor
 import com.intellij.psi.util.InheritanceUtil
 import icons.GradleIcons
+import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.plugins.gradle.service.resolve.GradleCommonClassNames.GRADLE_API_PROJECT
 import org.jetbrains.plugins.gradle.settings.GradleExtensionsSettings
 import org.jetbrains.plugins.gradle.settings.GradleExtensionsSettings.GradleExtensionsData
@@ -27,7 +28,8 @@ import org.jetbrains.plugins.groovy.lang.resolve.processors.inference.type
 import org.jetbrains.plugins.groovy.lang.resolve.shouldProcessProperties
 import javax.swing.Icon
 
-internal class GradleExtensionsContributor : NonCodeMembersContributor() {
+@ApiStatus.Internal
+class GradleExtensionsContributor : NonCodeMembersContributor() {
 
   override fun getClassNames(): Collection<String> {
     return listOf(GradleCommonClassNames.GRADLE_API_EXTRA_PROPERTIES_EXTENSION, GRADLE_API_PROJECT)
@@ -133,7 +135,7 @@ internal class GradleExtensionsContributor : NonCodeMembersContributor() {
       return GradleExtensionsSettings.getInstance(project).getExtensionsFor(module)
     }
 
-    internal const val PROPERTIES_FILE_ORIGINAL_INFO : String = "by gradle.properties"
+    const val PROPERTIES_FILE_ORIGINAL_INFO : String = "by gradle.properties"
 
     private fun processAllCatalogsOfBuild(place: PsiElement, processor: PsiScopeProcessor, state: ResolveState): Set<String>? {
       val catalogNameToAccessor: Map<String, PsiClass> = getAccessorsForAllCatalogs(place)

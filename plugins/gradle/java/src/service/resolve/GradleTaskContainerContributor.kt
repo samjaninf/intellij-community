@@ -90,6 +90,6 @@ class GradleTaskContainerContributor : NonCodeMembersContributor() {
   }
 
   companion object {
-    internal const val GRADLE_TASK_INFO = "by Gradle tasks"
+    const val GRADLE_TASK_INFO = "by Gradle tasks"
   }
 }

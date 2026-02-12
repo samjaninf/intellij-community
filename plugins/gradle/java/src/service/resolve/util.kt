@@ -9,6 +9,7 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.util.ProcessingContext
+import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.plugins.gradle.util.GradleConstants.EXTENSION
 import org.jetbrains.plugins.groovy.lang.psi.api.GroovyMethodResult
 import org.jetbrains.plugins.groovy.lang.psi.impl.synthetic.GroovyScriptClass
@@ -40,7 +41,8 @@ private val PsiElement.module get() = containingFile?.originalFile?.virtualFile?
   ProjectFileIndex.getInstance(project).getModuleForFile(it)
 }
 
-internal fun PsiElement.getLinkedGradleProjectPath() : String? {
+@ApiStatus.Internal
+fun PsiElement.getLinkedGradleProjectPath() : String? {
   return ExternalSystemApiUtil.getExternalProjectPath(module)
 }
 

@@ -95,7 +95,7 @@ class GradleDependencyHandlerContributor : NonCodeMembersContributor() {
   }
 
   companion object {
-    internal const val DEPENDENCY_NOTATION : String = "by Gradle, configuration method"
+    const val DEPENDENCY_NOTATION : String = "by Gradle, configuration method"
     const val dependencyMethodKind: String = "gradle:dependencyMethod"
   }
 }

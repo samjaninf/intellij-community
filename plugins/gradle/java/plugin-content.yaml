@@ -16,6 +16,9 @@
 - name: lib/modules/intellij.gradle.java.groovy.jar
   contentModules:
   - name: intellij.gradle.java.groovy
+- name: lib/modules/intellij.gradle.java.groovy.ml.jar
+  contentModules:
+  - name: intellij.gradle.java.groovy.ml
 - name: lib/modules/intellij.gradle.java.groovy.toml.jar
   contentModules:
   - name: intellij.gradle.java.groovy.toml
