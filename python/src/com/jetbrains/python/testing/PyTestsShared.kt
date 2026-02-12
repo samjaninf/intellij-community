@@ -788,6 +788,11 @@ abstract class PyAbstractTestConfiguration(
 
 abstract class PyAbstractTestFactory<out CONF_T : PyAbstractTestConfiguration>(type: PythonTestConfigurationType)
   : PythonConfigurationFactoryBase(type) {
+
+  /**
+   * Whether this factory represents an explicitly selected test runner whose selection should be respected by facets.
+   */
+  open val isExplicitChoice: Boolean get() = true
   abstract override fun createTemplateConfiguration(project: Project): CONF_T
 
   // Several insances of the same class point to the same factory
