@@ -21,12 +21,10 @@ import com.intellij.ide.plugins.newui.SearchUpDownPopupController
 import com.intellij.ide.plugins.newui.UiPluginManager.Companion.getInstance
 import com.intellij.ide.plugins.newui.getPluginsViewCustomizer
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.updateSettings.impl.pluginsAdvertisement.findSuggestedPlugins
@@ -45,7 +43,6 @@ import java.awt.event.KeyEvent
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Supplier
-import java.util.stream.Collectors
 import javax.accessibility.AccessibleContext
 import javax.accessibility.AccessibleRole
 import javax.swing.Icon
@@ -107,7 +104,7 @@ internal class MarketplacePluginsTabSearchResultPanel(
     sortByAction.setForeground(PluginsGroupComponent.SECTION_HEADER_FOREGROUND)
 
     sortByAction.setListener(
-      LinkListener { component: LinkLabel<*>?, `__`: Any? ->
+      LinkListener { component: LinkLabel<*>?, _: Any? ->
         PluginManagerConfigurablePanel.showRightBottomPopup(
           component!!.getParent().getParent(), IdeBundle.message("plugins.configurable.sort.by"),
           myMarketplaceSortByGroup
@@ -115,7 +112,7 @@ internal class MarketplacePluginsTabSearchResultPanel(
       }, null
     )
 
-    DumbAwareAction.create(com.intellij.util.Consumer { event: AnActionEvent? -> sortByAction.doClick() })
+    DumbAwareAction.create(com.intellij.util.Consumer { _ -> sortByAction.doClick() })
       .registerCustomShortcutSet(KeyEvent.VK_DOWN, 0, sortByAction)
     return sortByAction
   }
@@ -189,15 +186,13 @@ internal class MarketplacePluginsTabSearchResultPanel(
               parser, searchIndex
             )
             updatePanel(runQuery)
-            null
           }
       }
-      null
     }
   }
 
   private fun updateSearchPanel(result: PluginsGroup, runQuery: AtomicBoolean, plugins: List<PluginUiModel>) {
-    val ids = plugins.stream().map<PluginId> { it: PluginUiModel? -> it!!.pluginId }.collect(Collectors.toSet())
+    val ids = plugins.mapTo(LinkedHashSet()) { it.pluginId }
     result.getPreloadedModel().setInstalledPlugins(getInstance().findInstalledPluginsSync(ids))
     result.getPreloadedModel().setPluginInstallationStates(getInstance().getInstallationStatesSync())
     updatePanel(runQuery)
@@ -276,7 +271,7 @@ internal class MarketplacePluginsTabSearchResultPanel(
         }
       }
     }
-    val ids = result.getModels().stream().map<PluginId> { it: PluginUiModel? -> it!!.pluginId }.collect(Collectors.toSet())
+    val ids = result.getModels().mapTo(LinkedHashSet()) { it.pluginId }
     result.getPreloadedModel().setInstalledPlugins(getInstance().findInstalledPluginsSync(ids))
     result.getPreloadedModel().setPluginInstallationStates(getInstance().getInstallationStatesSync())
     PluginManagerUsageCollector.performMarketplaceSearch(
