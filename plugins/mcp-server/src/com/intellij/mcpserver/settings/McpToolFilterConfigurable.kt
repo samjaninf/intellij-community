@@ -132,12 +132,12 @@ class McpToolFilterConfigurable : SearchableConfigurable {
       var allToolsAllowed = true
 
       for (tool in categoryTools) {
-        val toolFqn = tool.descriptor.fullyQualifiedName
+        val toolName = tool.descriptor.name
         // Checked means "allowed" (not in disallow list)
-        val isAllowed = toolFqn !in disallowedToolNames
+        val isAllowed = toolName !in disallowedToolNames
         val toolNode = CheckedTreeNode(ToolNode(tool))
         toolNode.isChecked = isAllowed
-        toolNodes[toolFqn] = toolNode
+        toolNodes[toolName] = toolNode
         categoryNode.add(toolNode)
 
         if (!isAllowed) allToolsAllowed = false
@@ -198,9 +198,9 @@ class McpToolFilterConfigurable : SearchableConfigurable {
     val settings = McpToolDisallowListSettings.getInstance()
     initialDisallowedTools = settings.disallowedToolNames
 
-    for ((toolFqn, node) in toolNodes) {
+    for ((toolName, node) in toolNodes) {
       // Checked means "allowed" (not in disallow list)
-      node.isChecked = toolFqn !in initialDisallowedTools
+      node.isChecked = toolName !in initialDisallowedTools
     }
 
     // Update category nodes
@@ -267,10 +267,10 @@ class McpToolFilterConfigurable : SearchableConfigurable {
 
   private fun getCurrentDisallowedTools(): Set<String> {
     val disallowed = mutableSetOf<String>()
-    for ((toolFqn, node) in toolNodes) {
+    for ((toolName, node) in toolNodes) {
       // If not checked, it's disallowed
       if (!node.isChecked) {
-        disallowed.add(toolFqn)
+        disallowed.add(toolName)
       }
     }
     return disallowed

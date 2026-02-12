@@ -7,17 +7,18 @@ import com.intellij.mcpserver.McpToolFilterProvider.McpToolFilterContext
 import com.intellij.mcpserver.McpToolFilterProvider.McpToolFilterModification
 import com.intellij.mcpserver.settings.McpToolDisallowListSettings
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-internal class DisallowListBasedMcpToolFilterProvider : McpToolFilterProvider {
+internal class DisallowListBasedMcpToolFilterProvider(val cs: CoroutineScope) : McpToolFilterProvider {
   override fun getFilters(clientInfo: Implementation?): StateFlow<List<McpToolFilter>> {
     val settings = McpToolDisallowListSettings.getInstance()
     return settings.disallowedToolNamesFlow
       .map { disallowedNames -> listOf(DisallowListMcpToolFilter(disallowedNames)) }
-      .stateIn(McpServerService.getInstance().cs, SharingStarted.Eagerly, listOf(DisallowListMcpToolFilter(settings.disallowedToolNames)))
+      .stateIn(cs, SharingStarted.Lazily, listOf(DisallowListMcpToolFilter(settings.disallowedToolNames)))
   }
 
   private class DisallowListMcpToolFilter(private val disallowedNames: Set<String>) : McpToolFilter {

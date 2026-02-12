@@ -334,7 +334,6 @@ class McpServerService(val cs: CoroutineScope) {
         filterFlowJobs.add(job)
       }
     }
-    subscribeToFilterProviders()
 
     McpToolFilterProvider.EP.addExtensionPointListener(cs, object : ExtensionPointListener<McpToolFilterProvider> {
       override fun extensionAdded(extension: McpToolFilterProvider, pluginDescriptor: PluginDescriptor) {
@@ -403,16 +402,20 @@ class McpServerService(val cs: CoroutineScope) {
         //  return@setRequestHandler EmptyRequestResult()
         //}
         launch {
+          subscribeToFilterProviders()
+
           var previousTools: List<McpTool>? = null
           mcpTools.collectLatest { updatedTools ->
             // Apply session-specific filter
             val filteredTools = updatedTools.filter { sessionOptions.toolFilter.shouldInclude(it.descriptor.name) }
 
-            previousTools?.forEach { previousTool ->
-              mcpServer.removeTool(previousTool.descriptor.name)
-            }
-            mcpServer.addTools(filteredTools.map { it.mcpToolToRegisteredTool(mcpServer, session, projectPath) })
-            previousTools = filteredTools
+            previousTools = updateMcpServerTools(
+              mcpServer = mcpServer,
+              session = session,
+              projectPath = projectPath,
+              previousTools = previousTools,
+              newTools = filteredTools
+            )
           }
 
         }
@@ -447,6 +450,39 @@ class McpServerService(val cs: CoroutineScope) {
         return@mcpPatched session
       }
     }.start(wait = false)
+  }
+
+  /**
+   * Updates MCP server tools by comparing old and new tool lists.
+   * Only removes tools that are not in the new list and adds tools that are not in the old list.
+   * Uses removeTools for batch removal.
+   *
+   * @return the new tools list to be stored as previousTools
+   */
+  private fun updateMcpServerTools(
+    mcpServer: Server,
+    session: ServerSession,
+    projectPath: String?,
+    previousTools: List<McpTool>?,
+    newTools: List<McpTool>
+  ): List<McpTool> {
+    val previousToolNames = previousTools?.map { it.descriptor.name }?.toSet() ?: emptySet()
+    val newToolNames = newTools.map { it.descriptor.name }.toSet()
+
+    // Find tools to remove (in previous but not in new)
+    val toolsToRemove = previousToolNames - newToolNames
+    if (toolsToRemove.isNotEmpty()) {
+      mcpServer.removeTools(toolsToRemove.toList())
+    }
+
+    // Find tools to add (in new but not in previous)
+    val toolNamesToAdd = newToolNames - previousToolNames
+    val toolsToAdd = newTools.filter { it.descriptor.name in toolNamesToAdd }
+    if (toolsToAdd.isNotEmpty()) {
+      mcpServer.addTools(toolsToAdd.map { it.mcpToolToRegisteredTool(mcpServer, session, projectPath) })
+    }
+
+    return newTools
   }
 
   internal fun getMcpTools(filter: McpToolFilter = McpToolFilter.AllowAll, useFiltersFromEP: Boolean = true): List<McpTool> {
