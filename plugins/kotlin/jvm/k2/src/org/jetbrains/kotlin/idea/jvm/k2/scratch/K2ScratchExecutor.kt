@@ -5,6 +5,7 @@ import com.intellij.execution.JavaParametersBuilder
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.edtWriteAction
 import com.intellij.openapi.application.readAction
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
@@ -34,6 +35,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.readLines
+
+private val log = Logger.getInstance(K2ScratchExecutor::class.java)
 
 class K2ScratchExecutor(override val scratchFile: K2KotlinScratchFile, val project: Project, val scope: CoroutineScope) :
     ScratchExecutor(scratchFile) {
@@ -143,7 +146,10 @@ class K2ScratchExecutor(override val scratchFile: K2KotlinScratchFile, val proje
             "plugin:kotlin.scripting:enable-script-explanation=true",
         )
 
-        return javaParameters.toCommandLine()
+        val commandLine = javaParameters.toCommandLine()
+        log.info("commandLine=${commandLine.commandLineString}")
+
+        return commandLine
     }
 
     private val requiredKotlinArtifacts by lazy {
