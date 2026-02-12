@@ -180,23 +180,6 @@ class KotlinGradleModelBuilder : AbstractKotlinGradleModelBuilder(), ModelBuilde
 
     private fun ProjectDependency.pathOrName() = if (path == ":") name else path
 
-    private fun Task.getDependencyClasspath(): List<String> {
-        try {
-            val abstractKotlinCompileClass = javaClass.classLoader.loadClass(ABSTRACT_KOTLIN_COMPILE_CLASS)
-            val getCompileClasspath = abstractKotlinCompileClass.getDeclaredMethod("getCompileClasspath").apply { isAccessible = true }
-            @Suppress("UNCHECKED_CAST")
-            return (getCompileClasspath.invoke(this) as Collection<File>).map { it.path }
-        } catch (e: ClassNotFoundException) {
-            // Leave arguments unchanged
-        } catch (e: NoSuchMethodException) {
-            // Leave arguments unchanged
-        } catch (e: InvocationTargetException) {
-            // We can safely ignore this exception here as getCompileClasspath() gets called again at a later time
-            // Leave arguments unchanged
-        }
-        return emptyList()
-    }
-
     private fun getCoroutines(project: Project): String? {
         val kotlinExtension = project.extensions.findByName("kotlin") ?: return null
         val experimentalExtension = try {
