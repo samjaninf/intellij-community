@@ -1,297 +1,291 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.ide.plugins;
+package com.intellij.ide.plugins
 
-import com.intellij.icons.AllIcons;
-import com.intellij.ide.IdeBundle;
-import com.intellij.ide.impl.ProjectUtil;
-import com.intellij.ide.plugins.marketplace.PluginSearchResult;
-import com.intellij.ide.plugins.marketplace.ranking.MarketplaceLocalRanker;
-import com.intellij.ide.plugins.marketplace.statistics.PluginManagerUsageCollector;
-import com.intellij.ide.plugins.newui.LinkComponent;
-import com.intellij.ide.plugins.newui.PluginModelAsyncOperationsExecutor;
-import com.intellij.ide.plugins.newui.PluginUiModel;
-import com.intellij.ide.plugins.newui.PluginsGroup;
-import com.intellij.ide.plugins.newui.PluginsGroupComponent;
-import com.intellij.ide.plugins.newui.PluginsGroupComponentWithProgress;
-import com.intellij.ide.plugins.newui.PluginsViewCustomizer;
-import com.intellij.ide.plugins.newui.PluginsViewCustomizerKt;
-import com.intellij.ide.plugins.newui.SearchQueryParser;
-import com.intellij.ide.plugins.newui.SearchResultPanel;
-import com.intellij.ide.plugins.newui.SearchUpDownPopupController;
-import com.intellij.ide.plugins.newui.UiPluginManager;
-import com.intellij.openapi.actionSystem.ActionManager;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.DefaultActionGroup;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.extensions.PluginId;
-import com.intellij.openapi.project.DumbAwareAction;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.updateSettings.impl.pluginsAdvertisement.PluginsAdvertiserStartupActivityKt;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.ui.scale.JBUIScale;
-import com.intellij.util.containers.ContainerUtil;
-import com.intellij.util.ui.StatusText;
-import kotlinx.coroutines.CoroutineScope;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
-
-import javax.accessibility.AccessibleContext;
-import javax.accessibility.AccessibleRole;
-import javax.swing.Icon;
-import javax.swing.SwingConstants;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Point;
-import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static com.intellij.ide.plugins.PluginManagerConfigurablePanel.applyUpdates;
-import static com.intellij.ide.plugins.PluginManagerConfigurablePanel.showRightBottomPopup;
+import com.intellij.icons.AllIcons
+import com.intellij.ide.IdeBundle
+import com.intellij.ide.impl.ProjectUtil.getActiveProject
+import com.intellij.ide.plugins.MarketplacePluginsTab.MarketplaceSortByAction
+import com.intellij.ide.plugins.marketplace.PluginSearchResult
+import com.intellij.ide.plugins.marketplace.ranking.MarketplaceLocalRanker.Companion.getInstanceIfEnabled
+import com.intellij.ide.plugins.marketplace.statistics.PluginManagerUsageCollector
+import com.intellij.ide.plugins.marketplace.statistics.PluginManagerUsageCollector.updateAndGetSearchIndex
+import com.intellij.ide.plugins.newui.LinkComponent
+import com.intellij.ide.plugins.newui.PluginModelAsyncOperationsExecutor
+import com.intellij.ide.plugins.newui.PluginUiModel
+import com.intellij.ide.plugins.newui.PluginsGroup
+import com.intellij.ide.plugins.newui.PluginsGroupComponent
+import com.intellij.ide.plugins.newui.PluginsGroupComponentWithProgress
+import com.intellij.ide.plugins.newui.SearchQueryParser
+import com.intellij.ide.plugins.newui.SearchResultPanel
+import com.intellij.ide.plugins.newui.SearchUpDownPopupController
+import com.intellij.ide.plugins.newui.UiPluginManager.Companion.getInstance
+import com.intellij.ide.plugins.newui.getPluginsViewCustomizer
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.extensions.PluginId
+import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.updateSettings.impl.pluginsAdvertisement.findSuggestedPlugins
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.ui.components.labels.LinkLabel
+import com.intellij.ui.components.labels.LinkListener
+import com.intellij.ui.scale.JBUIScale.scale
+import com.intellij.util.containers.ContainerUtil
+import com.intellij.util.ui.StatusText
+import kotlinx.coroutines.CoroutineScope
+import org.jetbrains.annotations.ApiStatus
+import java.awt.Component
+import java.awt.Graphics
+import java.awt.Point
+import java.awt.event.KeyEvent
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Consumer
+import java.util.function.Supplier
+import java.util.stream.Collectors
+import javax.accessibility.AccessibleContext
+import javax.accessibility.AccessibleRole
+import javax.swing.Icon
+import javax.swing.SwingConstants
 
 @ApiStatus.Internal
-class MarketplacePluginsTabSearchResultPanel extends SearchResultPanel {
-  private static final Logger LOG = Logger.getInstance(MarketplacePluginsTabSearchResultPanel.class);
+internal class MarketplacePluginsTabSearchResultPanel(
+  coroutineScope: CoroutineScope,
+  marketplaceController: SearchUpDownPopupController,
+  panel: PluginsGroupComponentWithProgress,
+  private val myProject: Project?,
+  private val mySelectionListener: Consumer<in PluginsGroupComponent?>,
+  private val myMarketplaceSortByGroup: DefaultActionGroup,
+  private val myMarketplacePanelSupplier: Supplier<PluginsGroupComponentWithProgress?>,
+) : SearchResultPanel(coroutineScope, marketplaceController, panel, true) {
+  private val myMarketplaceSortByAction: LinkComponent
 
-  private final Project myProject;
-  private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
-  private final @NotNull DefaultActionGroup myMarketplaceSortByGroup;
-  private final @NotNull LinkComponent myMarketplaceSortByAction;
-  private final @NotNull Supplier<PluginsGroupComponentWithProgress> myMarketplacePanelSupplier;
-
-  MarketplacePluginsTabSearchResultPanel(CoroutineScope coroutineScope,
-                                         SearchUpDownPopupController marketplaceController,
-                                         PluginsGroupComponentWithProgress panel,
-                                         Project project,
-                                         @NotNull Consumer<? super PluginsGroupComponent> selectionListener,
-                                         @NotNull DefaultActionGroup marketplaceSortByGroup,
-                                         @NotNull Supplier<PluginsGroupComponentWithProgress> marketplacePanelSupplier) {
-    super(coroutineScope, marketplaceController, panel, true);
-    myProject = project;
-    mySelectionListener = selectionListener;
-    myMarketplaceSortByGroup = marketplaceSortByGroup;
-    myMarketplacePanelSupplier = marketplacePanelSupplier;
-    myMarketplaceSortByAction = createSortByAction();
+  init {
+    myMarketplaceSortByAction = createSortByAction()
   }
 
-  private @NotNull LinkComponent createSortByAction() {
-    LinkComponent sortByAction = new LinkComponent() {
-      @Override
-      protected boolean isInClickableArea(Point pt) {
-        return true;
+  private fun createSortByAction(): LinkComponent {
+    val sortByAction: LinkComponent = object : LinkComponent() {
+      override fun isInClickableArea(pt: Point?): Boolean {
+        return true
       }
 
-      @Override
-      public AccessibleContext getAccessibleContext() {
+      override fun getAccessibleContext(): AccessibleContext {
         if (accessibleContext == null) {
-          accessibleContext = new AccessibleLinkComponent();
+          accessibleContext = AccessibleLinkComponent()
         }
-        return accessibleContext;
+        return accessibleContext
       }
 
-      protected class AccessibleLinkComponent extends AccessibleLinkLabel {
-        @Override
-        public AccessibleRole getAccessibleRole() {
-          return AccessibleRole.COMBO_BOX;
-        }
+      inner class AccessibleLinkComponent : AccessibleLinkLabel() {
+        override fun getAccessibleRole(): AccessibleRole? = AccessibleRole.COMBO_BOX
       }
-    };
+    }
 
-    sortByAction.setIcon(new Icon() {
-      @Override
-      public void paintIcon(Component c, Graphics g, int x, int y) {
-        getIcon().paintIcon(c, g, x, y + 1);
+    sortByAction.setIcon(object : Icon {
+      override fun paintIcon(c: Component?, g: Graphics?, x: Int, y: Int) {
+        this.icon.paintIcon(c, g, x, y + 1)
       }
 
-      @Override
-      public int getIconWidth() {
-        return getIcon().getIconWidth();
+      override fun getIconWidth(): Int {
+        return this.icon.getIconWidth()
       }
 
-      @Override
-      public int getIconHeight() {
-        return getIcon().getIconHeight();
+      override fun getIconHeight(): Int {
+        return this.icon.getIconHeight()
       }
 
-      private static @NotNull Icon getIcon() {
-        return AllIcons.General.ButtonDropTriangle;
-      }
-    }); // TODO: icon
-    sortByAction.setPaintUnderline(false);
-    sortByAction.setIconTextGap(JBUIScale.scale(4));
-    sortByAction.setHorizontalTextPosition(SwingConstants.LEFT);
-    sortByAction.setForeground(PluginsGroupComponent.SECTION_HEADER_FOREGROUND);
+      val icon: Icon
+        get() = AllIcons.General.ButtonDropTriangle
+    }) // TODO: icon
+    sortByAction.setPaintUnderline(false)
+    sortByAction.setIconTextGap(scale(4))
+    sortByAction.setHorizontalTextPosition(SwingConstants.LEFT)
+    sortByAction.setForeground(PluginsGroupComponent.SECTION_HEADER_FOREGROUND)
 
-    //noinspection unchecked
     sortByAction.setListener(
-      (component, __) -> showRightBottomPopup(component.getParent().getParent(), IdeBundle.message("plugins.configurable.sort.by"),
-                                              myMarketplaceSortByGroup), null);
+      LinkListener { component: LinkLabel<*>?, `__`: Any? ->
+        PluginManagerConfigurablePanel.showRightBottomPopup(
+          component!!.getParent().getParent(), IdeBundle.message("plugins.configurable.sort.by"),
+          myMarketplaceSortByGroup
+        )
+      }, null
+    )
 
-    DumbAwareAction.create(event -> sortByAction.doClick())
-      .registerCustomShortcutSet(KeyEvent.VK_DOWN, 0, sortByAction);
-    return sortByAction;
+    DumbAwareAction.create(com.intellij.util.Consumer { event: AnActionEvent? -> sortByAction.doClick() })
+      .registerCustomShortcutSet(KeyEvent.VK_DOWN, 0, sortByAction)
+    return sortByAction
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, @NotNull AtomicBoolean runQuery) {
-    int searchIndex = PluginManagerUsageCollector.updateAndGetSearchIndex();
+  override fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean) {
+    val searchIndex = updateAndGetSearchIndex()
 
-    SearchQueryParser.Marketplace parser = new SearchQueryParser.Marketplace(query);
+    val parser = SearchQueryParser.Marketplace(query)
 
     if (parser.internal) {
       try {
-        PluginsViewCustomizer.PluginsGroupDescriptor groupDescriptor =
-          PluginsViewCustomizerKt.getPluginsViewCustomizer().getInternalPluginsGroupDescriptor();
+        val groupDescriptor = getPluginsViewCustomizer().getInternalPluginsGroupDescriptor()
         if (groupDescriptor != null) {
           if (parser.searchQuery == null) {
-            result.addDescriptors(groupDescriptor.getPlugins());
+            result.addDescriptors(groupDescriptor.plugins)
           }
           else {
-            for (IdeaPluginDescriptor pluginDescriptor : groupDescriptor.getPlugins()) {
-              if (StringUtil.containsIgnoreCase(pluginDescriptor.getName(), parser.searchQuery)) {
-                result.addDescriptor(pluginDescriptor);
+            for (pluginDescriptor in groupDescriptor.plugins) {
+              if (StringUtil.containsIgnoreCase(pluginDescriptor.getName(), parser.searchQuery!!)) {
+                result.addDescriptor(pluginDescriptor)
               }
             }
           }
-          result.removeDuplicates();
-          result.sortByName();
-          return;
+          result.removeDuplicates()
+          result.sortByName()
+          return
         }
       }
-      catch (Exception e) {
-        LOG.error("Error while loading internal plugins group", e);
+      catch (e: Exception) {
+        LOG.error("Error while loading internal plugins group", e)
       }
     }
 
-    PluginModelAsyncOperationsExecutor.INSTANCE.getCustomRepositoriesPluginMap(getCoroutineScope(), map -> {
-      Map<String, List<PluginUiModel>> customRepositoriesMap = (Map<String, List<PluginUiModel>>)map;
+    PluginModelAsyncOperationsExecutor.getCustomRepositoriesPluginMap(coroutineScope) { map ->
+      val customRepositoriesMap = map
       if (parser.suggested && myProject != null) {
-        List<@NotNull PluginUiModel> plugins =
-          PluginsAdvertiserStartupActivityKt.findSuggestedPlugins(myProject, customRepositoriesMap);
-        result.addModels(plugins);
-        updateSearchPanel(result, runQuery, plugins);
+        val plugins = findSuggestedPlugins(myProject, customRepositoriesMap)
+        result.addModels(plugins)
+        updateSearchPanel(result, runQuery, plugins)
       }
       else if (!parser.repositories.isEmpty()) {
-        for (String repository : parser.repositories) {
-          List<PluginUiModel> descriptors = customRepositoriesMap.get(repository);
+        for (repository in parser.repositories) {
+          val descriptors = customRepositoriesMap.get(repository)
           if (descriptors == null) {
-            continue;
+            continue
           }
           if (parser.searchQuery == null) {
-            result.addModels(descriptors);
+            result.addModels(descriptors)
           }
           else {
-            for (PluginUiModel descriptor : descriptors) {
-              if (StringUtil.containsIgnoreCase(descriptor.getName(), parser.searchQuery)) {
-                result.addModel(descriptor);
+            for (descriptor in descriptors) {
+              if (StringUtil.containsIgnoreCase(descriptor.name!!, parser.searchQuery!!)) {
+                result.addModel(descriptor)
               }
             }
           }
         }
-        result.removeDuplicates();
-        result.sortByName();
-        updateSearchPanel(result, runQuery, result.getModels());
+        result.removeDuplicates()
+        result.sortByName()
+        updateSearchPanel(result, runQuery, result.getModels())
       }
       else {
-        PluginModelAsyncOperationsExecutor.INSTANCE
-          .performMarketplaceSearch(getCoroutineScope(),
-                                    parser.getUrlQuery(),
-                                    !result.getModels().isEmpty(),
-                                    (searchResult, updates) -> {
-                                      applySearchResult(result, searchResult, (List<PluginUiModel>)updates, customRepositoriesMap,
-                                                        parser, searchIndex);
-                                      updatePanel(runQuery);
-                                      return null;
-                                    });
+        PluginModelAsyncOperationsExecutor
+          .performMarketplaceSearch(
+            coroutineScope,
+            parser.urlQuery,
+            !result.getModels().isEmpty()
+          ) { searchResult, updates ->
+            applySearchResult(
+              result, searchResult, updates, customRepositoriesMap,
+              parser, searchIndex
+            )
+            updatePanel(runQuery)
+            null
+          }
       }
-      return null;
-    });
+      null
+    }
   }
 
-  private void updateSearchPanel(@NonNull PluginsGroup result, AtomicBoolean runQuery, List<@NotNull PluginUiModel> plugins) {
-    Set<PluginId> ids = plugins.stream().map(it -> it.getPluginId()).collect(Collectors.toSet());
-    result.getPreloadedModel().setInstalledPlugins(UiPluginManager.getInstance().findInstalledPluginsSync(ids));
-    result.getPreloadedModel().setPluginInstallationStates(UiPluginManager.getInstance().getInstallationStatesSync());
-    updatePanel(runQuery);
+  private fun updateSearchPanel(result: PluginsGroup, runQuery: AtomicBoolean, plugins: List<PluginUiModel>) {
+    val ids = plugins.stream().map<PluginId> { it: PluginUiModel? -> it!!.pluginId }.collect(Collectors.toSet())
+    result.getPreloadedModel().setInstalledPlugins(getInstance().findInstalledPluginsSync(ids))
+    result.getPreloadedModel().setPluginInstallationStates(getInstance().getInstallationStatesSync())
+    updatePanel(runQuery)
   }
 
-  private void applySearchResult(@NotNull PluginsGroup result,
-                                 PluginSearchResult searchResult,
-                                 List<PluginUiModel> updates,
-                                 Map<String, List<PluginUiModel>> customRepositoriesMap,
-                                 SearchQueryParser.Marketplace parser,
-                                 int searchIndex) {
-    if (searchResult.getError() != null) {
+  private fun applySearchResult(
+    result: PluginsGroup,
+    searchResult: PluginSearchResult,
+    updates: List<PluginUiModel?>,
+    customRepositoriesMap: Map<String, List<PluginUiModel>>,
+    parser: SearchQueryParser.Marketplace,
+    searchIndex: Int,
+  ) {
+    if (searchResult.error != null) {
       ApplicationManager.getApplication().invokeLater(
-        () -> myPanel.getEmptyText()
-          .setText(IdeBundle.message("plugins.configurable.search.result.not.loaded"))
-          .appendSecondaryText(
-            IdeBundle.message("plugins.configurable.check.internet"),
-            StatusText.DEFAULT_ATTRIBUTES, null), ModalityState.any()
-      );
+        Runnable {
+          myPanel.getEmptyText()
+            .setText(IdeBundle.message("plugins.configurable.search.result.not.loaded"))
+            .appendSecondaryText(
+              IdeBundle.message("plugins.configurable.check.internet"),
+              StatusText.DEFAULT_ATTRIBUTES, null
+            )
+        }, ModalityState.any()
+      )
     }
     // compare plugin versions between marketplace & custom repositories
-    List<PluginUiModel> customPlugins = ContainerUtil.flatten(customRepositoriesMap.values());
-    Collection<PluginUiModel> plugins =
-      RepositoryHelper.mergePluginModelsFromRepositories(searchResult.getPlugins(),
-                                                         customPlugins,
-                                                         false);
-    result.addModels(0, new ArrayList<>(plugins));
+    val customPlugins: List<PluginUiModel> = ContainerUtil.flatten<PluginUiModel>(customRepositoriesMap.values)
+    val plugins =
+      RepositoryHelper.mergePluginModelsFromRepositories(
+        searchResult.getPlugins(),
+        customPlugins,
+        false
+      )
+    result.addModels(0, ArrayList<PluginUiModel?>(plugins))
 
     if (parser.searchQuery != null) {
-      List<PluginUiModel> descriptors = ContainerUtil.filter(customPlugins,
-                                                             descriptor -> StringUtil.containsIgnoreCase(
-                                                               descriptor.getName(),
-                                                               parser.searchQuery));
-      result.addModels(0, descriptors);
+      val descriptors = customPlugins.filter { descriptor: PluginUiModel ->
+        StringUtil.containsIgnoreCase(
+          descriptor.name!!,
+          parser.searchQuery!!
+        )
+      }
+      result.addModels(0, descriptors)
     }
 
-    result.removeDuplicates();
+    result.removeDuplicates()
 
-    Map<PluginUiModel, Double> pluginToScore = null;
-    final var localRanker = MarketplaceLocalRanker.getInstanceIfEnabled();
+    var pluginToScore: Map<PluginUiModel, Double>? = null
+    val localRanker = getInstanceIfEnabled()
     if (localRanker != null) {
-      pluginToScore = localRanker.rankPlugins(parser, result.getModels());
+      pluginToScore = localRanker.rankPlugins(parser, result.getModels())
     }
 
     if (!result.getModels().isEmpty()) {
-      String title = IdeBundle.message("plugin.manager.action.label.sort.by.1");
+      var title = IdeBundle.message("plugin.manager.action.label.sort.by.1")
 
-      for (AnAction action : myMarketplaceSortByGroup.getChildren(ActionManager.getInstance())) {
-        MarketplacePluginsTab.MarketplaceSortByAction sortByAction = (MarketplacePluginsTab.MarketplaceSortByAction)action;
-        sortByAction.setState(parser);
+      for (action in myMarketplaceSortByGroup.getChildren(ActionManager.getInstance())) {
+        val sortByAction = action as MarketplaceSortByAction
+        sortByAction.setState(parser)
         if (sortByAction.myState) {
-          title = IdeBundle.message("plugin.manager.action.label.sort.by",
-                                    sortByAction.myOption.getPresentableNameSupplier().get());
+          title = IdeBundle.message(
+            "plugin.manager.action.label.sort.by",
+            sortByAction.myOption.presentableNameSupplier.get()
+          )
         }
       }
 
-      myMarketplaceSortByAction.setText(title);
-      result.addSecondaryAction(myMarketplaceSortByAction);
+      myMarketplaceSortByAction.setText(title)
+      result.addSecondaryAction(myMarketplaceSortByAction)
 
-      if (!ContainerUtil.isEmpty(updates)) {
-        myPostFillGroupCallback = () -> {
-          applyUpdates(myPanel, updates);
-          mySelectionListener.accept(myMarketplacePanelSupplier.get());
-          mySelectionListener.accept(getPanel());
-        };
+      if (!ContainerUtil.isEmpty<PluginUiModel?>(updates)) {
+        myPostFillGroupCallback = Runnable {
+          PluginManagerConfigurablePanel.applyUpdates(myPanel, updates)
+          mySelectionListener.accept(myMarketplacePanelSupplier.get())
+          mySelectionListener.accept(panel)
+        }
       }
     }
-    Set<PluginId> ids = result.getModels().stream().map(it -> it.getPluginId()).collect(Collectors.toSet());
-    result.getPreloadedModel().setInstalledPlugins(UiPluginManager.getInstance().findInstalledPluginsSync(ids));
-    result.getPreloadedModel().setPluginInstallationStates(UiPluginManager.getInstance().getInstallationStatesSync());
-    PluginManagerUsageCollector.INSTANCE.performMarketplaceSearch(ProjectUtil.getActiveProject(), parser, result.getModels(),
-                                                                  searchIndex, pluginToScore);
+    val ids = result.getModels().stream().map<PluginId> { it: PluginUiModel? -> it!!.pluginId }.collect(Collectors.toSet())
+    result.getPreloadedModel().setInstalledPlugins(getInstance().findInstalledPluginsSync(ids))
+    result.getPreloadedModel().setPluginInstallationStates(getInstance().getInstallationStatesSync())
+    PluginManagerUsageCollector.performMarketplaceSearch(
+      getActiveProject(), parser, result.getModels(),
+      searchIndex, pluginToScore
+    )
+  }
+
+  companion object {
+    private val LOG = Logger.getInstance(MarketplacePluginsTabSearchResultPanel::class.java)
   }
 }
