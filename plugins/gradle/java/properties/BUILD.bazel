@@ -26,7 +26,6 @@ jvm_library(
     "//platform/indexing-api:indexing",
     "//plugins/groovy/groovy-psi:psi",
     "//java/java-psi-api:psi",
-    "//java/java-psi-impl:psi-impl",
     "//platform/util:util-ui",
     "//platform/projectModel-api:projectModel",
   ]

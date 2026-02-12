@@ -22,7 +22,8 @@ import org.jetbrains.plugins.gradle.service.resolve.GradleGroovyProperty
 import org.jetbrains.plugins.gradle.service.resolve.GradleProjectAwareType
 import org.jetbrains.plugins.gradle.service.resolve.getAccessorsForAllCatalogs
 import org.jetbrains.plugins.gradle.service.resolve.getVersionCatalogAccessor
-import org.jetbrains.plugins.groovy.lang.psi.impl.synthetic.GrLightField
+import org.jetbrains.plugins.groovy.lang.psi.api.statements.GrField
+import org.jetbrains.plugins.groovy.lang.psi.impl.utils.createGrField
 import org.jetbrains.plugins.groovy.lang.resolve.NonCodeMembersContributor
 import org.jetbrains.plugins.groovy.lang.resolve.getName
 import org.jetbrains.plugins.groovy.lang.resolve.processors.inference.type
@@ -99,10 +100,8 @@ class GradleExtensionsContributor : NonCodeMembersContributor() {
   companion object {
     private fun createGroovyProperty(aClass: PsiClass,
                                      property: IProperty,
-                                     stringType: PsiClassType): GrLightField {
-      val newProperty = GrLightField(aClass, property.name, stringType, property.psiElement)
-      newProperty.setIcon(AllIcons.FileTypes.Properties)
-      newProperty.originInfo = PROPERTIES_FILE_ORIGINAL_INFO
+                                     stringType: PsiClassType): GrField {
+      val newProperty = createGrField(aClass, property.name, stringType, property.psiElement, PROPERTIES_FILE_ORIGINAL_INFO, AllIcons.FileTypes.Properties)
       return newProperty
     }
 
