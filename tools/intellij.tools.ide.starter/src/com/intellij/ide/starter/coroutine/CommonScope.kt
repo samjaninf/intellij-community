@@ -52,12 +52,6 @@ object CommonScope {
    */
   val perClassSupervisorScope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("Test class's supervisor scope"))
 
-  /**
-   * In case of unhandled exception in child coroutines, all the coroutines tree (parents and other branches) will be canceled.
-   * In most scenarios you don't need that behavior.
-   */
-  val simpleScope = CoroutineScope(Job() + Dispatchers.IO + CoroutineName("Simple scope"))
-
   var scopeForProcesses: CoroutineScope = perClassSupervisorScope
     private set
 
