@@ -43,6 +43,7 @@ jvm_library(
     "//libraries/fastutil",
     "//libraries/asm",
     "//platform/util/jdom",
+    "//java/java-impl-inspections:impl-inspections",
   ],
   exports = ["@lib//:org-codehaus-groovy-groovy"]
 )
