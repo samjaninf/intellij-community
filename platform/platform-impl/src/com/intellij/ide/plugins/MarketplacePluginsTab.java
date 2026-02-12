@@ -89,6 +89,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.intellij.ide.plugins.PluginManagerConfigurablePanel.applyUpdates;
@@ -422,7 +423,7 @@ class MarketplacePluginsTab extends PluginsTab {
     Project project = ProjectUtil.getActiveProject();
 
     myMarketplaceSearchPanel = new MarketplaceSearchResultPanel(myCoroutineScope, marketplaceController, panel, project, selectionListener,
-                                                                myMarketplaceSortByGroup);
+                                                                myMarketplaceSortByGroup, () -> myMarketplacePanel);
     return myMarketplaceSearchPanel;
   }
 
@@ -707,17 +708,20 @@ class MarketplacePluginsTab extends PluginsTab {
     private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
     private final @NotNull DefaultActionGroup myMarketplaceSortByGroup;
     private final @NotNull LinkComponent myMarketplaceSortByAction;
+    private final @NotNull Supplier<PluginsGroupComponentWithProgress> myMarketplacePanelSupplier;
 
     MarketplaceSearchResultPanel(CoroutineScope coroutineScope,
                                  SearchUpDownPopupController marketplaceController,
                                  PluginsGroupComponentWithProgress panel,
                                  Project project,
                                  @NotNull Consumer<? super PluginsGroupComponent> selectionListener,
-                                 @NotNull DefaultActionGroup marketplaceSortByGroup) {
+                                 @NotNull DefaultActionGroup marketplaceSortByGroup,
+                                 @NotNull Supplier<PluginsGroupComponentWithProgress> marketplacePanelSupplier) {
       super(coroutineScope, marketplaceController, panel, true);
       myProject = project;
       mySelectionListener = selectionListener;
       myMarketplaceSortByGroup = marketplaceSortByGroup;
+      myMarketplacePanelSupplier = marketplacePanelSupplier;
       myMarketplaceSortByAction = createSortByAction();
     }
 
@@ -922,7 +926,7 @@ class MarketplacePluginsTab extends PluginsTab {
         if (!ContainerUtil.isEmpty(updates)) {
           myPostFillGroupCallback = () -> {
             applyUpdates(myPanel, updates);
-            mySelectionListener.accept(myMarketplacePanel);
+            mySelectionListener.accept(myMarketplacePanelSupplier.get());
             mySelectionListener.accept(myMarketplaceSearchPanel.getPanel());
           };
         }
