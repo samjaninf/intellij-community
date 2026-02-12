@@ -24,7 +24,6 @@ import com.intellij.platform.ide.progress.withBackgroundProgress
 import com.intellij.util.Consumer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
@@ -57,23 +56,21 @@ open class ITNReporter internal constructor(private val postUrl: String) : Error
     parentComponent: Component,
     consumer: Consumer<in SubmittedReportInfo>
   ): Boolean {
-    val errorBean = createReportBean(events[0], additionalInfo)
+    val errorBean = createReportBean(events[0], additionalInfo, autoReported = false)
     val project = CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext(parentComponent))
     return submit(project, errorBean, parentComponent, consumer::consume)
   }
 
   @ApiStatus.Internal
   suspend fun submitAutomated(event: IdeaLoggingEvent): SubmittedReportInfo {
-    val errorBean = createReportBean(event, comment = "Automatically reported exception")
-    return service<ITNProxyCoroutineScopeHolder>().coroutineScope.async {
-      try {
-        val reportId = ITNProxy.sendError(errorBean, postUrl)
-        SubmittedReportInfo(ITNProxy.getBrowseUrl(reportId), reportId.toString(), SubmittedReportInfo.SubmissionStatus.NEW_ISSUE)
-      }
-      catch (_: Exception) {
-        SubmittedReportInfo(SubmittedReportInfo.SubmissionStatus.FAILED)
-      }
-    }.await()
+    val errorBean = createReportBean(event, comment = "Automatically reported exception", autoReported = true)
+    return try {
+      val reportId = ITNProxy.sendError(errorBean, postUrl)
+      SubmittedReportInfo(ITNProxy.getBrowseUrl(reportId), reportId.toString(), SubmittedReportInfo.SubmissionStatus.NEW_ISSUE)
+    }
+    catch (_: Exception) {
+      SubmittedReportInfo(SubmittedReportInfo.SubmissionStatus.FAILED)
+    }
   }
 
   /**
@@ -81,11 +78,10 @@ open class ITNReporter internal constructor(private val postUrl: String) : Error
    */
   open fun showErrorInRelease(event: IdeaLoggingEvent): Boolean = false
 
-  private fun createReportBean(event: IdeaLoggingEvent, comment: String?): ErrorBean =
-    ErrorBean(event, comment,
-              event.plugin?.pluginId?.idString, event.plugin?.name, event.plugin?.version,
-              IdeaLogger.ourLastActionId,
-              ExceptionAutoReportUtil.isPlatformAutoReportedEvent(event))
+  private fun createReportBean(event: IdeaLoggingEvent, comment: String?, autoReported: Boolean) = ErrorBean(
+    event, comment, event.plugin?.pluginId?.idString, event.plugin?.name, event.plugin?.version,
+    IdeaLogger.ourLastActionId, autoReported
+  )
 
   private fun submit(
     project: Project?,
