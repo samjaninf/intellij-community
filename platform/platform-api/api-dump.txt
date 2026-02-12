@@ -2098,7 +2098,7 @@ c:com.intellij.openapi.editor.RawText
 - s:getDataFlavor():java.awt.datatransfer.DataFlavor
 com.intellij.openapi.editor.actionSystem.ActionPlan
 - a:getCaretOffset():I
-- a:getText():com.intellij.util.text.ImmutableCharSequence
+- a:getText():java.lang.CharSequence
 - a:replace(I,I,java.lang.String):V
 - a:setCaretOffset(I):V
 a:com.intellij.openapi.editor.actionSystem.EditorAction

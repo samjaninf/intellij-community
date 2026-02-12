@@ -39,8 +39,14 @@ public class MarkupModelImpl extends UserDataHolderBase implements MarkupModelEx
 
   private volatile RangeHighlighter[] myCachedHighlighters;
   private final List<MarkupModelListener> myListeners = ContainerUtil.createLockFreeCopyOnWriteList();
-  private final RangeHighlighterTree myHighlighterTree;          // this tree holds regular highlighters with target = HighlighterTargetArea.EXACT_RANGE
-  private final RangeHighlighterTree myHighlighterTreeForLines;  // this tree holds line range highlighters with target = HighlighterTargetArea.LINES_IN_RANGE
+  /**
+   * this tree holds line range highlighters with {@link RangeHighlighter#getTargetArea()} = {@link HighlighterTargetArea#EXACT_RANGE}
+   */
+  private final RangeHighlighterTree myHighlighterTree;
+  /**
+   * this tree holds line range highlighters with {@link RangeHighlighter#getTargetArea()} = {@link HighlighterTargetArea#LINES_IN_RANGE}
+   */
+  private final RangeHighlighterTree myHighlighterTreeForLines;
 
   @ApiStatus.Internal
   protected MarkupModelImpl(@NotNull DocumentEx document) {
@@ -176,7 +182,7 @@ public class MarkupModelImpl extends UserDataHolderBase implements MarkupModelEx
   }
 
   @NotNull
-  RangeHighlighterTree treeFor(@NotNull RangeHighlighter highlighter) {
+  private RangeHighlighterTree treeFor(@NotNull RangeHighlighter highlighter) {
     return highlighter.getTargetArea() == HighlighterTargetArea.EXACT_RANGE ? myHighlighterTree : myHighlighterTreeForLines;
   }
 
