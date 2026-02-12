@@ -23,6 +23,7 @@ jvm_library(
     ":pycharm-community_resources_1",
   ],
   deps = [
+    "@lib//:kotlin-stdlib",
     "//platform/platform-impl:ide-impl",
     "//platform/lang-api:lang",
     "//platform/lang-impl",

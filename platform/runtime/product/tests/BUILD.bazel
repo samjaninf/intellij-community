@@ -5,7 +5,10 @@ jvm_library(
   name = "tests",
   visibility = ["//visibility:public"],
   srcs = glob([], allow_empty = True),
-  runtime_deps = ["//platform/runtime/product"]
+  runtime_deps = [
+    "//platform/runtime/product",
+    "@lib//:kotlin-stdlib",
+  ]
 )
 
 jvm_library(
@@ -15,6 +18,7 @@ jvm_library(
   srcs = glob(["testSrc/**/*.kt", "testSrc/**/*.java", "testSrc/**/*.form"], allow_empty = True),
   deps = [
     "//platform/runtime/product",
+    "@lib//:kotlin-stdlib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "//platform/runtime/repository",

@@ -1207,7 +1207,6 @@ f:com.intellij.toolWindow.ToolWindowDefaultLayoutManager
 - f:deleteLayout(java.lang.String):V
 - f:getActiveLayoutName():java.lang.String
 - f:getFactoryDefaultLayoutCopy():com.intellij.openapi.wm.impl.DesktopLayout
-- sf:getInstance():com.intellij.toolWindow.ToolWindowDefaultLayoutManager
 - f:getLayoutCopy():com.intellij.openapi.wm.impl.DesktopLayout
 - f:getLayoutNames():java.util.Set
 - f:renameLayout(java.lang.String,java.lang.String):V

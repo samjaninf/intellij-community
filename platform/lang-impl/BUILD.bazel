@@ -93,6 +93,7 @@ jvm_library(
     "//platform/util/jdom",
     "//platform/util-class-loader:util-classLoader",
     "//platform/util/zip",
+    "//platform/project-frame",
     "@lib//:opentelemetry",
     "//platform/platform-impl/codeinsight-inline:ide-codeinsight-inline",
     "@lib//:opentelemetry-semconv",
@@ -281,6 +282,7 @@ jvm_library(
     "//platform/core-impl",
     "//platform/execution",
     "//platform/forms_rt:java-guiForms-rt",
+    "//platform/project-frame",
   ],
   exports = [
     "//platform/lang-api:lang",

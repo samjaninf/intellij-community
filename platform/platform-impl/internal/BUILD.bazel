@@ -34,6 +34,7 @@ jvm_library(
     "//platform/editor-ui-ex:editor-ex",
     "//platform/analysis-impl",
     "//platform/util/progress",
+    "//platform/project-frame",
     "//libraries/jcef",
     "//platform/lang-api:lang",
     "//platform/backend/workspace",

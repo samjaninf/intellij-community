@@ -16,6 +16,7 @@ jvm_library(
   srcs = glob([], allow_empty = True),
   runtime_deps = [
     "//platform/util-ex",
+    "@lib//:kotlin-stdlib",
     "//platform/platform-impl:ide-impl",
     "//platform/util",
     "//platform/util/storages",
@@ -32,6 +33,7 @@ jvm_library(
   deps = [
     "//platform/util-ex",
     "@lib//:ktor-network-tls",
+    "@lib//:kotlin-stdlib",
     "//libraries/io",
     "//platform/platform-impl:ide-impl",
     "//libraries/kotlinx/coroutines/core",

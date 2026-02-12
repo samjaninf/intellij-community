@@ -57,6 +57,7 @@ jvm_library(
     "//platform/workspace/jps",
     "//platform/backend/workspace",
     "//platform/diagnostic",
+    "//platform/project-frame",
     "//platform/ijent",
     "//platform/ijent/impl",
     "//platform/forms_rt:java-guiForms-rt",
@@ -80,6 +81,7 @@ jvm_library(
   visibility = ["//visibility:public"],
   srcs = glob([], allow_empty = True),
   runtime_deps = [
+    "@lib//:kotlin-stdlib",
     "//platform/forms_rt:java-guiForms-rt",
     "//libraries/pty4j",
   ]
@@ -101,6 +103,7 @@ jvm_library(
     "//platform/execution",
     "//platform/util/concurrency",
     "//platform/util/concurrency:concurrency_test_lib",
+    "@lib//:kotlin-stdlib",
     "@lib//:assert_j",
     "//platform/core-ui",
     "//libraries/jediterm-core",

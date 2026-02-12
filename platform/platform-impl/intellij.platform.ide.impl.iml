@@ -67,7 +67,7 @@
     <orderEntry type="module" module-name="intellij.libraries.imgscalr" />
     <orderEntry type="module" module-name="intellij.platform.builtInServer" />
     <orderEntry type="module" module-name="intellij.platform.ide.observable" />
-    <orderEntry type="library" exported="" name="kotlin-stdlib" level="project" />
+    <orderEntry type="library" name="kotlin-stdlib" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="slf4j-api" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="slf4j-jdk14" level="project" />
     <orderEntry type="module" module-name="intellij.libraries.stream" />
@@ -168,6 +168,7 @@
     <orderEntry type="module" module-name="intellij.platform.pluginSystem.parser.impl" />
     <orderEntry type="module" module-name="intellij.platform.syntax.extensions" scope="RUNTIME" />
     <orderEntry type="module" module-name="intellij.platform.eel" />
+    <orderEntry type="module" module-name="intellij.platform.projectFrame" />
     <orderEntry type="module" module-name="intellij.platform.ide.util.io" />
     <orderEntry type="module" module-name="intellij.platform.locking.impl" />
     <orderEntry type="module" module-name="intellij.platform.ide.concurrency" />

@@ -66,7 +66,6 @@ jvm_library(
     "//platform/editor-ui-api:editor-ui",
     "//platform/util:util-ui",
     "//platform/ide-core",
-    "//platform/project-frame",
     "//platform/welcome-screen",
     "//platform/progress/shared:ide-progress",
   ]

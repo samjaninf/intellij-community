@@ -22,6 +22,7 @@ jvm_library(
   visibility = ["//visibility:public"],
   srcs = glob([], allow_empty = True),
   runtime_deps = [
+    "@lib//:kotlin-stdlib",
     "//platform/analysis-api:analysis",
     "@lib//:kotlin-test",
     "//libraries/kryo5",
@@ -44,6 +45,7 @@ jvm_library(
     "//libraries/guava",
     "//libraries/kotlin/reflect",
     "//libraries/fastutil",
+    "@lib//:kotlin-stdlib",
     "//platform/analysis-api:analysis",
     "@lib//:kotlin-test",
     "//libraries/kryo5",

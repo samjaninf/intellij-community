@@ -29,6 +29,7 @@ jvm_library(
     "//plugins/agent-workbench/codex/common",
     "//plugins/agent-workbench/chat",
     "//libraries/jackson/jackson",
+    "//platform/project-frame",
   ],
   plugins = ["@lib//:compose-plugin"]
 )
@@ -66,6 +67,7 @@ jvm_library(
     "//platform/testFramework/junit5",
     "//platform/testFramework/junit5:junit5_test_lib",
     "//libraries/assertj-core",
+    "//platform/project-frame",
   ],
   plugins = ["@lib//:compose-plugin"]
 )

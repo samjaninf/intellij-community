@@ -54,6 +54,7 @@ jvm_library(
     "//platform/editor-ui-ex:editor-ex",
     "@lib//:junit4",
     "//platform/core-api:core",
+    "@lib//:kotlin-stdlib",
     "//platform/projectModel-api:projectModel",
     "//platform/usageView",
     "//platform/refactoring",
