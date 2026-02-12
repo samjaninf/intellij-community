@@ -69,7 +69,7 @@ internal class InstalledPluginsTabSearchResultPanel(
     }
   }
 
-  override fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean) {
+  override suspend fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean) {
     val searchIndex = updateAndGetSearchIndex()
     myPluginModelFacade.getModel().setInvalidFixCallback(null)
     val parser = SearchQueryParser.Installed(query)

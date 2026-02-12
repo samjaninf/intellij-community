@@ -117,7 +117,7 @@ internal class MarketplacePluginsTabSearchResultPanel(
     return sortByAction
   }
 
-  override fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean) {
+  override suspend fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean) {
     val searchIndex = updateAndGetSearchIndex()
 
     val parser = SearchQueryParser.Marketplace(query)

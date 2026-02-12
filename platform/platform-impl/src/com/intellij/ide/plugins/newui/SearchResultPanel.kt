@@ -16,6 +16,8 @@ import com.intellij.util.ui.EDT
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.accessibility.AccessibleAnnouncerUtil
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.jetbrains.annotations.ApiStatus
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JComponent
@@ -107,9 +109,9 @@ abstract class SearchResultPanel(
     val runQuery = myRunQuery!!
     val group = this.group
 
-    ApplicationManager.getApplication().executeOnPooledThread(Runnable {
+    coroutineScope.launch(Dispatchers.IO) {
       handleQuery(query, group, runQuery)
-    })
+    }
   }
 
   protected fun updatePanel(runQuery: AtomicBoolean) {
@@ -140,7 +142,7 @@ abstract class SearchResultPanel(
     }, ModalityState.any())
   }
 
-  protected abstract fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean)
+  protected abstract suspend fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean)
 
   private fun runPostFillGroupCallback() {
     if (myPostFillGroupCallback != null) {
