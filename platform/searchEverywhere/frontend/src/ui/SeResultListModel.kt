@@ -46,6 +46,7 @@ class SeResultListModel(private val searchStatePublisher: SeSearchStatePublisher
     SeLog.log(SeLog.THROTTLING) { "Will invalidate result list model" }
     _isValidState.value = false
     isValidAndHasOnlySemantic = false
+    freezer.reset()
   }
 
   fun removeLoadingItem() {

@@ -363,7 +363,7 @@ private fun Flow<SeResultEvent>.throttleUntilEssentialsArrive(essentialProviderI
       }
     }
 
-    return@throttledWithAccumulation if (essentialProvidersCounts.isEmpty()) 0
+    return@throttledWithAccumulation if (essentialProvidersCounts.isEmpty()) ESSENTIALS_THROTTLE_DELAY
     else if (essentialProvidersCounts.values.all { it >= ESSENTIALS_ENOUGH_COUNT }) 0
     else if (essentialProvidersCounts.values.all { it > 0 }) ESSENTIALS_THROTTLE_DELAY
     else null
