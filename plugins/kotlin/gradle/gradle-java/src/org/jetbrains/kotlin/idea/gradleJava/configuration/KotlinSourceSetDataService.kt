@@ -215,7 +215,6 @@ class KotlinSourceSetDataService : AbstractProjectDataService<GradleSourceSetDat
             additionalRunTasks: Collection<ExternalSystemRunTask>? = null
         ): KotlinFacet {
             val compilerVersion = KotlinGradleFacade.getInstance()?.findKotlinPluginVersion(mainModuleNode)
-            // ?: return null TODO: Fix in CLion or our plugin KT-27623
 
             val platformKinds = kotlinSourceSet.actualPlatforms.platforms //TODO(auskov): fix calculation of jvm target
                 .map { kotlinPlatform -> kotlinPlatform.tooling.kind }
