@@ -416,16 +416,13 @@ public abstract class GitImplBase implements Git {
 
   private static @NotNull AccessToken lock(@NotNull GitLineHandler handler, boolean canSuppressOptionalLocks) {
     Project project = handler.project();
-    LockingPolicy lockingPolicy = handler.getCommand().lockingPolicy();
 
-    if (project == null || project.isDefault() || lockingPolicy == READ) {
+    if (project == null || project.isDefault() || !shouldTakeWriteLock(handler, canSuppressOptionalLocks)) {
       return AccessToken.EMPTY_ACCESS_TOKEN;
     }
 
     ReadWriteLock executionLock = GitVcs.getInstance(project).getCommandLock();
-    Lock lock = lockingPolicy == READ_OPTIONAL_LOCKING && canSuppressOptionalLocks
-                ? executionLock.readLock()
-                : executionLock.writeLock();
+    Lock lock = executionLock.writeLock();
 
     ProgressIndicatorUtils.awaitWithCheckCanceled(lock);
     return new AccessToken() {
@@ -434,6 +431,13 @@ public abstract class GitImplBase implements Git {
         lock.unlock();
       }
     };
+  }
+
+  private static boolean shouldTakeWriteLock(@NotNull GitLineHandler handler, boolean canSuppressOptionalLocks) {
+    LockingPolicy lockingPolicy = handler.getCommand().lockingPolicy();
+    return lockingPolicy != READ &&
+           // If lock can't be suppressed, then command can be executed with writing side effects
+           (lockingPolicy != READ_OPTIONAL_LOCKING || !canSuppressOptionalLocks);
   }
 
   public static boolean looksLikeProgress(@NotNull String line) {
