@@ -142,7 +142,7 @@ public class LightBulbTest extends DaemonAnalyzerTestCase {
   }
 
   private void setActiveEditors(Editor @NotNull ... editors) {
-    EditorTracker.Companion.getInstance(myProject).setActiveEditors(Arrays.asList(editors));
+    EditorTracker.getInstance(myProject).setActiveEditorsInTests(Arrays.asList(editors));
   }
 
   @Override

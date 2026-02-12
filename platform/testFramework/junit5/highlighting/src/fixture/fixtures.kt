@@ -46,11 +46,11 @@ private suspend fun configureEditorTracker(editor: Editor): suspend () -> Unit {
   val editorTracker = project.serviceAsync<EditorTracker>()
   val previousEditors = editorTracker.activeEditors
   withContext(Dispatchers.EDT) {
-    project.serviceAsync<EditorTracker>().activeEditors = previousEditors + editor
+    project.serviceAsync<EditorTracker>().setActiveEditorsInTests(previousEditors + editor)
   }
   return {
     withContext(Dispatchers.EDT) {
-      editorTracker.activeEditors = previousEditors
+      editorTracker.setActiveEditorsInTests(previousEditors)
     }
   }
 }

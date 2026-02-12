@@ -224,7 +224,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
   }
 
   private void setActiveEditors(Editor @NotNull ... editors) {
-    (EditorTracker.Companion.getInstance(myProject)).setActiveEditors(Arrays.asList(editors));
+    EditorTracker.getInstance(myProject).setActiveEditorsInTests(Arrays.asList(editors));
   }
 
   @Override
@@ -1287,7 +1287,7 @@ public class DaemonRespondToChangesTest extends DaemonAnalyzerTestCase {
     TextEditor textEditor2 = new PsiAwareTextEditorProvider().getTextEditor(editor2);
     assertNotNull(textEditor1);
     assertNotNull(textEditor2);
-    EditorTracker.getInstance(getProject()).setActiveEditors(List.of(editor1, editor2));
+    EditorTracker.getInstance(getProject()).setActiveEditorsInTests(List.of(editor1, editor2));
 
     // check that 'MySingletonAnnotator' is run only once for two editors for the same document
     DaemonAnnotatorsRespondToChangesTest.useAnnotatorsIn(JavaFileType.INSTANCE.getLanguage(), new DaemonAnnotatorsRespondToChangesTest.MyRecordingAnnotator[]{new MySingletonAnnotator()}, ()-> {

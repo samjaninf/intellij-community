@@ -122,7 +122,7 @@ public class DaemonLineMarkersRespondToChangesTest extends DaemonAnalyzerTestCas
   }
 
   private void setActiveEditors(Editor @NotNull ... editors) {
-    (EditorTracker.Companion.getInstance(myProject)).setActiveEditors(Arrays.asList(editors));
+    EditorTracker.getInstance(myProject).setActiveEditorsInTests(Arrays.asList(editors));
   }
 
   @Override

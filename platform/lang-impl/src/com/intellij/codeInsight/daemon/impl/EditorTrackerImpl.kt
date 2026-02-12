@@ -20,6 +20,7 @@ import com.intellij.openapi.wm.WindowManager
 import com.intellij.openapi.wm.impl.IdeFrameImpl
 import com.intellij.openapi.wm.impl.ProjectFrameHelper
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.util.application
 import com.intellij.util.concurrency.annotations.RequiresEdt
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.awt.Window
@@ -187,6 +188,11 @@ open class EditorTrackerImpl(@JvmField protected val project: Project) : EditorT
         }
       }
     }
+
+  override fun setActiveEditorsInTests(editors: List<Editor>) {
+    assert(application.isUnitTestMode)
+    activeEditors = editors
+  }
 
   private fun isActiveWindow(window: Window): Boolean {
     return window === activeWindow?.get()
