@@ -335,6 +335,7 @@ class InstalledPluginsTab extends PluginsTab {
       myCoroutineScope,
       installedController,
       panel,
+      myInstalledSearchGroup,
       selectionListener,
       mySearchInMarketplaceTabHandler,
       myPluginModelFacade
@@ -601,14 +602,17 @@ class InstalledPluginsTab extends PluginsTab {
     private final @NotNull Consumer<? super PluginsGroupComponent> mySelectionListener;
     private final @Nullable Consumer<String> mySearchInMarketplaceTabHandler;
     private final @NotNull PluginModelFacade myPluginModelFacade;
+    private final @NotNull DefaultActionGroup mySearchActionGroup;
 
     InstalledTabSearchResultPanel(CoroutineScope coroutineScope,
                                   SearchUpDownPopupController installedController,
                                   PluginsGroupComponentWithProgress panel,
+                                  @NotNull DefaultActionGroup searchActionGroup,
                                   @NotNull Consumer<? super PluginsGroupComponent> selectionListener,
                                   @Nullable Consumer<String> searchInMarketplaceTabHandler,
                                   @NotNull PluginModelFacade pluginModelFacade) {
       super(coroutineScope, installedController, panel, false);
+      mySearchActionGroup = searchActionGroup;
       mySelectionListener = selectionListener;
       mySearchInMarketplaceTabHandler = searchInMarketplaceTabHandler;
       myPluginModelFacade = pluginModelFacade;
@@ -636,7 +640,7 @@ class InstalledPluginsTab extends PluginsTab {
     public void setQuery(@NotNull String query) {
       super.setQuery(query);
       SearchQueryParser.Installed parser = new SearchQueryParser.Installed(query);
-      for (AnAction action : myInstalledSearchGroup.getChildren(ActionManager.getInstance())) {
+      for (AnAction action : mySearchActionGroup.getChildren(ActionManager.getInstance())) {
         ((InstalledSearchOptionAction)action).setState(parser);
       }
     }
