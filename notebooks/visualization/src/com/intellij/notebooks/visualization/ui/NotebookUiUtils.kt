@@ -23,6 +23,7 @@ object NotebookUiUtils {
   }
 
   fun Rectangle.intersectsEvenIfEmpty(other: Rectangle): Boolean {
-    return this.intersects(other) || (this.isEmpty && other.contains(this)) || (other.isEmpty && this.contains(other))
+    return this.intersects(other) || (this.isEmpty && other.contains(Point(x, y))) || (other.isEmpty && this.contains(Point(other.x,
+                                                                                                                            other.y)))
   }
 }
