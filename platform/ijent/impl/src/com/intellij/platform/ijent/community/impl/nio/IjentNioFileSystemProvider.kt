@@ -368,9 +368,11 @@ class IjentNioFileSystemProvider : FileSystemProvider() {
 
   override fun isHidden(path: Path): Boolean {
     ensureAbsoluteIjentNioPath(path)
-    return when (path.nioFs.ijentFs) {
+    return when (val ijentFs = path.nioFs.ijentFs) {
       is IjentFileSystemPosixApi -> path.normalize().fileName.toString().startsWith(".")
-      is IjentFileSystemWindowsApi -> TODO("Not implemented for Windows")
+      is IjentFileSystemWindowsApi -> fsBlocking {
+        ijentFs.stat(path.eelPath).getOrThrowFileSystemException().permissions.isHidden
+      }
     }
   }
 
