@@ -1,6 +1,6 @@
 package com.intellij.ide.starter.driver.driver.remoteDev
 
-import com.intellij.ide.starter.coroutine.CommonScope.perClassSupervisorScope
+import com.intellij.ide.starter.coroutine.CommonScope.scopeForProcesses
 import com.intellij.ide.starter.driver.engine.DriverOptions
 import com.intellij.ide.starter.driver.engine.remoteDev.XorgWindowManagerHandler
 import com.intellij.ide.starter.ide.IDETestContext
@@ -65,7 +65,7 @@ internal class IDEFrontendHandler(
     EventsBus.subscribeOnce(process) { event: IdeLaunchEvent ->
       process.complete(event.ideProcess)
     }
-    val result = perClassSupervisorScope.async {
+    val result = scopeForProcesses.async {
       try {
         val thinClientCommand =
           if (frontendContext.ide.vmOptions.data().contains("-Djava.awt.headless=true")) "thinClient-headless" else "thinClient"
