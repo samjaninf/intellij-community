@@ -17,7 +17,6 @@
   <module value="com.intellij.modules.gradle.java"/>
   <module value="org.jetbrains.plugins.gradle.java"/>
 
-  <depends optional="true" config-file="gradle-maven-integration.xml">org.jetbrains.idea.maven</depends>
   <depends optional="true" config-file="gradle-groovy-integration.xml">org.intellij.groovy</depends>
   <depends optional="true" config-file="gradle-properties-integration.xml">com.intellij.properties</depends>
 
