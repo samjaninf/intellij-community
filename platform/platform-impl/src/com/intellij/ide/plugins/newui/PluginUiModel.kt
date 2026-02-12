@@ -300,3 +300,9 @@ fun PluginSource?.addSource(pluginSource: PluginSource?): PluginSource? {
     return PluginSource.BOTH
   }
 }
+
+@ApiStatus.Internal
+fun PluginSource?.includes(pluginSource: PluginSource?): Boolean {
+  if (this == null || pluginSource == null) return false
+  return this == pluginSource || this == PluginSource.BOTH
+}
