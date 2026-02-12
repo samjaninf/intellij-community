@@ -140,7 +140,7 @@ abstract class SearchResultPanel(
     }, ModalityState.any())
   }
 
-  protected abstract fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean?)
+  protected abstract fun handleQuery(query: String, result: PluginsGroup, runQuery: AtomicBoolean)
 
   private fun runPostFillGroupCallback() {
     if (myPostFillGroupCallback != null) {

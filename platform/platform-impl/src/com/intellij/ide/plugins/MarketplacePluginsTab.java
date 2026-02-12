@@ -771,7 +771,7 @@ class MarketplacePluginsTab extends PluginsTab {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, AtomicBoolean runQuery) {
+    protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, @NotNull AtomicBoolean runQuery) {
       int searchIndex = PluginManagerUsageCollector.updateAndGetSearchIndex();
 
       SearchQueryParser.Marketplace parser = new SearchQueryParser.Marketplace(query);

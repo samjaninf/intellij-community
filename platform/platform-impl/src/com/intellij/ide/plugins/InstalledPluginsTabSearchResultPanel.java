@@ -93,7 +93,7 @@ class InstalledPluginsTabSearchResultPanel extends SearchResultPanel {
   }
 
   @Override
-  protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, AtomicBoolean runQuery) {
+  protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, @NotNull AtomicBoolean runQuery) {
     int searchIndex = PluginManagerUsageCollector.updateAndGetSearchIndex();
     myPluginModelFacade.getModel().setInvalidFixCallback(null);
     SearchQueryParser.Installed parser = new SearchQueryParser.Installed(query);
