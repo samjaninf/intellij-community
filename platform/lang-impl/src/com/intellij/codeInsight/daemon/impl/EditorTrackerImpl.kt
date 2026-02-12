@@ -21,7 +21,6 @@ import com.intellij.openapi.wm.impl.IdeFrameImpl
 import com.intellij.openapi.wm.impl.ProjectFrameHelper
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.util.application
-import com.intellij.util.concurrency.annotations.RequiresEdt
 import org.jetbrains.annotations.ApiStatus.Internal
 import java.awt.Window
 import java.awt.event.WindowAdapter
@@ -164,34 +163,35 @@ open class EditorTrackerImpl(@JvmField protected val project: Project) : EditorT
     }
   }
 
-  @get:RequiresEdt
-  @set:RequiresEdt
-  override var activeEditors: List<Editor> = emptyList()
-    set(editors) {
-      if (editors == field) {
-        return
+  override val activeEditors: List<Editor> get() = localActiveEditors
+
+  private var localActiveEditors: List<Editor> = emptyList()
+
+  protected open fun updateLocalActiveEditors(editors: List<Editor>) {
+    if (editors == localActiveEditors) {
+      return
+    }
+
+    localActiveEditors = editors
+    if (!project.isDisposed) {
+      if (LOG.isDebugEnabled) {
+        LOG.debug("active editors changed: " + editors.joinToString(separator = "\n    ") {
+          WriteIntentReadAction.compute<String> {
+            PsiDocumentManager.getInstance(project).getPsiFile(it.document).toString()
+          }
+        })
+
       }
-
-      field = editors
-      if (!project.isDisposed) {
-        if (LOG.isDebugEnabled) {
-          LOG.debug("active editors changed: " + editors.joinToString(separator = "\n    ") {
-            WriteIntentReadAction.compute<String> {
-              PsiDocumentManager.getInstance(project).getPsiFile(it.document).toString()
-            }
-          })
-
-        }
-        //maybe readaction
-        WriteIntentReadAction.run {
-          project.messageBus.syncPublisher(EditorTrackerListener.TOPIC).activeEditorsChanged(editors)
-        }
+      //maybe readaction
+      WriteIntentReadAction.run {
+        project.messageBus.syncPublisher(EditorTrackerListener.TOPIC).activeEditorsChanged(editors)
       }
     }
+  }
 
   override fun setActiveEditorsInTests(editors: List<Editor>) {
     assert(application.isUnitTestMode)
-    activeEditors = editors
+    updateLocalActiveEditors(editors)
   }
 
   private fun isActiveWindow(window: Window): Boolean {
@@ -207,10 +207,10 @@ open class EditorTrackerImpl(@JvmField protected val project: Project) : EditorT
     val window = activeWindow?.get()
     val list = if (window == null) null else windowToEditorsMap.get(window)
     if (list.isNullOrEmpty()) {
-      activeEditors = emptyList()
+      updateLocalActiveEditors(emptyList())
     }
     else {
-      activeEditors = list.filter { !it.isDisposed && it.contentComponent.isShowing }
+      updateLocalActiveEditors(list.filter { !it.isDisposed && it.contentComponent.isShowing })
     }
   }
 
