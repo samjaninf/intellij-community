@@ -309,7 +309,7 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
       }
       catch (e: Exception) {
         if (e is CancellationException) throw e
-        //TODO: handle???
+        LOG.warn("Failed to run action", e)
       }
     }
   }

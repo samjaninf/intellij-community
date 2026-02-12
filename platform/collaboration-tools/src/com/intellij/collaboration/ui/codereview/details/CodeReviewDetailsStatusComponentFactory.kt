@@ -39,10 +39,12 @@ import kotlinx.coroutines.launch
 import org.jetbrains.annotations.Nls
 import java.awt.Point
 import java.awt.event.ActionListener
+import javax.swing.Action
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JTextPane
+import javax.swing.SwingConstants
 
 object CodeReviewDetailsStatusComponentFactory {
   private const val STATUS_COMPONENT_BORDER = 5
@@ -58,6 +60,24 @@ object CodeReviewDetailsStatusComponentFactory {
       isOpaque = false
       JLabelUtil.setTrimOverflow(this, trim = true)
     }
+
+  fun createErrorComponent(message: @Nls String, action: Action? = null): JComponent {
+    val label = JLabel(message, CIBuildStatusIcons.failed, SwingConstants.LEFT).apply {
+      JLabelUtil.setTrimOverflow(this, trim = true)
+    }
+    if (action == null) return label
+
+    val actionLink = ActionLink(action).apply {
+      autoHideOnDisable = false
+    }
+    return HorizontalListPanel(CI_COMPONENTS_GAP).apply {
+      name = "Code review status: error"
+      border = JBUI.Borders.empty(STATUS_COMPONENT_BORDER, 0)
+
+      add(label)
+      add(actionLink)
+    }
+  }
 
   /**
    * @param resolveActionFlow If an ActionListener is emitted, there's some action to execute on click.

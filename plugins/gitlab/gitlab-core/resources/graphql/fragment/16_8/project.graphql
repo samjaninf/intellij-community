@@ -12,6 +12,7 @@ fragment project on Project {
   onlyAllowMergeIfAllDiscussionsAreResolved
   onlyAllowMergeIfPipelineSucceeds
   allowMergeOnSkippedPipeline
+  mergeRequestsFfOnlyEnabled
 
   userPermissions {
     createSnippet

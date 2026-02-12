@@ -25,6 +25,7 @@ data class GitLabProjectDTO(
   val onlyAllowMergeIfPipelineSucceeds: Boolean?,
   @SinceGitLab("12.5") val removeSourceBranchAfterMerge: Boolean?,
   @SinceGitLab("13.1") val allowMergeOnSkippedPipeline: Boolean?,
+  val mergeRequestsFfOnlyEnabled: Boolean?,
   @SinceGitLab("16.8") val allowsMultipleMergeRequestAssignees: Boolean?,
   @SinceGitLab("16.8") val allowsMultipleMergeRequestReviewers: Boolean?,
   val repository: Repository?

@@ -27,10 +27,12 @@ import org.jetbrains.plugins.gitlab.api.dto.GitLabCiJobDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabPipelineDTO
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabCiJobStatus
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequest
+import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequestState
 import org.jetbrains.plugins.gitlab.mergerequest.util.GitLabMergeRequestDiscussionUtil.createAnyDiscussionsUnresolvedFlow
 
 interface GitLabMergeRequestStatusViewModel : CodeReviewStatusViewModel {
   val hasUnresolvedDiscussionsBlockingMerge: StateFlow<Boolean>
+  val shouldBeRebasedBeforeMerging: StateFlow<Boolean>
   val resolveConflictsVm: GitLabResolveConflictsLocallyViewModel
 }
 
@@ -60,6 +62,10 @@ class GitLabMergeRequestStatusViewModelImpl(
         flowOf(false)
       }
     }.stateInNow(cs, false)
+
+  override val shouldBeRebasedBeforeMerging: StateFlow<Boolean> = mergeRequest.details.map {
+    it.state == GitLabMergeRequestState.OPENED && it.userPermissions.canMerge && it.ffOnlyMerge && it.shouldBeRebased
+  }.stateInNow(cs, false)
 
   override val ciJobs: SharedFlow<List<CodeReviewCIJob>> = pipeline.map {
     it?.jobs?.mapNotNull { job -> job.convert() } ?: emptyList()

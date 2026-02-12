@@ -11,6 +11,7 @@ fragment project on Project {
   onlyAllowMergeIfAllDiscussionsAreResolved
   onlyAllowMergeIfPipelineSucceeds
   allowMergeOnSkippedPipeline
+  mergeRequestsFfOnlyEnabled
 
   allowsMultipleMergeRequestAssignees
   allowsMultipleMergeRequestReviewers
