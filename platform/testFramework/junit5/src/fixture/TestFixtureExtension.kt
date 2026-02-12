@@ -5,6 +5,11 @@ import com.intellij.platform.eel.EelApi
 import com.intellij.platform.util.coroutines.childScope
 import com.intellij.testFramework.TestLoggerFactory
 import com.intellij.testFramework.junit5.fixture.EelForFixturesProvider.Companion.getEelForParametrizedTestProvider
+import com.intellij.testFramework.junit5.impl.TypedStoreKey
+import com.intellij.testFramework.junit5.impl.TypedStoreKey.Companion.get
+import com.intellij.testFramework.junit5.impl.TypedStoreKey.Companion.remove
+import com.intellij.testFramework.junit5.impl.TypedStoreKey.Companion.set
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -36,6 +41,9 @@ internal class TestFixtureExtension : BeforeAllCallback,
                                       AfterEachCallback,
                                       AfterAllCallback,
                                       InvocationInterceptor {
+  private companion object {
+    val exceptionsKey = TypedStoreKey.createKey<Throwable>()
+  }
 
   override fun beforeAll(context: ExtensionContext) {
     before(context, static = true)
@@ -88,8 +96,13 @@ internal class TestFixtureExtension : BeforeAllCallback,
 
     TestLoggerFactory.onFixturesInitializationStarted(static)
 
+    val exceptionHandler = CoroutineExceptionHandler { _, exception ->
+      context[exceptionsKey] = exception
+      throw exception
+    }
+
     @OptIn(DelicateCoroutinesApi::class)
-    val testScope = GlobalScope.childScope(context.displayName)
+    val testScope = GlobalScope.childScope(context.displayName, exceptionHandler)
     val pendingFixtures = ArrayList<Deferred<*>>()
 
     val classToTestInstance = collectTestInstances(context)
@@ -125,6 +138,12 @@ internal class TestFixtureExtension : BeforeAllCallback,
       after(context, static = false)
     }
     after(context, static = true)
+    // Throw unprocessed exceptions thrown by fixtures to break the test
+    val exception = context[exceptionsKey]
+    context.remove(exceptionsKey)
+    if (exception != null) {
+      throw exception
+    }
   }
 
   private fun after(context: ExtensionContext, static: Boolean) {
