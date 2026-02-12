@@ -2,7 +2,6 @@
 package org.jetbrains.plugins.terminal;
 
 import com.intellij.execution.process.UnixProcessManager;
-import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.Disposer;
@@ -170,26 +169,6 @@ public final class TerminalUtil {
    */
   @ApiStatus.Internal
   public static boolean isGenOneTerminalOptionVisible() {
-    return ExperimentalUI.isNewUI() && getGenOneTerminalVisibilityValue() == Boolean.TRUE
-           || Registry.is("terminal.new.ui.option.visible", false);
-  }
-
-  /**
-   * Internal helper setting to control whether Gen1 terminal options should be visible or not.
-   */
-  private static final String GEN_ONE_OPTION_VISIBLE_PROPERTY = "terminal.gen.one.option.visible";
-
-  @ApiStatus.Internal
-  public static @Nullable Boolean getGenOneTerminalVisibilityValue() {
-    String value = PropertiesComponent.getInstance().getValue(GEN_ONE_OPTION_VISIBLE_PROPERTY);
-    if (value != null) {
-      return Boolean.parseBoolean(value);
-    }
-    return null;
-  }
-
-  @ApiStatus.Internal
-  public static void setGenOneTerminalVisibilityValue(boolean isVisible) {
-    PropertiesComponent.getInstance().setValue(GEN_ONE_OPTION_VISIBLE_PROPERTY, Boolean.toString(isVisible));
+    return ExperimentalUI.isNewUI() && Registry.is("terminal.new.ui.option.visible", false);
   }
 }
