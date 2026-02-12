@@ -24,7 +24,7 @@ import javax.swing.ScrollPaneConstants
 
 @ApiStatus.Internal
 abstract class SearchResultPanel(
-  private val coroutineScope: CoroutineScope,
+  protected val coroutineScope: CoroutineScope,
   @JvmField val controller: SearchPopupController,
   @JvmField protected val myPanel: PluginsGroupComponentWithProgress,
   private val isMarketplace: Boolean,

@@ -336,6 +336,7 @@ class InstalledPluginsTab extends PluginsTab {
       installedController,
       panel,
       myInstalledSearchGroup,
+      () -> myInstalledPanel,
       selectionListener,
       mySearchInMarketplaceTabHandler,
       myPluginModelFacade
@@ -603,16 +604,19 @@ class InstalledPluginsTab extends PluginsTab {
     private final @Nullable Consumer<String> mySearchInMarketplaceTabHandler;
     private final @NotNull PluginModelFacade myPluginModelFacade;
     private final @NotNull DefaultActionGroup mySearchActionGroup;
+    private final @NotNull Supplier<PluginsGroupComponentWithProgress> myInstalledPanelSupplier;
 
-    InstalledTabSearchResultPanel(CoroutineScope coroutineScope,
+    InstalledTabSearchResultPanel(@NotNull CoroutineScope coroutineScope,
                                   SearchUpDownPopupController installedController,
                                   PluginsGroupComponentWithProgress panel,
                                   @NotNull DefaultActionGroup searchActionGroup,
+                                  @NotNull Supplier<PluginsGroupComponentWithProgress> installedPanelSupplier,
                                   @NotNull Consumer<? super PluginsGroupComponent> selectionListener,
                                   @Nullable Consumer<String> searchInMarketplaceTabHandler,
                                   @NotNull PluginModelFacade pluginModelFacade) {
       super(coroutineScope, installedController, panel, false);
       mySearchActionGroup = searchActionGroup;
+      myInstalledPanelSupplier = installedPanelSupplier;
       mySelectionListener = selectionListener;
       mySearchInMarketplaceTabHandler = searchInMarketplaceTabHandler;
       myPluginModelFacade = pluginModelFacade;
@@ -752,12 +756,12 @@ class InstalledPluginsTab extends PluginsTab {
             }
           });
         }
-        PluginModelAsyncOperationsExecutor.INSTANCE.loadUpdates(myCoroutineScope, updates -> {
+        PluginModelAsyncOperationsExecutor.INSTANCE.loadUpdates(getCoroutineScope(), updates -> {
           if (!ContainerUtil.isEmpty(updates)) {
             myPostFillGroupCallback = () -> {
               //noinspection unchecked
               applyUpdates(myPanel, (Collection<PluginUiModel>)updates);
-              mySelectionListener.accept(myInstalledPanel);
+              mySelectionListener.accept(myInstalledPanelSupplier.get());
               mySelectionListener.accept(getPanel());
             };
           }
