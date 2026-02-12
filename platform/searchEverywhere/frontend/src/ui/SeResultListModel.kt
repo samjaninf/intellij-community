@@ -43,6 +43,7 @@ class SeResultListModel(private val searchStatePublisher: SeSearchStatePublisher
   }
 
   fun invalidate() {
+    SeLog.log(SeLog.THROTTLING) { "Will invalidate result list model" }
     _isValidState.value = false
     isValidAndHasOnlySemantic = false
   }
@@ -109,19 +110,20 @@ class SeResultListModel(private val searchStatePublisher: SeSearchStatePublisher
 
     fun enable() {
       isEnabled = true
-      SeLog.log(SeLog.FROZEN_COUNT) { "frozenCount = $frozenCountToApply; size = ${listSize()}; isApplied = $isEnabled" }
+      SeLog.log(SeLog.FROZEN_COUNT) { "enable: frozenCount = $frozenCountToApply; size = ${listSize()}; isApplied = $isEnabled" }
     }
 
     fun freezeIfEnabled(count: Int) {
       if (count > frozenCountToApply) {
         frozenCountToApply = count
-        SeLog.log(SeLog.FROZEN_COUNT) { "frozenCount = $frozenCountToApply; size = ${listSize()}; isApplied = $isEnabled" }
+        SeLog.log(SeLog.FROZEN_COUNT) { "freezeIfEnabled: frozenCount = $frozenCountToApply; size = ${listSize()}; isApplied = $isEnabled" }
       }
     }
 
     fun reset() {
       isEnabled = false
       frozenCountToApply = 0
+      SeLog.log(SeLog.FROZEN_COUNT) { "reset: frozenCount = $frozenCountToApply; size = ${listSize()}; isApplied = $isEnabled" }
     }
   }
 }

@@ -130,6 +130,7 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalAtomicApi::class, ExperimentalCoroutinesApi::class)
 @Internal
@@ -309,8 +310,10 @@ class SePopupContentPane(
           }
 
           launch {
-            delay(DEFAULT_FREEZING_DELAY_MS)
+            SeLog.log(SeLog.FROZEN_COUNT) { "Will schedule freeze" }
+            delay(DEFAULT_FREEZING_DELAY_MS.milliseconds)
             withContext(Dispatchers.EDT) {
+              SeLog.log(SeLog.FROZEN_COUNT) { "Will freeze, because of the scheduled freezing" }
               resultListModel.freezer.enable()
             }
           }
@@ -358,7 +361,10 @@ class SePopupContentPane(
               semanticWarning.value = resultListModel.isValidAndHasOnlySemantic
 
               // Freeze back if it was frozen before
-              if (wasFrozen) resultListModel.freezer.enable()
+              if (wasFrozen) {
+                SeLog.log(SeLog.FROZEN_COUNT) { "Will freeze, because of it was frozen before" }
+                resultListModel.freezer.enable()
+              }
               updateFrozenCount()
 
               updateViewMode()
