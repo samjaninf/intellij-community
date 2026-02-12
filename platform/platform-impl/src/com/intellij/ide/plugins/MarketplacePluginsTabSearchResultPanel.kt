@@ -146,8 +146,7 @@ internal class MarketplacePluginsTabSearchResultPanel(
       }
     }
 
-    PluginModelAsyncOperationsExecutor.getCustomRepositoriesPluginMap(coroutineScope) { map ->
-      val customRepositoriesMap = map
+    PluginModelAsyncOperationsExecutor.getCustomRepositoriesPluginMap(coroutineScope) { customRepositoriesMap ->
       if (parser.suggested && myProject != null) {
         val plugins = findSuggestedPlugins(myProject, customRepositoriesMap)
         result.addModels(plugins)
