@@ -973,6 +973,11 @@ public abstract class K2SmartCompletionTestGenerated extends AbstractK2SmartComp
         public void testNotFirstArgument() throws Exception {
             runTest("../../completion/testData/smart/multipleArgsItem/notFirstArgument.kt");
         }
+
+        @TestMetadata("notFirstArgumentBrackets.kt")
+        public void testNotFirstArgumentBrackets() throws Exception {
+            runTest("../../completion/testData/smart/multipleArgsItem/notFirstArgumentBrackets.kt");
+        }
     }
 
     @RunWith(JUnit3RunnerWithInners.class)

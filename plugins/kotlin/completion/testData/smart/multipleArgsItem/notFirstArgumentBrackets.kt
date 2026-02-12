@@ -5,7 +5,7 @@ class Foo {
 
 fun bar(b: String, a: Int, c: String) {
     val foo = Foo()
-    val test = foo[<caret>]
+    val test = foo[a, <caret>]
 }
 
-// EXIST: "a, b, c"
+// EXIST: "b, c"

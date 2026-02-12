@@ -3,6 +3,8 @@
 package org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories
 
 import com.intellij.codeInsight.AutoPopupController
+import com.intellij.codeInsight.completion.CodeCompletionHandlerBase
+import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.completion.InsertionContext
 import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.lookup.LookupElement

@@ -973,6 +973,11 @@ public abstract class JvmSmartCompletionTestGenerated extends AbstractJvmSmartCo
         public void testNotFirstArgument() throws Exception {
             runTest("../testData/smart/multipleArgsItem/notFirstArgument.kt");
         }
+
+        @TestMetadata("notFirstArgumentBrackets.kt")
+        public void testNotFirstArgumentBrackets() throws Exception {
+            runTest("../testData/smart/multipleArgsItem/notFirstArgumentBrackets.kt");
+        }
     }
 
     @RunWith(JUnit3RunnerWithInners.class)
