@@ -5,6 +5,7 @@ import com.intellij.concurrency.ConcurrentCollectionFactory
 import com.intellij.ide.vfs.rpcId
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.diagnostic.debug
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -132,6 +133,15 @@ class FrontendXBreakpointManager(private val project: Project, private val cs: C
               removeBreakpointLocally(event.breakpointId)
               // breakpointRemoved event happened on the server, so we can remove id from the frontend
               breakpointIdsRemovedLocally.remove(event.breakpointId)
+            }
+            is XBreakpointEvent.BreakpointPresentationUpdated -> {
+              log.debug { "Breakpoint presentation update from backend: ${event.breakpointId}" }
+              val breakpoint = breakpoints[event.breakpointId] as? FrontendXBreakpointProxy
+              if (breakpoint != null) {
+                breakpoint.updatePresentation(event.customPresentation, event.currentSessionCustomPresentation)
+              } else {
+                log.warn("Presentation update for unknown breakpoint: ${event.breakpointId}")
+              }
             }
           }
         }

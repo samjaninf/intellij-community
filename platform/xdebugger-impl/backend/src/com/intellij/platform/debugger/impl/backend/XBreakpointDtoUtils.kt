@@ -12,7 +12,6 @@ import com.intellij.platform.debugger.impl.rpc.XBreakpointTypeId
 import com.intellij.platform.debugger.impl.rpc.XLineBreakpointInfo
 import com.intellij.platform.debugger.impl.rpc.toRpc
 import com.intellij.xdebugger.XDebuggerManager
-import com.intellij.xdebugger.impl.XDebugSessionImpl
 import com.intellij.xdebugger.impl.XDebuggerManagerImpl
 import com.intellij.xdebugger.impl.breakpoints.CustomizedBreakpointPresentation
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase
@@ -29,31 +28,33 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 
-private fun CustomizedBreakpointPresentation.toRpc(): XBreakpointCustomPresentationDto {
+internal fun CustomizedBreakpointPresentation.toRpc(): XBreakpointCustomPresentationDto {
   return XBreakpointCustomPresentationDto(icon?.rpcId(), errorMessage, timestamp)
 }
 
 internal suspend fun XBreakpointBase<*, *, *>.toRpc(): XBreakpointDto {
   val editorsProvider = getEditorsProvider(type, this, project)
   val xDebuggerManager = XDebuggerManager.getInstance(project) as XDebuggerManagerImpl
+  val currentSession = xDebuggerManager.currentSession
+
   return XBreakpointDto(
     id = breakpointId,
-    initialState = getDtoState(xDebuggerManager.currentSession),
+    initialState = getDtoState(),
+    initialCustomPresentation = customizedPresentation?.toRpc(),
+    initialCurrentSessionCustomPresentation = currentSession?.getBreakpointPresentation(this)?.toRpc(),
     typeId = XBreakpointTypeId(type.id),
     editorsProviderDto = editorsProvider?.toRpc(coroutineScope),
     state = channelFlow {
       val currentSessionFlow = xDebuggerManager.currentSessionFlow
-      breakpointChangedFlow().combine(currentSessionFlow) { _, currentSession ->
-        currentSession
-      }.collectLatest { currentSession ->
-        send(getDtoState(currentSession))
+      breakpointChangedFlow().combine(currentSessionFlow) { _, _ -> }.collectLatest {
+        send(getDtoState())
       }
     }.toRpc()
   )
 }
 
 
-private suspend fun XBreakpointBase<*, *, *>.getDtoState(currentSession: XDebugSessionImpl?): XBreakpointDtoState {
+private suspend fun XBreakpointBase<*, *, *>.getDtoState(): XBreakpointDtoState {
   val breakpoint = this
   return withContext(Dispatchers.Default) {
     val manager = XDebuggerManager.getInstance(project).breakpointManager as XBreakpointManagerImpl
@@ -76,8 +77,6 @@ private suspend fun XBreakpointBase<*, *, *>.getDtoState(currentSession: XDebugS
       generalDescription = XBreakpointUtil.getGeneralDescription(breakpoint),
       tooltipDescription = readAction { description },
       timestamp = timeStamp,
-      currentSessionCustomPresentation = currentSession?.getBreakpointPresentation(breakpoint)?.toRpc(),
-      customPresentation = breakpoint.customizedPresentation?.toRpc(),
       lineBreakpointInfo = readAction { (breakpoint as? XLineBreakpointImpl<*>)?.getInfo() },
       requestId = completedRequestId,
     )

@@ -227,6 +227,19 @@ internal class BackendXDebuggerManagerApi : XDebuggerManagerApi {
             XBreakpointEvent.BreakpointRemoved((breakpoint as XBreakpointBase<*, *, *>).breakpointId)
           }
         }
+
+        override fun breakpointPresentationUpdated(breakpoint: XBreakpoint<*>, session: XDebugSession?) {
+          val breakpointBase = breakpoint as? XBreakpointBase<*, *, *> ?: return
+          val sessionImpl = session as? XDebugSessionImpl
+
+          events.trySend {
+            XBreakpointEvent.BreakpointPresentationUpdated(
+              breakpointId = breakpointBase.breakpointId,
+              customPresentation = breakpointBase.customizedPresentation?.toRpc(),
+              currentSessionCustomPresentation = sessionImpl?.getBreakpointPresentation(breakpoint)?.toRpc()
+            )
+          }
+        }
       })
 
       val currentBreakpoints = breakpointManager.allBreakpoints

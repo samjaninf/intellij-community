@@ -69,6 +69,20 @@ internal open class FrontendXBreakpointProxy(
    */
   private val _state: MutableStateFlow<XBreakpointDtoState> = MutableStateFlow(dto.initialState)
 
+  /**
+   * Custom presentation for the breakpoint (general, persistent).
+   * Updated via presentation events, independent of state changes.
+   */
+  private val _customPresentation: MutableStateFlow<CustomizedBreakpointPresentation?> =
+    MutableStateFlow(dto.initialCustomPresentation?.toPresentation())
+
+  /**
+   * Custom presentation for the current debug session (session-specific).
+   * Updated via presentation events, independent of state changes.
+   */
+  private val _currentSessionCustomPresentation: MutableStateFlow<CustomizedBreakpointPresentation?> =
+    MutableStateFlow(dto.initialCurrentSessionCustomPresentation?.toPresentation())
+
   private val editorsProvider = dto.editorsProviderDto?.let {
     getEditorsProvider(cs, it, documentIdProvider = { frontendDocumentId, expression, position, mode ->
       XBreakpointApi.getInstance().createDocument(frontendDocumentId, id, expression, position, mode)
@@ -144,6 +158,19 @@ internal open class FrontendXBreakpointProxy(
   internal fun installListener(listener: () -> Unit) {
     assert(this.listener == null) { "Listener is already installed" }
     this.listener = listener
+  }
+
+  /**
+   * Updates presentation from backend event.
+   * Called by FrontendXBreakpointManager when BreakpointPresentationUpdated event arrives.
+   */
+  internal fun updatePresentation(
+    customPresentation: XBreakpointCustomPresentationDto?,
+    currentSessionCustomPresentation: XBreakpointCustomPresentationDto?
+  ) {
+    _customPresentation.value = customPresentation?.toPresentation()
+    _currentSessionCustomPresentation.value = currentSessionCustomPresentation?.toPresentation()
+    onBreakpointChange()
   }
 
   private fun onBreakpointChange() {
@@ -315,13 +342,11 @@ internal open class FrontendXBreakpointProxy(
   }
 
   override fun getCustomizedPresentation(): CustomizedBreakpointPresentation? {
-    // TODO: let's convert it once on state change rather then on every getCustomizedPresentation call
-    return currentState.customPresentation?.toPresentation()
+    return _customPresentation.value
   }
 
   override fun getCustomizedPresentationForCurrentSession(): CustomizedBreakpointPresentation? {
-    // TODO: let's convert it once on state change rather then on every getCustomizedPresentation call
-    return currentState.currentSessionCustomPresentation?.toPresentation()
+    return _currentSessionCustomPresentation.value
   }
 
   override fun isDisposed(): Boolean {
@@ -352,6 +377,8 @@ internal open class FrontendXBreakpointProxy(
   override fun dispose() {
     cs.cancel()
     listener = null
+    _customPresentation.value = null
+    _currentSessionCustomPresentation.value = null
   }
 
   override fun createBreakpointDraggableObject(): GutterDraggableObject? {

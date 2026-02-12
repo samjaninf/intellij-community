@@ -79,6 +79,8 @@ interface XBreakpointApi : RemoteApi<Unit> {
 data class XBreakpointDto(
   val id: XBreakpointId,
   val initialState: XBreakpointDtoState,
+  val initialCustomPresentation: XBreakpointCustomPresentationDto?,
+  val initialCurrentSessionCustomPresentation: XBreakpointCustomPresentationDto?,
   val state: RpcFlow<XBreakpointDtoState>,
   val editorsProviderDto: XDebuggerEditorsProviderDto?,
   val typeId: XBreakpointTypeId,
@@ -104,8 +106,6 @@ data class XBreakpointDtoState(
   val generalDescription: String,
   val tooltipDescription: String,
   val timestamp: Long,
-  val currentSessionCustomPresentation: XBreakpointCustomPresentationDto?,
-  val customPresentation: XBreakpointCustomPresentationDto?,
   val lineBreakpointInfo: XLineBreakpointInfo?,
   val requestId: Long,
 )

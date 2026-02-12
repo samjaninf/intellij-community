@@ -141,7 +141,6 @@ public class XBreakpointBase<Self extends XBreakpoint<P>, P extends XBreakpointP
   public final void fireBreakpointPresentationUpdated(@Nullable XDebugSession session) {
     clearIcon();
     myBreakpointManager.fireBreakpointPresentationUpdated(this, session);
-    emitBreakpointChanged();
   }
 
   public final Flow<Unit> breakpointChangedFlow() {

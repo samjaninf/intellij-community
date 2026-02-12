@@ -65,6 +65,13 @@ sealed interface XBreakpointEvent {
 
   @Serializable
   data class BreakpointRemoved(val breakpointId: XBreakpointId) : XBreakpointEvent
+
+  @Serializable
+  data class BreakpointPresentationUpdated(
+    val breakpointId: XBreakpointId,
+    val customPresentation: XBreakpointCustomPresentationDto?,
+    val currentSessionCustomPresentation: XBreakpointCustomPresentationDto?,
+  ) : XBreakpointEvent
 }
 
 @ApiStatus.Internal
