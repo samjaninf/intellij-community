@@ -113,15 +113,14 @@ class DelayTypeCommand(text: String, line: Int) : PlaybackCommandCoroutineAdapte
               delay(500)
             }
             if (!typed) {
-              barriers[i].completeExceptionally(
-                Exception("Focus was lost during typing. Current focus is in: " +
-                          withContext(Dispatchers.EDT) {
-                            KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner?.javaClass ?: "null"
-                          }))
+              val ex = Exception("Focus was lost during typing. Current focus is in: " +
+                                 withContext(Dispatchers.EDT) {
+                                   KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner?.javaClass ?: "null"
+                                 })
+              barriers[i].completeExceptionally(ex)
+              throw ex
             }
-            else {
-              barriers[i].complete(Unit)
-            }
+            barriers[i].complete(Unit)
           }
         }
 
