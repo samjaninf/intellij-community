@@ -40,7 +40,7 @@ import java.util.Objects;
  * Implementation of the markup element for the editor and document.
  */
 @ApiStatus.Internal
-public sealed class RangeHighlighterImpl extends RangeMarkerImpl implements RangeHighlighterEx
+sealed class RangeHighlighterImpl extends RangeMarkerImpl implements RangeHighlighterEx
   permits PersistentRangeHighlighterImpl {
   private static final Logger LOG = Logger.getInstance(RangeHighlighterImpl.class);
   @SuppressWarnings({"InspectionUsingGrayColors", "UseJBColor"})
