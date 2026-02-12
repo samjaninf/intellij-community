@@ -66,7 +66,7 @@ com.intellij.xdebugger.impl.frame.XWatchesView
 - a:removeAllWatches():V
 - a:removeWatches(java.util.List):V
 com.intellij.xdebugger.impl.ui.ExecutionPointHighlighter$HighlighterProvider
-- a:getHighlightRange():com.intellij.openapi.util.TextRange
+- com.intellij.xdebugger.ui.ExecutionPointHighlighterProvider
 a:com.intellij.xdebugger.impl.ui.XDebuggerEditorBase
 - rebuildDocument():V
 c:com.intellij.xdebugger.impl.ui.XDebuggerExpressionComboBox

@@ -8,7 +8,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.util.coroutines.flow.mapStateIn
 import com.intellij.util.asSafely
 import com.intellij.xdebugger.XSourcePosition
-import com.intellij.xdebugger.impl.ui.ExecutionPointHighlighter
+import com.intellij.xdebugger.ui.ExecutionPointHighlighterProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -102,7 +102,7 @@ internal class ExecutionPositionVmImpl(
   override val file: VirtualFile by sourcePosition::file
   override val line: Int by sourcePosition::line
 
-  override val exactRange: TextRange? get() = sourcePosition.asSafely<ExecutionPointHighlighter.HighlighterProvider>()?.highlightRange
+  override val exactRange: TextRange? get() = sourcePosition.asSafely<ExecutionPointHighlighterProvider>()?.highlightRange
 
   private val navigationAwareUpdateFlow: Flow<Boolean> = run {
     val externalUpdateFlow = updateRequestFlow.filter { it.file == file }.map { it.isToScrollToPosition }

@@ -36,6 +36,7 @@ import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.impl.settings.DataViewsConfigurableUi;
 import com.intellij.xdebugger.settings.XDebuggerSettingsManager;
 import com.intellij.xdebugger.ui.DebuggerColors;
+import com.intellij.xdebugger.ui.ExecutionPointHighlighterProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -197,7 +198,7 @@ public class ExecutionPointHighlighter {
 
     TextAttributesKey attributesKey = myNotTopFrame ? DebuggerColors.NOT_TOP_FRAME_ATTRIBUTES : DebuggerColors.EXECUTIONPOINT_ATTRIBUTES;
     MarkupModel markupModel = DocumentMarkupModel.forDocument(document, myProject, true);
-    if (mySourcePosition instanceof HighlighterProvider highlighterProvider) {
+    if (mySourcePosition instanceof ExecutionPointHighlighterProvider highlighterProvider) {
       TextRange range = highlighterProvider.getHighlightRange();
       if (range != null) {
         myRangeHighlighter = markupModel
@@ -245,8 +246,10 @@ public class ExecutionPointHighlighter {
     }
   }
 
-  public interface HighlighterProvider {
-    @Nullable
-    TextRange getHighlightRange();
+  /**
+   * @deprecated Implement {@link ExecutionPointHighlighterProvider} instead.
+   */
+  @Deprecated
+  public interface HighlighterProvider extends ExecutionPointHighlighterProvider {
   }
 }

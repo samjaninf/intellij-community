@@ -97,8 +97,8 @@ import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.frame.XValueContainer;
 import com.intellij.xdebugger.frame.XValueNode;
 import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
-import com.intellij.xdebugger.impl.ui.ExecutionPointHighlighter;
 import com.intellij.xdebugger.impl.ui.tree.nodes.XValueNodeImpl;
+import com.intellij.xdebugger.ui.ExecutionPointHighlighterProvider;
 import com.jetbrains.jdi.ArrayReferenceImpl;
 import com.jetbrains.jdi.JNITypeParser;
 import com.jetbrains.jdi.LocationImpl;
@@ -905,7 +905,7 @@ public abstract class DebuggerUtilsEx extends DebuggerUtils {
     }
   }
 
-  private static class JavaXSourcePosition implements XSourcePosition, ExecutionPointHighlighter.HighlighterProvider {
+  private static class JavaXSourcePosition implements XSourcePosition, ExecutionPointHighlighterProvider {
     private final SourcePosition mySourcePosition;
     private final @NotNull VirtualFile myFile;
 

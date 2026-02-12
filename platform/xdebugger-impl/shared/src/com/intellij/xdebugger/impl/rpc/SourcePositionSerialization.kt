@@ -13,13 +13,13 @@ import com.intellij.platform.debugger.impl.rpc.XSourcePositionDto
 import com.intellij.platform.debugger.impl.shared.XDebuggerUtilImplShared
 import com.intellij.pom.Navigatable
 import com.intellij.xdebugger.XSourcePosition
-import com.intellij.xdebugger.impl.ui.ExecutionPointHighlighter
+import com.intellij.xdebugger.ui.ExecutionPointHighlighterProvider
 import org.jetbrains.annotations.ApiStatus
 
 @ApiStatus.Internal
 fun XSourcePosition.toRpc(): XSourcePositionDto {
   return runReadAction {
-    val textRangeDto = (this as? ExecutionPointHighlighter.HighlighterProvider)?.highlightRange?.toRpc()
+    val textRangeDto = (this as? ExecutionPointHighlighterProvider)?.highlightRange?.toRpc()
     XSourcePositionDto(line, offset, file.rpcId(), textRangeDto, this)
   }
 }
@@ -34,7 +34,7 @@ fun XSourcePositionDto.sourcePosition(): XSourcePosition {
 }
 
 private class SerializedXSourcePosition(private val dto: XSourcePositionDto) : XSourcePosition,
-                                                                               ExecutionPointHighlighter.HighlighterProvider {
+                                                                               ExecutionPointHighlighterProvider {
   private val virtualFile = dto.fileId.virtualFile()
 
   override fun getLine(): Int {
