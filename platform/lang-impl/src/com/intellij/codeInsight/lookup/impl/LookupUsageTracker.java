@@ -45,10 +45,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.intellij.codeInsight.completion.BaseCompletionService.LOOKUP_ELEMENT_RESULT_ADD_TIMESTAMP_MILLIS;
-import static com.intellij.codeInsight.completion.BaseCompletionService.LOOKUP_ELEMENT_RESULT_SET_ORDER;
 import static com.intellij.codeInsight.completion.CompletionData.LOOKUP_ELEMENT_PSI_REFERENCE;
-import static com.intellij.codeInsight.lookup.LookupElement.LOOKUP_ELEMENT_SHOW_TIMESTAMP_MILLIS;
+import static com.intellij.codeInsight.completion.FusCompletionKeys.LOOKUP_ELEMENT_CONTRIBUTOR;
+import static com.intellij.codeInsight.completion.FusCompletionKeys.LOOKUP_ELEMENT_RESULT_ADD_TIMESTAMP_MILLIS;
+import static com.intellij.codeInsight.completion.FusCompletionKeys.LOOKUP_ELEMENT_RESULT_SET_ORDER;
+import static com.intellij.codeInsight.completion.FusCompletionKeys.LOOKUP_ELEMENT_SHOW_TIMESTAMP_MILLIS;
 import static com.intellij.codeInsight.lookup.impl.LookupTypedHandler.CANCELLATION_CHAR;
 import static com.intellij.ide.actions.ToolwindowFusEventFields.TOOLWINDOW;
 
@@ -302,7 +303,7 @@ public final class LookupUsageTracker extends CounterUsagesCollector {
       if (currentItem != null) {
         data.add(TOKEN_LENGTH.with(currentItem.getLookupString().length()));
         data.add(QUERY_LENGTH.with(myLookup.itemPattern(currentItem).length()));
-        CompletionContributor contributor = currentItem.getUserData(BaseCompletionService.LOOKUP_ELEMENT_CONTRIBUTOR);
+        CompletionContributor contributor = currentItem.getUserData(LOOKUP_ELEMENT_CONTRIBUTOR);
         if (contributor != null) {
           data.add(CONTRIBUTOR.with(contributor.getClass()));
         }

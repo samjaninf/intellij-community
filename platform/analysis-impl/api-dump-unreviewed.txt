@@ -151,8 +151,6 @@ c:com.intellij.codeInsight.completion.BaseCompletionLookupArranger
 c:com.intellij.codeInsight.completion.BaseCompletionService
 - com.intellij.codeInsight.completion.CompletionService
 - sf:FORBID_WORD_COMPLETION:com.intellij.openapi.util.Key
-- sf:LOOKUP_ELEMENT_RESULT_ADD_TIMESTAMP_MILLIS:com.intellij.openapi.util.Key
-- sf:LOOKUP_ELEMENT_RESULT_SET_ORDER:com.intellij.openapi.util.Key
 - p:apiCompletionProcess:com.intellij.codeInsight.completion.CompletionProcess
 - <init>():V
 - p:addWeighersBefore(com.intellij.codeInsight.completion.impl.CompletionSorterImpl):com.intellij.codeInsight.completion.impl.CompletionSorterImpl

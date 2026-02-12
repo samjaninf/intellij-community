@@ -583,7 +583,6 @@ c:com.intellij.codeInsight.lookup.LookupArranger$DefaultArranger
 a:com.intellij.codeInsight.lookup.LookupElement
 - com.intellij.openapi.util.UserDataHolderBase
 - sf:EMPTY_ARRAY:com.intellij.codeInsight.lookup.LookupElement[]
-- sf:LOOKUP_ELEMENT_SHOW_TIMESTAMP_MILLIS:com.intellij.openapi.util.Key
 - <init>():V
 - as(com.intellij.openapi.util.ClassConditionKey):java.lang.Object
 - as(java.lang.Class):java.lang.Object
