@@ -83,7 +83,6 @@ class InstalledPluginsTab extends PluginsTab {
   private @Nullable PluginsGroupComponentWithProgress myInstalledPanel = null;
   private @Nullable SearchResultPanel myInstalledSearchPanel = null;
   private final DefaultActionGroup myInstalledSearchGroup;
-  private boolean myInstalledSearchSetState = true;
 
   private final PluginsGroup myBundledUpdateGroup =
     new PluginsGroup(IdeBundle.message("plugins.configurable.bundled.updates"), PluginsGroupType.BUNDLED_UPDATE);
@@ -351,11 +350,6 @@ class InstalledPluginsTab extends PluginsTab {
   @Override
   public void hideSearchPanel() {
     super.hideSearchPanel();
-    if (myInstalledSearchSetState) {
-      for (AnAction action : myInstalledSearchGroup.getChildren(ActionManager.getInstance())) {
-        ((InstalledSearchOptionAction)action).setState(null);
-      }
-    }
     myPluginModelFacade.getModel().setInvalidFixCallback(null);
   }
 
@@ -381,32 +375,19 @@ class InstalledPluginsTab extends PluginsTab {
     };
 
     if (updateAction.myIsSelected) {
-      for (AnAction action : myInstalledSearchGroup.getChildren(ActionManager.getInstance())) {
-        if (action != updateAction) {
-          ((InstalledSearchOptionAction)action).myIsSelected = false;
-        }
-      }
-
       queries.add(updateAction.getQuery());
     }
     else {
       queries.remove(updateAction.getQuery());
     }
 
-    try {
-      myInstalledSearchSetState = false;
-
-      String query = StringUtil.join(queries, " ");
-      searchTextField.setTextIgnoreEvents(query);
-      if (query.isEmpty()) {
-        hideSearchPanel();
-      }
-      else {
-        showSearchPanel(query);
-      }
+    String query = StringUtil.join(queries, " ");
+    searchTextField.setTextIgnoreEvents(query);
+    if (query.isEmpty()) {
+      hideSearchPanel();
     }
-    finally {
-      myInstalledSearchSetState = true;
+    else {
+      showSearchPanel(query);
     }
   }
 
@@ -652,18 +633,19 @@ class InstalledPluginsTab extends PluginsTab {
     }
 
     @Override
+    public void setQuery(@NotNull String query) {
+      super.setQuery(query);
+      SearchQueryParser.Installed parser = new SearchQueryParser.Installed(query);
+      for (AnAction action : myInstalledSearchGroup.getChildren(ActionManager.getInstance())) {
+        ((InstalledSearchOptionAction)action).setState(parser);
+      }
+    }
+
+    @Override
     protected void handleQuery(@NotNull String query, @NotNull PluginsGroup result, AtomicBoolean runQuery) {
       int searchIndex = PluginManagerUsageCollector.updateAndGetSearchIndex();
       myPluginModelFacade.getModel().setInvalidFixCallback(null);
-
       SearchQueryParser.Installed parser = new SearchQueryParser.Installed(query);
-
-      if (myInstalledSearchSetState) {
-        for (AnAction action : myInstalledSearchGroup.getChildren(ActionManager.getInstance())) {
-          ((InstalledSearchOptionAction)action).setState(parser);
-        }
-      }
-
       List<PluginUiModel> descriptors = myPluginModelFacade.getModel().getInstalledDescriptors();
 
       if (!parser.vendors.isEmpty()) {

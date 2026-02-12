@@ -11,6 +11,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.Alarm
 import com.intellij.util.SingleAlarm
+import com.intellij.util.concurrency.annotations.RequiresEdt
 import com.intellij.util.ui.EDT
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.accessibility.AccessibleAnnouncerUtil
@@ -77,7 +78,8 @@ abstract class SearchResultPanel(
     query = ""
   }
 
-  fun setQuery(query: String) {
+  @RequiresEdt
+  open fun setQuery(query: String) {
     assert(EDT.isCurrentThreadEdt())
     if (query == this.query) {
       return
