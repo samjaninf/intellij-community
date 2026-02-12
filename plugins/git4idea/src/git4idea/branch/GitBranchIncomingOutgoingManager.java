@@ -158,6 +158,7 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
    * If there are no incoming commits, but it is known that something is non-fetched from a remote,
    */
   private @Nullable Integer getIncomingFor(@Nullable GitRepository repository, @NotNull GitLocalBranch localBranch) {
+    if (!shouldShow()) return null;
     Map<GitLocalBranch, Integer> incomingForRepo = myLocalBranchesWithIncoming.get(repository);
     if (incomingForRepo == null) return null;
 
@@ -165,6 +166,7 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   }
 
   private @Nullable Integer getOutgoingFor(@Nullable GitRepository repository, @NotNull GitLocalBranch localBranch) {
+    if (!shouldShow()) return null;
     Map<GitLocalBranch, Integer> outgoingForRepo = myLocalBranchesWithOutgoing.get(repository);
     if (outgoingForRepo == null) return null;
     return outgoingForRepo.get(localBranch);
@@ -179,7 +181,7 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   @ApiStatus.Internal
   public @NotNull GitInOutCountersInProject getIncomingOutgoingState(@NotNull Collection<GitRepository> repositories,
                                                                      @NotNull GitLocalBranch localBranch) {
-    if (repositories.isEmpty()) return GitInOutCountersInProject.EMPTY;
+    if (!shouldShow() || repositories.isEmpty()) return GitInOutCountersInProject.EMPTY;
 
     Map<RepositoryId, GitInOutCountersInRepo> repoStates = repositories.stream()
       .map(r -> {
@@ -198,9 +200,11 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
   }
 
   private @NotNull GitIncomingRemoteCheckStrategy getIncomingRemoteCheckStrategy() {
-    if (!AdvancedSettings.getBoolean("git.update.incoming.outgoing.info")) return GitIncomingRemoteCheckStrategy.NONE;
+    return !shouldShow() ? GitIncomingRemoteCheckStrategy.NONE : GitVcsSettings.getInstance(myProject).getIncomingCommitsCheckStrategy();
+  }
 
-    return GitVcsSettings.getInstance(myProject).getIncomingCommitsCheckStrategy();
+  private static boolean shouldShow() {
+    return AdvancedSettings.getBoolean("git.update.incoming.outgoing.info");
   }
 
   public static @NotNull GitBranchIncomingOutgoingManager getInstance(@NotNull Project project) {
@@ -326,7 +330,9 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   @ApiStatus.Internal
   public @NotNull GitInOutProjectState getState() {
-    return new GitInOutProjectState(mapState(myLocalBranchesWithIncoming), mapState(myLocalBranchesWithOutgoing));
+    return !shouldShow()
+           ? GitInOutProjectState.EMPTY
+           : new GitInOutProjectState(mapState(myLocalBranchesWithIncoming), mapState(myLocalBranchesWithOutgoing));
   }
 
   private static @NotNull Map<RepositoryId, Map<String, Integer>> mapState(@NotNull Map<GitRepository, Map<GitLocalBranch, Integer>> projectState) {
@@ -520,6 +526,8 @@ public final class GitBranchIncomingOutgoingManager implements GitRepositoryChan
 
   private static @NotNull Collection<GitLocalBranch> getBranches(@Nullable GitRepository repository,
                                                                  @NotNull Map<GitRepository, Map<GitLocalBranch, Integer>> branchCollection) {
+    if (!shouldShow()) return Collections.emptySet();
+
     if (repository != null) {
       Map<GitLocalBranch, Integer> map = Objects.requireNonNullElse(branchCollection.get(repository), Collections.emptyMap());
       return map.keySet();

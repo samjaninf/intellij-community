@@ -579,8 +579,6 @@
     <advancedSetting id="git.read.content.with" enumClass="git4idea.util.GitTextConvMode" default="FILTERS"
                      groupKey="advanced.settings.git"/>
     <advancedSetting id="git.use.push.force.with.lease" default="true" groupKey="advanced.settings.git"/>
-    <!-- Even though the setting name contains "outgoing", it affects only background execution of ls-remote or fetch.
-         Check its description or usage for details. -->
     <advancedSetting id="git.update.incoming.outgoing.info" default="true" groupKey="advanced.settings.git"/>
     <advancedSetting id="git.update.info.auto.open.enabled" default="true" bundle="messages.GitBundle" groupKey="advanced.settings.git"/>
     <advancedSetting id="git.commit.do.not.run.commit.hooks" default="false"  groupKey="advanced.settings.git"/>

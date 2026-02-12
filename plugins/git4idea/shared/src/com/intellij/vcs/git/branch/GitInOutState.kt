@@ -13,7 +13,12 @@ import org.jetbrains.annotations.ApiStatus
 data class GitInOutProjectState(
   val incoming: Map<RepositoryId, Map<String, Int>>,
   val outgoing: Map<RepositoryId, Map<String, Int>>,
-)
+) {
+  companion object {
+    @JvmField
+    val EMPTY: GitInOutProjectState = GitInOutProjectState(emptyMap(), emptyMap())
+  }
+}
 
 @ApiStatus.Internal
 data class GitInOutCountersInProject(private val inOutRepoState: Map<RepositoryId, GitInOutCountersInRepo>) {
