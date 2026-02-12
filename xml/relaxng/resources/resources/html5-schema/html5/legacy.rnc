@@ -1535,7 +1535,6 @@ datatypes w = "http://whattf.org/datatype-draft"
 		attribute manifest {
 			string
 		}
-
 	html.attrs &= html.attrs.manifest?
 
 ## name attribute on a element
