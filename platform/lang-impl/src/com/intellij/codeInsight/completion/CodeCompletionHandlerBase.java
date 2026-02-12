@@ -172,7 +172,11 @@ public class CodeCompletionHandlerBase {
     invokeCompletionWithTracing(project, editor, invocationCount, hasModifiers, editor.getCaretModel().getPrimaryCaret());
   }
 
-  private void invokeCompletion(@NotNull Project project, @NotNull Editor editor, int invocationCount, boolean hasModifiers, @NotNull Caret caret) {
+  private void invokeCompletion(@NotNull Project project,
+                                @NotNull Editor editor,
+                                int invocationCount,
+                                boolean hasModifiers,
+                                @NotNull Caret caret) {
     markCaretAsProcessed(caret);
 
     if (invokedExplicitly) {
@@ -196,11 +200,9 @@ public class CodeCompletionHandlerBase {
     CompletionPhase phase = CompletionServiceImpl.getCompletionPhase();
     boolean repeated = phase.indicator != null && phase.indicator.isRepeatedInvocation(completionType, editor);
 
-    int newInvocationCount = phase.newCompletionStarted(invocationCount, repeated);
-    if (invokedExplicitly) {
-      invocationCount = newInvocationCount;
-    }
-    int effectiveInvocationCount = invocationCount;
+    int newInvocationCount = phase.newCompletionStarted(invocationCount, repeated); // don't move into ?: operator
+    int effectiveInvocationCount = invokedExplicitly ? newInvocationCount : invocationCount;
+
     if (CompletionServiceImpl.isPhase(CompletionPhase.InsertedSingleItem.class)) {
       CompletionServiceImpl.setCompletionPhase(CompletionPhase.NoCompletion);
     }
