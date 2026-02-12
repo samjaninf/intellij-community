@@ -873,7 +873,7 @@ f:com.intellij.collaboration.api.json.JsonHttpApiHelperKt
 *:com.intellij.collaboration.ui.codereview.details.model.CodeReviewStatusViewModel
 - a:getCiJobs():kotlinx.coroutines.flow.SharedFlow
 - a:getHasConflicts():kotlinx.coroutines.flow.SharedFlow
-- a:getRequiredConversationsResolved():kotlinx.coroutines.flow.SharedFlow
+- getRequiredConversationsResolved():kotlinx.coroutines.flow.SharedFlow
 - a:getShowJobsDetailsRequests():kotlinx.coroutines.flow.SharedFlow
 - a:showJobsDetails():V
 *a:com.intellij.collaboration.ui.codereview.diff.AddCommentGutterIconRenderer

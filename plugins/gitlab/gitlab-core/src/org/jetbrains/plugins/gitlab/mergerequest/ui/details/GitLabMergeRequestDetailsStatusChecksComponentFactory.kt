@@ -43,7 +43,7 @@ internal object GitLabMergeRequestDetailsStatusChecksComponentFactory {
       add(CodeReviewDetailsStatusComponentFactory.createCiComponent(scope, statusVm))
       add(createConflictsStatusComponentIn(scope, statusVm.resolveConflictsVm))
       add(CodeReviewDetailsStatusComponentFactory.createRequiredResolveConversationsComponent(
-        scope, statusVm.requiredConversationsResolved
+        scope, statusVm.hasUnresolvedDiscussionsBlockingMerge
       ))
       add(CodeReviewDetailsStatusComponentFactory.createNeedReviewerComponent(scope, reviewFlowVm.reviewerReviews))
       add(CodeReviewDetailsStatusComponentFactory.createReviewersReviewStateComponent(
