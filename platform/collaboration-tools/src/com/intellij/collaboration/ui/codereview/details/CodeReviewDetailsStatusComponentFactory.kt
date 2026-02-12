@@ -90,6 +90,7 @@ object CodeReviewDetailsStatusComponentFactory {
     isBusyFlow: Flow<Boolean> = flowOf(false),
   ): JComponent {
     val title = JLabel().apply {
+      JLabelUtil.setTrimOverflow(this, trim = true)
       bindIconIn(scope, hasConflicts.map {
         if (it == null) CIBuildStatusIcons.pending
         else CIBuildStatusIcons.failed
@@ -197,6 +198,7 @@ object CodeReviewDetailsStatusComponentFactory {
     val ciJobs = statusVm.ciJobs
 
     val title = JLabel().apply {
+      JLabelUtil.setTrimOverflow(this, trim = true)
       bindIconIn(scope, ciJobs.map { jobs -> calcPipelineIcon(jobs) })
       bindTextIn(scope, ciJobs.map { jobs -> calcPipelineText(jobs) })
     }
