@@ -149,8 +149,6 @@ class MarketplacePluginsTabSearchResultPanel extends SearchResultPanel {
 
     SearchQueryParser.Marketplace parser = new SearchQueryParser.Marketplace(query);
 
-    Map<PluginUiModel, Double> pluginToScore = null;
-
     if (parser.internal) {
       try {
         PluginsViewCustomizer.PluginsGroupDescriptor groupDescriptor =
@@ -212,7 +210,7 @@ class MarketplacePluginsTabSearchResultPanel extends SearchResultPanel {
                                     !result.getModels().isEmpty(),
                                     (searchResult, updates) -> {
                                       applySearchResult(result, searchResult, (List<PluginUiModel>)updates, customRepositoriesMap,
-                                                        parser, pluginToScore, searchIndex);
+                                                        parser, searchIndex);
                                       updatePanel(runQuery);
                                       return null;
                                     });
@@ -233,7 +231,6 @@ class MarketplacePluginsTabSearchResultPanel extends SearchResultPanel {
                                  List<PluginUiModel> updates,
                                  Map<String, List<PluginUiModel>> customRepositoriesMap,
                                  SearchQueryParser.Marketplace parser,
-                                 Map<PluginUiModel, Double> pluginToScore,
                                  int searchIndex) {
     if (searchResult.getError() != null) {
       ApplicationManager.getApplication().invokeLater(
@@ -262,6 +259,7 @@ class MarketplacePluginsTabSearchResultPanel extends SearchResultPanel {
 
     result.removeDuplicates();
 
+    Map<PluginUiModel, Double> pluginToScore = null;
     final var localRanker = MarketplaceLocalRanker.getInstanceIfEnabled();
     if (localRanker != null) {
       pluginToScore = localRanker.rankPlugins(parser, result.getModels());
