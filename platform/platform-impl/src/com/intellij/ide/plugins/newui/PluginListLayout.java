@@ -65,29 +65,29 @@ public final class PluginListLayout extends AbstractLayoutManager implements Pag
 
     for (UIPluginGroup group : groups) {
       Component component = group.panel;
-      if(component == null) continue;
+      if (component == null) continue;
       int height = component.getPreferredSize().height;
       component.setBounds(0, y, width, height);
       y += height;
-    
-    // Layout promotion panel if it exists
-    if (Registry.is("ide.plugins.category.promotion.enabled")) {
-      PluginsGroup pluginsGroup = findGroupForUI(parent, group);
-      if (pluginsGroup != null && pluginsGroup.promotionPanel != null) {
-        int promotionHeight = pluginsGroup.promotionPanel.getPreferredSize().height;
-        pluginsGroup.promotionPanel.setBounds(0, y, width, promotionHeight);
-        y += promotionHeight;
+
+      // Layout promotion panel if it exists
+      if (Registry.is("ide.plugins.category.promotion.enabled")) {
+        PluginsGroup pluginsGroup = findGroupForUI(parent, group);
+        if (pluginsGroup != null && pluginsGroup.promotionPanel != null) {
+          int promotionHeight = pluginsGroup.promotionPanel.getPreferredSize().height;
+          pluginsGroup.promotionPanel.setBounds(0, y, width, promotionHeight);
+          y += promotionHeight;
+        }
       }
-    }
 
-    for (ListPluginComponent plugin : group.plugins) {
-      int lineHeight = plugin.getPreferredSize().height;
-      plugin.setBounds(0, y, width, lineHeight);
-      y += lineHeight;
-      myMiddleLineHeight += lineHeight;
-    }
+      for (ListPluginComponent plugin : group.plugins) {
+        int lineHeight = plugin.getPreferredSize().height;
+        plugin.setBounds(0, y, width, lineHeight);
+        y += lineHeight;
+        myMiddleLineHeight += lineHeight;
+      }
 
-    lines += group.plugins.size();
+      lines += group.plugins.size();
       y += groupGap;
     }
 
