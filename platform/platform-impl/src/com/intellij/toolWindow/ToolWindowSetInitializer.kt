@@ -26,6 +26,7 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.WINDOW_INFO_DEFAULT_TOOL_WINDOW_PANE_ID
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.wm.impl.DesktopLayout
+import com.intellij.openapi.wm.impl.ToolWindowManagerAppLevelHelper
 import com.intellij.openapi.wm.impl.ToolWindowManagerImpl
 import com.intellij.openapi.wm.impl.WindowInfoImpl
 import com.intellij.openapi.wm.safeToolWindowPaneId
@@ -167,7 +168,7 @@ internal class ToolWindowSetInitializer(private val project: Project, private va
       }
     }
 
-    serviceAsync<ToolWindowManagerImpl.ToolWindowManagerAppLevelHelper>()
+    serviceAsync<ToolWindowManagerAppLevelHelper>()
 
     postEntryProcessing(entries)
 
