@@ -32,6 +32,7 @@ import com.intellij.grazie.utils.isSpelling
 import com.intellij.grazie.utils.toProofreadingContext
 import com.intellij.lang.annotation.ProblemGroup
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.runBlockingCancellable
@@ -50,6 +51,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.yield
 import org.jetbrains.annotations.ApiStatus
+import java.util.concurrent.CancellationException
 
 private val LOG = Logger.getInstance(CheckerRunner::class.java)
 
@@ -103,8 +105,8 @@ class CheckerRunner(val text: TextContent) {
     return runBlockingCancellable {
       val deferred = checkers.map { checker ->
         when (checker) {
-          is ExternalTextChecker -> async { checker.checkExternally(context) }
-          else -> async(start = CoroutineStart.LAZY) { checker.check(context) }
+          is ExternalTextChecker -> async { catchingSuspend { checker.checkExternally(context) } ?: emptyList() }
+          else -> async(start = CoroutineStart.LAZY) { catching { checker.check(context) } ?: emptyList() }
         }
       }
       for (job in deferred) {
@@ -289,6 +291,26 @@ class CheckerRunner(val text: TextContent) {
                     "PSI language: ${psi.language.id}, TextContent.fileRanges: ${problem.text.rangesInFile}")
         }
       }
+    }
+  }
+
+  private fun <T> catching(function: () -> T): T? {
+    try {
+      return function()
+    } catch (e: Throwable) {
+      if (e is CancellationException) throw e
+      thisLogger().error(e)
+      return null
+    }
+  }
+
+  private suspend fun <T> catchingSuspend(function: suspend () -> T): T? {
+    try {
+      return function()
+    } catch (e: Throwable) {
+      if (e is CancellationException) throw e
+      thisLogger().error(e)
+      return null
     }
   }
 }
