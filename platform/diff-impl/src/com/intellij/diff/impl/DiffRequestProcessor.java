@@ -1198,7 +1198,7 @@ public abstract class DiffRequestProcessor
   /**
    * @deprecated only for compatibility
    **/
-  @Deprecated
+  @Deprecated(forRemoval = true)
   protected static abstract class DelegatingNavigationAction extends AnAction implements DumbAware {
     private final @NotNull AnAction delegate;
 
