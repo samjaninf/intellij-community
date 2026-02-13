@@ -236,8 +236,8 @@ private val LOG = logger<ToolWindowManagerImpl>()
 
   internal fun updateContentBackgroundColors() {
     val color = JBUI.CurrentTheme.ToolWindow.background()
-
-    for (content in contentManager.value.contents) {
+    val contentManager = contentManager.valueIfInitialized ?: return
+    for (content in contentManager.contents) {
       InternalDecoratorImpl.setBackgroundRecursively(content.component, color)
     }
   }
