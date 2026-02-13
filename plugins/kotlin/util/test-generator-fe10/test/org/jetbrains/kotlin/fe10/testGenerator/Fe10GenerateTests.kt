@@ -834,6 +834,7 @@ private fun assembleWorkspace(): TWorkspace = workspace(KotlinPluginMode.K1) {
                     "javaCollectionsWithNullableTypes", // K2-only
                     "kdocResolutionResultHasChanged", // K2-only
                     "convertLongToDuration", // K2-only
+                    "customComponentDestructuringMigration", // K2-only
                 )
             )
         }

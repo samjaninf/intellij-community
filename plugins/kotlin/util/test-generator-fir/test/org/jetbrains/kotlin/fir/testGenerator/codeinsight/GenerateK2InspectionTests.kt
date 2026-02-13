@@ -148,6 +148,7 @@ internal fun MutableTWorkspace.generateK2InspectionTests() {
             model("${idea}/inspectionsLocal/redundantEnumConstructorInvocation")
             model("${idea}/inspectionsLocal/redundantReturnKeyword")
             model("${idea}/inspectionsLocal/orInWhenGuard")
+            model("${idea}/inspectionsLocal/customComponentDestructuringMigration")
             model("${idea}/inspectionsLocal/convertFromMultiDollarToRegularString")
             model("${idea}/inspectionsLocal/redundantCompanionReference")
             model("${idea}/inspectionsLocal/replacePutWithAssignment")
