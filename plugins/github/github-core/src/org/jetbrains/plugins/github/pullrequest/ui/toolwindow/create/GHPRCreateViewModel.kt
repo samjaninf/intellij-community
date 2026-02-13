@@ -579,7 +579,9 @@ internal class GHPRCreateViewModelImpl(
     val defaultBranch = repoData.getDefaultRemoteBranch()
     val currentBranch = baseGitRepo.currentBranch
     val currentBranchTrackInfo = currentBranch?.let { baseGitRepo.getBranchTrackInfo(it.name) }
-    val headRepo = currentBranchTrackInfo?.remote?.let { remote -> repositories.find { it.remote.remote == remote } } ?: baseRepo
+    val headRepo = currentBranchTrackInfo?.remote?.let { remote ->
+      repositories.find { it.gitRepository.root == baseGitRepo.root && it.remote.remote == remote }
+    } ?: baseRepo
     return BranchesState(baseRepo, defaultBranch, headRepo, currentBranch)
   }
 
