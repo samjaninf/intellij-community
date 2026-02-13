@@ -454,13 +454,13 @@ public final class ListPluginComponent extends JPanel {
         myRating = createRatingLabel(myMetricsPanel, rating, AllIcons.Plugins.Rating);
       }
       String version = myInstalledDescriptorForMarketplace == null ? "" : myInstalledDescriptorForMarketplace.getVersion();
-      myVersion = createRatingLabel(myMetricsPanel, version, null);
+      myVersion = createVersionLabel(myMetricsPanel, version, false);
       myVersion.setVisible(!StringUtil.isEmptyOrSpaces(version));
     }
     else {
       String version = myPlugin.getVersion();
       if (!StringUtil.isEmptyOrSpaces(version)) {
-        myVersion = createRatingLabel(myMetricsPanel, version, myPlugin.isBundledUpdate() ? AllIcons.Plugins.Updated : null);
+        myVersion = createVersionLabel(myMetricsPanel, version, myPlugin.isBundledUpdate());
       }
     }
 
@@ -607,7 +607,7 @@ public final class ListPluginComponent extends JPanel {
 
     if (myUpdateDescriptor == null) {
       if (myVersion != null) {
-        myVersion.setText(plugin.getVersion());
+        setVersionLabelState(myVersion, plugin.getVersion(), plugin.isBundledUpdate());
       }
       if (myUpdateLicensePanel != null) {
         myLayout.removeLineComponent(myUpdateLicensePanel);
@@ -622,7 +622,7 @@ public final class ListPluginComponent extends JPanel {
     }
     else {
       if (myVersion != null) {
-        myVersion.setText(plugin.getVersion());
+        setVersionLabelState(myVersion, plugin.getVersion(), plugin.isBundledUpdate());
       }
       if (plugin.getProductCode() == null && myUpdateDescriptor.getProductCode() != null &&
           !plugin.isBundled() && !LicensePanel.isEA2Product(myUpdateDescriptor.getProductCode()) &&
@@ -842,7 +842,7 @@ public final class ListPluginComponent extends JPanel {
               if (myMarketplace) {
                 myInstallButton.setVisible(false);
                 myEnableDisableButton.setVisible(true);
-                myVersion.setText(myInstalledDescriptorForMarketplace.getVersion());
+                setVersionLabelState(myVersion, myInstalledDescriptorForMarketplace.getVersion(), myInstalledDescriptorForMarketplace.isBundledUpdate());
                 myVersion.setVisible(true);
                 updateEnabledStateUI();
                 fullRepaint();
@@ -1320,9 +1320,32 @@ public final class ListPluginComponent extends JPanel {
     return createRatingLabel(panel, null, text, icon, null, true);
   }
 
+  static @NotNull JLabel createVersionLabel(@NotNull JPanel panel,
+                                            @Nullable @Nls String text,
+                                            boolean isBundledUpdate) {
+    var label = createRatingLabel(panel, null, null, null, null, true);
+    setVersionLabelState(label, text, isBundledUpdate);
+    return label;
+  }
+
+  static void setVersionLabelState(@NotNull JLabel versionLabel, @Nullable @Nls String text, boolean isBundledUpdate) {
+    if (isBundledUpdate) {
+      if (versionLabel.getToolTipText() == null) {
+        versionLabel.setToolTipText(IdeBundle.message("plugin.status.is.updated.bundled.plugin.tooltip"));
+      }
+      if (versionLabel.getIcon() != AllIcons.Plugins.Updated) {
+        versionLabel.setIcon(AllIcons.Plugins.Updated);
+      }
+    } else {
+      versionLabel.setToolTipText(null);
+      versionLabel.setIcon(null);
+    }
+    versionLabel.setText(text);
+  }
+
   static @NotNull JLabel createRatingLabel(@NotNull JPanel panel,
                                            @Nullable Object constraints,
-                                           @NotNull @Nls String text,
+                                           @Nullable @Nls String text,
                                            @Nullable Icon icon,
                                            @Nullable Color color,
                                            boolean tiny) {
