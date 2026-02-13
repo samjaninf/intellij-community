@@ -9,7 +9,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performMouseInput
@@ -118,6 +120,45 @@ class AgentSessionsToolWindowTest {
     composeRule.onNodeWithText("10m").assertIsDisplayed()
     composeRule.onAllNodesWithText(AgentSessionsBundle.message("toolwindow.action.open"))
       .assertCountEquals(0)
+  }
+
+  @Test
+  fun hoveringProjectRowShowsNewThreadActionAndDoesNotInvokeOpenCallback() {
+    var createdPath: String? = null
+    var openedPath: String? = null
+    val projectPath = "/work/project-plus"
+    val projects = listOf(
+      AgentProjectSessions(
+        path = projectPath,
+        name = "Project Plus",
+        isOpen = false,
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = { openedPath = it },
+        onCreateThread = { createdPath = it },
+      )
+    }
+
+    val newThreadLabel = AgentSessionsBundle.message("toolwindow.action.new.thread")
+    composeRule.onAllNodesWithContentDescription(newThreadLabel).assertCountEquals(0)
+
+    composeRule.onNodeWithText("Project Plus")
+      .assertIsDisplayed()
+      .performMouseInput { moveTo(center) }
+
+    composeRule.onNodeWithContentDescription(newThreadLabel)
+      .assertIsDisplayed()
+      .performClick()
+
+    composeRule.runOnIdle {
+      assertThat(createdPath).isEqualTo(projectPath)
+      assertThat(openedPath).isNull()
+    }
   }
 
   @Test

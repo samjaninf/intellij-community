@@ -3,6 +3,7 @@ package com.intellij.agent.workbench.sessions
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -24,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -34,17 +37,20 @@ import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.foundation.theme.LocalContentColor
 import org.jetbrains.jewel.ui.component.CircularProgressIndicator
 import org.jetbrains.jewel.ui.component.ContextMenuItemOption
+import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.OutlinedButton
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.Tooltip
 import org.jetbrains.jewel.ui.component.search.highlightSpeedSearchMatches
 import org.jetbrains.jewel.ui.component.search.highlightTextSearch
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
 
 @OptIn(ExperimentalJewelApi::class)
 @Composable
 internal fun SelectableLazyItemScope.sessionTreeNodeContent(
   element: Tree.Element<SessionTreeNode>,
   onOpenProject: (String) -> Unit,
+  onCreateThread: (String) -> Unit,
   onRefresh: () -> Unit,
   nowProvider: () -> Long,
 ) {
@@ -53,6 +59,7 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     is SessionTreeNode.Project -> projectNodeRow(
       project = node.project,
       onOpenProject = onOpenProject,
+      onCreateThread = onCreateThread,
     )
     is SessionTreeNode.Thread -> threadNodeRow(
       thread = node.thread,
@@ -86,6 +93,7 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
 
 private data class TreeRowChrome(
   val interactionSource: MutableInteractionSource,
+  val isHovered: Boolean,
   val background: Color,
   val shape: Shape,
   val spacing: Dp,
@@ -111,6 +119,7 @@ private fun rememberTreeRowChrome(
   val indicatorPadding = spacing * 0.4f
   return TreeRowChrome(
     interactionSource = interactionSource,
+    isHovered = isHovered,
     background = background,
     shape = shape,
     spacing = spacing,
@@ -123,6 +132,7 @@ private fun rememberTreeRowChrome(
 private fun SelectableLazyItemScope.projectNodeRow(
   project: AgentProjectSessions,
   onOpenProject: (String) -> Unit,
+  onCreateThread: (String) -> Unit,
 ) {
   val chrome = rememberTreeRowChrome(
     isSelected = isSelected,
@@ -130,6 +140,7 @@ private fun SelectableLazyItemScope.projectNodeRow(
     baseTint = projectRowTint(),
   )
   val openLabel = AgentSessionsBundle.message("toolwindow.action.open")
+  val newThreadLabel = AgentSessionsBundle.message("toolwindow.action.new.thread")
   val branchColor = LocalContentColor.current
     .takeOrElse { JewelTheme.globalColors.text.disabled }
     .copy(alpha = 0.55f)
@@ -176,8 +187,23 @@ private fun SelectableLazyItemScope.projectNodeRow(
           maxLines = 1,
         )
       }
-      if (project.isLoading) {
-        CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
+      Box(
+        modifier = Modifier.size(projectActionSlotSize()),
+        contentAlignment = Alignment.Center,
+      ) {
+        if (project.isLoading) {
+          CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
+        }
+        else if (chrome.isHovered) {
+          Icon(
+            key = AllIconsKeys.General.Add,
+            contentDescription = newThreadLabel,
+            modifier = Modifier
+              .size(projectActionIconSize())
+              .pointerHoverIcon(PointerIcon.Hand, overrideDescendants = true)
+              .clickable(onClick = { onCreateThread(project.path) }),
+          )
+        }
       }
     }
   }

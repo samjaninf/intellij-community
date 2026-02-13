@@ -48,6 +48,7 @@ internal fun agentSessionsToolWindow(currentProject: Project) {
     state = state,
     onRefresh = { service.refresh() },
     onOpenProject = { service.openOrFocusProject(it) },
+    onCreateThread = { path -> service.createAndOpenThread(path, currentProject) },
     onProjectExpanded = { service.loadProjectThreadsOnDemand(it) },
     onWorktreeExpanded = { projectPath, worktreePath ->
       service.loadWorktreeThreadsOnDemand(projectPath, worktreePath)
@@ -67,6 +68,7 @@ internal fun agentSessionsToolWindowContent(
   state: AgentSessionsState,
   onRefresh: () -> Unit,
   onOpenProject: (String) -> Unit,
+  onCreateThread: (String) -> Unit = {},
   onProjectExpanded: (String) -> Unit = {},
   onWorktreeExpanded: (String, String) -> Unit = { _, _ -> },
   onOpenThread: (String, AgentSessionThread) -> Unit = { _, _ -> },
@@ -90,6 +92,7 @@ internal fun agentSessionsToolWindowContent(
         projects = state.projects,
         onRefresh = onRefresh,
         onOpenProject = onOpenProject,
+        onCreateThread = onCreateThread,
         onProjectExpanded = onProjectExpanded,
         onWorktreeExpanded = onWorktreeExpanded,
         onOpenThread = onOpenThread,
