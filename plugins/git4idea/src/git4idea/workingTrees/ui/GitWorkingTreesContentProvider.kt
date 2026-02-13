@@ -26,6 +26,8 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
+import com.intellij.util.FontUtil
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.StatusText
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.intellij.vcs.git.repo.GitRepositoriesHolder
@@ -165,16 +167,13 @@ internal class GitWorkingTreesContentProvider(private val project: Project) : Ch
   private class WorkingTreesListRenderer : ColoredListCellRenderer<GitWorkingTree>() {
     override fun customizeCellRenderer(list: JList<out GitWorkingTree?>, value: GitWorkingTree?, index: Int, selected: Boolean, hasFocus: Boolean) {
       if (value == null) return
-      if (value.isCurrent) {
-        icon = AllIcons.Actions.Checked
-      }
-      else {
-        icon = AllIcons.Empty
-      }
-      append(" ")
-      append(value.path.name,
-             if (value.isMain) SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES else SimpleTextAttributes.REGULAR_ATTRIBUTES)
-      append("   ")
+
+      iconTextGap = JBUI.scale(4)
+      icon = if (value.isCurrent) AllIcons.Actions.Checked else AllIcons.Empty
+
+      append(value.path.name, if (value.isMain) SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES else SimpleTextAttributes.REGULAR_ATTRIBUTES)
+      append(FontUtil.spaceAndThinSpace().repeat(2)) // NON-NLS
+
       val presentableBranchName = when (val branch = value.currentBranch) {
         null -> GitBundle.message("toolwindow.working.trees.tab.detached.working.tree.branch.text")
         else -> branch.name
