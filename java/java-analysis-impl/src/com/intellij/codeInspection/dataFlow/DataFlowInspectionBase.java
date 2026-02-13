@@ -647,7 +647,6 @@ public abstract class DataFlowInspectionBase extends AbstractBaseJavaLocalInspec
     PsiSwitchBlock switchBlock = PsiTreeUtil.getParentOfType(pattern, PsiSwitchBlock.class);
     if (switchBlock == null) return null;
     ModCommandAction modCommandAction = quickFixFactory.createAddSwitchDefaultFix(switchBlock, null).asModCommandAction();
-    if (modCommandAction == null) return null;
     return modCommandAction;
   }
 
