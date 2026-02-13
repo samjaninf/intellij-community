@@ -2,9 +2,7 @@
 package com.intellij.openapi.wm.ex
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.platform.ide.CoreUiCoroutineScopeHolder
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.junit5.RunInEdt
 import com.intellij.testFramework.junit5.TestApplication
@@ -59,7 +57,7 @@ class ProjectFrameCapabilitiesServiceTest {
       disposable,
     )
 
-    val service = ProjectFrameCapabilitiesService(service<CoreUiCoroutineScopeHolder>().coroutineScope)
+    val service = ProjectFrameCapabilitiesService()
     assertThat(service.getUiPolicy(project)?.projectPaneToActivateId).isEqualTo("pane-1")
     assertThat(service.getUiPolicy(project)?.toolWindowLayoutProfileId).isEqualTo("layout-profile-1")
 
@@ -98,7 +96,7 @@ class ProjectFrameCapabilitiesServiceTest {
       disposable,
     )
 
-    val service = ProjectFrameCapabilitiesService(service<CoreUiCoroutineScopeHolder>().coroutineScope)
+    val service = ProjectFrameCapabilitiesService()
     assertThat(service.has(project, ProjectFrameCapability.SUPPRESS_PROJECT_VIEW)).isTrue()
     assertThat(service.getAll(project)).isEqualTo(setOf(ProjectFrameCapability.SUPPRESS_PROJECT_VIEW))
   }
