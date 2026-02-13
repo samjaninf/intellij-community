@@ -838,7 +838,6 @@ public abstract class VcsVFSListener implements Disposable {
 
   @TestOnly
   protected final void waitForEventsProcessedInTestMode() {
-    myExternalFilesProcessor.waitForEventsProcessedInTestMode();
     myProjectConfigurationFilesProcessor.waitForEventsProcessedInTestMode();
     myIgnoreFilesProcessor.waitForEventsProcessedInTestMode();
   }
