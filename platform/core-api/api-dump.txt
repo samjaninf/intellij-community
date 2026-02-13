@@ -433,6 +433,9 @@ com.intellij.openapi.application.Application
 - a:runWriteAction(com.intellij.openapi.util.ThrowableComputable):java.lang.Object
 - a:runWriteAction(java.lang.Runnable):V
 - a:saveSettings():V
+a:com.intellij.openapi.application.ApplicationInfo
+- hasContextHelp():Z
+- hasHelp():Z
 com.intellij.openapi.application.ApplicationListener
 - java.util.EventListener
 - afterWriteActionFinished(java.lang.Object):V
