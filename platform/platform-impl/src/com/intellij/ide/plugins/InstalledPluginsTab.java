@@ -389,6 +389,11 @@ class InstalledPluginsTab extends PluginsTab {
       }
     }
     else if (myBundledUpdateGroup.ui == null) {
+      if (myBundledUpdateGroup.secondaryActions.isEmpty()) {
+        // removeGroup clears actions too
+        myBundledUpdateGroup.addSecondaryAction(myUpdateAllBundled);
+        myBundledUpdateGroup.addSecondaryAction(myUpdateCounterBundled);
+      }
       for (PluginUiModel descriptor : updates) {
         for (UIPluginGroup group : getInstalledPanel().getGroups()) {
           ListPluginComponent component = group.findComponent(descriptor.getPluginId());
