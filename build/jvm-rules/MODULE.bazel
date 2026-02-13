@@ -4,16 +4,26 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "bazel_worker_api", version = "0.0.9")
+bazel_dep(name = "bazel_worker_api", version = "0.0.10")
 bazel_dep(name = "hermetic_cc_toolchain", version = "4.0.1")
 bazel_dep(name = "rules_apple", version = "4.3.3") # added explicitly to fix `No 'swiftc' executable found in $PATH` error
 bazel_dep(name = "rules_java", version = "9.3.0")
-bazel_dep(name = "rules_jvm_external", version = "6.9")
+bazel_dep(name = "rules_jvm_external", version = "6.10")
+single_version_override(
+    module_name = "rules_jvm_external",
+    version = "6.10",
+    patches = ["rules-jvm-external-6.10-make-coursier-repo-targets-shell-free-and-hermetic.patch"],
+)
 bazel_dep(name = "rules_kotlin", version = "2.2.2")
+archive_override(
+    module_name = "rules_kotlin",
+    sha256 = "1600acb76079b1356553a6dc2685f9304666d07383830c25efe3491763732e25",
+    strip_prefix = "rules_kotlin-7da67b3a776d7785a5ece293ca771df7bc907965",
+    url = "https://github.com/JetBrains/rules_kotlin/archive/7da67b3a776d7785a5ece293ca771df7bc907965.zip",
+)
 bazel_dep(name = "rules_pkg", version = "1.2.0")
 bazel_dep(name = "rules_python", version = "1.7.0")
 bazel_dep(name = "rules_swift", version = "3.4.1") # same as above
-bazel_dep(name = "toolchains_protoc", version = "0.6.0")
 
 # bazel tool to be used in jvm builder tests
 test_bazel_tool = use_extension("//:test_bazel_tool.bzl", "extension")
@@ -39,20 +49,18 @@ test_bazel_tool.config(
 )
 use_repo(test_bazel_tool, "test_bazel_tool")
 
-protoc_java_version = "4.33.0"
+protoc_java_version = "4.33.4"
 protobuf_version = ".".join(protoc_java_version.split(".")[-2:]) # Last 2 parts
 
 bazel_dep(name = "protobuf", version = protobuf_version)
-
-protoc = use_extension("@toolchains_protoc//protoc:extensions.bzl", "protoc")
-protoc.toolchain(
-    version = "v" + protobuf_version,
+single_version_override(
+    module_name = "protobuf",
+    version = protobuf_version,
+    patch_strip = 1,
+    patches = [
+      "protobuf-33.4-reuse-win64-for-arm.patch",
+    ],
 )
-use_repo(protoc, "toolchains_protoc_hub")
-
-register_toolchains("@toolchains_protoc_hub//:all")
-
-register_toolchains("//:all")
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
@@ -78,14 +86,14 @@ register_toolchains(
 http_file(
   name = "protobuf-java_http",
   downloaded_file_path = "protobuf-java-{}.jar".format(protoc_java_version),
-  sha256 = "6c50b4323a101dfd7b8aea209337ac49ecf5d8e33e0b210b196fc654291ed2cc",
+  sha256 = "3ca892fd6ea8b37d01bb6917dbc0bf2637548b756753f65a28d4f1d4d982347f",
   url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/{}/protobuf-java-{}.jar".format(protoc_java_version, protoc_java_version)
 )
 
 http_file(
     name = "protobuf-java-sources_http",
     downloaded_file_path = "protobuf-java-{}-sources.jar".format(protoc_java_version),
-    sha256 = "64e061477f46624978960d0fed6b562eb6de1307c95337c4e0ae7d079dbb6dfc",
+    sha256 = "ed30fe6a51c7c15a6f123448304c97185f2039f2aeca9d5e3b4f53de3a4c813c",
     url = "https://cache-redirector.jetbrains.com/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/{}/protobuf-java-{}-sources.jar".format(protoc_java_version, protoc_java_version)
 )
 

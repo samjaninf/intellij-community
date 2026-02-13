@@ -136,8 +136,13 @@ common:ci --remote_cache_async=false
 build --remote_build_event_upload=minimal
 build --nolegacy_important_outputs
 
-# protobuf
-common --incompatible_enable_proto_toolchain_resolution
+# Avoid
+# Exception in thread "main" java.io.IOException: Error getting terminal size: GetConsoleScreenBufferInfo error 6
+# 	at coursier.jniutils.WindowsAnsiTerminal.terminalSize(WindowsAnsiTerminal.java:10)
+common:windows --repo_env=COURSIER_NO_TERM=true
+common:windows --repo_env=COURSIER_PROGRESS=false
+# Enable on Bazel 9
+# common --experimental_strict_repo_env
 
 # More debug on CI
 common:ci --announce_rc
@@ -161,14 +166,9 @@ test --test_timeout=60,300,900,14400
 # A workaround for https://github.com/bazelbuild/rules_kotlin/issues/1352
 common --repo_env=ANDROID_HOME=
 
-# See https://github.com/aspect-build/toolchains_protoc (this has been already upstreamed to @protobuf, but it's not yet released)
+# Use prebuilt protoc instead of building from source, https://protobuf.dev/news/2026-01-16/
 common --incompatible_enable_proto_toolchain_resolution
-
-# Ensure that we don't accidentally build protobuf or gRPC
-common --per_file_copt=external/.*protobuf.*@--PROTOBUF_WAS_NOT_SUPPOSED_TO_BE_BUILT
-common --host_per_file_copt=external/.*protobuf.*@--PROTOBUF_WAS_NOT_SUPPOSED_TO_BE_BUILT
-common --per_file_copt=external/.*grpc.*@--GRPC_WAS_NOT_SUPPOSED_TO_BE_BUILT
-common --host_per_file_copt=external/.*grpc.*@--GRPC_WAS_NOT_SUPPOSED_TO_BE_BUILT
+common --@protobuf//bazel/toolchains:prefer_prebuilt_protoc=true
 
 # need to use Python from rules_python in rules_pkg in pkg_zip target
 common --@rules_python//python/config_settings:bootstrap_impl=script
