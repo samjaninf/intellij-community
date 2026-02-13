@@ -21,7 +21,7 @@ class TestExample {
   private static II getII2() {
     RI ri = new RI(null);
     return switch (ri) {
-      case RI(<warning descr="Pattern matching may throw 'MatchException'">II.BI bi</warning>) -> bi;
+      case RI(II.BI bi) -> bi;
       case RI(II.AI ai) -> ai;
     };
   }
