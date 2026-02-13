@@ -16,6 +16,8 @@ import com.intellij.collaboration.util.IncrementallyComputedValue
 import com.intellij.collaboration.util.ResultUtil.runCatchingUser
 import com.intellij.collaboration.util.SingleCoroutineLauncher
 import com.intellij.collaboration.util.collectIncrementallyTo
+import com.intellij.openapi.diagnostic.getOrHandleException
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -40,7 +42,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
@@ -64,20 +65,20 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   val projectMapping: GitLabProjectMapping
   val avatarIconProvider: IconsProvider<GitLabUserDTO>
 
-  val titleGenerationVm: StateFlow<GitLabMergeRequestCreateTitleGenerationViewModel?>
+  val isBusy: StateFlow<Boolean>
 
-  val isBusy: Flow<Boolean>
+  val titleGenerationVm: StateFlow<GitLabMergeRequestCreateTitleGenerationViewModel?>
 
   val allowsMultipleAssignees: StateFlow<Boolean>
   val allowsMultipleReviewers: StateFlow<Boolean>
-  val branchState: Flow<BranchState?>
+  val branchState: StateFlow<BranchState?>
 
-  val existingMergeRequest: Flow<String?>
-  val creatingProgressText: Flow<String?>
+  val existingMergeRequest: StateFlow<String?>
+  val creatingProgressText: StateFlow<String?>
   val commits: StateFlow<Result<List<VcsCommitMetadata>>?>
 
-  val reviewRequirementsErrorState: Flow<MergeRequestRequirementsErrorType?>
-  val reviewCreatingError: Flow<Throwable?>
+  val reviewRequirementsErrorState: StateFlow<MergeRequestRequirementsErrorType?>
+  val reviewCreatingError: StateFlow<Throwable?>
 
   val projectMembers: StateFlow<IncrementallyComputedValue<List<GitLabUserDTO>>>
   val reviewers: StateFlow<List<GitLabUserDTO>>
@@ -85,8 +86,6 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
 
   val projectLabels: StateFlow<IncrementallyComputedValue<List<GitLabLabel>>>
   val labels: StateFlow<List<GitLabLabel>>
-
-  val openReviewTabAction: suspend (mrIid: String) -> Unit
 
   fun updateBranchState(state: BranchState?)
 
@@ -99,8 +98,12 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   fun setLabels(labels: List<GitLabLabel>)
   fun clearLabels()
 
+  fun openExistingReview()
+
   fun createMergeRequest()
 }
+
+private val LOG = logger<GitLabMergeRequestCreateViewModelImpl>()
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class GitLabMergeRequestCreateViewModelImpl(
@@ -109,13 +112,13 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   private val projectsManager: GitLabProjectsManager,
   private val projectData: GitLabProject,
   override val avatarIconProvider: IconsProvider<GitLabUserDTO>,
-  override val openReviewTabAction: suspend (mrIid: String) -> Unit,
+  private val openReviewTabAction: suspend (mrIid: String) -> Unit,
   private val onReviewCreated: () -> Unit,
 ) : GitLabMergeRequestCreateViewModel {
   private val cs: CoroutineScope = parentCs.childScope(this::class)
   private val taskLauncher = SingleCoroutineLauncher(cs)
 
-  override val isBusy: Flow<Boolean> = taskLauncher.busy
+  override val isBusy: StateFlow<Boolean> = taskLauncher.busy
 
   override val allowsMultipleAssignees: StateFlow<Boolean> = suspend {
     try {
@@ -136,7 +139,7 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   }.asFlow().stateIn(cs, SharingStarted.Eagerly, false)
 
   private val listenableProgressIndicator = ListenableProgressIndicator()
-  override val creatingProgressText: Flow<String?> = callbackFlow {
+  override val creatingProgressText: StateFlow<String?> = callbackFlow {
     val listenerDisposable = Disposer.newDisposable()
     listenableProgressIndicator.addAndInvokeListener(listenerDisposable) {
       trySend(listenableProgressIndicator.text)
@@ -144,23 +147,27 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     awaitClose {
       Disposer.dispose(listenerDisposable)
     }
-  }
+  }.stateIn(cs, SharingStarted.Eagerly, null)
 
   private val _branchState: MutableStateFlow<BranchState?> = MutableStateFlow(null)
-  override val branchState: Flow<BranchState?> = _branchState.asSharedFlow()
+  override val branchState: StateFlow<BranchState?> = _branchState.asStateFlow()
 
-  override val existingMergeRequest: Flow<String?> = branchState.map { state ->
+  override val existingMergeRequest: StateFlow<String?> = branchState.map { state ->
     state ?: return@map null
     val sourceProject = state.headRepo
     val sourceBranch = state.headBranch.name
     val targetProject = state.baseRepo
     val targetBranch = state.baseBranch.nameForRemoteOperations
 
-    projectData.mergeRequests.findByBranches(GitLabMergeRequestState.OPENED, sourceBranch, targetBranch).find {
-      it.targetProject.fullPath == targetProject.repository.projectPath.fullPath() &&
-      it.sourceProject?.fullPath == sourceProject.repository.projectPath.fullPath()
-    }?.iid
-  }
+    runCatching {
+      projectData.mergeRequests.findByBranches(GitLabMergeRequestState.OPENED, sourceBranch, targetBranch).find {
+        it.targetProject.fullPath == targetProject.repository.projectPath.fullPath() &&
+        it.sourceProject?.fullPath == sourceProject.repository.projectPath.fullPath()
+      }?.iid
+    }.getOrHandleException {
+      LOG.warn("Failed to check for existing merge request", it)
+    }
+  }.stateIn(cs, SharingStarted.Eagerly, null)
 
   private val gitRepository: GitRepository = projectData.gitRemote.repository
   override val projectMapping: GitLabProjectMapping = GitLabProjectMapping(projectData.projectCoordinates, projectData.gitRemote)
@@ -191,7 +198,7 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   }.modelFlow(cs, thisLogger())
     .stateInNow(cs, null)
 
-  override val reviewRequirementsErrorState: Flow<MergeRequestRequirementsErrorType?> =
+  override val reviewRequirementsErrorState: StateFlow<MergeRequestRequirementsErrorType?> =
     combine(branchState, commits) { branchState, commits ->
       branchState ?: return@combine null
       commits ?: return@combine null
@@ -199,7 +206,7 @@ internal class GitLabMergeRequestCreateViewModelImpl(
       checkDirection(branchState)
       ?: checkChanges(commits)
       ?: checkProtectedBranch(branchState, project)
-    }
+    }.stateIn(cs, SharingStarted.Eagerly, null)
 
   private val _reviewCreatingError: MutableStateFlow<Throwable?> = MutableStateFlow(null)
   override val reviewCreatingError: StateFlow<Throwable?> = _reviewCreatingError.asStateFlow()
@@ -308,6 +315,13 @@ internal class GitLabMergeRequestCreateViewModelImpl(
 
   override fun clearLabels() {
     _labels.value = listOf()
+  }
+
+  override fun openExistingReview() {
+    val mrIid = existingMergeRequest.value ?: return
+    taskLauncher.launch {
+      openReviewTabAction(mrIid)
+    }
   }
 
   override fun createMergeRequest() {
