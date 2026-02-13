@@ -4,7 +4,6 @@ package com.intellij.mcpserver
 
 import com.intellij.mcpserver.settings.McpToolFilterOptimizer
 import com.intellij.mcpserver.settings.McpToolFilterOptimizer.CategoryToolsInfo
-import com.intellij.mcpserver.settings.McpToolFilterSettings
 import org.junit.jupiter.api.Test
 import org.junit.platform.commons.annotation.Testable
 import kotlin.test.assertEquals
@@ -27,7 +26,7 @@ class McpToolFilterOptimizerTest {
       categoriesInfo = categoriesInfo
     )
     
-    assertEquals(McpToolFilterSettings.DEFAULT_FILTER, result)
+    assertEquals("*", result)
   }
 
   @Test
