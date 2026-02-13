@@ -1187,7 +1187,6 @@
                                               converter="com.intellij.codeInsight.completion.MethodCallRegistrationHandler$Converter"
                                               descriptor="com.intellij.codeInsight.completion.NoOpFrontendFriendlyInsertHandler"/>
 
-    <codeInsight.completion.command.factory language="JAVA" implementationClass="com.intellij.codeInsight.completion.commands.JavaCommandCompletionFactory" />
     <codeInsight.completion.intention.skipper language="JAVA"
                                               implementationClass="com.intellij.codeInsight.completion.commands.JavaIntentionCommandSkipper"/>
     <codeInsight.completion.intention.skipper language="JAVA"
