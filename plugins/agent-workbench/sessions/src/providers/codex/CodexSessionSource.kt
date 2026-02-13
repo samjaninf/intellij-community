@@ -5,42 +5,38 @@ package com.intellij.agent.workbench.sessions.providers.codex
 // @spec community/plugins/agent-workbench/spec/agent-sessions-codex-rollout-source.spec.md
 
 import com.intellij.agent.workbench.codex.common.CodexThread
-import com.intellij.agent.workbench.codex.common.normalizeRootPath
+import com.intellij.agent.workbench.codex.sessions.CodexBackendThread
+import com.intellij.agent.workbench.codex.sessions.CodexSessionActivity
+import com.intellij.agent.workbench.codex.sessions.CodexSessionBackend
+import com.intellij.agent.workbench.codex.sessions.createDefaultCodexSessionBackend
+import com.intellij.agent.workbench.sessions.AgentSessionActivity
 import com.intellij.agent.workbench.sessions.AgentSessionProvider
 import com.intellij.agent.workbench.sessions.AgentSessionThread
 import com.intellij.agent.workbench.sessions.AgentSubAgent
-import com.intellij.agent.workbench.sessions.codex.SharedCodexAppServerService
-import com.intellij.agent.workbench.sessions.codex.resolveProjectDirectoryFromPath
 import com.intellij.agent.workbench.sessions.providers.BaseAgentSessionSource
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import kotlin.io.path.invariantSeparatorsPathString
 
-internal class CodexSessionSource : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX, canReportExactThreadCount = false) {
+internal class CodexSessionSource(
+  private val backend: CodexSessionBackend = createDefaultCodexSessionBackend(),
+) : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX, canReportExactThreadCount = false) {
   override suspend fun listThreads(path: String, openProject: Project?): List<AgentSessionThread> {
-    val workingDirectory = resolveProjectDirectoryFromPath(path) ?: return emptyList()
-    val codexService = service<SharedCodexAppServerService>()
-    val threads = codexService.listThreads(workingDirectory)
-    return threads.map { it.toAgentSessionThread() }
+    return backend.listThreads(path = path, openProject = openProject).map { it.toAgentSessionThread() }
   }
 
   override suspend fun prefetchThreads(paths: List<String>): Map<String, List<AgentSessionThread>> {
-    if (paths.isEmpty()) return emptyMap()
-    val codexService = service<SharedCodexAppServerService>()
-    val allThreads = codexService.listAllThreads()
-    val pathToCwd = paths.mapNotNull { path ->
-      resolveProjectDirectoryFromPath(path)?.let { dir ->
-        path to normalizeRootPath(dir.invariantSeparatorsPathString)
-      }
-    }
-    return pathToCwd.associate { (path, cwdFilter) ->
-      val matching = allThreads.filter { it.cwd == cwdFilter }
-      path to matching.map { it.toAgentSessionThread() }
+    val prefetched = backend.prefetchThreads(paths)
+    if (prefetched.isEmpty()) return emptyMap()
+    return prefetched.mapValues { (_, threads) ->
+      threads.map { it.toAgentSessionThread() }
     }
   }
 }
 
-private fun CodexThread.toAgentSessionThread(): AgentSessionThread {
+private fun CodexBackendThread.toAgentSessionThread(): AgentSessionThread {
+  return thread.toAgentSessionThread(activity = activity)
+}
+
+private fun CodexThread.toAgentSessionThread(activity: CodexSessionActivity): AgentSessionThread {
   return AgentSessionThread(
     id = id,
     title = title,
@@ -49,5 +45,15 @@ private fun CodexThread.toAgentSessionThread(): AgentSessionThread {
     provider = AgentSessionProvider.CODEX,
     subAgents = subAgents.map { AgentSubAgent(it.id, it.name) },
     originBranch = gitBranch,
+    activity = activity.toAgentSessionActivity(),
   )
+}
+
+private fun CodexSessionActivity.toAgentSessionActivity(): AgentSessionActivity {
+  return when (this) {
+    CodexSessionActivity.UNREAD -> AgentSessionActivity.UNREAD
+    CodexSessionActivity.REVIEWING -> AgentSessionActivity.REVIEWING
+    CodexSessionActivity.PROCESSING -> AgentSessionActivity.PROCESSING
+    CodexSessionActivity.READY -> AgentSessionActivity.READY
+  }
 }

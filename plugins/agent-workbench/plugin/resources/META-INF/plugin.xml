@@ -7,6 +7,7 @@
   <content namespace="jetbrains">
     <module name="intellij.agent.workbench.claude.common"/>
     <module name="intellij.agent.workbench.codex.common"/>
+    <module name="intellij.agent.workbench.codex.sessions"/>
     <module name="intellij.agent.workbench.sessions"/>
     <module name="intellij.agent.workbench.chat"/>
   </content>

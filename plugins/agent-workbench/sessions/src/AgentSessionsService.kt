@@ -7,7 +7,7 @@ package com.intellij.agent.workbench.sessions
 
 import com.intellij.agent.workbench.chat.AgentChatEditorService
 import com.intellij.agent.workbench.codex.common.CodexCliNotFoundException
-import com.intellij.agent.workbench.sessions.codex.SharedCodexAppServerService
+import com.intellij.agent.workbench.codex.sessions.SharedCodexAppServerService
 import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
 import com.intellij.agent.workbench.sessions.providers.codex.CodexCliCommands
 import com.intellij.agent.workbench.sessions.providers.createDefaultAgentSessionSources

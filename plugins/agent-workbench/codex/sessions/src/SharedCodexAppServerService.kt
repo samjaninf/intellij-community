@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions.codex
+package com.intellij.agent.workbench.codex.sessions
 
 import com.intellij.agent.workbench.codex.common.CodexAppServerClient
 import com.intellij.agent.workbench.codex.common.CodexThread
@@ -10,19 +10,19 @@ import java.nio.file.Path
 import kotlin.io.path.invariantSeparatorsPathString
 
 @Service(Service.Level.APP)
-internal class SharedCodexAppServerService(serviceScope: CoroutineScope) {
+class SharedCodexAppServerService(serviceScope: CoroutineScope) {
   private val client = CodexAppServerClient(coroutineScope = serviceScope)
 
   init {
     registerShutdownOnCancellation(serviceScope) { client.shutdown() }
   }
 
-  suspend fun listThreads(projectPath: Path): List<CodexThread> {
+  internal suspend fun listThreads(projectPath: Path): List<CodexThread> {
     val cwdFilter = normalizeRootPath(projectPath.invariantSeparatorsPathString)
     return client.listThreads(archived = false, cwdFilter = cwdFilter)
   }
 
-  suspend fun listAllThreads(): List<CodexThread> {
+  internal suspend fun listAllThreads(): List<CodexThread> {
     return client.listThreads(archived = false, cwdFilter = null)
   }
 
@@ -37,3 +37,4 @@ internal class SharedCodexAppServerService(serviceScope: CoroutineScope) {
     return thread
   }
 }
+

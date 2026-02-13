@@ -3,10 +3,12 @@ name: Codex Sessions Rollout Source
 description: Codex thread list source and activity indicators for Agent Threads.
 targets:
   - ../sessions/src/providers/codex/*.kt
+  - ../codex/sessions/src/*.kt
   - ../sessions/src/SessionTreeStyle.kt
   - ../sessions/src/AgentSessionModels.kt
   - ../sessions/src/AgentSessionsService.kt
   - ../sessions/testSrc/*.kt
+  - ../codex/sessions/testSrc/*.kt
 ---
 
 # Codex Sessions Rollout Source
@@ -51,7 +53,7 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
 - `CodexSessionSource` maps rollout backend data directly and does not use `CodexSessionBranchStore` fallback.
 
 ## Testing / Local Run
-- `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.CodexRolloutSessionBackendTest'`
+- `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.codex.sessions.CodexRolloutSessionBackendTest'`
 - `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionCliTest'`
 
 ## References

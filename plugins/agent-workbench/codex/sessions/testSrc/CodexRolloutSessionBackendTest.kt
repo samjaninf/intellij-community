@@ -1,7 +1,6 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions
+package com.intellij.agent.workbench.codex.sessions
 
-import com.intellij.agent.workbench.sessions.providers.codex.CodexRolloutSessionBackend
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -42,7 +41,7 @@ class CodexRolloutSessionBackendTest {
       assertThat(thread.thread.id).isEqualTo("session-abc")
       assertThat(thread.thread.title).isEqualTo("Fix flaky test")
       assertThat(thread.thread.updatedAt).isEqualTo(Instant.parse("2026-02-13T10:00:30.000Z").toEpochMilli())
-      assertThat(thread.activity).isEqualTo(AgentSessionActivity.UNREAD)
+      assertThat(thread.activity).isEqualTo(CodexSessionActivity.UNREAD)
     }
   }
 
@@ -91,7 +90,7 @@ class CodexRolloutSessionBackendTest {
       assertThat(threads).hasSize(1)
       val thread = threads.single()
       assertThat(thread.thread.id).isEqualTo("session-review")
-      assertThat(thread.activity).isEqualTo(AgentSessionActivity.REVIEWING)
+      assertThat(thread.activity).isEqualTo(CodexSessionActivity.REVIEWING)
     }
   }
 
@@ -131,7 +130,7 @@ class CodexRolloutSessionBackendTest {
       val threads = backend.listThreads(path = projectDir.toString(), openProject = null)
 
       assertThat(threads.map { it.thread.id }).containsExactly("session-ready")
-      assertThat(threads.single().activity).isEqualTo(AgentSessionActivity.READY)
+      assertThat(threads.single().activity).isEqualTo(CodexSessionActivity.READY)
     }
   }
 
@@ -157,7 +156,7 @@ class CodexRolloutSessionBackendTest {
       val threads = backend.listThreads(path = projectDir.toString(), openProject = null)
 
       assertThat(threads).hasSize(1)
-      assertThat(threads.single().activity).isEqualTo(AgentSessionActivity.PROCESSING)
+      assertThat(threads.single().activity).isEqualTo(CodexSessionActivity.PROCESSING)
     }
   }
 
@@ -183,7 +182,7 @@ class CodexRolloutSessionBackendTest {
       val threads = backend.listThreads(path = projectDir.toString(), openProject = null)
 
       assertThat(threads).hasSize(1)
-      assertThat(threads.single().activity).isEqualTo(AgentSessionActivity.UNREAD)
+      assertThat(threads.single().activity).isEqualTo(CodexSessionActivity.UNREAD)
     }
   }
 
@@ -222,3 +221,4 @@ private fun writeRollout(file: Path, lines: List<String>) {
   Files.createDirectories(file.parent)
   Files.write(file, lines)
 }
+

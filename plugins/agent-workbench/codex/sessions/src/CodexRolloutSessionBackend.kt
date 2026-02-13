@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions.providers.codex
+package com.intellij.agent.workbench.codex.sessions
 
 // @spec community/plugins/agent-workbench/spec/agent-sessions-codex-rollout-source.spec.md
 
@@ -9,8 +9,6 @@ import com.fasterxml.jackson.core.JsonToken
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.agent.workbench.codex.common.forEachObjectField
 import com.intellij.agent.workbench.codex.common.readStringOrNull
-import com.intellij.agent.workbench.sessions.AgentSessionActivity
-import com.intellij.agent.workbench.sessions.codex.resolveProjectDirectoryFromPath
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,7 +22,7 @@ private const val ROLLOUT_FILE_PREFIX = "rollout-"
 private const val ROLLOUT_FILE_SUFFIX = ".jsonl"
 private const val MAX_TITLE_LENGTH = 120
 
-internal class CodexRolloutSessionBackend(
+class CodexRolloutSessionBackend(
   private val codexHomeProvider: () -> Path = { Path.of(System.getProperty("user.home"), ".codex") },
 ) : CodexSessionBackend {
   private val jsonFactory = JsonFactory()
@@ -97,6 +95,7 @@ internal class CodexRolloutSessionBackend(
                     pendingUserInputAt = null
                   }
                 }
+
                 "agent_message" -> {
                   latestAgentMessageAt = maxTimestamp(latestAgentMessageAt, eventTimestamp)
                 }
@@ -122,6 +121,7 @@ internal class CodexRolloutSessionBackend(
                       pendingUserInputAt = null
                     }
                   }
+
                   "assistant" -> {
                     latestAgentMessageAt = maxTimestamp(latestAgentMessageAt, eventTimestamp)
                   }
@@ -143,10 +143,10 @@ internal class CodexRolloutSessionBackend(
     val hasUnread = latestAgentMessageAt > latestUserMessageAt
     val hasPendingUserInput = pendingUserInputAt != null
     val activity = when {
-      hasPendingUserInput || hasUnread -> AgentSessionActivity.UNREAD
-      reviewing -> AgentSessionActivity.REVIEWING
-      processing -> AgentSessionActivity.PROCESSING
-      else -> AgentSessionActivity.READY
+      hasPendingUserInput || hasUnread -> CodexSessionActivity.UNREAD
+      reviewing -> CodexSessionActivity.REVIEWING
+      processing -> CodexSessionActivity.PROCESSING
+      else -> CodexSessionActivity.READY
     }
 
     val fallbackUpdatedAt = runCatching { Files.getLastModifiedTime(path).toMillis() }.getOrDefault(0L)
@@ -198,9 +198,11 @@ internal class CodexRolloutSessionBackend(
                     "git" -> {
                       gitBranch = parseNestedStringField(parser, "branch")
                     }
+
                     "item" -> {
                       itemType = parseNestedStringField(parser, "type")
                     }
+
                     else -> parser.skipChildren()
                   }
                   true
@@ -210,6 +212,7 @@ internal class CodexRolloutSessionBackend(
                 parser.skipChildren()
               }
             }
+
             else -> parser.skipChildren()
           }
           true
@@ -304,3 +307,4 @@ private fun maxTimestamp(current: Long, candidate: Long?): Long {
   if (candidate == null) return current
   return if (candidate > current) candidate else current
 }
+

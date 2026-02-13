@@ -1,8 +1,6 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions
+package com.intellij.agent.workbench.codex.sessions
 
-import com.intellij.agent.workbench.sessions.codex.registerShutdownOnCancellation
-import com.intellij.agent.workbench.sessions.codex.resolveProjectDirectory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -15,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.time.Duration.Companion.seconds
 
 class CodexProjectSessionServiceTest {
   @TempDir
@@ -27,13 +26,13 @@ class CodexProjectSessionServiceTest {
     val scope = CoroutineScope(coroutineContext + Job(parentJob))
     val shutdown = CompletableDeferred<Unit>()
 
-      registerShutdownOnCancellation(scope) {
-          shutdown.complete(Unit)
-      }
+    registerShutdownOnCancellation(scope) {
+      shutdown.complete(Unit)
+    }
 
     scope.cancel()
 
-    withTimeout(1_000) {
+    withTimeout(1.seconds) {
       shutdown.await()
     }
   }
@@ -47,10 +46,10 @@ class CodexProjectSessionServiceTest {
     Files.writeString(miscXml, "<project />")
 
     val resolved = resolveProjectDirectory(
-        recentProjectPath = miscXml,
-        projectFilePath = null,
-        basePath = null,
-        guessedProjectDir = null,
+      recentProjectPath = miscXml,
+      projectFilePath = null,
+      basePath = null,
+      guessedProjectDir = null,
     )
 
     assertThat(resolved).isEqualTo(projectRoot)
@@ -64,10 +63,10 @@ class CodexProjectSessionServiceTest {
     Files.writeString(iprFile, "<project></project>")
 
     val resolved = resolveProjectDirectory(
-        recentProjectPath = null,
-        projectFilePath = iprFile.toString(),
-        basePath = null,
-        guessedProjectDir = null,
+      recentProjectPath = null,
+      projectFilePath = iprFile.toString(),
+      basePath = null,
+      guessedProjectDir = null,
     )
 
     assertThat(resolved).isEqualTo(projectRoot)
@@ -79,10 +78,10 @@ class CodexProjectSessionServiceTest {
     Files.createDirectories(projectRoot)
 
     val resolved = resolveProjectDirectory(
-        recentProjectPath = null,
-        projectFilePath = null,
-        basePath = null,
-        guessedProjectDir = projectRoot,
+      recentProjectPath = null,
+      projectFilePath = null,
+      basePath = null,
+      guessedProjectDir = projectRoot,
     )
 
     assertThat(resolved).isEqualTo(projectRoot)

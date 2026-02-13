@@ -6,7 +6,7 @@ targets:
   - ../../sessions/src/SessionTreeRows.kt
   - ../../sessions/src/AgentSessionsToolWindow.kt
   - ../../sessions/src/AgentSessionsService.kt
-  - ../../sessions/src/codex/SharedCodexAppServerService.kt
+  - ../../codex/sessions/src/SharedCodexAppServerService.kt
   - ../../sessions/src/AgentSessionCli.kt
   - ../../sessions/src/providers/codex/CodexCliCommands.kt
   - ../../sessions/resources/messages/AgentSessionsBundle.properties
@@ -81,4 +81,3 @@ Define project/worktree `New Session` actions (`+` and quick-provider icon) and 
 - `../agent-sessions.spec.md`
 - `../agent-sessions-codex-rollout-source.spec.md`
 - `../agent-dedicated-frame.spec.md`
-
