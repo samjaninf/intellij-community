@@ -34,6 +34,8 @@ internal fun sessionTree(
   onWorktreeExpanded: (String, String) -> Unit = { _, _ -> },
   onOpenThread: (String, AgentSessionThread) -> Unit,
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit,
+  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit = { _, _, _ -> },
+  lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long,
   visibleProjectCount: Int = Int.MAX_VALUE,
   onShowMoreProjects: () -> Unit = {},
@@ -53,8 +55,7 @@ internal fun sessionTree(
         it.isOpen ||
         it.errorMessage != null ||
         it.providerWarnings.isNotEmpty() ||
-        it.threads.isNotEmpty() ||
-        it.worktrees.any { wt -> wt.errorMessage != null || wt.providerWarnings.isNotEmpty() || wt.threads.isNotEmpty() }
+        it.worktrees.any { wt -> wt.isOpen }
       }
       .map { SessionTreeId.Project(it.path) }
   }
@@ -170,6 +171,8 @@ internal fun sessionTree(
           onCreateThread(path)
         },
         onRefresh = onRefresh,
+        onCreateSession = onCreateSession,
+        lastUsedProvider = lastUsedProvider,
         nowProvider = nowProvider,
       )
     }

@@ -52,6 +52,8 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
   onOpenProject: (String) -> Unit,
   onCreateThread: (String) -> Unit,
   onRefresh: () -> Unit,
+  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit = { _, _, _ -> },
+  lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long,
 ) {
   val node = element.data
@@ -60,6 +62,8 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
       project = node.project,
       onOpenProject = onOpenProject,
       onCreateThread = onCreateThread,
+      onCreateSession = onCreateSession,
+      lastUsedProvider = lastUsedProvider,
     )
     is SessionTreeNode.Thread -> threadNodeRow(
       thread = node.thread,
@@ -87,6 +91,8 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     )
     is SessionTreeNode.Worktree -> worktreeNodeRow(
       worktree = node.worktree,
+      onCreateSession = onCreateSession,
+      lastUsedProvider = lastUsedProvider,
     )
   }
 }
@@ -133,6 +139,9 @@ private fun SelectableLazyItemScope.projectNodeRow(
   project: AgentProjectSessions,
   onOpenProject: (String) -> Unit,
   onCreateThread: (String) -> Unit,
+  onCreateThread: (String) -> Unit,
+  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit,
+  lastUsedProvider: AgentSessionProvider?,
 ) {
   val chrome = rememberTreeRowChrome(
     isSelected = isSelected,
@@ -140,7 +149,6 @@ private fun SelectableLazyItemScope.projectNodeRow(
     baseTint = projectRowTint(),
   )
   val openLabel = AgentSessionsBundle.message("toolwindow.action.open")
-  val newThreadLabel = AgentSessionsBundle.message("toolwindow.action.new.thread")
   val branchColor = LocalContentColor.current
     .takeOrElse { JewelTheme.globalColors.text.disabled }
     .copy(alpha = 0.55f)
@@ -187,23 +195,25 @@ private fun SelectableLazyItemScope.projectNodeRow(
           maxLines = 1,
         )
       }
-      Box(
-        modifier = Modifier.size(projectActionSlotSize()),
-        contentAlignment = Alignment.Center,
-      ) {
-        if (project.isLoading) {
-          CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
-        }
-        else if (chrome.isHovered) {
-          Icon(
-            key = AllIconsKeys.General.Add,
-            contentDescription = newThreadLabel,
-            modifier = Modifier
-              .size(projectActionIconSize())
-              .pointerHoverIcon(PointerIcon.Hand, overrideDescendants = true)
-              .clickable(onClick = { onCreateThread(project.path) }),
-          )
-        }
+      var newSessionPopupVisible by remember { mutableStateOf(false) }
+      if (project.isLoading) {
+        CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
+      }
+      else if (chrome.isHovered || newSessionPopupVisible) {
+        NewSessionHoverActions(
+          path = project.path,
+          lastUsedProvider = lastUsedProvider,
+          onCreateSession = { path, provider, yolo ->
+            if (provider == AgentSessionProvider.CODEX && !yolo && lastUsedProvider == null) {
+              onCreateThread(path)
+            }
+            else {
+              onCreateSession(path, provider, yolo)
+            }
+          },
+          popupVisible = newSessionPopupVisible,
+          onPopupVisibleChange = { newSessionPopupVisible = it },
+        )
       }
     }
   }
@@ -318,6 +328,8 @@ private fun SelectableLazyItemScope.subAgentNodeRow(
 @Composable
 private fun SelectableLazyItemScope.worktreeNodeRow(
   worktree: AgentWorktree,
+  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit,
+  lastUsedProvider: AgentSessionProvider?,
 ) {
   val chrome = rememberTreeRowChrome(isSelected = isSelected, isActive = isActive)
   val titleColor = if (isSelected || isActive) Color.Unspecified else {
@@ -353,7 +365,18 @@ private fun SelectableLazyItemScope.worktreeNodeRow(
       style = AgentSessionsTextStyles.threadTime(),
       maxLines = 1,
     )
-    if (worktree.isLoading) {
+    var newSessionPopupVisible by remember { mutableStateOf(false) }
+    val isHovered by chrome.interactionSource.collectIsHoveredAsState()
+    if ((isHovered || newSessionPopupVisible) && !worktree.isLoading) {
+      NewSessionHoverActions(
+        path = worktree.path,
+        lastUsedProvider = lastUsedProvider,
+        onCreateSession = onCreateSession,
+        popupVisible = newSessionPopupVisible,
+        onPopupVisibleChange = { newSessionPopupVisible = it },
+      )
+    }
+    else if (worktree.isLoading) {
       CircularProgressIndicator(Modifier.size(loadingIndicatorSize()))
     }
   }

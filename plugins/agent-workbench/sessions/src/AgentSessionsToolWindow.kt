@@ -23,8 +23,10 @@ import org.jetbrains.jewel.ui.component.Text
 internal fun agentSessionsToolWindow(currentProject: Project) {
   val service = remember { service<AgentSessionsService>() }
   val chatSelectionService = remember(currentProject) { currentProject.service<AgentChatTabSelectionService>() }
+  val uiStateService = remember { service<AgentSessionsTreeUiStateService>() }
   val state by service.state.collectAsState()
   val selectedChatTab by chatSelectionService.selectedChatTab.collectAsState()
+  val lastUsedProvider by uiStateService.lastUsedProviderFlow.collectAsState()
 
   LaunchedEffect(Unit) {
     service.refresh()
@@ -53,8 +55,10 @@ internal fun agentSessionsToolWindow(currentProject: Project) {
     onWorktreeExpanded = { projectPath, worktreePath ->
       service.loadWorktreeThreadsOnDemand(projectPath, worktreePath)
     },
-    onOpenThread = { path, thread -> service.openChatThread(path, thread, currentProject) },
-    onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent, currentProject) },
+  onOpenThread = { path, thread -> service.openChatThread(path, thread, currentProject) },
+  onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent, currentProject) },
+  onCreateSession = { path, provider, yolo -> service.createNewSession(path, provider, yolo) },
+  lastUsedProvider = lastUsedProvider,
     visibleProjectCount = state.visibleProjectCount,
     onShowMoreProjects = { service.showMoreProjects() },
     visibleThreadCounts = state.visibleThreadCounts,
@@ -73,6 +77,8 @@ internal fun agentSessionsToolWindowContent(
   onWorktreeExpanded: (String, String) -> Unit = { _, _ -> },
   onOpenThread: (String, AgentSessionThread) -> Unit = { _, _ -> },
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit = { _, _, _ -> },
+  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit = { _, _, _ -> },
+  lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long = { System.currentTimeMillis() },
   visibleProjectCount: Int = Int.MAX_VALUE,
   onShowMoreProjects: () -> Unit = {},
@@ -97,6 +103,8 @@ internal fun agentSessionsToolWindowContent(
         onWorktreeExpanded = onWorktreeExpanded,
         onOpenThread = onOpenThread,
         onOpenSubAgent = onOpenSubAgent,
+        onCreateSession = onCreateSession,
+        lastUsedProvider = lastUsedProvider,
         nowProvider = nowProvider,
         visibleProjectCount = visibleProjectCount,
         onShowMoreProjects = onShowMoreProjects,

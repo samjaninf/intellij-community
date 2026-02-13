@@ -3,7 +3,9 @@ package com.intellij.agent.workbench.sessions
 
 import com.intellij.agent.workbench.chat.AgentChatEditorService
 import com.intellij.agent.workbench.codex.common.CodexCliNotFoundException
+import com.intellij.agent.workbench.sessions.codex.SharedCodexAppServerService
 import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
+import com.intellij.agent.workbench.sessions.providers.codex.CodexCliCommands
 import com.intellij.agent.workbench.sessions.providers.createDefaultAgentSessionSources
 import com.intellij.ide.RecentProjectsManager
 import com.intellij.ide.RecentProjectsManagerBase
@@ -44,6 +46,7 @@ import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
 
 private val LOG = logger<AgentSessionsService>()
+
 private const val SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY = "agent.workbench.suppress.branch.mismatch.dialog"
 private const val OPEN_PROJECT_ACTION_KEY_PREFIX = "project-open"
 private const val CREATE_THREAD_ACTION_KEY_PREFIX = "thread-create"
@@ -60,7 +63,7 @@ internal class AgentSessionsService private constructor(
   @Suppress("unused")
   constructor(serviceScope: CoroutineScope) : this(
     serviceScope = serviceScope,
-    sessionSources = createDefaultAgentSessionSources(serviceScope),
+    sessionSources = createDefaultAgentSessionSources(),
     projectEntriesProvider = { service -> service.collectProjects() },
     subscribeToProjectLifecycle = true,
   )
@@ -105,7 +108,9 @@ internal class AgentSessionsService private constructor(
 
   fun refresh() {
     serviceScope.launch(Dispatchers.IO) {
-      if (!refreshMutex.tryLock()) return@launch
+      if (!refreshMutex.tryLock()) {
+        return@launch
+      }
       try {
         val entries = projectEntriesProvider(this@AgentSessionsService)
         val currentProjectsByPath = mutableState.value.projects.associateBy { it.path }
@@ -130,7 +135,7 @@ internal class AgentSessionsService private constructor(
                 name = wt.name,
                 branch = wt.branch,
                 isOpen = wt.project != null,
-                isLoading = hasExistingData,
+                isLoading = wt.project != null && hasExistingData,
                 hasLoaded = existingWt?.hasLoaded ?: false,
                 hasUnknownThreadCount = existingWt?.hasUnknownThreadCount ?: false,
                 threads = existingWt?.threads ?: emptyList(),
@@ -142,86 +147,155 @@ internal class AgentSessionsService private constructor(
         }
         mutableState.update { it.copy(projects = initialProjects, lastUpdatedAt = System.currentTimeMillis()) }
 
-        data class ProjectLoadResult(val path: String, val result: AgentSessionLoadResult)
-        data class WorktreeLoadResult(val projectPath: String, val worktreePath: String, val result: AgentSessionLoadResult)
-
-        val projectResults: List<ProjectLoadResult>
-        val worktreeResults: List<WorktreeLoadResult>
-        coroutineScope {
-          val projectDeferreds = entries.filter { it.project != null }.map { entry ->
-            async {
-              try {
-                ProjectLoadResult(entry.path, loadThreadsFromOpenProject(path = entry.path, project = entry.project!!))
-              }
-              catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                LOG.warn("Failed to load project sessions for ${entry.path}", e)
-                ProjectLoadResult(entry.path,
-                                  AgentSessionLoadResult(threads = emptyList(),
-                                                         errorMessage = AgentSessionsBundle.message("toolwindow.error")))
-              }
-            }
+        // Collect all open paths for prefetching (batch Codex calls)
+        val openPaths = entries.flatMap { entry ->
+          buildList {
+            if (entry.project != null) add(entry.path)
+            entry.worktreeEntries.filter { it.project != null }.forEach { add(it.path) }
           }
-          val worktreeDeferreds = entries.flatMap { entry ->
-            entry.worktreeEntries.map { wt ->
-              async {
-                try {
-                  val result = if (wt.project != null) {
-                    loadThreadsFromOpenProject(path = wt.path, project = wt.project)
-                  }
-                  else {
-                    loadThreadsFromClosedProject(path = wt.path)
-                  }
-                  WorktreeLoadResult(entry.path, wt.path, result)
-                }
-                catch (e: Throwable) {
-                  if (e is CancellationException) throw e
-                  LOG.warn("Failed to load worktree sessions for ${wt.path}", e)
-                  WorktreeLoadResult(entry.path,
-                                     wt.path,
-                                     AgentSessionLoadResult(threads = emptyList(),
-                                                            errorMessage = AgentSessionsBundle.message("toolwindow.error")))
-                }
-              }
-            }
-          }
-          projectResults = projectDeferreds.awaitAll()
-          worktreeResults = worktreeDeferreds.awaitAll()
         }
 
-        val projectResultMap = projectResults.associateBy { it.path }
-        val worktreeResultsByProject = worktreeResults.groupBy { it.projectPath }
-        mutableState.update { state ->
-          state.copy(
-            projects = state.projects.map { project ->
-              val pResult = projectResultMap[project.path]
-              val wtResults = (worktreeResultsByProject[project.path] ?: emptyList()).associateBy { it.worktreePath }
-              val updatedWorktrees = project.worktrees.map { wt ->
-                val wtResult = wtResults[wt.path]
-                if (wtResult != null) wt.copy(isLoading = false,
-                                              hasLoaded = true,
-                                              hasUnknownThreadCount = wtResult.result.hasUnknownThreadCount,
-                                              threads = wtResult.result.threads,
-                                              errorMessage = wtResult.result.errorMessage,
-                                              providerWarnings = wtResult.result.providerWarnings)
-                else wt
+        // Prefetch from all sources in parallel
+        val prefetchedByProvider = coroutineScope {
+          sessionSources.map { source ->
+            async {
+              source.provider to try {
+                source.prefetchThreads(openPaths)
               }
-              if (pResult != null) {
+              catch (_: Throwable) {
+                emptyMap()
+              }
+            }
+          }.awaitAll().toMap()
+        }
+
+        // Load each (project × source) independently so fast sources (Claude)
+        // update the UI immediately without waiting for slow sources (Codex).
+        coroutineScope {
+          for (entry in entries) {
+            launch {
+              if (entry.project == null) {
+                updateProject(entry.path) { it.copy(isLoading = false) }
+                return@launch
+              }
+              val sourceResults = java.util.concurrent.CopyOnWriteArrayList<AgentSessionSourceLoadResult>()
+              coroutineScope {
+                for (source in sessionSources) {
+                  launch {
+                    val sourceResult = try {
+                      val prefetched = prefetchedByProvider[source.provider]?.get(entry.path)
+                      val threads = prefetched
+                                    ?: source.listThreadsFromOpenProject(path = entry.path, project = entry.project)
+                      AgentSessionSourceLoadResult(
+                        provider = source.provider,
+                        result = Result.success(threads),
+                        hasUnknownTotal = !source.canReportExactThreadCount,
+                      )
+                    }
+                    catch (e: Throwable) {
+                      if (e is CancellationException) throw e
+                      LOG.warn("Failed to load ${source.provider.name} sessions for ${entry.path}", e)
+                      AgentSessionSourceLoadResult(
+                        provider = source.provider,
+                        result = Result.failure(e),
+                      )
+                    }
+                    sourceResults.add(sourceResult)
+                    // Incremental UI update — clear spinner as soon as any source succeeds
+                    val partial = mergeAgentSessionSourceLoadResults(
+                      sourceResults = sourceResults.toList(),
+                      resolveErrorMessage = ::resolveErrorMessage,
+                      resolveWarningMessage = ::resolveProviderWarningMessage,
+                    )
+                    val anySuccess = sourceResults.any { it.result.isSuccess }
+                    updateProject(entry.path) { project ->
+                      project.copy(
+                        threads = partial.threads,
+                        providerWarnings = partial.providerWarnings,
+                        isLoading = if (anySuccess) false else project.isLoading,
+                      )
+                    }
+                  }
+                }
+              }
+              // All sources done — final update with error/warning consolidation
+              val finalResult = mergeAgentSessionSourceLoadResults(
+                sourceResults = sourceResults.toList(),
+                resolveErrorMessage = ::resolveErrorMessage,
+                resolveWarningMessage = ::resolveProviderWarningMessage,
+              )
+              updateProject(entry.path) { project ->
                 project.copy(isLoading = false,
                              hasLoaded = true,
-                             hasUnknownThreadCount = pResult.result.hasUnknownThreadCount,
-                             threads = pResult.result.threads,
-                             errorMessage = pResult.result.errorMessage,
-                             providerWarnings = pResult.result.providerWarnings,
-                             worktrees = updatedWorktrees)
+                             hasUnknownThreadCount = finalResult.hasUnknownThreadCount,
+                             threads = finalResult.threads,
+                             errorMessage = finalResult.errorMessage,
+                             providerWarnings = finalResult.providerWarnings)
               }
-              else {
-                project.copy(worktrees = updatedWorktrees)
+            }
+            for (wt in entry.worktreeEntries) {
+              launch {
+                if (wt.project == null) {
+                  updateWorktree(entry.path, wt.path) { it.copy(isLoading = false) }
+                  return@launch
+                }
+                val sourceResults = java.util.concurrent.CopyOnWriteArrayList<AgentSessionSourceLoadResult>()
+                coroutineScope {
+                  for (source in sessionSources) {
+                    launch {
+                      val sourceResult = try {
+                        val prefetched = prefetchedByProvider[source.provider]?.get(wt.path)
+                        val threads = prefetched
+                                      ?: source.listThreadsFromOpenProject(path = wt.path, project = wt.project)
+                        AgentSessionSourceLoadResult(
+                          provider = source.provider,
+                          result = Result.success(threads),
+                          hasUnknownTotal = !source.canReportExactThreadCount,
+                        )
+                      }
+                      catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        LOG.warn("Failed to load ${source.provider.name} sessions for ${wt.path}", e)
+                        AgentSessionSourceLoadResult(
+                          provider = source.provider,
+                          result = Result.failure(e),
+                        )
+                      }
+                      sourceResults.add(sourceResult)
+                      val partial = mergeAgentSessionSourceLoadResults(
+                        sourceResults = sourceResults.toList(),
+                        resolveErrorMessage = ::resolveErrorMessage,
+                        resolveWarningMessage = ::resolveProviderWarningMessage,
+                      )
+                      val anySuccess = sourceResults.any { it.result.isSuccess }
+                      updateWorktree(entry.path, wt.path) { worktree ->
+                        worktree.copy(
+                          threads = partial.threads,
+                          providerWarnings = partial.providerWarnings,
+                          isLoading = if (anySuccess) false else worktree.isLoading,
+                        )
+                      }
+                    }
+                  }
+                }
+                val finalResult = mergeAgentSessionSourceLoadResults(
+                  sourceResults = sourceResults.toList(),
+                  resolveErrorMessage = ::resolveErrorMessage,
+                  resolveWarningMessage = ::resolveProviderWarningMessage,
+                )
+                updateWorktree(entry.path, wt.path) { worktree ->
+                  worktree.copy(isLoading = false,
+                                hasLoaded = true,
+                                hasUnknownThreadCount = finalResult.hasUnknownThreadCount,
+                                threads = finalResult.threads,
+                                errorMessage = finalResult.errorMessage,
+                                providerWarnings = finalResult.providerWarnings)
+                }
               }
-            },
-            lastUpdatedAt = System.currentTimeMillis(),
-          )
+            }
+          }
         }
+        mutableState.update { it.copy(lastUpdatedAt = System.currentTimeMillis()) }
       }
       catch (e: Throwable) {
         if (e is CancellationException) throw e
@@ -231,7 +305,7 @@ internal class AgentSessionsService private constructor(
             projects = it.projects.map { project ->
               project.copy(
                 isLoading = false,
-                hasLoaded = project.isOpen,
+                hasLoaded = true,
                 hasUnknownThreadCount = false,
                 errorMessage = AgentSessionsBundle.message("toolwindow.error"),
                 providerWarnings = emptyList(),
@@ -356,6 +430,30 @@ internal class AgentSessionsService private constructor(
     }
   }
 
+  fun createNewSession(path: String, provider: AgentSessionProvider, yolo: Boolean = false) {
+    serviceScope.launch {
+      val normalized = normalizePath(path)
+      service<AgentSessionsTreeUiStateService>().setLastUsedProvider(provider)
+
+      val identity: String
+      val command: List<String>
+      when (provider) {
+        AgentSessionProvider.CLAUDE -> {
+          command = buildAgentSessionNewCommand(provider, yolo)
+          identity = buildAgentSessionNewIdentity(provider)
+        }
+        AgentSessionProvider.CODEX -> {
+          val codexService = service<SharedCodexAppServerService>()
+          val thread = codexService.createThread(cwd = normalized, yolo = yolo)
+          command = CodexCliCommands.buildResumeCommand(thread.id)
+          identity = buildAgentSessionIdentity(provider, thread.id)
+        }
+      }
+
+      openNewChat(normalized, identity, command)
+    }
+  }
+
   fun loadProjectThreadsOnDemand(path: String) {
     serviceScope.launch(Dispatchers.IO) {
       val normalized = normalizePath(path)
@@ -416,12 +514,6 @@ internal class AgentSessionsService private constructor(
       finally {
         clearWorktreeOnDemandLoading(normalizedWorktree)
       }
-    }
-  }
-
-  private suspend fun loadThreadsFromOpenProject(path: String, project: Project): AgentSessionLoadResult {
-    return loadThreads(path) { source ->
-      source.listThreadsFromOpenProject(path = path, project = project)
     }
   }
 
@@ -567,6 +659,109 @@ internal class AgentSessionsService private constructor(
     )
   }
 
+  private suspend fun openNewChat(path: String, identity: String, command: List<String>) {
+    val title = AgentSessionsBundle.message("toolwindow.action.new.thread")
+    val dedicatedFrame = AgentChatOpenModeSettings.openInDedicatedFrame()
+    if (dedicatedFrame) {
+      openNewChatInDedicatedFrame(path, identity, command, title)
+      return
+    }
+    val openProject = findOpenProject(path)
+    if (openProject != null) {
+      openNewChatInProject(openProject, path, identity, command, title)
+      return
+    }
+    val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase ?: return
+    val projectPath = try {
+      Path.of(path)
+    }
+    catch (_: InvalidPathException) {
+      return
+    }
+    val connection = ApplicationManager.getApplication().messageBus.connect(serviceScope)
+    connection.subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
+      @Deprecated("Deprecated in Java")
+      @Suppress("removal")
+      override fun projectOpened(project: Project) {
+        if (resolveProjectPath(manager, project) != path) return
+        serviceScope.launch {
+          openNewChatInProject(project, path, identity, command, title)
+          connection.disconnect()
+        }
+      }
+    })
+    manager.openProject(projectFile = projectPath, options = OpenProjectTask())
+  }
+
+  private suspend fun openNewChatInDedicatedFrame(
+    path: String,
+    identity: String,
+    command: List<String>,
+    title: String,
+  ) {
+    val dedicatedProjectPath = AgentWorkbenchDedicatedFrameProjectManager.dedicatedProjectPath()
+    val openProject = findOpenProject(dedicatedProjectPath)
+    if (openProject != null) {
+      AgentWorkbenchDedicatedFrameProjectManager.configureProject(openProject)
+      openNewChatInProject(openProject, path, identity, command, title)
+      return
+    }
+
+    val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase ?: return
+    val dedicatedProjectDir = try {
+      AgentWorkbenchDedicatedFrameProjectManager.ensureProjectPath()
+    }
+    catch (e: Throwable) {
+      LOG.warn("Failed to prepare dedicated chat frame project", e)
+      return
+    }
+
+    val connection = ApplicationManager.getApplication().messageBus.connect(serviceScope)
+    connection.subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
+      @Deprecated("Deprecated in Java")
+      @Suppress("removal")
+      override fun projectOpened(project: Project) {
+        val projectPath2 = resolveProjectPath(manager, project)
+        if (projectPath2 != dedicatedProjectPath) return
+        serviceScope.launch {
+          AgentWorkbenchDedicatedFrameProjectManager.configureProject(project)
+          openNewChatInProject(project, path, identity, command, title)
+          connection.disconnect()
+        }
+      }
+    })
+    try {
+      val result = manager.openProject(projectFile = dedicatedProjectDir, options = OpenProjectTask(forceOpenInNewFrame = true))
+      if (result == null) {
+        connection.disconnect()
+      }
+    }
+    catch (e: Throwable) {
+      connection.disconnect()
+      if (e is CancellationException) throw e
+    }
+  }
+
+  private suspend fun openNewChatInProject(
+    project: Project,
+    projectPath: String,
+    identity: String,
+    command: List<String>,
+    title: String,
+  ) {
+    withContext(Dispatchers.EDT) {
+      project.service<AgentChatEditorService>().openChat(
+        projectPath = projectPath,
+        threadIdentity = identity,
+        shellCommand = command,
+        threadId = identity,
+        threadTitle = title,
+        subAgentId = null,
+      )
+      ProjectUtilService.getInstance(project).focusProjectWindow()
+    }
+  }
+
   private suspend fun openChatInDedicatedFrame(
     path: String,
     thread: AgentSessionThread,
@@ -595,7 +790,8 @@ internal class AgentSessionsService private constructor(
       @Deprecated("Deprecated in Java")
       @Suppress("removal")
       override fun projectOpened(project: Project) {
-        if (resolveProjectPath(manager, project) != dedicatedProjectPath) return
+        val projectPath2 = resolveProjectPath(manager, project)
+        if (projectPath2 != dedicatedProjectPath) return
         serviceScope.launch {
           AgentWorkbenchDedicatedFrameProjectManager.configureProject(project)
           openChatInProject(project, path, thread, subAgent, shellCommandOverride)
@@ -603,7 +799,16 @@ internal class AgentSessionsService private constructor(
         }
       }
     })
-    manager.openProject(projectFile = dedicatedProjectDir, options = OpenProjectTask(forceOpenInNewFrame = true))
+    try {
+      val result = manager.openProject(projectFile = dedicatedProjectDir, options = OpenProjectTask(forceOpenInNewFrame = true))
+      if (result == null) {
+        connection.disconnect()
+      }
+    }
+    catch (e: Throwable) {
+      connection.disconnect()
+      if (e is CancellationException) throw e
+    }
   }
 
   private suspend fun openChatInProject(
@@ -613,11 +818,13 @@ internal class AgentSessionsService private constructor(
     subAgent: AgentSubAgent?,
     shellCommandOverride: List<String>?,
   ) {
+    val identity = buildAgentSessionIdentity(provider = thread.provider, sessionId = thread.id)
+    val command = buildAgentSessionResumeCommand(provider = thread.provider, sessionId = thread.id)
     withContext(Dispatchers.EDT) {
       project.service<AgentChatEditorService>().openChat(
         projectPath = projectPath,
-        threadIdentity = buildAgentSessionIdentity(provider = thread.provider, sessionId = thread.id),
-        shellCommand = shellCommandOverride ?: buildAgentSessionResumeCommand(provider = thread.provider, sessionId = thread.id),
+        threadIdentity = identity,
+        shellCommand = shellCommandOverride ?: command,
         threadId = thread.id,
         threadTitle = thread.title,
         subAgentId = subAgent?.id,
