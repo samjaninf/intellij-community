@@ -43,6 +43,7 @@ class KotlinSourceSetImpl @OptIn(KotlinGradlePluginVersionDependentApi::class) c
     override val languageSettings: KotlinLanguageSettings,
     override val sourceDirs: Set<File>,
     override val resourceDirs: Set<File>,
+    override val generatedKotlinDirs: Set<File>,
     override val regularDependencies: Array<KotlinDependencyId>,
     override val intransitiveDependencies: Array<KotlinDependencyId>,
     override val declaredDependsOnSourceSets: Set<String>,
@@ -62,6 +63,7 @@ class KotlinSourceSetImpl @OptIn(KotlinGradlePluginVersionDependentApi::class) c
         name = kotlinSourceSet.name,
         languageSettings = KotlinLanguageSettingsImpl(kotlinSourceSet.languageSettings),
         sourceDirs = kotlinSourceSet.sourceDirs.toMutableSet(),
+        generatedKotlinDirs = kotlinSourceSet.generatedKotlinDirs.toMutableSet(),
         resourceDirs = kotlinSourceSet.resourceDirs.toMutableSet(),
         regularDependencies = kotlinSourceSet.regularDependencies.clone(),
         intransitiveDependencies = kotlinSourceSet.intransitiveDependencies.clone(),
@@ -74,7 +76,7 @@ class KotlinSourceSetImpl @OptIn(KotlinGradlePluginVersionDependentApi::class) c
         isTestComponent = kotlinSourceSet.isTestComponent
     )
 
-    override fun toString() = name
+    override fun toString(): String = name
 
     init {
         require(allDependsOnSourceSets.containsAll(declaredDependsOnSourceSets)) {

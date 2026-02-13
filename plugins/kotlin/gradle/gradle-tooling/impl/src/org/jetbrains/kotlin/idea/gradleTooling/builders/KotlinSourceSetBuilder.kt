@@ -45,6 +45,7 @@ internal class KotlinSourceSetBuilder(
 
         val sourceDirs = sourceSetReflection.kotlin?.srcDirs ?: emptySet()
         val resourceDirs = sourceSetReflection.resources?.srcDirs ?: emptySet()
+        val generatedKotlinDirs = sourceSetReflection.generatedSources?.srcDirs?.toSet() ?: emptySet()
         val dependsOnSourceSets = sourceSetReflection.dependsOn.map { it.name }.toSet()
         val additionalVisibleSourceSets = sourceSetReflection.additionalVisibleSourceSets.map { it.name }.toSet()
 
@@ -87,6 +88,7 @@ internal class KotlinSourceSetBuilder(
             languageSettings = languageSettings,
             sourceDirs = sourceDirs,
             resourceDirs = resourceDirs,
+            generatedKotlinDirs = generatedKotlinDirs,
             regularDependencies = sourceSetDependencies,
             intransitiveDependencies = intransitiveSourceSetDependencies,
             declaredDependsOnSourceSets = dependsOnSourceSets.toMutableSet(),

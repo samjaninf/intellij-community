@@ -310,7 +310,9 @@ private fun populateNonJvmSourceRootTypes(sourceSetNode: DataNode<GradleSourceSe
 
     val externalToKotlinSourceTypes = mapOf(
         ExternalSystemSourceType.SOURCE to SourceKotlinRootType,
-        ExternalSystemSourceType.TEST to TestSourceKotlinRootType
+        ExternalSystemSourceType.SOURCE_GENERATED to SourceKotlinRootType,
+        ExternalSystemSourceType.TEST to TestSourceKotlinRootType,
+        ExternalSystemSourceType.TEST_GENERATED to TestSourceKotlinRootType
     )
     externalToKotlinSourceTypes.forEach { (externalType, kotlinType) ->
         val sourcesRoots = contentRootDataList.flatMap { it.getPaths(externalType) }
