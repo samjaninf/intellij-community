@@ -23,4 +23,22 @@ class AgentSessionCliTest {
     assertNull(parseAgentSessionIdentity(":thread-1"))
     assertNull(parseAgentSessionIdentity("UNKNOWN:thread-1"))
   }
+
+  @Test
+  fun buildResumeCommandUsesProviderSpecificCommands() {
+    assertEquals(
+      listOf("codex", "resume", "thread-1"),
+      buildAgentSessionResumeCommand(AgentSessionProvider.CODEX, "thread-1"),
+    )
+    assertEquals(
+      listOf("claude", "--resume", "session-1"),
+      buildAgentSessionResumeCommand(AgentSessionProvider.CLAUDE, "session-1"),
+    )
+  }
+
+  @Test
+  fun buildNewCommandUsesProviderSpecificEntryCommands() {
+    assertEquals(listOf("codex"), buildAgentSessionNewCommand(AgentSessionProvider.CODEX))
+    assertEquals(listOf("claude"), buildAgentSessionNewCommand(AgentSessionProvider.CLAUDE))
+  }
 }

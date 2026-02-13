@@ -8,6 +8,13 @@ internal fun buildAgentSessionResumeCommand(provider: AgentSessionProvider, sess
   }
 }
 
+internal fun buildAgentSessionNewCommand(provider: AgentSessionProvider): List<String> {
+  return when (provider) {
+    AgentSessionProvider.CODEX -> listOf("codex")
+    AgentSessionProvider.CLAUDE -> listOf("claude")
+  }
+}
+
 internal fun buildAgentSessionIdentity(provider: AgentSessionProvider, sessionId: String): String {
   return "${provider.name}:$sessionId"
 }

@@ -46,6 +46,7 @@ Define the Agent Threads tool window as a provider-agnostic, project-scoped sess
 - Resume command must be provider-specific:
   - Codex: `codex resume <sessionId>`
   - Claude: `claude --resume <sessionId>`
+- Codex project-row `New Thread` action must open fresh CLI chat with `codex` (without pre-creating/resuming a session id).
 - Branch mismatch between thread origin and current worktree branch must show a warning confirmation before opening chat.
 
 [@test] ../sessions/testSrc/AgentSessionLoadAggregationTest.kt

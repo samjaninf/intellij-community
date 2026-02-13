@@ -54,6 +54,7 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 - Chat resume command remains provider-specific in dedicated mode as in current-project mode:
   - Codex: `codex resume <threadId>`
   - Claude: `claude --resume <threadId>`
+- Codex fresh-thread opens (project-row `New Thread`) use `codex` without `resume`.
 
 [@test] ../sessions/testSrc/AgentSessionsGearActionsTest.kt
 [@test] ../sessions/testSrc/AgentSessionsOpenModeRoutingTest.kt

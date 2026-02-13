@@ -2,12 +2,7 @@
 package com.intellij.agent.workbench.sessions
 
 import com.intellij.agent.workbench.chat.AgentChatEditorService
-import com.intellij.agent.workbench.codex.common.CodexAppServerClient
-import com.intellij.agent.workbench.codex.common.CodexAppServerException
 import com.intellij.agent.workbench.codex.common.CodexCliNotFoundException
-import com.intellij.agent.workbench.codex.common.CodexThread
-import com.intellij.agent.workbench.sessions.codex.CodexProjectSessionService
-import com.intellij.agent.workbench.sessions.codex.resolveProjectDirectoryFromPath
 import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
 import com.intellij.agent.workbench.sessions.providers.createDefaultAgentSessionSources
 import com.intellij.ide.RecentProjectsManager
@@ -44,6 +39,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
+import java.util.UUID
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
 
@@ -277,31 +273,13 @@ internal class AgentSessionsService private constructor(
       progress = dedicatedFrameOpenProgressRequest(currentProject),
       onDrop = { LOG.debug("Dropped duplicate create thread action for $normalized") },
     ) {
-      updateProject(normalized) { project ->
-        project.copy(isLoading = true, errorMessage = null)
-      }
-      try {
-        val createdThread = createThreadForProjectPath(normalized)
-        updateProject(normalized) { project ->
-          project.copy(
-            isLoading = false,
-            hasLoaded = true,
-            threads = mergeThread(project.threads, createdThread),
-            errorMessage = null,
-          )
-        }
-        openChat(normalized, createdThread, subAgent = null)
-      }
-      catch (e: Throwable) {
-        if (e is CancellationException) throw e
-        LOG.warn("Failed to create thread for $normalized", e)
-        updateProject(normalized) { project ->
-          project.copy(
-            isLoading = false,
-            errorMessage = resolveErrorMessage(AgentSessionProvider.CODEX, e),
-          )
-        }
-      }
+      val freshThread = createFreshCodexThread()
+      openChat(
+        path = normalized,
+        thread = freshThread,
+        subAgent = null,
+        shellCommandOverride = buildAgentSessionNewCommand(AgentSessionProvider.CODEX),
+      )
     }
   }
 
@@ -508,27 +486,6 @@ internal class AgentSessionsService private constructor(
     }
   }
 
-  private suspend fun createThreadForProjectPath(path: String): AgentSessionThread {
-    val openProject = findOpenProject(path)
-    if (openProject != null) {
-      val service = openProject.getService(CodexProjectSessionService::class.java)
-      if (service == null || !service.hasWorkingDirectory()) {
-        throw CodexAppServerException("Project directory is not available")
-      }
-      return service.createThread().toAgentSessionThread()
-    }
-
-    val workingDirectory = resolveProjectDirectoryFromPath(path)
-      ?: throw CodexAppServerException("Project directory is not available")
-    val client = CodexAppServerClient(coroutineScope = serviceScope, workingDirectory = workingDirectory)
-    try {
-      return client.createThread().toAgentSessionThread()
-    }
-    finally {
-      client.shutdown()
-    }
-  }
-
   private suspend fun openOrFocusProjectInternal(path: String) {
     val normalized = normalizePath(path)
     val openProject = findOpenProject(normalized)
@@ -548,15 +505,20 @@ internal class AgentSessionsService private constructor(
     manager.openProject(projectFile = projectPath, options = OpenProjectTask())
   }
 
-  private suspend fun openChat(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent?) {
+  private suspend fun openChat(
+    path: String,
+    thread: AgentSessionThread,
+    subAgent: AgentSubAgent?,
+    shellCommandOverride: List<String>? = null,
+  ) {
     val normalized = normalizePath(path)
     if (AgentChatOpenModeSettings.openInDedicatedFrame()) {
-      openChatInDedicatedFrame(normalized, thread, subAgent)
+      openChatInDedicatedFrame(normalized, thread, subAgent, shellCommandOverride)
       return
     }
     val openProject = findOpenProject(normalized)
     if (openProject != null) {
-      openChatInProject(openProject, normalized, thread, subAgent)
+      openChatInProject(openProject, normalized, thread, subAgent, shellCommandOverride)
       return
     }
     val manager = RecentProjectsManager.getInstance() as? RecentProjectsManagerBase ?: return
@@ -573,7 +535,7 @@ internal class AgentSessionsService private constructor(
       override fun projectOpened(project: Project) {
         if (resolveProjectPath(manager, project) != normalized) return
         serviceScope.launch {
-          openChatInProject(project, normalized, thread, subAgent)
+          openChatInProject(project, normalized, thread, subAgent, shellCommandOverride)
           connection.disconnect()
         }
       }
@@ -605,12 +567,17 @@ internal class AgentSessionsService private constructor(
     )
   }
 
-  private suspend fun openChatInDedicatedFrame(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent?) {
+  private suspend fun openChatInDedicatedFrame(
+    path: String,
+    thread: AgentSessionThread,
+    subAgent: AgentSubAgent?,
+    shellCommandOverride: List<String>?,
+  ) {
     val dedicatedProjectPath = AgentWorkbenchDedicatedFrameProjectManager.dedicatedProjectPath()
     val openProject = findOpenProject(dedicatedProjectPath)
     if (openProject != null) {
       AgentWorkbenchDedicatedFrameProjectManager.configureProject(openProject)
-      openChatInProject(openProject, path, thread, subAgent)
+      openChatInProject(openProject, path, thread, subAgent, shellCommandOverride)
       return
     }
 
@@ -631,7 +598,7 @@ internal class AgentSessionsService private constructor(
         if (resolveProjectPath(manager, project) != dedicatedProjectPath) return
         serviceScope.launch {
           AgentWorkbenchDedicatedFrameProjectManager.configureProject(project)
-          openChatInProject(project, path, thread, subAgent)
+          openChatInProject(project, path, thread, subAgent, shellCommandOverride)
           connection.disconnect()
         }
       }
@@ -644,12 +611,13 @@ internal class AgentSessionsService private constructor(
     projectPath: String,
     thread: AgentSessionThread,
     subAgent: AgentSubAgent?,
+    shellCommandOverride: List<String>?,
   ) {
     withContext(Dispatchers.EDT) {
       project.service<AgentChatEditorService>().openChat(
         projectPath = projectPath,
         threadIdentity = buildAgentSessionIdentity(provider = thread.provider, sessionId = thread.id),
-        shellCommand = buildAgentSessionResumeCommand(provider = thread.provider, sessionId = thread.id),
+        shellCommand = shellCommandOverride ?: buildAgentSessionResumeCommand(provider = thread.provider, sessionId = thread.id),
         threadId = thread.id,
         threadTitle = thread.title,
         subAgentId = subAgent?.id,
@@ -951,18 +919,15 @@ internal class AgentSessionsService private constructor(
     return null
   }
 
-  private fun mergeThread(threads: List<AgentSessionThread>, thread: AgentSessionThread): List<AgentSessionThread> {
-    val merged = LinkedHashMap<Pair<AgentSessionProvider, String>, AgentSessionThread>()
-    for (existing in threads) {
-      merged[existing.provider to existing.id] = existing
-    }
-
-    val key = thread.provider to thread.id
-    val existing = merged[key]
-    if (existing == null || thread.updatedAt >= existing.updatedAt) {
-      merged[key] = thread
-    }
-    return merged.values.sortedByDescending { it.updatedAt }
+  private fun createFreshCodexThread(): AgentSessionThread {
+    return AgentSessionThread(
+      id = "new-${UUID.randomUUID()}",
+      title = AgentSessionsBundle.message("toolwindow.provider.codex"),
+      updatedAt = System.currentTimeMillis(),
+      archived = false,
+      activity = AgentSessionActivity.PROCESSING,
+      provider = AgentSessionProvider.CODEX,
+    )
   }
 
   internal data class ProjectEntry(
@@ -978,18 +943,6 @@ internal class AgentSessionsService private constructor(
     val name: String,
     val branch: String?,
     val project: Project?,
-  )
-}
-
-private fun CodexThread.toAgentSessionThread(): AgentSessionThread {
-  return AgentSessionThread(
-    id = id,
-    title = title,
-    updatedAt = updatedAt,
-    archived = archived,
-    provider = AgentSessionProvider.CODEX,
-    subAgents = subAgents.map { AgentSubAgent(it.id, it.name) },
-    originBranch = gitBranch,
   )
 }
 
