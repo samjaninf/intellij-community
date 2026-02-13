@@ -215,9 +215,7 @@ object InternalThreading {
                                        val event = TransferredWriteActionEvent(toRun)
                                        try {
                                          IdeEventQueue.getInstance().doPostEvent(event, true)
-                                         SuvorovProgress.logErrorIfTooLong().use {
-                                           event.blockingWait()
-                                         }
+                                         event.blockingWait()
                                        }
                                        catch (e: InterruptedException) {
                                          exceptionRef.set(e)
