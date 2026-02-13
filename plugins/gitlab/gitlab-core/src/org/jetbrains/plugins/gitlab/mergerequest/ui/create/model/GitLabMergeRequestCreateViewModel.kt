@@ -6,6 +6,7 @@ import com.intellij.collaboration.async.childScope
 import com.intellij.collaboration.async.combineAndCollect
 import com.intellij.collaboration.async.extensionListFlow
 import com.intellij.collaboration.async.mapNullableScoped
+import com.intellij.collaboration.async.mapState
 import com.intellij.collaboration.async.modelFlow
 import com.intellij.collaboration.async.stateInNow
 import com.intellij.collaboration.async.withInitial
@@ -230,8 +231,8 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   private val _labels: MutableStateFlow<List<GitLabLabel>> = MutableStateFlow(listOf())
   override val labels: StateFlow<List<GitLabLabel>> = _labels.asStateFlow()
 
-  private val _title: MutableStateFlow<String> = MutableStateFlow("")
-  override val titleText: StateFlow<String> = _title.asStateFlow()
+  private val _title: MutableStateFlow<TitleState> = MutableStateFlow(TitleState("", true))
+  override val titleText: StateFlow<String> = _title.mapState { it.title }
 
   private val _description: MutableStateFlow<String> = MutableStateFlow("")
   override val descriptionText: StateFlow<String> = _description.asStateFlow()
@@ -248,7 +249,9 @@ internal class GitLabMergeRequestCreateViewModelImpl(
 
       commits to extension
     }.mapNullableScoped { (commits, extension) ->
-      GitLabMergeRequestCreateTitleGenerationViewModelImpl(this, project, extension, commits, ::setTitle, ::setDescription)
+      GitLabMergeRequestCreateTitleGenerationViewModelImpl(this, project, extension, commits, {
+        _title.value = TitleState(it, true)
+      }, ::setDescription)
     }.stateIn(cs, SharingStarted.Lazily, null)
 
   init {
@@ -264,22 +267,30 @@ internal class GitLabMergeRequestCreateViewModelImpl(
 
     cs.launch {
       combineAndCollect(commits, branchState) { commitsResult, branchState ->
-        val commits = commitsResult?.getOrNull()
-        if (commits != null && commits.size == 1 && titleText.value.isEmpty()) {
-          setTitle(commits.first().subject.lines().firstOrNull() ?: return@combineAndCollect)
+        val state = _title.value
+        if (!state.generated && !state.title.isBlank()) {
+          return@combineAndCollect
         }
-        else if (titleText.value.isEmpty()) {
-          setTitle(when (val branch = branchState?.headBranch ?: return@combineAndCollect) {
-                     is GitRemoteBranch -> branch.nameForRemoteOperations
-                     else -> branch.name
-                   })
+
+        val commits = commitsResult?.getOrNull() // await commits loading
+        if (commits != null) {
+          val title = if (commits.size == 1) {
+            commits.first().subject.lines().firstOrNull() ?: return@combineAndCollect
+          }
+          else {
+            when (val branch = branchState?.headBranch ?: return@combineAndCollect) {
+              is GitRemoteBranch -> branch.nameForRemoteOperations
+              else -> branch.name
+            }
+          }
+          _title.compareAndSet(state, state.copy(title = title))
         }
       }
     }
   }
 
   override fun setTitle(text: String) {
-    _title.value = text
+    _title.value = TitleState(text, false)
   }
 
   override fun setDescription(text: String) {
@@ -287,6 +298,7 @@ internal class GitLabMergeRequestCreateViewModelImpl(
   }
 
   override fun updateBranchState(state: BranchState?) {
+    titleGenerationVm.value?.stopGeneration()
     _branchState.value = state
   }
 
@@ -376,6 +388,11 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     }
   }
 }
+
+private data class TitleState(
+  val title: String,
+  val generated: Boolean,
+)
 
 internal data class BranchState(
   val baseRepo: GitLabProjectMapping,
