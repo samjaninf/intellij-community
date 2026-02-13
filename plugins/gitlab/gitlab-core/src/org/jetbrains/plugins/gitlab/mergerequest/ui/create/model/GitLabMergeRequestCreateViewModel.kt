@@ -255,15 +255,7 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     }.stateIn(cs, SharingStarted.Lazily, null)
 
   init {
-    cs.launch {
-      val baseRepo = GitLabProjectMapping(projectData.projectCoordinates, projectData.gitRemote)
-      val baseGitRepo = baseRepo.gitRepository
-      val defaultBranch = projectData.defaultBranch ?: return@launch
-      val baseBranch = baseGitRepo.getBranchTrackInfo(defaultBranch)?.remoteBranch ?: return@launch
-      val currentBranch = baseGitRepo.currentBranch ?: return@launch
-
-      _branchState.value = BranchState(baseRepo, baseBranch, baseRepo, currentBranch)
-    }
+    initBranchState()
 
     cs.launch {
       combineAndCollect(commits, branchState) { commitsResult, branchState ->
@@ -287,6 +279,21 @@ internal class GitLabMergeRequestCreateViewModelImpl(
         }
       }
     }
+  }
+
+  private fun initBranchState() {
+    val baseRepo = GitLabProjectMapping(projectData.projectCoordinates, projectData.gitRemote)
+    val baseGitRepo = baseRepo.gitRepository
+    val defaultBranch = projectData.defaultBranch ?: return
+    val baseBranch = baseGitRepo.getBranchTrackInfo(defaultBranch)?.remoteBranch ?: return
+    val currentBranch = baseGitRepo.currentBranch ?: return
+    val currentBranchTrackInfo = currentBranch.let { baseGitRepo.getBranchTrackInfo(it.name) }
+    val projects = projectsManager.knownRepositoriesState.value
+    val headRepo = currentBranchTrackInfo?.remote?.let { remote ->
+      projects.find { it.gitRepository.root == baseGitRepo.root && it.remote.remote == remote }
+    } ?: baseRepo
+
+    _branchState.value = BranchState(baseRepo, baseBranch, headRepo, currentBranch)
   }
 
   override fun setTitle(text: String) {
