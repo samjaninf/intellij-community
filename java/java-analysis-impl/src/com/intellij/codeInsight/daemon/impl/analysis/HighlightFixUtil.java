@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInsight.daemon.impl.analysis;
 
 import com.intellij.codeInsight.daemon.QuickFixBundle;
@@ -195,12 +195,11 @@ public final class HighlightFixUtil {
    */
   static void registerAccessQuickFixAction(@NotNull Consumer<? super CommonIntentionAction> info,
                                            @NotNull PsiJvmMember refElement,
-                                           @NotNull PsiJavaCodeReferenceElement place,
+                                           @NotNull PsiElement place,
                                            @Nullable PsiElement fileResolveScope) {
     PsiClass accessObjectClass = null;
-    PsiElement qualifier = place.getQualifier();
-    if (qualifier instanceof PsiExpression) {
-      accessObjectClass = (PsiClass)PsiUtil.getAccessObjectClass((PsiExpression)qualifier).getElement();
+    if (place instanceof PsiJavaCodeReferenceElement ref && ref.getQualifier() instanceof PsiExpression expr) {
+      accessObjectClass = (PsiClass)PsiUtil.getAccessObjectClass(expr).getElement();
     }
     if (place instanceof PsiReferenceExpression ref) {
       FieldAccessFixer fixer = FieldAccessFixer.create(ref, refElement, place);
