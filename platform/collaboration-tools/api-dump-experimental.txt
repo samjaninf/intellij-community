@@ -363,6 +363,8 @@ f:com.intellij.collaboration.api.json.JsonHttpApiHelperKt
 - f:createGrid(java.util.List):javax.swing.JPanel
 - f:createLabelPanel(kotlinx.coroutines.flow.StateFlow,java.lang.String,java.lang.String):javax.swing.JPanel
 - f:createListPanel(kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function3,kotlin.jvm.functions.Function1):javax.swing.JPanel
+- f:createListPanel(kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function3,kotlin.jvm.functions.Function1,kotlin.jvm.functions.Function1):javax.swing.JPanel
+- bs:createListPanel$default(com.intellij.collaboration.ui.LabeledListComponentsFactory,kotlinx.coroutines.flow.StateFlow,kotlin.jvm.functions.Function3,kotlin.jvm.functions.Function1,kotlin.jvm.functions.Function1,I,java.lang.Object):javax.swing.JPanel
 *f:com.intellij.collaboration.ui.ListenableProgressIndicator
 - com.intellij.openapi.progress.util.ProgressIndicatorBase
 - <init>():V
