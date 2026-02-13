@@ -2,7 +2,6 @@
 package com.intellij.agent.workbench.sessions.claude
 
 import com.intellij.agent.workbench.sessions.AgentSessionsBundle
-import com.intellij.agent.workbench.sessions.formatRelativeTimeShort
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
@@ -216,12 +215,25 @@ internal fun formatWidgetText(info: ClaudeQuotaInfo): String {
 internal fun formatWidgetTooltip(info: ClaudeQuotaInfo, now: Long): @Nls String {
   val parts = mutableListOf<String>()
   if (info.fiveHourPercent != null) {
-    val resetText = if (info.fiveHourReset != null) formatRelativeTimeShort(info.fiveHourReset, now) else ""
+    val resetText = if (info.fiveHourReset != null) formatQuotaResetTime(info.fiveHourReset, now) else ""
     parts.add(AgentSessionsBundle.message("status.bar.claude.quota.tooltip.session", info.fiveHourPercent, resetText))
   }
   if (info.sevenDayPercent != null) {
-    val resetText = if (info.sevenDayReset != null) formatRelativeTimeShort(info.sevenDayReset, now) else ""
+    val resetText = if (info.sevenDayReset != null) formatQuotaResetTime(info.sevenDayReset, now) else ""
     parts.add(AgentSessionsBundle.message("status.bar.claude.quota.tooltip.weekly", info.sevenDayPercent, resetText))
   }
   return if (parts.size > 1) "<html>${parts.joinToString("<br>")}</html>" else parts.firstOrNull() ?: ""
+}
+
+internal fun formatQuotaResetTime(timestamp: Long, now: Long): String {
+  val totalSeconds = ((timestamp - now) / 1000L).coerceAtLeast(0)
+  val totalMinutes = totalSeconds / 60
+  val days = totalMinutes / (60 * 24)
+  val hours = (totalMinutes % (60 * 24)) / 60
+  val minutes = totalMinutes % 60
+  return when {
+    days > 0 -> "${days}d ${hours}h"
+    hours > 0 -> "${hours}h ${minutes}m"
+    else -> "${minutes}m"
+  }
 }

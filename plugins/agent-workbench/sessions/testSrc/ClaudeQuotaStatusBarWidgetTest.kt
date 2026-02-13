@@ -3,6 +3,7 @@ package com.intellij.agent.workbench.sessions
 
 import com.intellij.agent.workbench.sessions.claude.ClaudeQuotaInfo
 import com.intellij.agent.workbench.sessions.claude.dominantPercent
+import com.intellij.agent.workbench.sessions.claude.formatQuotaResetTime
 import com.intellij.agent.workbench.sessions.claude.formatWidgetText
 import com.intellij.agent.workbench.sessions.claude.formatWidgetTooltip
 import com.intellij.agent.workbench.sessions.claude.isWarningQuota
@@ -60,8 +61,8 @@ class ClaudeQuotaStatusBarWidgetTest {
     assertThat(tooltip).contains("<br>")
     assertThat(tooltip).contains("45%")
     assertThat(tooltip).contains("12%")
-    assertThat(tooltip).contains("2h")
-    assertThat(tooltip).contains("5d")
+    assertThat(tooltip).contains("2h 0m")
+    assertThat(tooltip).contains("5d 0h")
   }
 
   @Test
@@ -102,5 +103,34 @@ class ClaudeQuotaStatusBarWidgetTest {
   fun warningQuotaOnlyAboveEightyPercent() {
     assertThat(isWarningQuota(80)).isFalse()
     assertThat(isWarningQuota(81)).isTrue()
+  }
+
+  @Test
+  fun formatQuotaResetTimeShowsMinutesOnly() {
+    val now = 1_700_000_000_000L
+    assertThat(formatQuotaResetTime(now + 30 * 60 * 1000L, now)).isEqualTo("30m")
+    assertThat(formatQuotaResetTime(now + 1 * 60 * 1000L, now)).isEqualTo("1m")
+    assertThat(formatQuotaResetTime(now + 59 * 60 * 1000L, now)).isEqualTo("59m")
+  }
+
+  @Test
+  fun formatQuotaResetTimeShowsHoursAndMinutes() {
+    val now = 1_700_000_000_000L
+    assertThat(formatQuotaResetTime(now + 2 * 60 * 60 * 1000L, now)).isEqualTo("2h 0m")
+    assertThat(formatQuotaResetTime(now + (2 * 60 + 15) * 60 * 1000L, now)).isEqualTo("2h 15m")
+    assertThat(formatQuotaResetTime(now + (4 * 60 + 45) * 60 * 1000L, now)).isEqualTo("4h 45m")
+  }
+
+  @Test
+  fun formatQuotaResetTimeShowsDaysAndHours() {
+    val now = 1_700_000_000_000L
+    assertThat(formatQuotaResetTime(now + 5 * 24 * 60 * 60 * 1000L, now)).isEqualTo("5d 0h")
+    assertThat(formatQuotaResetTime(now + (2 * 24 * 60 + 3 * 60 + 24) * 60 * 1000L, now)).isEqualTo("2d 3h")
+  }
+
+  @Test
+  fun formatQuotaResetTimeShowsZeroMinutesWhenPast() {
+    val now = 1_700_000_000_000L
+    assertThat(formatQuotaResetTime(now - 5 * 60 * 1000L, now)).isEqualTo("0m")
   }
 }
