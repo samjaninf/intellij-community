@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInsight.completion.command
 
 import com.intellij.codeInsight.CodeInsightBundle
@@ -105,7 +105,7 @@ internal class CommandCompletionService(
           !document.immutableCharSequence.substring(offsetOfFullIndex, currentOffset).startsWith(fullSuffix)) {
         if (installed != true) return
         lookup.removeUserData(INSTALLED_ADDITIONAL_MATCHER_KEY)
-        lookup.arranger.registerAdditionalMatcher { true }
+        lookup.arranger.additionalMatcher = null
         lookup.arranger.prefixChanged(lookup)
         lookup.requestResize()
         lookup.refreshUi(false, true)
@@ -118,10 +118,10 @@ internal class CommandCompletionService(
     lookup.showIfMeaningless() // stop hiding
     val showPostfixAsSeparateGroup = PostfixTemplatesSettings.getInstance().isShowAsSeparateGroup
     if (completionFactory.supportFiltersWithDoublePrefix()) {
-      lookup.arranger.registerAdditionalMatcher(CommandCompletionLookupItemFilter(showPostfixAsSeparateGroup))
+      lookup.arranger.additionalMatcher = CommandCompletionLookupItemMatcher(showPostfixAsSeparateGroup)
     }
     else if (!showPostfixAsSeparateGroup) {
-      lookup.arranger.registerAdditionalMatcher(NotPostfixCompletionLookupItemFilter)
+      lookup.arranger.additionalMatcher = NotPostfixCompletionLookupItemMatcher
     }
     lookup.arranger.prefixChanged(lookup)
     lookup.requestResize()
@@ -136,7 +136,7 @@ internal class CommandCompletionService(
     if (showIfMeaningless) {
       lookup.showIfMeaningless() // stop hiding
     }
-    lookup.arranger.registerAdditionalMatcher(CommandCompletionLookupItemFilter(PostfixTemplatesSettings.getInstance().isShowAsSeparateGroup))
+    lookup.arranger.additionalMatcher = CommandCompletionLookupItemMatcher(PostfixTemplatesSettings.getInstance().isShowAsSeparateGroup)
     lookup.arranger.prefixChanged(lookup)
     lookup.requestResize()
     lookup.refreshUi(false, true)
@@ -185,14 +185,13 @@ internal class CommandCompletionService(
     lookup.putUserData(INSTALLED_HINT_KEY, true)
   }
 
-  private class CommandCompletionLookupItemFilter(private val showPostfixAsSeparateGroup: Boolean) : Condition<LookupElement> {
-    override fun value(e: LookupElement?): Boolean {
-      return e != null && (e.`as`(CommandCompletionLookupElement::class.java) != null ||
-                           (showPostfixAsSeparateGroup && e.`as`(PostfixTemplateLookupElement::class.java) != null))
-    }
+  private class CommandCompletionLookupItemMatcher(private val showPostfixAsSeparateGroup: Boolean) : Condition<LookupElement> {
+    override fun value(e: LookupElement): Boolean =
+      e.`as`(CommandCompletionLookupElement::class.java) != null ||
+      (showPostfixAsSeparateGroup && e.`as`(PostfixTemplateLookupElement::class.java) != null)
   }
 
-  private object NotPostfixCompletionLookupItemFilter : Condition<LookupElement> {
+  private object NotPostfixCompletionLookupItemMatcher : Condition<LookupElement> {
     override fun value(e: LookupElement?): Boolean {
       return e != null && e.`as`(PostfixTemplateLookupElement::class.java) == null
     }
