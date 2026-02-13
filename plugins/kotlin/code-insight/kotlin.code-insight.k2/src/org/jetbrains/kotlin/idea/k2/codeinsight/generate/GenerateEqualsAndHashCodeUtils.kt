@@ -15,6 +15,8 @@ import org.jetbrains.kotlin.analysis.api.symbols.KaPropertySymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaValueParameterSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.symbol
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
+import org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.DefaultMemberFilters
+import org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.KotlinEqualsHashCodeGeneratorExtension
 import org.jetbrains.kotlin.idea.codeinsight.utils.KotlinEqualsHashCodeToStringSymbolUtils.findEqualsMethodForClass
 import org.jetbrains.kotlin.idea.codeinsight.utils.KotlinEqualsHashCodeToStringSymbolUtils.findHashCodeMethodForClass
 import org.jetbrains.kotlin.idea.codeinsight.utils.KotlinEqualsHashCodeToStringSymbolUtils.findToStringMethodForClass
@@ -126,14 +128,14 @@ object GenerateEqualsAndHashCodeUtils {
     context(_: KaSession)
     private fun collectEqualsContextFromExtensions(contextMap: MutableMap<String, Any?>, info: Info) {
         KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(info.klass)?.let { ext ->
-            contextMap.putAll(ext.extraEqualsContext(info))
+            contextMap.putAll(ext.extraEqualsContext(info.klass))
         }
     }
 
     context(_: KaSession)
     private fun collectHashCodeContextFromExtensions(contextMap: MutableMap<String, Any?>, info: Info) {
         KotlinEqualsHashCodeGeneratorExtension.getSingleApplicableFor(info.klass)?.let { ext ->
-            contextMap.putAll(ext.extraHashCodeContext(info))
+            contextMap.putAll(ext.extraHashCodeContext(info.klass))
         }
     }
 

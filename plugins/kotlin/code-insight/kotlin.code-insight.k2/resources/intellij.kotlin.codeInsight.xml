@@ -7,7 +7,7 @@
   <extensionPoints>
     <extensionPoint
             qualifiedName="org.jetbrains.kotlin.equalsHashCodeGeneratorExtension"
-            interface="org.jetbrains.kotlin.idea.k2.codeinsight.generate.KotlinEqualsHashCodeGeneratorExtension"
+            interface="org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.KotlinEqualsHashCodeGeneratorExtension"
             dynamic="true"/>
   </extensionPoints>
 

@@ -1,6 +1,6 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 
-package org.jetbrains.kotlin.idea.k2.codeinsight.generate
+package org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions
 
 import com.intellij.openapi.extensions.ExtensionPointName
 import org.jetbrains.annotations.ApiStatus
@@ -57,7 +57,7 @@ interface KotlinEqualsHashCodeGeneratorExtension {
      * Interference between contexts of different extensions is not possible.
      */
     context(session: KaSession)
-    fun extraEqualsContext(info: Info): Map<String, Any>
+    fun extraEqualsContext(klass: KtClass): Map<String, Any>
 
     /**
      * Returns extra context for hashCode generation that will be available in the template.
@@ -66,7 +66,7 @@ interface KotlinEqualsHashCodeGeneratorExtension {
      * Interference between contexts of different extensions is not possible.
      */
     context(session: KaSession)
-    fun extraHashCodeContext(info: Info): Map<String, Any>
+    fun extraHashCodeContext(klass: KtClass): Map<String, Any>
 
     /**
      * Provides the name of an alternative default template for equals/hashCode generation, if any.

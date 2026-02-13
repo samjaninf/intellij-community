@@ -5,6 +5,9 @@ import com.intellij.codeInsight.generation.ui.TemplateChooserStep
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NlsContexts
 import org.jetbrains.kotlin.idea.actions.generate.KotlinGenerateEqualsWizard
+import org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.DefaultMemberFilters
+import org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.KotlinEqualsHashCodeGeneratorExtension
+import org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.MemberFilters
 import org.jetbrains.kotlin.idea.refactoring.memberInfo.KotlinMemberInfo
 import org.jetbrains.kotlin.idea.search.KotlinSearchUsagesSupport.SearchUtils.isInheritable
 import org.jetbrains.kotlin.psi.KtClass

@@ -12,6 +12,7 @@ import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypes
 import org.jetbrains.java.generate.exception.TemplateResourceException
 import org.jetbrains.java.generate.template.TemplateResource
+import org.jetbrains.kotlin.idea.codeinsight.api.applicable.extensions.KotlinEqualsHashCodeGeneratorExtension
 import org.jetbrains.kotlin.psi.KtClass
 import java.io.IOException
 
