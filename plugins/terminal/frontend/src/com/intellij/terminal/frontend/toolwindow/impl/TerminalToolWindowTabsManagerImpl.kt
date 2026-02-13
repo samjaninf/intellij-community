@@ -116,6 +116,10 @@ internal class TerminalToolWindowTabsManagerImpl(
     if (toolWindow.contentManager.isEmpty) {
       toolWindow.hide()
     }
+
+    fireListenersAndLogAllExceptions(listeners, LOG, "Exception during handling tab detached event: $tab") {
+      it.tabDetached(tab)
+    }
     return tab.view
   }
 
@@ -247,6 +251,10 @@ internal class TerminalToolWindowTabsManagerImpl(
     val tabName = builder.tabName ?: createDefaultTabName(getToolWindow())
     terminal.title.change { defaultTitle = tabName }
     createBackendTabAndStartSession(terminal, builder)
+
+    fireListenersAndLogAllExceptions(listeners, LOG, "Exception during terminal view created event: $terminal") {
+      it.terminalViewCreated(terminal)
+    }
     return terminal
   }
 
