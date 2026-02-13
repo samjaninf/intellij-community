@@ -26,6 +26,7 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.FontUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.StatusText
@@ -179,6 +180,9 @@ internal class GitWorkingTreesContentProvider(private val project: Project) : Ch
         else -> branch.name
       }
       append(presentableBranchName, SimpleTextAttributes.GRAY_ATTRIBUTES)
+      append(FontUtil.spaceAndThinSpace().repeat(2)) // NON-NLS
+
+      append(FileUtil.getLocationRelativeToUserHome(value.path.path), SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
     }
   }
 }
