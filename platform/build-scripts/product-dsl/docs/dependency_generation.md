@@ -145,13 +145,28 @@ A specialized validation rule ensures content modules properly declare plugin de
 
 This handles many-to-many content module → plugin relationships directly from the graph.
 
-**Suppressing Known Issues**: Use `contentModuleAllowedMissingPluginDeps` in `ModuleSetGenerationConfig`:
+**Suppressing Known Issues**:
+- DSL-defined test plugin modules: use `allowedMissingPluginIds` in test plugin DSL.
+- Non-DSL content modules: use `suppressions.json` (`contentModules.<module>.suppressPlugins`).
+
 ```kotlin
-ModuleSetGenerationConfig(
-  contentModuleAllowedMissingPluginDeps = mapOf(
-    "intellij.react.ultimate" to setOf("com.intellij.css"),
-  ),
-)
+testPlugin(
+  pluginId = "intellij.some.tests.plugin",
+  name = "Some Tests Plugin",
+  pluginXmlPath = "path/to/testResources/META-INF/plugin.xml",
+) {
+  module("intellij.some.tests.module", allowedMissingPluginIds = listOf("com.intellij.css"))
+}
+```
+
+```json
+{
+  "contentModules": {
+    "intellij.react.ultimate": {
+      "suppressPlugins": ["com.intellij.css"]
+    }
+  }
+}
 ```
 
 See [docs/validators/plugin-content-dependency.md](validators/plugin-content-dependency.md) for details.
@@ -238,10 +253,12 @@ The generator computes **both** production and test dependencies for each conten
 
 | Edge Type | JPS Scopes Included | Written to XML | Use Case |
 |-----------|---------------------|----------------|----------|
-| `EDGE_CONTENT_MODULE_DEPENDS_ON` | COMPILE, RUNTIME | Yes | Production validation |
+| `EDGE_CONTENT_MODULE_DEPENDS_ON` | COMPILE, RUNTIME (and TEST for test-runtime-only modules) | Yes | Production validation |
 | `EDGE_CONTENT_MODULE_DEPENDS_ON_TEST` | COMPILE, RUNTIME, TEST | No | Test plugin validation |
 
-**Key insight**: Content modules are production code with intrinsic dependencies. A content module's production deps are the same regardless of which plugin includes it.
+For written XML, test scope is also included when a module runs only in test runtime (test descriptor `._test` modules and modules that only have test-plugin content sources).
+
+**Key insight**: Content modules are production code with intrinsic dependencies. Scope filtering is based on where the module is sourced (production vs test-only), not on ad-hoc XML state.
 
 ### Example
 
@@ -485,8 +502,11 @@ Dependencies are written within region markers:
 
 **Region types:**
 - `WRAPS_ENTIRE_SECTION` - module descriptors (region wraps whole `<dependencies>`)
-- `INSIDE_SECTION` - plugin.xml (region inside, preserves manual entries)
+- `INSIDE_SECTION` - real `META-INF/plugin.xml` descriptors only (region inside, preserves manual entries)
 - `NONE` - legacy files without markers
+
+If a non-plugin descriptor has region markers inside `<dependencies>`, generation normalizes it to `WRAPS_ENTIRE_SECTION`
+behavior (manual entries outside the generated region are not implicitly preserved unless covered by suppression rules).
 
 ## Validation
 
@@ -542,6 +562,9 @@ bazel run //platform/buildScripts:plugin-model-tool -- --update-suppressions
 # Review and commit suppressions changes
 git diff platform/buildScripts/suppressions.json
 ```
+
+`--update-suppressions` reports non-DSL cases as warnings and updates their suppression entries in `suppressions.json`.
+DSL test plugin allowlists (`allowedMissingPluginIds`) remain in code and are not serialized into `suppressions.json`.
 
 **Key principle:** The generator should produce ZERO changes when run twice.
 

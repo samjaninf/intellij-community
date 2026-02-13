@@ -59,6 +59,7 @@ private fun writePluginXml(
     legacyPluginDependencies = plan.legacyPluginDependencies.map { it.value },
     xiIncludeModuleDeps = plan.xiIncludeModuleDeps,
     xiIncludePluginDeps = plan.xiIncludePluginDeps,
+    allowInsideSectionRegion = true,
     strategy = policy,
   )
 

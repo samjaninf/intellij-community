@@ -64,6 +64,7 @@ private fun writeContentModuleXml(plan: ContentModuleDependencyPlan, policy: Fil
     pluginDependencies = plan.pluginDependencies.map { it.value },
     preserveExistingModule = { moduleName -> plan.suppressedModules.contains(ContentModuleName(moduleName)) },
     preserveExistingPlugin = { pluginName -> plan.suppressedPlugins.contains(PluginId(pluginName)) },
+    allowInsideSectionRegion = false,
     strategy = policy,
   )
 

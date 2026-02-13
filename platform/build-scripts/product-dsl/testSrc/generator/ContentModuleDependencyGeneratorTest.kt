@@ -2,15 +2,20 @@
 package org.jetbrains.intellij.build.productLayout.generator
 
 import com.intellij.platform.pluginGraph.ContentModuleName
+import com.intellij.platform.pluginGraph.PluginId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.intellij.build.productLayout.TestFailureLogger
+import org.jetbrains.intellij.build.productLayout.config.SuppressionConfig
+import org.jetbrains.intellij.build.productLayout.dependency.ModuleDescriptorCache
 import org.jetbrains.intellij.build.productLayout.dependency.generateDependencies
+import org.jetbrains.intellij.build.productLayout.dependency.pluginGraph
 import org.jetbrains.intellij.build.productLayout.dependency.pluginTestSetup
 import org.jetbrains.intellij.build.productLayout.dependency.testGenerationModel
 import org.jetbrains.intellij.build.productLayout.pipeline.ComputeContextImpl
 import org.jetbrains.intellij.build.productLayout.pipeline.Slots
+import org.jetbrains.intellij.build.productLayout.stats.SuppressionType
 import org.jetbrains.jps.model.java.JpsJavaDependencyScope
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -251,6 +256,102 @@ class ContentModuleDependencyGeneratorTest {
           .isNotNull()
         assertThat(testBootstrapDiff!!.expectedContent)
           .contains("<module name=\"intellij.libraries.junit5.vintage\"/>")
+      }
+    }
+
+    @Test
+    fun `test plugin only module includes TEST scope dependencies in written deps`(@TempDir tempDir: Path) {
+      runBlocking(Dispatchers.Default) {
+        val setup = pluginTestSetup(tempDir) {
+          contentModule("intellij.test.only.lib") {
+            descriptor = """<idea-plugin package="test.only.lib"/>"""
+          }
+
+          contentModule("intellij.test.only.consumer") {
+            descriptor = """<idea-plugin package="test.only.consumer"/>"""
+            jpsDependency("intellij.test.only.lib", JpsJavaDependencyScope.TEST)
+          }
+
+          plugin("intellij.test.plugin") {
+            isTestPlugin = true
+            content("intellij.test.only.consumer")
+            content("intellij.test.only.lib")
+          }
+        }
+
+        val graph = pluginGraph {
+          moduleWithScopedDeps("intellij.test.only.lib")
+          moduleWithScopedDeps("intellij.test.only.consumer", "intellij.test.only.lib" to "TEST")
+          testPlugin("intellij.test.plugin") {
+            testContent("intellij.test.only.consumer")
+            testContent("intellij.test.only.lib")
+          }
+        }
+
+        val model = testGenerationModel(
+          pluginGraph = graph,
+          outputProvider = setup.jps.outputProvider,
+          fileUpdater = setup.strategy,
+        )
+
+        val ctx = ComputeContextImpl(model)
+        ctx.initSlot(Slots.CONTENT_MODULE_PLAN)
+        ctx.initSlot(Slots.CONTENT_MODULE)
+        val planCtx = ctx.forNode(ContentModuleDependencyPlanner.id)
+        ContentModuleDependencyPlanner.execute(planCtx)
+        ctx.finalizeNodeErrors(ContentModuleDependencyPlanner.id)
+
+        val writeCtx = ctx.forNode(ContentModuleXmlWriter.id)
+        ContentModuleXmlWriter.execute(writeCtx)
+        ctx.finalizeNodeErrors(ContentModuleXmlWriter.id)
+
+        val diffs = setup.strategy.getDiffs()
+        val consumerDiff = diffs.find { it.path.toString().contains("intellij.test.only.consumer.xml") }
+        assertThat(consumerDiff)
+          .describedAs("Module used only from test plugin should include TEST scope dependency")
+          .isNotNull()
+        assertThat(consumerDiff!!.expectedContent)
+          .contains("<module name=\"intellij.test.only.lib\"/>")
+      }
+    }
+
+    @Test
+    fun `module shared with production source does not include TEST scope dependency in written deps`(@TempDir tempDir: Path) {
+      runBlocking(Dispatchers.Default) {
+        val setup = pluginTestSetup(tempDir) {
+          contentModule("intellij.test.only.lib") {
+            descriptor = """<idea-plugin package="test.only.lib"/>"""
+          }
+
+          contentModule("intellij.shared.consumer") {
+            descriptor = """<idea-plugin package="shared.consumer"/>"""
+            jpsDependency("intellij.test.only.lib", JpsJavaDependencyScope.TEST)
+          }
+
+          plugin("intellij.production.plugin") {
+            content("intellij.shared.consumer")
+          }
+
+          plugin("intellij.test.plugin") {
+            isTestPlugin = true
+            content("intellij.shared.consumer")
+            content("intellij.test.only.lib")
+          }
+        }
+
+        val result = setup.generateDependencies(listOf("intellij.production.plugin", "intellij.test.plugin"))
+        val contentResults = result.files
+          .flatMap { it.contentModuleResults }
+          .filter { it.contentModuleName == ContentModuleName("intellij.shared.consumer") }
+
+        assertThat(contentResults)
+          .describedAs("Shared module should be present in generation results")
+          .isNotEmpty()
+        for (contentResult in contentResults) {
+          assertThat(contentResult.writtenDependencies)
+            .describedAs("Module with a production content source should keep TEST scope deps out of written XML")
+            .doesNotContain(ContentModuleName("intellij.test.only.lib"))
+        }
       }
     }
   }
@@ -510,6 +611,244 @@ class ContentModuleDependencyGeneratorTest {
             .describedAs("Module with REQUIRED loading is NOT globally embedded, should be included")
             .contains("<module name=\"intellij.platform.optional\"/>")
         }
+      }
+    }
+  }
+
+  @Nested
+  inner class UpdateSuppressionsDslTestPluginPolicyTest {
+    @Test
+    fun `pure dsl test owned module respects explicit suppressions config in regular generation`(@TempDir tempDir: Path) {
+      runBlocking(Dispatchers.Default) {
+        val setup = pluginTestSetup(tempDir) {
+          contentModule("owner.content") {
+            descriptor = """<idea-plugin package="owner.content"/>"""
+            jpsDependency("dep.plugin")
+          }
+          contentModule("dep.plugin") {
+            descriptor = """<idea-plugin package="dep.plugin"/>"""
+          }
+          plugin("test.plugin") {
+            isTestPlugin = true
+            content("owner.content")
+          }
+          plugin("dep.plugin")
+        }
+
+        val graph = pluginGraph {
+          moduleWithScopedDeps("owner.content", "dep.plugin" to "COMPILE")
+          testPlugin("test.plugin") {
+            pluginId("test.plugin")
+            content("owner.content")
+          }
+          plugin("dep.plugin") {
+            pluginId("dep.plugin")
+          }
+          linkPluginMainTarget("dep.plugin")
+        }
+
+        val suppressionConfig = SuppressionConfig(
+          contentModules = mapOf(
+            ContentModuleName("owner.content") to org.jetbrains.intellij.build.productLayout.config.ContentModuleSuppression(
+              suppressPlugins = setOf(PluginId("dep.plugin"))
+            )
+          )
+        )
+
+        val descriptorCache = ModuleDescriptorCache(setup.jps.outputProvider, this)
+        val generation = planContentModuleDependenciesWithBothSets(
+          contentModuleName = ContentModuleName("owner.content"),
+          descriptorCache = descriptorCache,
+          pluginGraph = graph,
+          isTestDescriptor = false,
+          suppressionConfig = suppressionConfig,
+          updateSuppressions = false,
+          libraryModuleFilter = { true },
+        )
+        val plan = generation.plan
+        assertThat(plan).isNotNull()
+
+        assertThat(plan!!.suppressedPlugins)
+          .describedAs("Suppressions config should be honored when computing written plugin deps")
+          .contains(PluginId("dep.plugin"))
+        assertThat(plan.writtenPluginDependencies)
+          .doesNotContain(PluginId("dep.plugin"))
+      }
+    }
+
+    @Test
+    fun `dsl declared module with mixed ownership respects suppressions config in regular generation`(@TempDir tempDir: Path) {
+      runBlocking(Dispatchers.Default) {
+        val setup = pluginTestSetup(tempDir) {
+          contentModule("shared.content") {
+            descriptor = """<idea-plugin package="shared.content"/>"""
+            jpsDependency("dep.plugin")
+          }
+          contentModule("dep.plugin") {
+            descriptor = """<idea-plugin package="dep.plugin"/>"""
+          }
+          plugin("test.plugin") {
+            isTestPlugin = true
+            content("shared.content")
+          }
+          plugin("owner.plugin") {
+            content("shared.content")
+          }
+          plugin("dep.plugin")
+        }
+
+        val graph = pluginGraph {
+          moduleWithScopedDeps("shared.content", "dep.plugin" to "COMPILE")
+          testPlugin("test.plugin") {
+            pluginId("test.plugin")
+            content("shared.content")
+          }
+          plugin("owner.plugin") {
+            pluginId("owner.plugin")
+            content("shared.content")
+          }
+          plugin("dep.plugin") {
+            pluginId("dep.plugin")
+          }
+          linkPluginMainTarget("dep.plugin")
+        }
+
+        val suppressionConfig = SuppressionConfig(
+          contentModules = mapOf(
+            ContentModuleName("shared.content") to org.jetbrains.intellij.build.productLayout.config.ContentModuleSuppression(
+              suppressPlugins = setOf(PluginId("dep.plugin"))
+            )
+          )
+        )
+
+        val descriptorCache = ModuleDescriptorCache(setup.jps.outputProvider, this)
+        val generation = planContentModuleDependenciesWithBothSets(
+          contentModuleName = ContentModuleName("shared.content"),
+          descriptorCache = descriptorCache,
+          pluginGraph = graph,
+          isTestDescriptor = false,
+          suppressionConfig = suppressionConfig,
+          updateSuppressions = false,
+          libraryModuleFilter = { true },
+        )
+        val plan = generation.plan
+        assertThat(plan).isNotNull()
+
+        assertThat(plan!!.suppressedPlugins)
+          .describedAs("Suppressions config should remain effective for mixed-ownership modules")
+          .contains(PluginId("dep.plugin"))
+        assertThat(plan.writtenPluginDependencies)
+          .doesNotContain(PluginId("dep.plugin"))
+      }
+    }
+
+    @Test
+    fun `pure dsl test owned module auto-suppresses missing plugin deps in updateSuppressions`(@TempDir tempDir: Path) {
+      runBlocking(Dispatchers.Default) {
+        val setup = pluginTestSetup(tempDir) {
+          contentModule("owner.content") {
+            descriptor = """<idea-plugin package="owner.content"/>"""
+            jpsDependency("dep.plugin")
+          }
+          contentModule("dep.plugin") {
+            descriptor = """<idea-plugin package="dep.plugin"/>"""
+          }
+          plugin("test.plugin") {
+            isTestPlugin = true
+            content("owner.content")
+          }
+          plugin("dep.plugin")
+        }
+
+        val graph = pluginGraph {
+          moduleWithScopedDeps("owner.content", "dep.plugin" to "COMPILE")
+          testPlugin("test.plugin") {
+            pluginId("test.plugin")
+            content("owner.content")
+          }
+          plugin("dep.plugin") {
+            pluginId("dep.plugin")
+          }
+          linkPluginMainTarget("dep.plugin")
+        }
+
+        val descriptorCache = ModuleDescriptorCache(setup.jps.outputProvider, this)
+        val generation = planContentModuleDependenciesWithBothSets(
+          contentModuleName = ContentModuleName("owner.content"),
+          descriptorCache = descriptorCache,
+          pluginGraph = graph,
+          isTestDescriptor = false,
+          suppressionConfig = SuppressionConfig(),
+          updateSuppressions = true,
+          libraryModuleFilter = { true },
+        )
+        val plan = generation.plan
+        assertThat(plan).isNotNull()
+
+        assertThat(plan!!.allJpsPluginDependencies)
+          .containsExactly(PluginId("dep.plugin"))
+        assertThat(plan.suppressedPlugins)
+          .describedAs("updateSuppressions should auto-capture missing plugin deps into suppressions")
+          .contains(PluginId("dep.plugin"))
+        assertThat(plan.suppressionUsages)
+          .anyMatch {
+            it.type == SuppressionType.PLUGIN_DEP &&
+            it.sourceModule == ContentModuleName("owner.content") &&
+            it.suppressedDep == "dep.plugin"
+          }
+      }
+    }
+
+    @Test
+    fun `regular module still auto-suppresses missing plugin deps in updateSuppressions`(@TempDir tempDir: Path) {
+      runBlocking(Dispatchers.Default) {
+        val setup = pluginTestSetup(tempDir) {
+          contentModule("owner.content") {
+            descriptor = """<idea-plugin package="owner.content"/>"""
+            jpsDependency("dep.plugin")
+          }
+          contentModule("dep.plugin") {
+            descriptor = """<idea-plugin package="dep.plugin"/>"""
+          }
+          plugin("owner.plugin") {
+            content("owner.content")
+          }
+          plugin("dep.plugin")
+        }
+
+        val graph = pluginGraph {
+          moduleWithScopedDeps("owner.content", "dep.plugin" to "COMPILE")
+          plugin("owner.plugin") {
+            pluginId("owner.plugin")
+            content("owner.content")
+          }
+          plugin("dep.plugin") {
+            pluginId("dep.plugin")
+          }
+          linkPluginMainTarget("dep.plugin")
+        }
+
+        val descriptorCache = ModuleDescriptorCache(setup.jps.outputProvider, this)
+        val generation = planContentModuleDependenciesWithBothSets(
+          contentModuleName = ContentModuleName("owner.content"),
+          descriptorCache = descriptorCache,
+          pluginGraph = graph,
+          isTestDescriptor = false,
+          suppressionConfig = SuppressionConfig(),
+          updateSuppressions = true,
+          libraryModuleFilter = { true },
+        )
+        val plan = generation.plan
+        assertThat(plan).isNotNull()
+
+        assertThat(plan!!.suppressedPlugins)
+          .contains(PluginId("dep.plugin"))
+        assertThat(plan.suppressionUsages)
+          .anyMatch {
+            it.type == SuppressionType.PLUGIN_DEP &&
+            it.sourceModule == ContentModuleName("owner.content") &&
+            it.suppressedDep == "dep.plugin"
+          }
       }
     }
   }

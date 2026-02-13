@@ -106,6 +106,7 @@ internal object ProductModuleDependencyGenerator : PipelineNode {
               effectiveSuppressedModules.contains(ContentModuleName(moduleNameToPreserve))
             },
             preserveExistingPlugin = { true },
+            allowInsideSectionRegion = false,
             strategy = strategy,
           )
           DependencyFileResult(

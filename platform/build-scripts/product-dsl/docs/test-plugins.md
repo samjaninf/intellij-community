@@ -128,6 +128,8 @@ val isTestPlugin = content.isTestPlugin ||
 
 Created via `testPlugin {}` in `getProductContentDescriptor()`:
 - Plugin XML is **auto-generated** from Kotlin DSL
+- The generated file is fully owned by the DSL generator (`TestPluginXmlGenerator`): existing `plugin.xml`
+  content is replaced on regeneration, and dependency-updater region semantics do not apply
 - `isDslDefined = true` in `PluginContentInfo`
 - Auto-fixes (like structural violation fixes) are **skipped** - fix in Kotlin instead
 

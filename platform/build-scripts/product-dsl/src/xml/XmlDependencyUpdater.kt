@@ -90,6 +90,9 @@ private fun StringBuilder.appendPlugins(indent: String, plugins: List<String>) {
  * @param preserveExistingPlugin Predicate to identify which existing plugins should be preserved (manual deps)
  * @param xiIncludeModuleDeps Module deps already present via xi:includes (not to be duplicated in main file)
  * @param xiIncludePluginDeps Plugin deps already present via xi:includes (not to be duplicated in main file)
+ * @param allowInsideSectionRegion Whether region markers inside `<dependencies>` should be treated as generated sub-blocks.
+ *        Keep `true` for real plugin.xml files; use `false` for content module descriptors to avoid preserving
+ *        manual dependencies outside the generated region.
  * @param strategy File update strategy (actual writer or dry run recorder)
  * @return FileChangeStatus indicating what changed
  */
@@ -103,13 +106,14 @@ internal fun updateXmlDependencies(
   legacyPluginDependencies: List<String> = emptyList(),
   xiIncludeModuleDeps: Set<ContentModuleName> = emptySet(),
   xiIncludePluginDeps: Set<PluginId> = emptySet(),
+  allowInsideSectionRegion: Boolean = true,
   strategy: FileUpdateStrategy,
 ): FileChangeStatus {
   if (content.isEmpty()) {
     return FileChangeStatus.UNCHANGED
   }
 
-  val info = parseDependenciesInfo(content)
+  val info = parseDependenciesInfo(content, allowInsideSectionRegion)
   if (info == null) {
     if (moduleDependencies.isEmpty() && pluginDependencies.isEmpty()) {
       return FileChangeStatus.UNCHANGED
@@ -211,13 +215,13 @@ internal fun updateXmlDependencies(
  * logic as [updateXmlDependencies]. Returns null if no <dependencies> section exists.
  */
 internal fun extractDependenciesEntries(content: String): ParsedDependenciesEntries? {
-  val info = parseDependenciesInfo(content) ?: return null
+  val info = parseDependenciesInfo(content = content, allowInsideSectionRegion = true) ?: return null
   val moduleNames = info.entries.filterIsInstance<DepEntry.Module>().map { it.name }
   val pluginIds = info.entries.filterIsInstance<DepEntry.Plugin>().map { it.id }
   return ParsedDependenciesEntries(moduleNames = moduleNames, pluginIds = pluginIds)
 }
 
-private fun parseDependenciesInfo(content: String): DependenciesInfo? {
+private fun parseDependenciesInfo(content: String, allowInsideSectionRegion: Boolean): DependenciesInfo? {
   // Find <dependencies> section using StAX
   var depsStart = -1
   var depsLineStart = -1
@@ -294,8 +298,14 @@ private fun parseDependenciesInfo(content: String): DependenciesInfo? {
     DependenciesInfo(fold.startOffset, fold.endOffset, entries, entriesInRegion, fold.indent, RegionType.WRAPS_ENTIRE_SECTION)
   }
   else {
-    // Editor-fold inside section (plugin.xml)
-    DependenciesInfo(fold.startOffset, fold.endOffset, entries, entriesInRegion, fold.indent, RegionType.INSIDE_SECTION)
+    if (allowInsideSectionRegion) {
+      // Editor-fold inside section (plugin.xml)
+      DependenciesInfo(fold.startOffset, fold.endOffset, entries, entriesInRegion, fold.indent, RegionType.INSIDE_SECTION)
+    }
+    else {
+      // Normalize non-plugin descriptors to whole-section replacement.
+      DependenciesInfo(depsLineStart, depsEnd, entries, entriesInRegion, depsIndent, RegionType.WRAPS_ENTIRE_SECTION)
+    }
   }
 }
 
@@ -309,7 +319,16 @@ private fun insertDependenciesSection(content: String, modules: List<String>, pl
   val prefix = content.substring(0, insertPos)
   val suffix = content.substring(insertPos)
   val normalizedPrefix = if (prefix.isNotEmpty() && prefix.last() != '\n') "$prefix\n" else prefix
-  return normalizedPrefix + buildFullBlock(indent, emptyList(), modules, plugins) + suffix
+  val normalizedSuffix = suffix.removeSingleLeadingLineBreak()
+  return normalizedPrefix + buildFullBlock(indent, emptyList(), modules, plugins) + normalizedSuffix
+}
+
+private fun String.removeSingleLeadingLineBreak(): String {
+  return when {
+    startsWith("\r\n") -> substring(2)
+    startsWith("\n") -> substring(1)
+    else -> this
+  }
 }
 
 private val METADATA_TAGS = setOf(

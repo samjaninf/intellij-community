@@ -476,6 +476,13 @@ internal class GenerationPipeline(
     commitChanges: Boolean,
     trackingMaps: Map<Path, Set<String>>,
   ): List<ModuleSetFileResult> {
+    // In --update-suppressions mode we intentionally skip XML writes via XmlWritePolicy,
+    // but still must persist suppressions.json even when commitChanges=false.
+    if (model.updateSuppressions) {
+      model.fileUpdater.commit()
+      return emptyList()
+    }
+
     if (errors.isEmpty() && commitChanges) {
       // Clean up orphaned module set files before commit
       val deletedFiles = cleanupOrphanedModuleSetFiles(trackingMaps, model.xmlWritePolicy)

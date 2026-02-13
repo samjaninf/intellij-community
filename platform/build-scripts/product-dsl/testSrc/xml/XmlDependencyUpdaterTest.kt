@@ -42,6 +42,90 @@ class XmlDependencyUpdaterTest {
   }
 
   @Test
+  fun `inserting generated dependencies preserves blank line count before next section`(@TempDir tempDir: Path) {
+    val content = """
+      <idea-plugin>
+
+        <extensions defaultExtensionNs="com.intellij">
+        </extensions>
+      </idea-plugin>
+    """.trimIndent()
+
+    val updater = DeferredFileUpdater(tempDir)
+    val path = tempDir.resolve("META-INF/plugin.xml")
+    updateXmlDependencies(
+      path = path,
+      content = content,
+      moduleDependencies = listOf("intellij.platform.backend"),
+      pluginDependencies = emptyList(),
+      strategy = updater,
+    )
+
+    val xml = updater.getDiffs().single().expectedContent
+    assertThat(xml).contains("<!-- endregion -->\n\n  <extensions")
+    assertThat(xml).doesNotContain("<!-- endregion -->\n\n\n  <extensions")
+  }
+
+  @Test
+  fun `non plugin descriptor with inside region rewrites full dependencies section`(@TempDir tempDir: Path) {
+    val content = """
+      <idea-plugin>
+        <dependencies>
+          <module name="manual.dep"/>
+          <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
+          <module name="old.auto"/>
+          <!-- endregion -->
+        </dependencies>
+      </idea-plugin>
+    """.trimIndent()
+
+    val updater = DeferredFileUpdater(tempDir)
+    val path = tempDir.resolve("resources/intellij.sample.xml")
+    updateXmlDependencies(
+      path = path,
+      content = content,
+      moduleDependencies = listOf("intellij.new.auto"),
+      pluginDependencies = emptyList(),
+      allowInsideSectionRegion = false,
+      strategy = updater,
+    )
+
+    val xml = updater.getDiffs().single().expectedContent
+    assertThat(xml).contains("<!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->\n  <dependencies>")
+    assertThat(xml).contains("<module name=\"intellij.new.auto\"/>")
+    assertThat(xml).doesNotContain("<module name=\"manual.dep\"/>")
+  }
+
+  @Test
+  fun `suppressed module is preserved for non plugin descriptor even with inside region`(@TempDir tempDir: Path) {
+    val content = """
+      <idea-plugin>
+        <dependencies>
+          <module name="manual.dep"/>
+          <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
+          <module name="old.auto"/>
+          <!-- endregion -->
+        </dependencies>
+      </idea-plugin>
+    """.trimIndent()
+
+    val updater = DeferredFileUpdater(tempDir)
+    val path = tempDir.resolve("resources/intellij.sample.xml")
+    updateXmlDependencies(
+      path = path,
+      content = content,
+      moduleDependencies = listOf("intellij.new.auto"),
+      preserveExistingModule = { it == "manual.dep" },
+      allowInsideSectionRegion = false,
+      strategy = updater,
+    )
+
+    val xml = updater.getDiffs().single().expectedContent
+    assertThat(xml).contains("<module name=\"manual.dep\"/>")
+    assertThat(xml).contains("<module name=\"intellij.new.auto\"/>")
+  }
+
+  @Test
   fun `removes duplicate legacy depends for modern plugin deps`() {
     val content = """
       <idea-plugin>

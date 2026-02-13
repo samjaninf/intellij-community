@@ -274,13 +274,19 @@ private fun buildContentModuleDependencyPlanFromInfoWithBothSets(
   val allJpsPluginDeps = ArrayList<PluginId>()
   val suppressionUsages = ArrayList<SuppressionUsage>()
 
-  // Compute PRODUCTION dependencies using graph EDGE_TARGET_DEPENDS_ON
-  // For test modules (._test), include TEST scope deps since they run in test context
+  // Compute dependencies written to XML using graph EDGE_TARGET_DEPENDS_ON.
+  // Include TEST scope deps for:
+  // 1) test descriptor modules (._test), and
+  // 2) modules that are only sourced from test plugins (no production content source).
+  val includeTestScopeForWrittenDeps = graph.query {
+    val module = contentModule(contentModuleName)
+    isTestDescriptor || (module != null && !hasProductionContentSource(module.id))
+  }
   val prodGraphDeps = graph.query {
     computeJpsDeps(
       graph = graph,
       moduleName = contentModuleName,
-      includeTestScope = isTestDescriptor,
+      includeTestScope = includeTestScopeForWrittenDeps,
       libraryModuleFilter = libraryModuleFilter,
     )
   }

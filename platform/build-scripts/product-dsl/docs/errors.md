@@ -358,8 +358,9 @@ Run 'Generate Product Layouts' to fix automatically.
 
 💡 Fix: Add <plugin id="com.intellij.css"/> to the content module's XML descriptor
 
-Or suppress temporarily: Add to contentModuleAllowedMissingPluginDeps in ModuleSetGenerationConfig:
-       "intellij.react.ultimate" to setOf("com.intellij.css"),
+Or suppress temporarily:
+  - DSL-defined test plugin modules: add module-level allowedMissingPluginIds in the testPlugin DSL
+  - Non-DSL content modules: add suppressPlugins entry to platform/buildScripts/suppressions.json
 ```
 
 **Cause**: Content module has compile dependency in `.iml` on a plugin's main module, but the module's XML descriptor doesn't declare the plugin dependency.
@@ -369,9 +370,13 @@ Or suppress temporarily: Add to contentModuleAllowedMissingPluginDeps in ModuleS
 **Fixes**:
 1. **Add XML declaration** (preferred): Add `<plugin id="..."/>` to the content module's descriptor
 2. **Remove IML dependency**: If the dependency isn't actually needed
-3. **Suppress temporarily**: Add to `contentModuleAllowedMissingPluginDeps` config
+3. **Suppress temporarily**:
+   - DSL-defined test plugin modules: use `allowedMissingPluginIds`
+   - Non-DSL content modules: use `suppressions.json` (`contentModules.<module>.suppressPlugins`)
 
-**Note**: The error message includes copy-paste Kotlin code for the suppression config.
+**Note**:
+- In `--update-suppressions` mode, non-DSL cases are reported as warnings and their suppressions are updated in `suppressions.json`.
+- DSL test-plugin allowlists remain in code (`allowedMissingPluginIds`) and are not written to `suppressions.json`.
 
 ---
 
