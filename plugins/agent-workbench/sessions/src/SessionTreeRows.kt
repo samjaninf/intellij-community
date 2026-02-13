@@ -1,5 +1,9 @@
 package com.intellij.agent.workbench.sessions
 
+// @spec community/plugins/agent-workbench/spec/agent-sessions.spec.md
+// @spec community/plugins/agent-workbench/spec/agent-sessions-thread-visibility.spec.md
+// @spec community/plugins/agent-workbench/spec/actions/new-thread.spec.md
+
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background

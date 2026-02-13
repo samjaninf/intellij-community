@@ -1,5 +1,8 @@
 package com.intellij.agent.workbench.sessions
 
+// @spec community/plugins/agent-workbench/spec/agent-sessions.spec.md
+// @spec community/plugins/agent-workbench/spec/agent-sessions-thread-visibility.spec.md
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
