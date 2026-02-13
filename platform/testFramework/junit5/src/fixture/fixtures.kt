@@ -54,6 +54,7 @@ import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.copyToRecursively
+import kotlin.io.path.createDirectory
 import kotlin.io.path.exists
 
 @JvmOverloads
@@ -71,8 +72,8 @@ fun testNameFixture(lowerCaseFirstLetter: Boolean = true): TestFixture<String> =
 
 @JvmOverloads
 @TestOnly
-fun tempPathFixture(root: Path? = null, prefix: String = "IJ"): TestFixture<Path> = testFixture {
-  val tempDir = withContext(Dispatchers.IO) {
+fun tempPathFixture(root: Path? = null, prefix: String = "IJ", subdirName: String? = null): TestFixture<Path> = testFixture {
+  var tempDir = withContext(Dispatchers.IO) {
     if (root == null) {
       it.eel?.fs?.createTemporaryDirectory(CreateTemporaryEntryOptions.Builder().prefix(prefix).build())?.getOrThrow()?.asNioPath()
       ?: Files.createTempDirectory(prefix)
@@ -83,6 +84,9 @@ fun tempPathFixture(root: Path? = null, prefix: String = "IJ"): TestFixture<Path
       }
       Files.createTempDirectory(root, prefix)
     }
+  }
+  if (subdirName != null) {
+    tempDir = tempDir.resolve(subdirName).createDirectory()
   }
   val realTempDir = tempDir.toRealPath()
   initialized(realTempDir) {

@@ -4,6 +4,7 @@ package com.jetbrains.python.venvReader
 import com.intellij.execution.Platform
 import com.intellij.execution.target.FullPathOnTarget
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.fileLogger
 import com.intellij.openapi.progress.runBlockingMaybeCancellable
 import com.intellij.openapi.util.io.toCanonicalPath
 import com.intellij.platform.eel.EelApi
@@ -13,6 +14,7 @@ import com.intellij.platform.eel.provider.asNioPath
 import com.intellij.platform.eel.provider.localEel
 import com.intellij.platform.eel.provider.osFamily
 import com.intellij.util.concurrency.annotations.RequiresBackgroundThread
+import com.intellij.util.ui.EDT
 import com.jetbrains.python.PythonBinary
 import com.jetbrains.python.PythonHomePath
 import com.jetbrains.python.venvReader.VirtualEnvReader.Companion.Instance
@@ -71,7 +73,7 @@ class VirtualEnvReader private constructor(
 
   @RequiresBackgroundThread
   fun getPyenvRootDir(eel: EelApi? = getLocalEelIfApp()): Directory {
-    return resolveDirFromEnvOrElseGetDirInHomePath(eel, "PYENV_ROOT", ".pyenv")
+    return resolveDirFromEnvOrElseGetDirInHomePath(eel, "PYENV_ROOT", PYENV_DEFAULT_DIR_NAME)
   }
 
   @RequiresBackgroundThread
@@ -235,6 +237,12 @@ class VirtualEnvReader private constructor(
 
   @RequiresBackgroundThread
   private fun resolveDirFromEnvOrElseGetDirInHomePath(eel: EelApi?, env: String, dirName: String): Path {
+    if (EDT.isCurrentThreadEdt()) {
+      // This check should have been done by @RequiresBackgroundThread
+      // But since Kotlin doesn't support it, we have to do that imperatively.
+      // This error doesn't break user flow but tests
+      logger.error("Access from EDT isn't allowed", Throwable())
+    }
     val envs = forcedVars
                ?: eel?.let { eel -> runBlockingMaybeCancellable { eel.exec.environmentVariables().eelIt().await() } }
                ?: System.getenv()
@@ -245,6 +253,7 @@ class VirtualEnvReader private constructor(
 
 
   companion object {
+    private val logger = fileLogger()
     internal val Instance: VirtualEnvReader = VirtualEnvReader(forcedVars = null, forcedOs = null)
 
 
@@ -258,6 +267,8 @@ class VirtualEnvReader private constructor(
 
     @Suppress("VENV_IS_OK") // The only place it should be used in prod
     const val DEFAULT_VIRTUALENV_DIRNAME: String = ".venv"
+
+    const val PYENV_DEFAULT_DIR_NAME: String = ".pyenv"
 
     private val POSIX_PYTHON_PATTERN = Regex("^(pypy|python)(\\d+(\\.\\d+)*)?$")
     private val WIN_PYTHON_PATTERN = Regex("^(pypy|python)(\\d+(\\.\\d+)*)?\\.exe$", RegexOption.IGNORE_CASE)
