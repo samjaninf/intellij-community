@@ -8,11 +8,11 @@ import com.intellij.platform.eel.EelOsFamily
 import com.intellij.platform.eel.EelResult
 import com.intellij.platform.eel.EelUserPosixInfo
 import com.intellij.platform.eel.EelUserWindowsInfo
-import com.intellij.platform.eel.fs.*
 import com.intellij.platform.eel.fs.EelFileSystemApi
 import com.intellij.platform.eel.fs.EelFileSystemPosixApi
 import com.intellij.platform.eel.fs.EelOpenedFile
 import com.intellij.platform.eel.fs.EelPosixFileInfo
+import com.intellij.platform.eel.fs.EelWindowsFileInfo
 import com.intellij.platform.eel.fs.StreamingReadResult
 import com.intellij.platform.eel.fs.StreamingWriteResult
 import com.intellij.platform.eel.fs.WalkDirectoryEntryResult
