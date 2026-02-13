@@ -2233,6 +2233,11 @@ public abstract class K2JsBasicCompletionLegacyStdlibTestGenerated extends Abstr
                 runTest("../../completion/testData/basic/common/override/SecondConstructorParameter.kt");
             }
 
+            @TestMetadata("SecondConstructorParameterWithDuplicateClass.kt")
+            public void testSecondConstructorParameterWithDuplicateClass() throws Exception {
+                runTest("../../completion/testData/basic/common/override/SecondConstructorParameterWithDuplicateClass.kt");
+            }
+
             @TestMetadata("Simple.kt")
             public void testSimple() throws Exception {
                 runTest("../../completion/testData/basic/common/override/Simple.kt");

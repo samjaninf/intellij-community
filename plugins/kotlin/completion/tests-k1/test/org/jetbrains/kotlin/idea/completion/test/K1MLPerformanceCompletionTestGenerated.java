@@ -2263,6 +2263,11 @@ public abstract class K1MLPerformanceCompletionTestGenerated extends AbstractK1M
                 runTest("../testData/basic/common/override/SecondConstructorParameter.kt");
             }
 
+            @TestMetadata("SecondConstructorParameterWithDuplicateClass.kt")
+            public void testSecondConstructorParameterWithDuplicateClass() throws Exception {
+                runTest("../testData/basic/common/override/SecondConstructorParameterWithDuplicateClass.kt");
+            }
+
             @TestMetadata("Simple.kt")
             public void testSimple() throws Exception {
                 runTest("../testData/basic/common/override/Simple.kt");
