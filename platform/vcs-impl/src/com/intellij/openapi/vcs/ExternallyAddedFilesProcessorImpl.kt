@@ -55,7 +55,7 @@ internal class ExternallyAddedFilesProcessorImpl(
 
   override fun unchangedFileStatusChanged(upToDate: Boolean) {
     if (!upToDate) return
-    if (!needProcessExternalFiles()) return
+    if (doNothingSilently()) return
 
     val files: Set<VirtualFile>
     UNPROCESSED_FILES_LOCK.write {
@@ -71,7 +71,7 @@ internal class ExternallyAddedFilesProcessorImpl(
   }
 
   override suspend fun filesChanged(events: List<VFileEvent>) {
-    if (!needProcessExternalFiles()) {
+    if (doNothingSilently()) {
       return
     }
 
@@ -98,14 +98,8 @@ internal class ExternallyAddedFilesProcessorImpl(
     }
   }
 
-  private fun doNothingSilently() = vcsManager.getStandardConfirmation(ADD, vcs).value == DO_NOTHING_SILENTLY
-
-  private fun needProcessExternalFiles(): Boolean {
-    if (doNothingSilently()) return false
-    if (!Registry.`is`("vcs.process.externally.added.files")) return false
-
-    return true
-  }
+  private fun doNothingSilently() =
+    Registry.`is`("vcs.files.processing.do.nothing", false) || vcsManager.getStandardConfirmation(ADD, vcs).value == DO_NOTHING_SILENTLY
 
   override fun dispose() {
     UNPROCESSED_FILES_LOCK.write {
