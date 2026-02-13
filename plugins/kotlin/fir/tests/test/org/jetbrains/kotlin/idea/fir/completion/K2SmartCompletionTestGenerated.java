@@ -1510,6 +1510,16 @@ public abstract class K2SmartCompletionTestGenerated extends AbstractK2SmartComp
             runTest("../../completion/testData/smart/NamedArgument.kt");
         }
 
+        @TestMetadata("NamedArgumentsAbsent.kt")
+        public void testNamedArgumentsAbsent() throws Exception {
+            runTest("../../completion/testData/smart/NamedArgumentsAbsent.kt");
+        }
+
+        @TestMetadata("NamedArgumentsAfterNamedArg.kt")
+        public void testNamedArgumentsAfterNamedArg() throws Exception {
+            runTest("../../completion/testData/smart/NamedArgumentsAfterNamedArg.kt");
+        }
+
         @TestMetadata("NoAssertFailsWith.kt")
         public void testNoAssertFailsWith() throws Exception {
             runTest("../../completion/testData/smart/NoAssertFailsWith.kt");
