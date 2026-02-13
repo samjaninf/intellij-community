@@ -19,6 +19,9 @@ jvm_library(
     "//platform/testFramework/junit5",
     "//platform/core-api:core",
     "//platform/core-ui",
+    "//platform/lang-impl",
+    "//platform/lang-api:lang",
+    "//platform/projectModel-api:projectModel",
   ]
 )
 ### auto-generated section `build intellij.platform.testFramework.junit5.codeInsight` end

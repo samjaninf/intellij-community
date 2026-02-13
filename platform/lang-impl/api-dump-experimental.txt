@@ -120,6 +120,7 @@ c:com.intellij.codeInsight.actions.VcsFacade
 - a:getName():java.lang.String
 - getPlaceholderCollector(com.intellij.openapi.editor.Editor,com.intellij.psi.PsiFile):com.intellij.codeInsight.codeVision.CodeVisionPlaceholderCollector
 - a:getRelativeOrderings():java.util.List
+- getSingleEntryPerLine():Z
 - handleClick(com.intellij.openapi.editor.Editor,com.intellij.openapi.util.TextRange,com.intellij.codeInsight.codeVision.CodeVisionEntry):V
 - handleExtraAction(com.intellij.openapi.editor.Editor,com.intellij.openapi.util.TextRange,com.intellij.codeInsight.codeVision.CodeVisionEntry,java.lang.String):V
 - handleExtraAction(com.intellij.openapi.editor.Editor,com.intellij.openapi.util.TextRange,java.lang.String):V

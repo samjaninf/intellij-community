@@ -1,4 +1,4 @@
-// Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInsight.codeVision
 
 import com.intellij.codeInsight.codeVision.ui.CodeVisionView
@@ -131,7 +131,15 @@ open class EditorCodeVisionContext(
           continue
         }
 
-        val lastFilteredLineLenses = lineLenses.groupBy { it.codeVisionEntryOrThrow.providerId }.map { it.value.last() }
+        val lastFilteredLineLenses = lineLenses.groupBy { it.codeVisionEntryOrThrow.providerId }.flatMap { (providerId, lenses) ->
+          val provider = codeVisionHost.getProviderById(providerId)
+          if (provider?.singleEntryPerLine == true) {
+            listOf(lenses.last())
+          }
+          else {
+            lenses
+          }
+        }
         val groupedLenses = lastFilteredLineLenses.groupBy { codeVisionHost.getAnchorForEntry(it.codeVisionEntryOrThrow) }
 
         val anchoringRange = groupedLenses.first().value.first()
