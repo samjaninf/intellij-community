@@ -264,7 +264,9 @@ object TemplateInlayUtil {
       if (textOccurrences != null) {
         processor.setToSearchForTextOccurrences(elementToRename, textOccurrences)
       }
-      restart.run()
+      WriteIntentReadAction.run {
+        restart.run()
+      }
     }
   }
 
