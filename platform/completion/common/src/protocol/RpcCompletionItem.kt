@@ -3,6 +3,7 @@ package com.intellij.platform.completion.common.protocol
 
 import com.intellij.codeInsight.completion.CodeCompletionHandlerBase
 import com.intellij.codeInsight.completion.CompletionResult
+import com.intellij.codeInsight.completion.command.RemDevCommandCompletionHelpers
 import com.intellij.codeInsight.lookup.AutoCompletionPolicy
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementInsertStopper
@@ -24,6 +25,7 @@ data class RpcCompletionItem(
   val shouldStopLookupInsertion: Boolean = false,
   val isDirectInsertion: Boolean = false,
   val isWorthShowingInAutoPopup: Boolean = false,
+  val commandState: RemDevCommandCompletionHelpers.CommandState? = null
 ) {
   override fun toString(): String = buildToString("RpcCompletionItem") {
     field("id", id)
@@ -61,6 +63,7 @@ fun CompletionResult.toRpc(): RpcCompletionItem {
     isDirectInsertion = element.getUserData(CodeCompletionHandlerBase.DIRECT_INSERTION) != null,
     prefixMatcher = prefixMatcher.toRpc(id),
     isWorthShowingInAutoPopup = element.isWorthShowingInAutoPopup(),
+    commandState = RemDevCommandCompletionHelpers.getCommandState(element)
   )
 }
 

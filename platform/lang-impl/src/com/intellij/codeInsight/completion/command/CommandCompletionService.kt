@@ -2,6 +2,8 @@
 package com.intellij.codeInsight.completion.command
 
 import com.intellij.codeInsight.CodeInsightBundle
+import com.intellij.codeInsight.completion.command.RemDevCommandCompletionHelpers.isCommand
+import com.intellij.codeInsight.completion.command.RemDevCommandCompletionHelpers.isPostfix
 import com.intellij.codeInsight.completion.command.configuration.ApplicationCommandCompletionService
 import com.intellij.codeInsight.daemon.impl.HintRenderer
 import com.intellij.codeInsight.editorLineStripeHint.EditorLineStripeTextRenderer
@@ -16,7 +18,6 @@ import com.intellij.codeInsight.lookup.LookupManagerListener
 import com.intellij.codeInsight.lookup.impl.LookupCustomizer
 import com.intellij.codeInsight.lookup.impl.LookupImpl
 import com.intellij.codeInsight.template.impl.TemplateColors
-import com.intellij.codeInsight.template.postfix.completion.PostfixTemplateLookupElement
 import com.intellij.codeInsight.template.postfix.settings.PostfixTemplatesSettings
 import com.intellij.lang.Language
 import com.intellij.lang.LanguageExtension
@@ -136,7 +137,7 @@ internal class CommandCompletionService(
     if (showIfMeaningless) {
       lookup.showIfMeaningless() // stop hiding
     }
-    lookup.arranger.additionalMatcher = CommandCompletionLookupItemMatcher(PostfixTemplatesSettings.getInstance().isShowAsSeparateGroup)
+    lookup.arranger.additionalMatcher = CommandCompletionLookupItemMatcher(PostfixTemplatesSettings.getInstance().isShowAsSeparateGroup) // todo settings move frontend
     lookup.arranger.prefixChanged(lookup)
     lookup.requestResize()
     lookup.refreshUi(false, true)
@@ -186,15 +187,14 @@ internal class CommandCompletionService(
   }
 
   private class CommandCompletionLookupItemMatcher(private val showPostfixAsSeparateGroup: Boolean) : Condition<LookupElement> {
-    override fun value(e: LookupElement): Boolean =
-      e.`as`(CommandCompletionLookupElement::class.java) != null ||
-      (showPostfixAsSeparateGroup && e.`as`(PostfixTemplateLookupElement::class.java) != null)
+    override fun value(element: LookupElement): Boolean =
+      isCommand(element) ||
+      (showPostfixAsSeparateGroup && isPostfix(element))
   }
 
   private object NotPostfixCompletionLookupItemMatcher : Condition<LookupElement> {
-    override fun value(e: LookupElement?): Boolean {
-      return e != null && e.`as`(PostfixTemplateLookupElement::class.java) == null
-    }
+    override fun value(element: LookupElement): Boolean =
+      !isPostfix(element)
   }
 }
 
