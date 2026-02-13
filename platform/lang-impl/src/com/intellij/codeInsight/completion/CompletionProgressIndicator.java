@@ -643,6 +643,7 @@ public final class CompletionProgressIndicator extends ProgressIndicatorBase imp
 
     ThreadingAssertions.assertEventDispatchThread();
     Disposer.dispose(queue);
+    //noinspection removal
     LookupManager.getInstance(getProject()).removePropertyChangeListener(myLookupManagerListener);
 
     CompletionServiceImpl.assertPhase(CompletionPhase.BgCalculation.class,
@@ -1013,7 +1014,7 @@ public final class CompletionProgressIndicator extends ProgressIndicatorBase imp
     try {
       calculateItems(initContext, consumer, parameters);
     }
-    catch (ProcessCanceledException ignore) {
+    catch (@SuppressWarnings("IncorrectCancellationExceptionHandling") ProcessCanceledException ignore) {
       cancel(); // some contributor may just throw PCE; if indicator is not canceled everything will hang
     }
     catch (Throwable t) {
