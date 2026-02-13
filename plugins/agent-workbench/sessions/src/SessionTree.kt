@@ -4,10 +4,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.intellij.agent.workbench.chat.AgentChatTabSelection
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
@@ -21,15 +18,12 @@ import org.jetbrains.jewel.ui.component.styling.LazyTreeMetrics
 import org.jetbrains.jewel.ui.component.styling.LazyTreeStyle
 import org.jetbrains.jewel.ui.theme.treeStyle
 
-private const val PROJECT_CLICK_SUPPRESSION_MS = 500L
-
 @OptIn(ExperimentalJewelApi::class)
 @Composable
 internal fun sessionTree(
   projects: List<AgentProjectSessions>,
   onRefresh: () -> Unit,
   onOpenProject: (String) -> Unit,
-  onCreateThread: (String) -> Unit,
   onProjectExpanded: (String) -> Unit,
   onWorktreeExpanded: (String, String) -> Unit = { _, _ -> },
   onOpenThread: (String, AgentSessionThread) -> Unit,
@@ -78,27 +72,6 @@ internal fun sessionTree(
   val tree = remember(projects, visibleProjectCount, visibleThreadCounts) {
     buildSessionTree(projects, visibleProjectCount, visibleThreadCounts)
   }
-  var suppressedProjectClick by remember { mutableStateOf<SuppressedProjectClick?>(null) }
-
-  fun suppressNextProjectClick(path: String) {
-    suppressedProjectClick = SuppressedProjectClick(
-      path = path,
-      expiresAt = System.currentTimeMillis() + PROJECT_CLICK_SUPPRESSION_MS,
-    )
-  }
-
-  fun shouldSuppressProjectClick(path: String): Boolean {
-    val suppression = suppressedProjectClick ?: return false
-    if (System.currentTimeMillis() > suppression.expiresAt) {
-      suppressedProjectClick = null
-      return false
-    }
-    if (suppression.path != path) {
-      return false
-    }
-    suppressedProjectClick = null
-    return true
-  }
 
   val treeStyle = run {
     val baseStyle = JewelTheme.treeStyle
@@ -127,9 +100,7 @@ internal fun sessionTree(
       onElementClick = { element ->
         when (val node = element.data) {
           is SessionTreeNode.Project -> {
-            if (!shouldSuppressProjectClick(node.project.path)) {
-              onOpenProject(node.project.path)
-            }
+            onOpenProject(node.project.path)
           }
           is SessionTreeNode.Thread -> {
             val path = when (val id = element.id) {
@@ -166,10 +137,6 @@ internal fun sessionTree(
       sessionTreeNodeContent(
         element = element,
         onOpenProject = onOpenProject,
-        onCreateThread = { path ->
-          suppressNextProjectClick(path)
-          onCreateThread(path)
-        },
         onRefresh = onRefresh,
         onCreateSession = onCreateSession,
         lastUsedProvider = lastUsedProvider,
@@ -178,11 +145,6 @@ internal fun sessionTree(
     }
   }
 }
-
-private data class SuppressedProjectClick(
-  val path: String,
-  val expiresAt: Long,
-)
 
 private fun buildSessionTree(
   projects: List<AgentProjectSessions>,

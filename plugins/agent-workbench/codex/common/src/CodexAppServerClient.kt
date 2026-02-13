@@ -283,7 +283,7 @@ class CodexAppServerClient(
     val configuredExecutable = executablePathProvider()
       ?.trim()
       ?.takeIf { it.isNotEmpty() }
-    val executable = configuredExecutable ?: CODEX_COMMAND
+    val executable = configuredExecutable ?: CodexCliUtils.CODEX_COMMAND
     val process = try {
       GeneralCommandLine(executable, "app-server")
         .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
@@ -294,7 +294,6 @@ class CodexAppServerClient(
             withWorkingDirectory(directory)
           }
         }
-        .createProcess()
         .createProcess()
     }
     catch (t: Throwable) {

@@ -21,7 +21,7 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
 - Make Codex thread indicators reflect real activity based on rollout data.
 - Keep app-server implementation in code as an alternate backend.
 - Avoid archived-session handling in this iteration.
-- Fix Codex `+` action to open fresh CLI chat (`codex`) without pre-creating a session.
+- Keep rollout backend changes independent from new-session action semantics.
 
 ## Non-goals
 - Archived session browsing or unarchive actions.
@@ -41,7 +41,7 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
   - `reviewing`: teal (`#2FD1C4`)
   - `processing`: orange (`#FF9F43`)
   - `ready`: green (`#3FE47E`)
-- Codex project-row `+` action must open a fresh chat command `codex` (no `codex resume <id>`).
+- New-session action semantics (including Codex `Codex (Full Auto)` parameters) are defined in `spec/actions/new-thread.spec.md` and are backend-invariant.
 - Existing thread open behavior remains `codex resume <threadId>`.
 
 ## Data & Backend
@@ -57,3 +57,4 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
 ## References
 - `spec/agent-sessions.spec.md`
 - `spec/agent-chat-editor.spec.md`
+- `spec/actions/new-thread.spec.md`

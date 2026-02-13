@@ -100,8 +100,10 @@ class AgentSessionsToolWindowTest {
   }
 
   @Test
-  fun hoveringProjectRowShowsNewThreadActionAndDoesNotInvokeOpenCallback() {
-    var createdPath: String? = null
+  fun hoveringProjectRowShowsQuickCreateSessionActionAndDoesNotInvokeOpenCallback() {
+    var createdSessionPath: String? = null
+    var createdSessionProvider: AgentSessionProvider? = null
+    var createdSessionYolo: Boolean? = null
     var openedPath: String? = null
     val projectPath = "/work/project-plus"
     val projects = listOf(
@@ -117,23 +119,30 @@ class AgentSessionsToolWindowTest {
         state = AgentSessionsState(projects = projects),
         onRefresh = {},
         onOpenProject = { openedPath = it },
-        onCreateThread = { createdPath = it },
+        onCreateSession = { path, provider, yolo ->
+          createdSessionPath = path
+          createdSessionProvider = provider
+          createdSessionYolo = yolo
+        },
+        lastUsedProvider = AgentSessionProvider.CLAUDE,
       )
     }
 
-    val newThreadLabel = AgentSessionsBundle.message("toolwindow.action.new.thread")
-    composeRule.onAllNodesWithContentDescription(newThreadLabel).assertCountEquals(0)
+    val quickActionLabel = AgentSessionsBundle.message("toolwindow.provider.claude")
+    composeRule.onAllNodesWithContentDescription(quickActionLabel).assertCountEquals(0)
 
     composeRule.onNodeWithText("Project Plus")
       .assertIsDisplayed()
       .performMouseInput { moveTo(center) }
 
-    composeRule.onNodeWithContentDescription(newThreadLabel)
+    composeRule.onNodeWithContentDescription(quickActionLabel)
       .assertIsDisplayed()
       .performClick()
 
     composeRule.runOnIdle {
-      assertThat(createdPath).isEqualTo(projectPath)
+      assertThat(createdSessionPath).isEqualTo(projectPath)
+      assertThat(createdSessionProvider).isEqualTo(AgentSessionProvider.CLAUDE)
+      assertThat(createdSessionYolo).isFalse()
       assertThat(openedPath).isNull()
     }
   }

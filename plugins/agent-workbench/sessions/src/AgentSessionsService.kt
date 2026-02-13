@@ -41,7 +41,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
-import java.util.UUID
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
 
@@ -49,7 +48,7 @@ private val LOG = logger<AgentSessionsService>()
 
 private const val SUPPRESS_BRANCH_MISMATCH_DIALOG_KEY = "agent.workbench.suppress.branch.mismatch.dialog"
 private const val OPEN_PROJECT_ACTION_KEY_PREFIX = "project-open"
-private const val CREATE_THREAD_ACTION_KEY_PREFIX = "thread-create"
+private const val CREATE_SESSION_ACTION_KEY_PREFIX = "session-create"
 private const val OPEN_THREAD_ACTION_KEY_PREFIX = "thread-open"
 private const val OPEN_SUB_AGENT_ACTION_KEY_PREFIX = "subagent-open"
 
@@ -337,26 +336,6 @@ internal class AgentSessionsService private constructor(
     }
   }
 
-  fun createAndOpenThread(path: String, currentProject: Project? = null) {
-    val normalized = normalizePath(path)
-    val key = buildCreateThreadActionKey(normalized)
-    actionGate.launch(
-      scope = serviceScope,
-      key = key,
-      policy = SingleFlightPolicy.DROP,
-      progress = dedicatedFrameOpenProgressRequest(currentProject),
-      onDrop = { LOG.debug("Dropped duplicate create thread action for $normalized") },
-    ) {
-      val freshThread = createFreshCodexThread()
-      openChat(
-        path = normalized,
-        thread = freshThread,
-        subAgent = null,
-        shellCommandOverride = buildAgentSessionNewCommand(AgentSessionProvider.CODEX),
-      )
-    }
-  }
-
   fun showMoreProjects() {
     mutableState.update { it.copy(visibleProjectCount = it.visibleProjectCount + DEFAULT_VISIBLE_PROJECT_COUNT) }
   }
@@ -430,9 +409,23 @@ internal class AgentSessionsService private constructor(
     }
   }
 
-  fun createNewSession(path: String, provider: AgentSessionProvider, yolo: Boolean = false) {
-    serviceScope.launch {
-      val normalized = normalizePath(path)
+  fun createNewSession(
+    path: String,
+    provider: AgentSessionProvider,
+    yolo: Boolean = false,
+    currentProject: Project? = null,
+  ) {
+    val normalized = normalizePath(path)
+    val key = buildCreateSessionActionKey(normalized, provider, yolo)
+    actionGate.launch(
+      scope = serviceScope,
+      key = key,
+      policy = SingleFlightPolicy.DROP,
+      progress = dedicatedFrameOpenProgressRequest(currentProject),
+      onDrop = {
+        LOG.debug("Dropped duplicate create session action for $normalized:$provider:yolo=$yolo")
+      },
+    ) {
       service<AgentSessionsTreeUiStateService>().setLastUsedProvider(provider)
 
       val identity: String
@@ -639,8 +632,8 @@ internal class AgentSessionsService private constructor(
     return "$OPEN_PROJECT_ACTION_KEY_PREFIX:$path"
   }
 
-  private fun buildCreateThreadActionKey(path: String): String {
-    return "$CREATE_THREAD_ACTION_KEY_PREFIX:$path"
+  private fun buildCreateSessionActionKey(path: String, provider: AgentSessionProvider, yolo: Boolean): String {
+    return "$CREATE_SESSION_ACTION_KEY_PREFIX:$path:$provider:yolo=$yolo"
   }
 
   private fun buildOpenThreadActionKey(path: String, thread: AgentSessionThread): String {
@@ -1124,17 +1117,6 @@ internal class AgentSessionsService private constructor(
     }
 
     return null
-  }
-
-  private fun createFreshCodexThread(): AgentSessionThread {
-    return AgentSessionThread(
-      id = "new-${UUID.randomUUID()}",
-      title = AgentSessionsBundle.message("toolwindow.provider.codex"),
-      updatedAt = System.currentTimeMillis(),
-      archived = false,
-      activity = AgentSessionActivity.PROCESSING,
-      provider = AgentSessionProvider.CODEX,
-    )
   }
 
   internal data class ProjectEntry(

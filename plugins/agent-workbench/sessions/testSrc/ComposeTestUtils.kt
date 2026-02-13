@@ -20,11 +20,17 @@ import org.jetbrains.jewel.foundation.theme.ThemeDefinition
 import org.jetbrains.jewel.foundation.theme.ThemeIconData
 import org.jetbrains.jewel.intui.standalone.theme.default
 import org.jetbrains.jewel.ui.ComponentStyling
+import org.jetbrains.jewel.ui.LocalMenuItemShortcutHintProvider
+import org.jetbrains.jewel.ui.LocalMenuItemShortcutProvider
 import org.jetbrains.jewel.ui.LocalTypography
+import org.jetbrains.jewel.ui.MenuItemShortcutHintProvider
+import org.jetbrains.jewel.ui.MenuItemShortcutProvider
 import org.jetbrains.jewel.ui.Typography
+import org.jetbrains.jewel.ui.component.ContextMenuItemOptionAction
 import org.jetbrains.jewel.ui.icon.LocalNewUiChecker
 import org.jetbrains.jewel.ui.icon.NewUiChecker
 import org.jetbrains.jewel.ui.theme.BaseJewelTheme
+import javax.swing.KeyStroke
 
 internal fun ComposeContentTestRule.setContentWithTheme(content: @Composable () -> Unit) {
   setContent {
@@ -32,6 +38,8 @@ internal fun ComposeContentTestRule.setContentWithTheme(content: @Composable () 
       CompositionLocalProvider(
         LocalTypography provides TestTypography,
         LocalNewUiChecker provides TestNewUiChecker,
+        LocalMenuItemShortcutProvider provides EmptyMenuItemShortcutProvider,
+        LocalMenuItemShortcutHintProvider provides EmptyMenuItemShortcutHintProvider,
       ) {
         content()
       }
@@ -130,4 +138,12 @@ private object TestTypography : Typography {
 
 private object TestNewUiChecker : NewUiChecker {
   override fun isNewUi(): Boolean = true
+}
+
+private object EmptyMenuItemShortcutProvider : MenuItemShortcutProvider {
+  override fun getShortcutKeyStroke(actionType: ContextMenuItemOptionAction): KeyStroke? = null
+}
+
+private object EmptyMenuItemShortcutHintProvider : MenuItemShortcutHintProvider {
+  override fun getShortcutHint(actionType: ContextMenuItemOptionAction): String = ""
 }

@@ -3,7 +3,6 @@ package com.intellij.agent.workbench.sessions
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -25,8 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.takeOrElse
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -37,20 +34,17 @@ import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.foundation.theme.LocalContentColor
 import org.jetbrains.jewel.ui.component.CircularProgressIndicator
 import org.jetbrains.jewel.ui.component.ContextMenuItemOption
-import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.OutlinedButton
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.Tooltip
 import org.jetbrains.jewel.ui.component.search.highlightSpeedSearchMatches
 import org.jetbrains.jewel.ui.component.search.highlightTextSearch
-import org.jetbrains.jewel.ui.icons.AllIconsKeys
 
 @OptIn(ExperimentalJewelApi::class)
 @Composable
 internal fun SelectableLazyItemScope.sessionTreeNodeContent(
   element: Tree.Element<SessionTreeNode>,
   onOpenProject: (String) -> Unit,
-  onCreateThread: (String) -> Unit,
   onRefresh: () -> Unit,
   onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit = { _, _, _ -> },
   lastUsedProvider: AgentSessionProvider? = null,
@@ -61,7 +55,6 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
     is SessionTreeNode.Project -> projectNodeRow(
       project = node.project,
       onOpenProject = onOpenProject,
-      onCreateThread = onCreateThread,
       onCreateSession = onCreateSession,
       lastUsedProvider = lastUsedProvider,
     )
@@ -138,8 +131,6 @@ private fun rememberTreeRowChrome(
 private fun SelectableLazyItemScope.projectNodeRow(
   project: AgentProjectSessions,
   onOpenProject: (String) -> Unit,
-  onCreateThread: (String) -> Unit,
-  onCreateThread: (String) -> Unit,
   onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit,
   lastUsedProvider: AgentSessionProvider?,
 ) {
@@ -203,14 +194,7 @@ private fun SelectableLazyItemScope.projectNodeRow(
         NewSessionHoverActions(
           path = project.path,
           lastUsedProvider = lastUsedProvider,
-          onCreateSession = { path, provider, yolo ->
-            if (provider == AgentSessionProvider.CODEX && !yolo && lastUsedProvider == null) {
-              onCreateThread(path)
-            }
-            else {
-              onCreateSession(path, provider, yolo)
-            }
-          },
+          onCreateSession = onCreateSession,
           popupVisible = newSessionPopupVisible,
           onPopupVisibleChange = { newSessionPopupVisible = it },
         )

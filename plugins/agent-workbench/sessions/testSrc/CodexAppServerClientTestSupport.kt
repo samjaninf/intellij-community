@@ -215,10 +215,21 @@ private fun resolveTestClasspath(): String {
       .map(String::trim)
       .filter(String::isNotEmpty)
     if (entries.isNotEmpty()) {
-      return entries.joinToString(File.pathSeparator)
+      return absolutizeClasspathEntries(entries)
     }
   }
-  return System.getProperty("java.class.path")
+  val classpath = System.getProperty("java.class.path")
+  val entries = classpath.split(File.pathSeparator)
+    .map(String::trim)
+    .filter(String::isNotEmpty)
+  return absolutizeClasspathEntries(entries)
+}
+
+private fun absolutizeClasspathEntries(entries: List<String>): String {
+  return entries.joinToString(File.pathSeparator) { entry ->
+    val path = Path.of(entry)
+    if (path.isAbsolute) entry else path.toAbsolutePath().normalize().toString()
+  }
 }
 
 private fun writeAppServerArgsFile(tempDir: Path, classpath: String, configPath: Path): Path {
