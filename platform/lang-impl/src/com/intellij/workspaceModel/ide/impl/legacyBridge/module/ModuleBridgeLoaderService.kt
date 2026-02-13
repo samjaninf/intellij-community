@@ -30,6 +30,7 @@ import com.intellij.workspaceModel.ide.impl.jps.serialization.JpsProjectModelSyn
 import com.intellij.workspaceModel.ide.impl.jpsMetrics
 import com.intellij.workspaceModel.ide.impl.legacyBridge.library.ProjectLibraryTableBridgeImpl
 import com.intellij.workspaceModel.ide.impl.legacyBridge.project.ProjectRootManagerBridge
+import com.intellij.workspaceModel.ide.legacyBridge.ModuleDependencyIndex
 import io.opentelemetry.api.metrics.Meter
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
@@ -125,13 +126,14 @@ class ModuleBridgeLoaderService : InitProjectActivity {
       }
 
       span("tracked libraries setup") {
-        val projectRootManager = coroutineScope {
+        val moduleDependencyIndex = coroutineScope {
           // required for setupTrackedLibrariesAndJdks - make sure that it is created to avoid blocking of EDT
           launch { serviceAsync<ProjectJdkTable>() }
-          project.serviceAsync<ProjectRootManager>() as ProjectRootManagerBridge
+          project.serviceAsync<ProjectRootManager>()
+          ModuleDependencyIndex.getInstance(project)
         }
         backgroundWriteAction {
-          projectRootManager.setupTrackedLibrariesAndJdks()
+          moduleDependencyIndex.setupTrackedLibrariesAndJdks()
         }
       }
 
