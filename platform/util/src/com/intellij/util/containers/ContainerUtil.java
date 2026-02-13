@@ -526,6 +526,7 @@ public final class ContainerUtil {
    * unlike the {@link Collections#unmodifiableList(List)} (Subject to change in subsequent JDKs).
    */
   @Contract(pure = true)
+  @ApiStatus.ScheduledForRemoval
   @Deprecated
   public static @Unmodifiable @NotNull <E> ImmutableList<E> immutableList(@NotNull List<? extends E> list) {
     //noinspection unchecked

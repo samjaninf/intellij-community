@@ -14,6 +14,7 @@ import com.intellij.util.io.impl.JarSpec
 import com.intellij.util.io.impl.ZipSpec
 import com.intellij.util.io.impl.assertContentUnderFileMatches
 import com.intellij.util.io.impl.fillSpecFromDirectory
+import org.jetbrains.annotations.ApiStatus
 import org.junit.rules.ErrorCollector
 import java.io.File
 import java.nio.file.Path
@@ -105,6 +106,7 @@ interface DirectoryContentSpec {
   /**
    * Generates files, directories and archives accordingly to this specification in [target] directory
    */
+  @ApiStatus.ScheduledForRemoval
   @Deprecated("Use generate(Path) instead")
   fun generate(target: File): Unit = generate(target.toPath())
 
