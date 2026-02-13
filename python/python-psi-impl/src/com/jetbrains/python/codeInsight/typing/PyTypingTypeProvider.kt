@@ -1391,22 +1391,9 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
         if (classType != null) {
           return classType
         }
-        if (context.typeRepresentationMode) {
-          if (resolved.text == "Unknown") {
-            return Ref()
-          }
-          if (resolved is PyFunctionTypeRepresentation) {
-            val result = context.typeContext.getType(resolved)
-            if (result != null) {
-              return Ref(result)
-            }
-          }
-          if (resolved is PySubscriptionExpression) {
-            val moduleType: Ref<PyType?>? = getModuleType(resolved)
-            if (moduleType != null) {
-              return moduleType
-            }
-          }
+        val typeEngineType = getTypeEngineType(typeHint, context)
+        if (typeEngineType != null) {
+          return typeEngineType
         }
         return null
       }
@@ -1418,6 +1405,47 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
           context.removeTypeAlias(alias)
         }
       }
+    }
+
+    private fun getTypeEngineType(typeHint: PyExpression, context: Context): Ref<PyType?>? {
+      if (!context.typeRepresentationMode) return null
+      if (typeHint.text == "Unknown") {
+        return Ref()
+      }
+      if (typeHint is PyFunctionTypeRepresentation) {
+        val result = context.typeContext.getType(typeHint)
+        if (result != null) {
+          return Ref(result)
+        }
+      }
+      if (typeHint is PySubscriptionExpression) {
+        val moduleType: Ref<PyType?>? = getModuleType(typeHint)
+        if (moduleType != null) {
+          return moduleType
+        }
+      }
+      if (typeHint is PyBinaryExpression && typeHint.operator === PyTokenTypes.AT) {
+        val name: String = typeHint.leftExpression.text
+        val scopeExpression = typeHint.rightExpression!!
+        if (name == SELF) {
+          val type = getType(scopeExpression, context) ?: return null
+
+          val scopeType = type.get()
+          if (scopeType is PyClassType) {
+            return Ref(PySelfType(scopeType))
+          }
+        }
+        val scopeOwner = if (scopeExpression is PyReferenceExpression) {
+          scopeExpression.asQualifiedName()?.let { qualifiedName ->
+            val scopeElement = PyResolveUtil.resolveFullyQualifiedName(qualifiedName, scopeExpression, context.typeContext)
+            scopeElement as? PyQualifiedNameOwner
+          }
+        }
+        else null
+        val result = PyTypeVarTypeImpl(name, null).withScopeOwner(scopeOwner)
+        return Ref(result)
+      }
+      return null
     }
 
     private fun getModuleType(moduleDefinition: PySubscriptionExpression): Ref<PyType?>? {
