@@ -40,9 +40,9 @@ internal val NOTIFY_SUCCESS_EACH_REPORT = AtomicBoolean(true) // dirty hack, rep
  * Third-party plugins need to provide their own implementations of [ErrorReportSubmitter].
  */
 @InternalIgnoreDependencyViolation
-open class ITNReporter internal constructor(private val postUrl: String) : ErrorReportSubmitter() {
+open class ITNReporter internal constructor(private val postUrl: String?) : ErrorReportSubmitter() {
   @ApiStatus.Internal
-  constructor() : this("https://ea-report.jetbrains.com/trackerRpc/idea/createScr")
+  constructor() : this(postUrl = null)
 
   override fun getReportActionText(): String = DiagnosticBundle.message("error.report.to.jetbrains.action")
 
