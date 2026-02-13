@@ -556,6 +556,14 @@ public class NullableNotNullManagerImpl extends NullableNotNullManager implement
   }
 
   @Override
+  public boolean isNonNullUsedForInstrumentation(@NotNull PsiAnnotation annotation) {
+    String qualifiedName = annotation.getQualifiedName();
+    if (qualifiedName == null) return false;
+    AnnotationPackageSupport support = AnnotationPackageSupport.EP_NAME.findFirstSafe(e -> e.getNullabilityAnnotations(Nullability.NOT_NULL).contains(qualifiedName));
+    return support != null && support.isNonNullUsedForInstrumentation();
+  }
+
+  @Override
   public void dispose() {
     
   }

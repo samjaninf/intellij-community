@@ -449,6 +449,9 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
         if (REPORT_REDUNDANT_NULLABILITY_ANNOTATION_IN_THE_SCOPE_OF_ANNOTATED_CONTAINER) {
           NullabilityAnnotationInfo containerInfo = wrapper.findContainerInfoForRedundantAnnotation();
           if (containerInfo != null) {
+            if (containerInfo.getNullability() == Nullability.NOT_NULL && manager.isNonNullUsedForInstrumentation(wrapper.annotation())) {
+              return;
+            }
             reportRedundantInContainerScope(wrapper.annotation(), containerInfo);
           }
         }
