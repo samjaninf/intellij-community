@@ -648,7 +648,7 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
 
     setHiddenState(info, entry, source)
     mutation?.invoke(info)
-    updateStateAndRemoveDecorator(info, entry, dirtyMode = dirtyMode)
+    decorators.updateStateAndRemoveDecorator(info, entry, dirtyMode = dirtyMode)
 
     entry.applyWindowInfo(info.copy())
   }
@@ -1135,7 +1135,7 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
     val info = layoutState.getInfo(id)
     if (info != null) {
       // remove decorator and tool button from the screen - removing will also save current bounds
-      updateStateAndRemoveDecorator(info, entry, false)
+      decorators.updateStateAndRemoveDecorator(info, entry, false)
       // save recent appearance of a tool window
       activeStack.remove(entry, true)
       if (isStackEnabled) {
@@ -1152,10 +1152,6 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
     }
 
     Disposer.dispose(entry.disposable)
-  }
-
-  private fun updateStateAndRemoveDecorator(state: WindowInfoImpl, entry: ToolWindowEntry, dirtyMode: Boolean) {
-    decorators.updateStateAndRemoveDecorator(state, entry, dirtyMode)
   }
 
   private fun removeExternalDecorators(entry: ToolWindowEntry) {
@@ -1255,7 +1251,7 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
 
       if (item.old.isVisible && !item.new.isVisible) {
         LOG.debug { "Hiding the tool window ${item.entry.id} as it's invisible in the new layout" }
-        updateStateAndRemoveDecorator(state = item.new, entry = item.entry, dirtyMode = true)
+        decorators.updateStateAndRemoveDecorator(state = item.new, entry = item.entry, dirtyMode = true)
       }
 
       if (item.old.safeToolWindowPaneId != item.new.safeToolWindowPaneId
@@ -1297,7 +1293,7 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
           "as its type has changed: ${item.old.type} -> ${item.new.type}, " +
           "will ${if (item.new.isVisible) "re-show" else "NOT re-show"} it again later"
         }
-        updateStateAndRemoveDecorator(item.old, item.entry, dirtyMode)
+        decorators.updateStateAndRemoveDecorator(item.old, item.entry, dirtyMode)
         if (item.new.isVisible) {
           toShowWindow = true
         }
@@ -1675,7 +1671,7 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
     }
 
     val dirtyMode = entry.readOnlyWindowInfo.type.isInternal
-    updateStateAndRemoveDecorator(info, entry, dirtyMode)
+    decorators.updateStateAndRemoveDecorator(info, entry, dirtyMode)
     info.type = type
     if (type.isInternal) {
       info.internalType = type

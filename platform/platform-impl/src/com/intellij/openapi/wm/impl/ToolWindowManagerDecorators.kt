@@ -192,113 +192,114 @@ internal class ToolWindowManagerDecorators(
 
   private fun removeDecoratorWithoutUpdatingState(entry: ToolWindowEntry, state: WindowInfoImpl, dirtyMode: Boolean) {
     removeExternalDecorators(entry)
-    removeInternalDecorator(entry, state, dirtyMode)
+    removeInternalDecorator(entry, state, dirtyMode, manager)
   }
+}
 
-  // This is important for RD/CWM case, when we might want to keep the content 'showing' by attaching it to ShowingContainer.
-  private fun detachInternalDecorator(entry: ToolWindowEntry) {
-    entry.toolWindow.decoratorComponent?.let { it.parent?.remove(it) }
+// This is important for RD/CWM case, when we might want to keep the content 'showing' by attaching it to ShowingContainer.
+private fun detachInternalDecorator(entry: ToolWindowEntry) {
+  entry.toolWindow.decoratorComponent?.let { it.parent?.remove(it) }
+}
+
+private fun removeInternalDecorator(entry: ToolWindowEntry, state: WindowInfoImpl, dirtyMode: Boolean, manager: ToolWindowManagerImpl) {
+  entry.toolWindow.decoratorComponent?.let {
+    val toolWindowPane = manager.getToolWindowPane(state.safeToolWindowPaneId)
+    toolWindowPane.removeDecorator(state, it, dirtyMode, manager)
+    return
   }
+}
 
-  private fun removeInternalDecorator(entry: ToolWindowEntry, state: WindowInfoImpl, dirtyMode: Boolean) {
-    entry.toolWindow.decoratorComponent?.let {
-      val toolWindowPane = manager.getToolWindowPane(state.safeToolWindowPaneId)
-      toolWindowPane.removeDecorator(state, it, dirtyMode, manager)
-      return
+private fun setExternalDecoratorBounds(
+  info: WindowInfo,
+  externalDecorator: ToolWindowExternalDecorator,
+  internalDecorator: InternalDecoratorImpl,
+  parentFrame: JFrame,
+) {
+  val storedBounds = info.floatingBounds
+  val screen = ScreenUtil.getScreenRectangle(parentFrame)
+  val needToCenter: Boolean
+  val bounds: Rectangle
+  if (storedBounds != null && isValidBounds(storedBounds)) {
+    LOG.debug { "Keeping the tool window ${info.id} valid bounds: $storedBounds" }
+    bounds = Rectangle(storedBounds)
+    needToCenter = false
+  }
+  else if (storedBounds != null && storedBounds.width > 0 && storedBounds.height > 0) {
+    LOG.debug { "Adjusting the stored bounds for the tool window ${info.id} to fit the screen $screen" }
+    bounds = Rectangle(storedBounds)
+    ScreenUtil.moveToFit(bounds, screen, null, true)
+    LOG.debug { "Adjusted the stored bounds to fit the screen: $bounds" }
+    needToCenter = true
+  }
+  else {
+    LOG.debug { "Computing default bounds for the tool window ${info.id}" }
+    // place a new frame at the center of the current frame if there are no floating bounds
+    var size = internalDecorator.size
+    if (size.width == 0 || size.height == 0) {
+      val preferredSize = internalDecorator.preferredSize
+      LOG.debug { "Using the preferred size $preferredSize because the size $size is invalid" }
+      size = preferredSize
+    }
+    bounds = Rectangle(externalDecorator.visibleWindowBounds.location, size)
+    LOG.debug { "Computed the bounds using the default location: $bounds" }
+    needToCenter = true
+  }
+  externalDecorator.visibleWindowBounds = bounds
+  if (needToCenter) {
+    externalDecorator.setLocationRelativeTo(parentFrame)
+    LOG.debug { "Centered the bounds relative to the IDE frame: ${externalDecorator.visibleWindowBounds}" }
+  }
+}
+
+private fun isValidBounds(bounds: Rectangle): Boolean {
+  val topLeftVisible = ScreenUtil.isVisible(bounds.topLeft)
+  val topRightVisible = ScreenUtil.isVisible(bounds.topRight)
+  val mostlyVisible = ScreenUtil.isVisible(bounds)
+  val isValid = bounds.width > 0 && bounds.height > 0 &&
+                (topLeftVisible || topRightVisible) && // At least some part of the header must be visible,
+                mostlyVisible // and that some sensible portion of the window is better to be visible too.
+  if (!isValid) {
+    LOG.debug {
+      "Not using saved bounds $bounds because they're invalid: " +
+      "topLeftVisible=$topLeftVisible, topRightVisible=$topRightVisible mostlyVisible=$mostlyVisible"
     }
   }
+  return isValid
+}
 
-  private fun setExternalDecoratorBounds(
-    info: WindowInfo,
-    externalDecorator: ToolWindowExternalDecorator,
-    internalDecorator: InternalDecoratorImpl,
-    parentFrame: JFrame,
-  ) {
-    val storedBounds = info.floatingBounds
-    val screen = ScreenUtil.getScreenRectangle(parentFrame)
-    val needToCenter: Boolean
-    val bounds: Rectangle
-    if (storedBounds != null && isValidBounds(storedBounds)) {
-      LOG.debug { "Keeping the tool window ${info.id} valid bounds: $storedBounds" }
-      bounds = Rectangle(storedBounds)
-      needToCenter = false
-    }
-    else if (storedBounds != null && storedBounds.width > 0 && storedBounds.height > 0) {
-      LOG.debug { "Adjusting the stored bounds for the tool window ${info.id} to fit the screen $screen" }
-      bounds = Rectangle(storedBounds)
-      ScreenUtil.moveToFit(bounds, screen, null, true)
-      LOG.debug { "Adjusted the stored bounds to fit the screen: $bounds" }
-      needToCenter = true
-    }
-    else {
-      LOG.debug { "Computing default bounds for the tool window ${info.id}" }
-      // place a new frame at the center of the current frame if there are no floating bounds
-      var size = internalDecorator.size
-      if (size.width == 0 || size.height == 0) {
-        val preferredSize = internalDecorator.preferredSize
-        LOG.debug { "Using the preferred size $preferredSize because the size $size is invalid" }
-        size = preferredSize
-      }
-      bounds = Rectangle(externalDecorator.visibleWindowBounds.location, size)
-      LOG.debug { "Computed the bounds using the default location: $bounds" }
-      needToCenter = true
-    }
-    externalDecorator.visibleWindowBounds = bounds
-    if (needToCenter) {
-      externalDecorator.setLocationRelativeTo(parentFrame)
-      LOG.debug { "Centered the bounds relative to the IDE frame: ${externalDecorator.visibleWindowBounds}" }
-    }
-  }
-
-  private fun isValidBounds(bounds: Rectangle): Boolean {
-    val topLeftVisible = ScreenUtil.isVisible(bounds.topLeft)
-    val topRightVisible = ScreenUtil.isVisible(bounds.topRight)
-    val mostlyVisible = ScreenUtil.isVisible(bounds)
-    val isValid =
-      bounds.width > 0 && bounds.height > 0 &&
-      (topLeftVisible || topRightVisible) && // At least some part of the header must be visible,
-      mostlyVisible // and that some sensible portion of the window is better be visible too.
-    if (!isValid) {
-      LOG.debug {
-        "Not using saved bounds $bounds because they're invalid: " +
-        "topLeftVisible=$topLeftVisible, topRightVisible=$topRightVisible mostlyVisible=$mostlyVisible"
-      }
-    }
-    return isValid
-  }
-
-  private fun dockingAreaComponentSizeCanBeTrusted(dockingAreaComponent: Component): Boolean {
-    val parentSplitter = dockingAreaComponent.parent as? ThreeComponentsSplitter
-    if (parentSplitter == null) {
-      // The window is not in a splitter (e.g., View Mode = Undock),
-      // so we don't have to worry about the splitter resizing it in a wrong way, like in IDEA-319836.
-      return true
-    }
-    val editorComponent = parentSplitter.innerComponent
-    if (editorComponent == null) {
-      LOG.info("Editor area is null, not updating tool window weights")
-      return false
-    }
-    if (!editorComponent.isVisible) {
-      LOG.info("Editor area is not visible, not updating tool window weights")
-      return false
-    }
+private fun dockingAreaComponentSizeCanBeTrusted(dockingAreaComponent: Component): Boolean {
+  val parentSplitter = dockingAreaComponent.parent as? ThreeComponentsSplitter
+  if (parentSplitter == null) {
+    // The window is not in a splitter (e.g., View Mode = Undock),
+    // so we don't have to worry about the splitter resizing it in the wrong way, like in IDEA-319836.
     return true
   }
-
-  private fun getAdjustedWeight(
-    toolWindowPane: ToolWindowPane,
-    anchor: ToolWindowAnchor,
-    component: Component,
-  ): Float {
-    val wholeSize = toolWindowPane.rootPane.size
-    return ToolWindowManagerImpl.getAdjustedRatio(
-      partSize = if (anchor.isHorizontal) component.height else component.width,
-      totalSize = if (anchor.isHorizontal) wholeSize.height else wholeSize.width,
-      direction = 1,
-    )
+  val editorComponent = parentSplitter.innerComponent
+  if (editorComponent == null) {
+    LOG.info("Editor area is null, not updating tool window weights")
+    return false
   }
-
-  private val Rectangle.topLeft: Point get() = location
-  private val Rectangle.topRight: Point get() = Point(x + width, y)
+  if (!editorComponent.isVisible) {
+    LOG.info("Editor area is not visible, not updating tool window weights")
+    return false
+  }
+  return true
 }
+
+private fun getAdjustedWeight(
+  toolWindowPane: ToolWindowPane,
+  anchor: ToolWindowAnchor,
+  component: Component,
+): Float {
+  val wholeSize = toolWindowPane.rootPane.size
+  return ToolWindowManagerImpl.getAdjustedRatio(
+    partSize = if (anchor.isHorizontal) component.height else component.width,
+    totalSize = if (anchor.isHorizontal) wholeSize.height else wholeSize.width,
+    direction = 1,
+  )
+}
+
+private val Rectangle.topLeft: Point
+  get() = location
+private val Rectangle.topRight: Point
+  get() = Point(x + width, y)
