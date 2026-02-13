@@ -1145,7 +1145,7 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
                     "inspection.nullable.problems.parameter.overrides.NotNull", getPresentableAnnoName(notNullSuper));
     }
     if (isNotNullParameterOverridingNonAnnotated(nullableManager, parameter, superParameters)) {
-      NullabilityAnnotationInfo info = nullableManager.findOwnNullabilityInfo(parameter);
+      NullabilityAnnotationInfo info = nullableManager.findEffectiveNullabilityInfo(parameter);
       assert info != null;
       PsiAnnotation notNullAnnotation = info.getAnnotation();
       boolean physical = PsiTreeUtil.isAncestor(parameter, notNullAnnotation, true);
@@ -1193,8 +1193,8 @@ public class NullableStuffInspectionBase extends AbstractBaseJavaLocalInspection
                                                            PsiParameter parameter,
                                                            List<? extends PsiParameter> superParameters) {
     if (!REPORT_NOTNULL_PARAMETERS_OVERRIDES_NOT_ANNOTATED) return false;
-    NullabilityAnnotationInfo info = nullableManager.findOwnNullabilityInfo(parameter);
-    return info != null && info.getNullability() == Nullability.NOT_NULL && !info.isInferred() &&
+    NullabilityAnnotationInfo info = nullableManager.findEffectiveNullabilityInfo(parameter);
+    return info != null && info.getNullability() == Nullability.NOT_NULL && info.getInheritedFrom() == null && !info.isInferred() &&
            ContainerUtil.exists(superParameters, sp -> isSuperNotAnnotated(nullableManager, parameter, sp));
   }
 
