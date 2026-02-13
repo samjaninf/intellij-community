@@ -333,13 +333,13 @@ class PyPackagingToolWindowService(val project: Project, val serviceScope: Corou
     val connection = project.messageBus.connect(this)
     connection.subscribe(PythonPackageManager.PACKAGE_MANAGEMENT_TOPIC, object : PythonPackageManagementListener {
       override fun packagesChanged(sdk: Sdk) {
-        if (sdkContext?.sdk == sdk) serviceScope.launch(Dispatchers.EDT + NON_INTERACTIVE_ROOT_TRACE_CONTEXT) {
+        if (sdkContext?.sdk == sdk) serviceScope.launch(NON_INTERACTIVE_ROOT_TRACE_CONTEXT) {
           refreshInstalledPackages()
         }
       }
 
       override fun outdatedPackagesChanged(sdk: Sdk) {
-        if (sdkContext?.sdk == sdk) serviceScope.launch(Dispatchers.EDT + NON_INTERACTIVE_ROOT_TRACE_CONTEXT) {
+        if (sdkContext?.sdk == sdk) serviceScope.launch(NON_INTERACTIVE_ROOT_TRACE_CONTEXT) {
           refreshInstalledPackages()
         }
 
