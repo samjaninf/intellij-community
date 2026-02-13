@@ -190,7 +190,7 @@ public abstract class DebuggerUtilsEx extends DebuggerUtils {
     return null;
   }
 
-  @Deprecated
+  @Deprecated(forRemoval = true)
   public static ReferenceType getSuperClass(final @NotNull String baseQualifiedName, @NotNull ReferenceType checkedType) {
     if (baseQualifiedName.equals(checkedType.name())) {
       return checkedType;
@@ -266,7 +266,7 @@ public abstract class DebuggerUtilsEx extends DebuggerUtils {
   /**
    * @deprecated Use {@link DebuggerSettingsUtils#readFilters} directly
    */
-  @Deprecated
+  @Deprecated(forRemoval = true)
   public static ClassFilter[] readFilters(List<? extends Element> children) {
     return DebuggerSettingsUtils.readFilters(children);
   }
@@ -274,7 +274,7 @@ public abstract class DebuggerUtilsEx extends DebuggerUtils {
   /**
    * @deprecated Use {@link DebuggerSettingsUtils#writeFilters} directly
    */
-  @Deprecated
+  @Deprecated(forRemoval = true)
   public static void writeFilters(@NotNull Element parentNode,
                                   @NonNls String tagName,
                                   ClassFilter[] filters) throws WriteExternalException {
