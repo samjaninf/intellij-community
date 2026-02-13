@@ -4,6 +4,7 @@ package com.intellij.ide.plugins.newui;
 import com.intellij.accessibility.AccessibilityUtils;
 import com.intellij.ide.plugins.ListPluginModel;
 import com.intellij.ide.plugins.PluginManagerConfigurable;
+import com.intellij.openapi.util.registry.Registry;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBPanelWithEmptyText;
 import com.intellij.ui.components.panels.NonOpaquePanel;
@@ -243,12 +244,14 @@ public abstract class PluginsGroupComponent extends JBPanelWithEmptyText {
 
     uiGroup.panel = panel;
 
-    if (group.promotionPanel != null) {
-      if (index == -1) {
-        add(group.promotionPanel);
-      } else {
-        add(group.promotionPanel, index);
-        index++;
+    if (Registry.is("ide.plugins.category.promotion.enabled")) {
+      if (group.promotionPanel != null) {
+        if (index == -1) {
+          add(group.promotionPanel);
+        } else {
+          add(group.promotionPanel, index);
+          index++;
+        }
       }
     }
 

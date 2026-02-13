@@ -29,6 +29,7 @@ import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.util.NlsSafe;
+import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.fields.ExtendableTextComponent;
@@ -223,10 +224,12 @@ class InstalledPluginsTab extends PluginsTab {
         String defaultCategory = IdeBundle.message("plugins.configurable.other.bundled");
 
         Map<String, JComponent> promotionPanels = new HashMap<>();
-        for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
-          JComponent panel = provider.createPromotionPanel();
-          if (panel != null) {
-            promotionPanels.put(provider.getCategoryName(), panel);
+        if (Registry.is("ide.plugins.category.promotion.enabled")) {
+          for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
+            JComponent panel = provider.createPromotionPanel();
+            if (panel != null) {
+              promotionPanels.put(provider.getCategoryName(), panel);
+            }
           }
         }
 
@@ -238,18 +241,22 @@ class InstalledPluginsTab extends PluginsTab {
           .map(entry -> {
             ComparablePluginsGroup group =
               new ComparablePluginsGroup(entry.getKey(), entry.getValue(), model.getVisiblePluginsRequiresUltimate());
-            JComponent promotionPanel = promotionPanels.get(entry.getKey());
-            if (promotionPanel != null) {
-              group.setPromotionPanel(promotionPanel);
+            if (Registry.is("ide.plugins.category.promotion.enabled")) {
+              JComponent promotionPanel = promotionPanels.get(entry.getKey());
+              if (promotionPanel != null) {
+                group.setPromotionPanel(promotionPanel);
+              }
             }
             return group;
           })
           .sorted((o1, o2) -> {
-            for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
-              if (provider.isPriorityCategory()) {
-                String priorityCategory = provider.getCategoryName();
-                if (priorityCategory.equals(o1.title)) return -1;
-                if (priorityCategory.equals(o2.title)) return 1;
+            if (Registry.is("ide.plugins.category.promotion.enabled")) {
+              for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
+                if (provider.isPriorityCategory()) {
+                  String priorityCategory = provider.getCategoryName();
+                  if (priorityCategory.equals(o1.title)) return -1;
+                  if (priorityCategory.equals(o2.title)) return 1;
+                }
               }
             }
             if (defaultCategory.equals(o1.title)) return 1;

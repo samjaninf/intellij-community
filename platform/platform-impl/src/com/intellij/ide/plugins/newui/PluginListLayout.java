@@ -1,6 +1,7 @@
 // Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.ide.plugins.newui;
 
+import com.intellij.openapi.util.registry.Registry;
 import com.intellij.util.ui.AbstractLayoutManager;
 import com.intellij.util.ui.AnimatedIcon;
 import com.intellij.util.ui.JBValue;
@@ -70,11 +71,13 @@ public final class PluginListLayout extends AbstractLayoutManager implements Pag
       y += height;
     
     // Layout promotion panel if it exists
-    PluginsGroup pluginsGroup = findGroupForUI(parent, group);
-    if (pluginsGroup != null && pluginsGroup.promotionPanel != null) {
-      int promotionHeight = pluginsGroup.promotionPanel.getPreferredSize().height;
-      pluginsGroup.promotionPanel.setBounds(0, y, width, promotionHeight);
-      y += promotionHeight;
+    if (Registry.is("ide.plugins.category.promotion.enabled")) {
+      PluginsGroup pluginsGroup = findGroupForUI(parent, group);
+      if (pluginsGroup != null && pluginsGroup.promotionPanel != null) {
+        int promotionHeight = pluginsGroup.promotionPanel.getPreferredSize().height;
+        pluginsGroup.promotionPanel.setBounds(0, y, width, promotionHeight);
+        y += promotionHeight;
+      }
     }
 
     for (ListPluginComponent plugin : group.plugins) {
