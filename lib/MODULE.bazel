@@ -5768,17 +5768,17 @@ http_file(
 )
 
 http_file(
-  name = "org_jetbrains_intellij_deps-sa-jdwp-1_24_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/ij/intellij-dependencies/org/jetbrains/intellij/deps/sa-jdwp/1.24/sa-jdwp-1.24.jar",
-  sha256 = "2334e030f1ebdaddbd84aa8cd3af514a3b80d674b343532187b6d6bdff24329d",
-  downloaded_file_path = "sa-jdwp-1.24.jar"
+  name = "org_jetbrains_intellij_deps-sa-jdwp-1_25_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/ij/intellij-dependencies/org/jetbrains/intellij/deps/sa-jdwp/1.25/sa-jdwp-1.25.jar",
+  sha256 = "b2c8f5883adcb8dc37dacca7359df1557cdd8f77144d68752403bf6f6e2de92b",
+  downloaded_file_path = "sa-jdwp-1.25.jar"
 )
 
 http_file(
-  name = "org_jetbrains_intellij_deps-sa-jdwp-1_24-sources_http",
-  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/ij/intellij-dependencies/org/jetbrains/intellij/deps/sa-jdwp/1.24/sa-jdwp-1.24-sources.jar",
-  sha256 = "39ba64d18b4f054863cd9b1f6a979e9d9f5e6d5d4b96225fc0feb3ec368d24df",
-  downloaded_file_path = "sa-jdwp-1.24-sources.jar"
+  name = "org_jetbrains_intellij_deps-sa-jdwp-1_25-sources_http",
+  url = "https://cache-redirector.jetbrains.com/packages.jetbrains.team/maven/p/ij/intellij-dependencies/org/jetbrains/intellij/deps/sa-jdwp/1.25/sa-jdwp-1.25-sources.jar",
+  sha256 = "9bb47cc5c36346a6faa43f80fb36132767f10668329e0b2c791abadcfa251269",
+  downloaded_file_path = "sa-jdwp-1.25-sources.jar"
 )
 
 http_file(

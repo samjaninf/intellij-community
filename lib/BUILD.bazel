@@ -7092,17 +7092,17 @@ jvm_import(
 )
 
 copy_file(
-  name = "org.jetbrains.intellij.deps/sa-jdwp-1.24.jar_copy",
-  src = "@org_jetbrains_intellij_deps-sa-jdwp-1_24_http//file",
-  out = "org.jetbrains.intellij.deps/sa-jdwp-1.24.jar",
+  name = "org.jetbrains.intellij.deps/sa-jdwp-1.25.jar_copy",
+  src = "@org_jetbrains_intellij_deps-sa-jdwp-1_25_http//file",
+  out = "org.jetbrains.intellij.deps/sa-jdwp-1.25.jar",
   allow_symlink = True,
   visibility = ["//visibility:public"]
 )
 
 jvm_import(
   name = "java-debugger-impl-sa-jdwp",
-  jar = "@org_jetbrains_intellij_deps-sa-jdwp-1_24_http//file",
-  source_jar = "@org_jetbrains_intellij_deps-sa-jdwp-1_24-sources_http//file",
+  jar = "@org_jetbrains_intellij_deps-sa-jdwp-1_25_http//file",
+  source_jar = "@org_jetbrains_intellij_deps-sa-jdwp-1_25-sources_http//file",
   visibility = ["//visibility:public"]
 )
 
