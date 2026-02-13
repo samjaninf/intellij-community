@@ -434,10 +434,9 @@ public final class HighlightFixUtil {
   }
 
   public static void registerFixesForExpressionStatement(@NotNull Consumer<? super CommonIntentionAction> info,
-                                                         @NotNull PsiElement statement) {
-    if (!(statement instanceof PsiExpressionStatement)) return;
+                                                         @NotNull PsiExpressionStatement statement) {
     if (!(statement.getParent() instanceof PsiCodeBlock block)) return;
-    PsiExpression expression = ((PsiExpressionStatement)statement).getExpression();
+    PsiExpression expression = statement.getExpression();
     if (expression instanceof PsiAssignmentExpression) return;
     PsiType type = expression.getType();
     if (type == null) return;
