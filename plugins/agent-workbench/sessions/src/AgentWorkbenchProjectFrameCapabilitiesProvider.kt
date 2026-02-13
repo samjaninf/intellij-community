@@ -34,7 +34,10 @@ internal class AgentWorkbenchProjectFrameCapabilitiesProvider : ProjectFrameCapa
   }
 }
 
-private val AGENT_WORKBENCH_FRAME_CAPABILITIES = EnumSet.of(ProjectFrameCapability.SUPPRESS_VCS_UI)
+private val AGENT_WORKBENCH_FRAME_CAPABILITIES = EnumSet.of(
+  ProjectFrameCapability.SUPPRESS_VCS_UI,
+  ProjectFrameCapability.SUPPRESS_PROJECT_VIEW,
+)
 
 private val AGENT_WORKBENCH_FRAME_UI_POLICY = ProjectFrameUiPolicy(
   startupToolWindowIdToActivate = AGENT_SESSIONS_TOOL_WINDOW_ID,

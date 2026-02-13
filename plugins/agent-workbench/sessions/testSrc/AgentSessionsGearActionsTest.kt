@@ -36,6 +36,20 @@ class AgentSessionsGearActionsTest {
   }
 
   @Test
+  fun dedicatedFrameRegistersProjectShortcutAliasAction() {
+    val descriptor = checkNotNull(javaClass.classLoader.getResource("intellij.agent.workbench.sessions.xml")) {
+      "Module descriptor intellij.agent.workbench.sessions.xml is missing"
+    }.readText()
+
+    assertThat(descriptor)
+      .contains("<action")
+      .contains("id=\"AgentWorkbenchSessions.ActivateWithProjectShortcut\"")
+      .contains("use-shortcut-of=\"ActivateProjectToolWindow\"")
+      .contains("class=\"com.intellij.agent.workbench.sessions.AgentSessionsActivateWithProjectShortcutAction\"")
+      .doesNotContain("id=\"ActivateProjectToolWindow\"")
+  }
+
+  @Test
   fun refreshActionTriggersSessionsRefresh() {
     val refreshAction = AgentSessionsRefreshAction()
 

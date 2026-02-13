@@ -12,7 +12,7 @@ targets:
 # Agent Chat Dedicated Frame
 
 Status: Draft
-Date: 2026-02-11
+Date: 2026-02-13
 
 ## Summary
 Define dedicated-frame behavior for Agent chat opening. By default, chat opens in a dedicated frame backed by a hidden internal project. Users can switch to current-project-frame mode via Advanced Settings and a Sessions gear toggle.
@@ -40,6 +40,10 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
   - Thread/sub-agent click opens chat in the dedicated frame project.
   - If the dedicated frame project is not open, it is opened in a new frame and reused afterwards.
   - Source project is not opened automatically when closed.
+  - Project View tool window is suppressed by frame capability and is not initialized for the dedicated frame project.
+  - Agent Workbench registers `AgentWorkbenchSessions.ActivateWithProjectShortcut` with `use-shortcut-of="ActivateProjectToolWindow"`.
+  - Shortcut routing for Cmd+1 is dedicated-frame-only: the custom action is enabled only for dedicated projects and activates Agent Sessions tool window.
+  - Platform action id `ActivateProjectToolWindow` is not redefined by Agent Workbench.
 - Current-project mode (`false`):
   - Preserve legacy behavior: open chat in source project frame.
   - If source project is closed, open it first and then open chat.
@@ -69,6 +73,7 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 ## Error Handling
 - If dedicated frame project path cannot be prepared/opened, log warning and do not open chat tab.
 - Invalid source project path should not crash routing logic.
+- Project View API calls in dedicated frame context are unsupported; `ProjectView` consumers may fail with NPE and this is accepted for dedicated mode.
 
 ## Testing / Local Run
 - Verify gear actions include toggle + refresh + open.
@@ -76,6 +81,7 @@ Define dedicated-frame behavior for Agent chat opening. By default, chat opens i
 - Verify dedicated mode opens/reuses dedicated frame project.
 - Verify current-project mode preserves legacy flow.
 - Verify dedicated frame project is filtered from Sessions list.
+- Verify plugin descriptor provides `AgentWorkbenchSessions.ActivateWithProjectShortcut` with `use-shortcut-of="ActivateProjectToolWindow"` and does not redefine `ActivateProjectToolWindow`.
 - Run tests using:
   - `./tests.cmd -Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionsGearActionsTest`
   - `./tests.cmd -Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionsToolWindowTest`

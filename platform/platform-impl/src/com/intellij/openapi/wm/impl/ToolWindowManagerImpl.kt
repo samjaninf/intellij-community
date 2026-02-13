@@ -87,6 +87,8 @@ import com.intellij.openapi.wm.ToolWindowType
 import com.intellij.openapi.wm.WINDOW_INFO_DEFAULT_TOOL_WINDOW_PANE_ID
 import com.intellij.openapi.wm.WindowInfo
 import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesService
+import com.intellij.openapi.wm.ex.ProjectFrameCapability
 import com.intellij.openapi.wm.ex.ToolWindowEx
 import com.intellij.openapi.wm.ex.ToolWindowManagerEx
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
@@ -714,6 +716,11 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
   }
 
   suspend fun initToolWindow(bean: ToolWindowEP, plugin: PluginDescriptor) {
+    if (bean.id == ToolWindowId.PROJECT_VIEW &&
+        serviceAsync<ProjectFrameCapabilitiesService>().has(project, ProjectFrameCapability.SUPPRESS_PROJECT_VIEW)) {
+      return
+    }
+
     val condition = bean.getCondition(plugin)
     if (condition != null && !condition.value(project)) {
       return

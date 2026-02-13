@@ -79,4 +79,27 @@ class ProjectFrameCapabilitiesServiceTest {
     assertThat(service.getAll(project)).isEqualTo(setOf(ProjectFrameCapability.WELCOME_EXPERIENCE))
     assertThat(capabilitiesComputationCount.get()).isEqualTo(1)
   }
+
+  @Test
+  fun supportsSuppressProjectViewCapability() {
+    ExtensionTestUtil.maskExtensions(
+      ProjectFrameCapabilitiesService.EP_NAME,
+      listOf(
+        object : ProjectFrameCapabilitiesProvider {
+          override fun getCapabilities(project: Project): Set<ProjectFrameCapability> {
+            return setOf(ProjectFrameCapability.SUPPRESS_PROJECT_VIEW)
+          }
+
+          override fun getUiPolicy(project: Project, capabilities: Set<ProjectFrameCapability>): ProjectFrameUiPolicy? {
+            return null
+          }
+        },
+      ),
+      disposable,
+    )
+
+    val service = ProjectFrameCapabilitiesService(service<CoreUiCoroutineScopeHolder>().coroutineScope)
+    assertThat(service.has(project, ProjectFrameCapability.SUPPRESS_PROJECT_VIEW)).isTrue()
+    assertThat(service.getAll(project)).isEqualTo(setOf(ProjectFrameCapability.SUPPRESS_PROJECT_VIEW))
+  }
 }

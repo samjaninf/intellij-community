@@ -32,6 +32,11 @@ enum class ProjectFrameCapability {
   SUPPRESS_VCS_UI,
 
   /**
+   * Suppresses Project View UI in the frame.
+   */
+  SUPPRESS_PROJECT_VIEW,
+
+  /**
    * Disables file colors for the frame.
    */
   FORCE_DISABLE_FILE_COLORS,

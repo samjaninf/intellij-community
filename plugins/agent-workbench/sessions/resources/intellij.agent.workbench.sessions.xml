@@ -33,5 +33,9 @@
       <action id="AgentWorkbenchSessions.ToggleDedicatedFrame" class="com.intellij.agent.workbench.sessions.AgentSessionsDedicatedFrameToggleAction"/>
       <action id="AgentWorkbenchSessions.Refresh" class="com.intellij.agent.workbench.sessions.AgentSessionsRefreshAction"/>
     </group>
+    <action
+      id="AgentWorkbenchSessions.ActivateWithProjectShortcut"
+      class="com.intellij.agent.workbench.sessions.AgentSessionsActivateWithProjectShortcutAction"
+      use-shortcut-of="ActivateProjectToolWindow"/>
   </actions>
 </idea-plugin>
