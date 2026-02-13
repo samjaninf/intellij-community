@@ -12,6 +12,7 @@ import com.intellij.openapi.actionSystem.toolbarLayout.ToolbarLayoutStrategy
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.help.HelpManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vcs.changes.ui.ChangesViewContentManager
 import com.intellij.openapi.vcs.changes.ui.ChangesViewContentProvider
 import com.intellij.openapi.wm.ToolWindow
@@ -26,8 +27,6 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
-import com.intellij.openapi.util.io.FileUtil
-import com.intellij.util.FontUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.StatusText
 import com.intellij.util.ui.components.BorderLayoutPanel
@@ -40,6 +39,7 @@ import git4idea.repo.GitRepository
 import git4idea.workingTrees.GitWorkingTreesNewBadgeUtil
 import git4idea.workingTrees.GitWorkingTreesService
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.Nls
 import java.awt.Component
 import java.awt.ComponentOrientation
 import java.awt.Point
@@ -173,16 +173,44 @@ internal class GitWorkingTreesContentProvider(private val project: Project) : Ch
       icon = if (value.isCurrent) AllIcons.Actions.Checked else AllIcons.Empty
 
       append(value.path.name, if (value.isMain) SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES else SimpleTextAttributes.REGULAR_ATTRIBUTES)
-      append(FontUtil.spaceAndThinSpace().repeat(2)) // NON-NLS
 
-      val presentableBranchName = when (val branch = value.currentBranch) {
-        null -> GitBundle.message("toolwindow.working.trees.tab.detached.working.tree.branch.text")
-        else -> branch.name
+      val columnGap = JBUI.scale(20)
+      var padding = iconTextGap * 2 + icon.iconWidth + getWorktreeColumnWidth(list) + columnGap
+      appendTextPadding(padding)
+
+      append(getPresentableBranchName(value), SimpleTextAttributes.GRAY_ATTRIBUTES)
+
+      padding += (getBranchColumnWidth(list) + columnGap)
+      appendTextPadding(padding)
+
+      append(FileUtil.getLocationRelativeToUserHome(value.path.path), SimpleTextAttributes.GRAY_ATTRIBUTES)
+    }
+
+    @Nls
+    private fun getPresentableBranchName(value: GitWorkingTree): @Nls String = when (val branch = value.currentBranch) {
+      null -> GitBundle.message("toolwindow.working.trees.tab.detached.working.tree.branch.text")
+      else -> branch.name
+    }
+
+    private fun getWorktreeColumnWidth(list: JList<out GitWorkingTree?>): Int = getMaxWidth(list) { it.path.name }
+    private fun getBranchColumnWidth(list: JList<out GitWorkingTree?>): Int = getMaxWidth(list) { getPresentableBranchName(it) }
+
+    private fun getMaxWidth(list: JList<out GitWorkingTree?>, toString: (GitWorkingTree) -> String): Int {
+      val model = list.model
+      var maxWidth = 0
+
+      val fontMetrics = list.getFontMetrics(list.font)
+
+      for (i in 0 until model.size) {
+        val workingTree = model.getElementAt(i)
+        val line = toString(workingTree)
+        val lineWidth = fontMetrics.stringWidth(line)
+        if (lineWidth > maxWidth) {
+          maxWidth = lineWidth
+        }
       }
-      append(presentableBranchName, SimpleTextAttributes.GRAY_ATTRIBUTES)
-      append(FontUtil.spaceAndThinSpace().repeat(2)) // NON-NLS
 
-      append(FileUtil.getLocationRelativeToUserHome(value.path.path), SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
+      return maxWidth
     }
   }
 }
