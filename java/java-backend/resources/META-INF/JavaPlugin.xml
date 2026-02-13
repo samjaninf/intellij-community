@@ -1189,11 +1189,11 @@
 
     <codeInsight.completion.command.factory language="JAVA" implementationClass="com.intellij.codeInsight.completion.commands.JavaCommandCompletionFactory" />
     <codeInsight.completion.intention.skipper language="JAVA"
-                                              implementationClass="com.intellij.codeInsight.completion.commands.JavaCommandCompletionFactory$JavaIntentionCommandSkipper"/>
+                                              implementationClass="com.intellij.codeInsight.completion.commands.JavaIntentionCommandSkipper"/>
     <codeInsight.completion.intention.skipper language="JAVA"
                                               implementationClass="com.intellij.codeInsight.intention.impl.JavaRefactoringIntentionCommandSkipper"/>
     <codeInsight.completion.intention.offset.provider language="JAVA"
-                                                      implementationClass="com.intellij.codeInsight.completion.commands.JavaCommandCompletionFactory$JavaIntentionCommandOffsetProvider"/>
+                                                      implementationClass="com.intellij.codeInsight.completion.commands.JavaIntentionCommandOffsetProvider"/>
     <!--<codeInsight.completion.command.provider language="JAVA" implementationClass="com.intellij.codeInsight.completion.command.commands.SimpleRunMarkerCommandProvider" />-->
     <codeInsight.completion.command.provider language="JAVA" implementationClass="com.intellij.codeInsight.completion.command.commands.DirectIntentionCommandProvider" order="last"/>
     <codeInsight.completion.command.provider language="JAVA" implementationClass="com.intellij.codeInsight.completion.commands.impl.JavaGenerateCommandCompletion" />
