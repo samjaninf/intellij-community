@@ -2,7 +2,7 @@
 package com.intellij.ui;
 
 import com.intellij.openapi.util.Key;
-import com.intellij.openapi.util.SystemInfoRt;
+import com.intellij.util.system.OS;
 import com.intellij.util.ui.StartupUiUtil;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.ApiStatus;
@@ -265,9 +265,11 @@ public final class ComponentUtil {
   }
 
   public static void decorateWindowHeader(@Nullable JRootPane pane) {
-    if (pane != null && SystemInfoRt.isMac) {
-      pane.putClientProperty("apple.awt.windowAppearance",
-                             StartupUiUtil.INSTANCE.isDarkTheme() ? "NSAppearanceNameVibrantDark" : "NSAppearanceNameVibrantLight");
+    if (pane != null && OS.CURRENT == OS.macOS) {
+      pane.putClientProperty(
+        "apple.awt.windowAppearance",
+        StartupUiUtil.INSTANCE.isDarkTheme() ? "NSAppearanceNameVibrantDark" : "NSAppearanceNameVibrantLight"
+      );
     }
   }
 }

@@ -599,7 +599,7 @@ open class IdeErrorsDialog @ApiStatus.Internal @JvmOverloads constructor(
       val frame = ComponentUtil.getParentOfType(IdeFrame::class.java, parentComponent)
       parentComponent = frame?.component ?: WindowManager.getInstance().findVisibleFrame() ?: parentComponent
     }
-    val accepted = submitter.submit(events, message.additionalInfo, parentComponent) { reportInfo: SubmittedReportInfo? ->
+    val accepted = submitter.submit(events, message.additionalInfo, parentComponent) { reportInfo ->
       message.setSubmitted(reportInfo)
       UIUtil.invokeLaterIfNeeded { updateOnSubmit() }
     }
