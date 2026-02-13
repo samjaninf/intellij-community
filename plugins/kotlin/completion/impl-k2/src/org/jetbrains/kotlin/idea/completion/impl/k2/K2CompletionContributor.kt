@@ -18,8 +18,12 @@ import org.jetbrains.kotlin.idea.base.analysis.api.utils.KtSymbolFromIndexProvid
 import org.jetbrains.kotlin.idea.base.codeInsight.contributorClass
 import org.jetbrains.kotlin.idea.completion.impl.k2.checkers.CompletionVisibilityChecker
 import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.evaluateRuntimeKaType
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.KEEP_OLD_ARGUMENT_LIST_ON_TAB_KEY
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.SmartCompletionReplaceExistingArgumentHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.WrapSingleStringTemplateEntryWithBracesInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.addSmartCompletionTailInsertHandler
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.keepOldArgumentListOnTab
+import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.FunctionCallLookupObject
 import org.jetbrains.kotlin.idea.completion.implCommon.handlers.CompletionCharInsertHandler
 import org.jetbrains.kotlin.idea.completion.implCommon.stringTemplates.InsertStringTemplateBracesInsertHandler
 import org.jetbrains.kotlin.idea.completion.isAtFunctionLiteralStart
@@ -286,13 +290,30 @@ internal abstract class K2CompletionContributor<P : KotlinRawPositionContext>(
             element.suppressItemSelectionByCharsOnTyping = true
         }
 
+        val lookupObject = element.`object`
+        if (lookupObject is FunctionCallLookupObject && lookupObject.inputValueArgumentsAreRequired) {
+            // This is required to not replace arguments already passed to existing function calls,
+            // if the replacing function also requires value arguments
+            element.keepOldArgumentListOnTab()
+        }
+
         val bracesInsertHandler = when (context.parameters.type) {
             KotlinFirCompletionParameters.CorrectionType.BRACES_FOR_STRING_TEMPLATE -> InsertStringTemplateBracesInsertHandler
             else -> WrapSingleStringTemplateEntryWithBracesInsertHandler
         }
 
         var element = element
+
         if (context.completionContext.parameters.completionType == CompletionType.SMART) {
+            if (element.getUserData(KEEP_OLD_ARGUMENT_LIST_ON_TAB_KEY) == null) {
+                // In smart completion we want to replace entire arguments (e.g., including their parentheses)
+                // if replacement completion is used
+                element = LookupElementDecorator.withDelegateInsertHandler(
+                    element,
+                    SmartCompletionReplaceExistingArgumentHandler()
+                )
+            }
+
             element = element.addSmartCompletionTailInsertHandler()
         }
 

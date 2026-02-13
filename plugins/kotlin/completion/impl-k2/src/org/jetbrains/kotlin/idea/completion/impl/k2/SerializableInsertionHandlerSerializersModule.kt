@@ -1,6 +1,7 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.idea.completion.impl.k2
 
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.jetbrains.annotations.ApiStatus
@@ -16,6 +17,7 @@ import org.jetbrains.kotlin.idea.completion.handlers.LineAdjusterInsertionHandle
 import org.jetbrains.kotlin.idea.completion.handlers.WithTailInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.ChainedInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.CompoundInsertionHandler
+import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.MultipleArgumentsInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.SuperLookupObject
 import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.TailTextInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.TypeParameterInWhenClauseILookupObject
@@ -28,6 +30,7 @@ import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.AnonymousObjectInse
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.BracketOperatorInsertionHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.InsertRequiredTypeArgumentsInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.QualifyContextSensitiveResolutionHandler
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.SmartCompletionReplaceExistingArgumentHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.TrailingLambdaInsertionHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.WithImportInsertionHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.WrapSingleStringTemplateEntryWithBracesInsertHandler
@@ -114,5 +117,7 @@ val serializableInsertionHandlerSerializersModule: SerializersModule = Serialize
         subclass(TrailingLambdaInsertionHandler::class, serializer = TrailingLambdaInsertionHandler.serializer())
         subclass(InsertRequiredTypeArgumentsInsertHandler::class, serializer = InsertRequiredTypeArgumentsInsertHandler.serializer())
         subclass(QualifyContextSensitiveResolutionHandler::class, serializer = QualifyContextSensitiveResolutionHandler.serializer())
+        subclass(MultipleArgumentsInsertHandler::class, serializer = MultipleArgumentsInsertHandler.serializer())
+        subclass(SmartCompletionReplaceExistingArgumentHandler::class, serializer = SmartCompletionReplaceExistingArgumentHandler.serializer())
     }
 }

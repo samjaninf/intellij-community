@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.idea.base.analysis.api.utils.shortenReferencesInRang
 import org.jetbrains.kotlin.idea.base.analysis.withRootPrefixIfNeeded
 import org.jetbrains.kotlin.idea.base.codeInsight.KotlinIconProvider.getIconFor
 import org.jetbrains.kotlin.idea.base.serialization.names.KotlinNameSerializer
+import org.jetbrains.kotlin.idea.completion.impl.k2.contributors.MultipleArgumentsInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.Tail
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.CallableInsertionOptions
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.CallableInsertionStrategy
@@ -126,6 +127,7 @@ internal object VariableLookupElementFactory {
         val lookupObject = MultipleArgumentsLookupObject(names.first(), renderedText, tail)
         val lookupElement = LookupElementBuilder.create(lookupObject, renderedText)
             .withIcon(compoundIcon)
+            .withInsertHandler(MultipleArgumentsInsertHandler())
 
         lookupElement.matchesExpectedType = ExpectedTypeWeigher.MatchesExpectedType.MATCHES_PREFERRED
 

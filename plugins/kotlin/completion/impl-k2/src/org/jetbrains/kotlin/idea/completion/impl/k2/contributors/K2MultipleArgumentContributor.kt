@@ -1,6 +1,10 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.idea.completion.impl.k2.contributors
 
+import com.intellij.codeInsight.completion.InsertionContext
+import com.intellij.codeInsight.lookup.Lookup
+import com.intellij.codeInsight.lookup.LookupElement
+import kotlinx.serialization.Serializable
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.components.KaScopeKind
 import org.jetbrains.kotlin.analysis.api.components.resolveToCallCandidates
@@ -10,9 +14,12 @@ import org.jetbrains.kotlin.analysis.api.signatures.KaFunctionSignature
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.base.analysis.api.utils.isPossiblySubTypeOf
+import org.jetbrains.kotlin.idea.completion.api.serialization.SerializableInsertHandler
 import org.jetbrains.kotlin.idea.completion.impl.k2.K2CompletionSectionContext
 import org.jetbrains.kotlin.idea.completion.impl.k2.K2SimpleCompletionContributor
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.K2SmartCompletionTailOffsetProviderImpl
 import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.Tail
+import org.jetbrains.kotlin.idea.completion.impl.k2.handlers.tryGetOffset
 import org.jetbrains.kotlin.idea.completion.impl.k2.lookups.factories.KotlinFirLookupElementFactory
 import org.jetbrains.kotlin.idea.util.positionContext.KotlinNameReferencePositionContext
 import org.jetbrains.kotlin.name.Name
@@ -187,6 +194,26 @@ internal class K2MultipleArgumentContributor : K2SimpleCompletionContributor<Kot
 
         for ((_, data) in matchedNames) {
             addElement(KotlinFirLookupElementFactory.createMultipleArgumentsLookupElement(data.matchingVariables, data.tail))
+        }
+    }
+}
+
+/**
+ * This insertion handler is responsible for replacing the existing arguments
+ * if replacement completion is invoked with a multi-argument completion item.
+ *
+ * e.g.: foo(<caret>a, b) -> foo(c, d)<caret>
+ */
+@Serializable
+internal class MultipleArgumentsInsertHandler : SerializableInsertHandler {
+    override fun handleInsert(
+        context: InsertionContext,
+        item: LookupElement
+    ) {
+        if (context.completionChar != Lookup.REPLACE_SELECT_CHAR) return
+        val offset = context.offsetMap.tryGetOffset(K2SmartCompletionTailOffsetProviderImpl.MULTIPLE_ARGUMENTS_REPLACEMENT_OFFSET)
+        if (offset != null) {
+            context.document.deleteString(context.tailOffset, offset)
         }
     }
 
