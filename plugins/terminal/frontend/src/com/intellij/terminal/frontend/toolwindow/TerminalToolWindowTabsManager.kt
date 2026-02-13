@@ -8,6 +8,7 @@ import com.intellij.terminal.frontend.view.TerminalView
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.intellij.util.concurrency.annotations.RequiresEdt
+import com.intellij.util.messages.Topic
 import org.jetbrains.annotations.ApiStatus
 
 /**
@@ -55,6 +56,7 @@ interface TerminalToolWindowTabsManager {
   @RequiresEdt
   fun attachTab(view: TerminalView, contentManager: ContentManager?): TerminalToolWindowTab
 
+  @Deprecated("Use TerminalTabsManagerListener.TOPIC instead")
   fun addListener(parentDisposable: Disposable, listener: TerminalTabsManagerListener)
 
   companion object {
@@ -97,4 +99,13 @@ interface TerminalTabsManagerListener {
    * Note, that [TerminalToolWindowTab.content] is already disposed at this moment.
    */
   fun tabDetached(tab: TerminalToolWindowTab) {}
+
+  companion object {
+    @JvmField
+    @Topic.ProjectLevel
+    val TOPIC: Topic<TerminalTabsManagerListener> = Topic.create(
+      "Terminal ToolWindow Tabs Manager",
+      TerminalTabsManagerListener::class.java,
+    )
+  }
 }
