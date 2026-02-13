@@ -1,16 +1,20 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-
 package com.intellij.openapi.wm.impl
 
 import com.intellij.openapi.MnemonicHelper
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.debug
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.ui.Splitter
+import com.intellij.openapi.ui.ThreeComponentsSplitter
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowType
 import com.intellij.openapi.wm.WindowInfo
 import com.intellij.openapi.wm.safeToolWindowPaneId
 import com.intellij.toolWindow.InternalDecoratorImpl
 import com.intellij.toolWindow.ToolWindowEntry
+import com.intellij.toolWindow.ToolWindowPane
 import com.intellij.ui.ScreenUtil
 import java.awt.Component
 import java.awt.Frame
@@ -18,10 +22,8 @@ import java.awt.Point
 import java.awt.Rectangle
 import javax.swing.JFrame
 import javax.swing.RootPaneContainer
-import com.intellij.openapi.ui.Splitter
-import com.intellij.openapi.ui.ThreeComponentsSplitter
-import com.intellij.toolWindow.ToolWindowPane
-import com.intellij.openapi.util.Disposer
+
+private val LOG = logger<ToolWindowManagerImpl>()
 
 internal class ToolWindowManagerDecorators(
   private val manager: ToolWindowManagerImpl,
@@ -119,16 +121,16 @@ internal class ToolWindowManagerDecorators(
     val rootPaneBounds = rootPane.bounds
     val point = rootPane.locationOnScreen
     val windowBounds = window.bounds
-    manager.log().debug {
+    LOG.debug {
       "Adjusting the bounds of the windowed tool window ${info.id} according to " +
       "its bounds ($windowBounds) and its root pane bounds ($rootPaneBounds)"
     }
     window.setLocation(2 * windowBounds.x - point.x, 2 * windowBounds.y - point.y)
     window.setSize(2 * windowBounds.width - rootPaneBounds.width, 2 * windowBounds.height - rootPaneBounds.height)
-    manager.log().debug { "The adjusted bounds are ${window.bounds}" }
+    LOG.debug { "The adjusted bounds are ${window.bounds}" }
     if (shouldBeMaximized && window is Frame) {
       window.extendedState = Frame.MAXIMIZED_BOTH
-      manager.log().debug { "The window has also been maximized" }
+      LOG.debug { "The window has also been maximized" }
     }
   }
 
@@ -145,7 +147,7 @@ internal class ToolWindowManagerDecorators(
     if (info.type == ToolWindowType.FLOATING) {
       if (externalFloatingBounds != null) {
         info.floatingBounds = externalFloatingBounds
-        manager.log().debug { "Floating tool window ${toolWindow.id} bounds updated: ${info.floatingBounds}" }
+        LOG.debug { "Floating tool window ${toolWindow.id} bounds updated: ${info.floatingBounds}" }
       }
     }
     else if (info.type == ToolWindowType.WINDOWED) {
@@ -156,7 +158,7 @@ internal class ToolWindowManagerDecorators(
       }
       info.floatingBounds = externalFloatingBounds
       info.isMaximized = (frame as JFrame).extendedState == Frame.MAXIMIZED_BOTH
-      manager.log().debug { "Windowed tool window ${toolWindow.id} bounds updated: ${info.floatingBounds}, maximized=${info.isMaximized}" }
+      LOG.debug { "Windowed tool window ${toolWindow.id} bounds updated: ${info.floatingBounds}, maximized=${info.isMaximized}" }
     }
     else {
       // docked and sliding windows
@@ -181,7 +183,7 @@ internal class ToolWindowManagerDecorators(
       val dockingAreaWeight = getAdjustedWeight(toolWindowPane, anchor, dockingAreaComponent)
       info.weight = toolWindowWeight
       manager.layoutState.setUnifiedAnchorWeight(anchor, dockingAreaWeight)
-      manager.log().debug {
+      LOG.debug {
         "Moved/resized tool window ${info.id}, updated weight=${toolWindowWeight}, docking area weight=${dockingAreaWeight}"
       }
     }
@@ -217,34 +219,34 @@ internal class ToolWindowManagerDecorators(
     val needToCenter: Boolean
     val bounds: Rectangle
     if (storedBounds != null && isValidBounds(storedBounds)) {
-      manager.log().debug { "Keeping the tool window ${info.id} valid bounds: $storedBounds" }
+      LOG.debug { "Keeping the tool window ${info.id} valid bounds: $storedBounds" }
       bounds = Rectangle(storedBounds)
       needToCenter = false
     }
     else if (storedBounds != null && storedBounds.width > 0 && storedBounds.height > 0) {
-      manager.log().debug { "Adjusting the stored bounds for the tool window ${info.id} to fit the screen $screen" }
+      LOG.debug { "Adjusting the stored bounds for the tool window ${info.id} to fit the screen $screen" }
       bounds = Rectangle(storedBounds)
       ScreenUtil.moveToFit(bounds, screen, null, true)
-      manager.log().debug { "Adjusted the stored bounds to fit the screen: $bounds" }
+      LOG.debug { "Adjusted the stored bounds to fit the screen: $bounds" }
       needToCenter = true
     }
     else {
-      manager.log().debug { "Computing default bounds for the tool window ${info.id}" }
+      LOG.debug { "Computing default bounds for the tool window ${info.id}" }
       // place a new frame at the center of the current frame if there are no floating bounds
       var size = internalDecorator.size
       if (size.width == 0 || size.height == 0) {
         val preferredSize = internalDecorator.preferredSize
-        manager.log().debug { "Using the preferred size $preferredSize because the size $size is invalid" }
+        LOG.debug { "Using the preferred size $preferredSize because the size $size is invalid" }
         size = preferredSize
       }
       bounds = Rectangle(externalDecorator.visibleWindowBounds.location, size)
-      manager.log().debug { "Computed the bounds using the default location: $bounds" }
+      LOG.debug { "Computed the bounds using the default location: $bounds" }
       needToCenter = true
     }
     externalDecorator.visibleWindowBounds = bounds
     if (needToCenter) {
       externalDecorator.setLocationRelativeTo(parentFrame)
-      manager.log().debug { "Centered the bounds relative to the IDE frame: ${externalDecorator.visibleWindowBounds}" }
+      LOG.debug { "Centered the bounds relative to the IDE frame: ${externalDecorator.visibleWindowBounds}" }
     }
   }
 
@@ -257,7 +259,7 @@ internal class ToolWindowManagerDecorators(
       (topLeftVisible || topRightVisible) && // At least some part of the header must be visible,
       mostlyVisible // and that some sensible portion of the window is better be visible too.
     if (!isValid) {
-      manager.log().debug {
+      LOG.debug {
         "Not using saved bounds $bounds because they're invalid: " +
         "topLeftVisible=$topLeftVisible, topRightVisible=$topRightVisible mostlyVisible=$mostlyVisible"
       }
@@ -274,11 +276,11 @@ internal class ToolWindowManagerDecorators(
     }
     val editorComponent = parentSplitter.innerComponent
     if (editorComponent == null) {
-      manager.log().info("Editor area is null, not updating tool window weights")
+      LOG.info("Editor area is null, not updating tool window weights")
       return false
     }
     if (!editorComponent.isVisible) {
-      manager.log().info("Editor area is not visible, not updating tool window weights")
+      LOG.info("Editor area is not visible, not updating tool window weights")
       return false
     }
     return true

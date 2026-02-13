@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 @file:OptIn(FlowPreview::class)
 
 package com.intellij.openapi.wm.impl
@@ -101,6 +101,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
+import org.jetbrains.annotations.ApiStatus.Internal
 import java.awt.AWTEvent
 import java.awt.Color
 import java.awt.Component
@@ -116,8 +117,11 @@ import javax.swing.JLabel
 import javax.swing.LayoutFocusTraversalPolicy
 import javax.swing.SwingUtilities
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
-@ApiStatus.Internal class ToolWindowImpl(
+private val LOG = logger<ToolWindowManagerImpl>()
+
+@Internal class ToolWindowImpl(
   @JvmField val toolWindowManager: ToolWindowManagerImpl,
   private val id: String,
   private val canCloseContent: Boolean,
@@ -200,18 +204,18 @@ import kotlin.math.abs
 
     toolWindowManager.coroutineScope.launch {
       moveOrResizeRequests
-        .debounce(100)
+        .debounce(100.milliseconds)
         .collectLatest {
           withContext(Dispatchers.EDT) {
             val decorator = decorator
             if (decorator != null) {
-              toolWindowManager.log().debug { "Invoking scheduled tool window $id bounds update" }
+              LOG.debug { "Invoking scheduled tool window $id bounds update" }
               toolWindowManager.movedOrResized(decorator)
             }
             val updatedWindowInfo = toolWindowManager.getLayout().getInfo(getId())
             if (updatedWindowInfo != null) {
               this@ToolWindowImpl.windowInfo = updatedWindowInfo
-              toolWindowManager.log().debug { "Updated window info: $updatedWindowInfo" }
+              LOG.debug { "Updated window info: $updatedWindowInfo" }
             }
           }
         }
@@ -284,8 +288,8 @@ import kotlin.math.abs
     decorator.applyWindowInfo(windowInfo)
     decorator.addComponentListener(object : ComponentAdapter() {
       override fun componentResized(e: ComponentEvent) {
-        if (toolWindowManager.log().isTraceEnabled) {
-          toolWindowManager.log().trace("Tool window $id internal decorator resized to ${decorator.bounds}, scheduling bounds update")
+        if (LOG.isTraceEnabled) {
+          LOG.trace("Tool window $id internal decorator resized to ${decorator.bounds}, scheduling bounds update")
         }
         onMovedOrResized()
       }
@@ -414,10 +418,10 @@ import kotlin.math.abs
   }
 
   internal fun applyWindowInfo(info: WindowInfo) {
-    if (toolWindowManager.log().isDebugEnabled) {
-      toolWindowManager.log().debug("Applying window info: $info")
+    if (LOG.isDebugEnabled) {
+      LOG.debug("Applying window info: $info")
       if (windowInfo.contentUiType != info.contentUiType) {
-        toolWindowManager.log().debug("Content UI type changed: ${windowInfo.contentUiType} -> ${info.contentUiType}")
+        LOG.debug("Content UI type changed: ${windowInfo.contentUiType} -> ${info.contentUiType}")
       }
     }
     windowInfo = info
@@ -647,7 +651,7 @@ import kotlin.math.abs
 
   override fun getStripeTitle(): String = stripeTitleProvider.get()
 
-  override fun getStripeTitleProvider() = stripeTitleProvider
+  override fun getStripeTitleProvider(): Supplier<@NlsContexts.TabTitle String> = stripeTitleProvider
 
   override fun setIcon(newIcon: Icon) {
     EDT.assertIsEdt()
@@ -692,7 +696,7 @@ import kotlin.math.abs
     stripeTitleProvider = title
   }
 
-  override fun getStripeShortTitleProvider() = stripeShortTitleProvider
+  override fun getStripeShortTitleProvider(): Supplier<@NlsContexts.TabTitle String>? = stripeShortTitleProvider
 
   override fun setStripeShortTitleProvider(title: Supplier<String>) {
     stripeShortTitleProvider = title

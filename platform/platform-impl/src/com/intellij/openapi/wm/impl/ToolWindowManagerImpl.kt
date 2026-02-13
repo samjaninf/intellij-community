@@ -27,10 +27,8 @@ import com.intellij.openapi.application.writeIntentReadAction
 import com.intellij.openapi.components.ComponentManagerEx
 import com.intellij.openapi.components.service
 import com.intellij.openapi.components.serviceAsync
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.debug
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.extensions.ExtensionPointListener
 import com.intellij.openapi.extensions.PluginDescriptor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
@@ -1125,7 +1123,7 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
     fireStateChanged(ToolWindowManagerEventType.UnregisterToolWindow, toolWindow)
   }
 
-  private fun doUnregisterToolWindow(id: String) {
+  internal fun doUnregisterToolWindow(id: String) {
     LOG.debug { "unregisterToolWindow($id)" }
 
     ThreadingAssertions.assertEventDispatchThread()
@@ -1919,22 +1917,4 @@ open class ToolWindowManagerImpl @NonInjectable @TestOnly internal constructor(
       LOG.error("Invariants failed: \n${violations.joinToString("\n")}\n${if (id == null) "" else "id: $id"}")
     }
   }
-
-  // This method cannot be inlined because of magic Kotlin compilation bug: it 'captured' "list" local value and cause class-loader leak
-  // See IDEA-CR-61904
-  internal fun registerEpListeners() {
-    ToolWindowEP.EP_NAME.addExtensionPointListener(object : ExtensionPointListener<ToolWindowEP> {
-      override fun extensionAdded(extension: ToolWindowEP, pluginDescriptor: PluginDescriptor) {
-        coroutineScope.launch {
-          initToolWindow(extension, pluginDescriptor)
-        }
-      }
-
-      override fun extensionRemoved(extension: ToolWindowEP, pluginDescriptor: PluginDescriptor) {
-        doUnregisterToolWindow(extension.id)
-      }
-    }, project)
-  }
-
-  internal fun log(): Logger = LOG
 }

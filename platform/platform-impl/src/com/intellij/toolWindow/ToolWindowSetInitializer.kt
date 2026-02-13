@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 @file:OptIn(ExperimentalCoroutinesApi::class)
 
 package com.intellij.toolWindow
@@ -14,6 +14,7 @@ import com.intellij.openapi.application.UI
 import com.intellij.openapi.application.asContextElement
 import com.intellij.openapi.components.serviceAsync
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.extensions.ExtensionPointListener
 import com.intellij.openapi.extensions.PluginDescriptor
 import com.intellij.openapi.extensions.impl.ExtensionPointImpl
 import com.intellij.openapi.extensions.impl.ExtensionsAreaImpl
@@ -186,7 +187,7 @@ internal class ToolWindowSetInitializer(private val project: Project, private va
       }, suffix = " (secondary)")
     }
 
-    manager.registerEpListeners()
+    registerEpListeners(manager)
   }
 
   private suspend fun postEntryProcessing(entries: List<RegisterToolWindowResult>, suffix: String = "") {
@@ -220,6 +221,21 @@ internal class ToolWindowSetInitializer(private val project: Project, private va
     }
   }
 }
+
+private fun registerEpListeners(manager: ToolWindowManagerImpl) {
+  ToolWindowEP.EP_NAME.addExtensionPointListener(manager.coroutineScope, object : ExtensionPointListener<ToolWindowEP> {
+    override fun extensionAdded(extension: ToolWindowEP, pluginDescriptor: PluginDescriptor) {
+      manager.coroutineScope.launch {
+        manager.initToolWindow(extension, pluginDescriptor)
+      }
+    }
+
+    override fun extensionRemoved(extension: ToolWindowEP, pluginDescriptor: PluginDescriptor) {
+      manager.doUnregisterToolWindow(extension.id)
+    }
+  })
+}
+
 
 internal data class PreparedRegisterToolWindowTask(
   @JvmField val task: RegisterToolWindowTaskData,
