@@ -717,10 +717,6 @@
                     interface="com.intellij.configurationStore.ProjectStorePathCustomizer"
                     dynamic="true"/>
 
-    <extensionPoint name="pluginCategoryPriority"
-                    interface="com.intellij.ide.plugins.PluginCategoryPriority"
-                    dynamic="true"/>
-
     <extensionPoint name="pluginCategoryPromotionProvider"
                     interface="com.intellij.ide.plugins.PluginCategoryPromotionProvider"
                     dynamic="true"/>

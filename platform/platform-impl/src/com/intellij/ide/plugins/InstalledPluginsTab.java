@@ -65,8 +65,6 @@ import static com.intellij.ide.plugins.PluginManagerConfigurablePanel.showRightB
 
 @ApiStatus.Internal
 class InstalledPluginsTab extends PluginsTab {
-  private static final ExtensionPointName<PluginCategoryPriority> EP_NAME =
-    ExtensionPointName.create("com.intellij.pluginCategoryPriority");
   private static final ExtensionPointName<PluginCategoryPromotionProvider> PROMOTION_EP_NAME =
     ExtensionPointName.create("com.intellij.pluginCategoryPromotionProvider");
 
@@ -247,10 +245,12 @@ class InstalledPluginsTab extends PluginsTab {
             return group;
           })
           .sorted((o1, o2) -> {
-            for (PluginCategoryPriority priority : EP_NAME.getExtensionList()) {
-              String priorityCategory = priority.getPriorityCategoryName();
-              if (priorityCategory.equals(o1.title)) return -1;
-              if (priorityCategory.equals(o2.title)) return 1;
+            for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
+              if (provider.isPriorityCategory()) {
+                String priorityCategory = provider.getCategoryName();
+                if (priorityCategory.equals(o1.title)) return -1;
+                if (priorityCategory.equals(o2.title)) return 1;
+              }
             }
             if (defaultCategory.equals(o1.title)) return 1;
             if (defaultCategory.equals(o2.title)) return -1;
