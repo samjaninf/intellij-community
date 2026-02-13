@@ -93,8 +93,11 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   fun getAllKnownProjects(): List<GitLabProjectMapping>
 
   fun setReviewers(reviewers: List<GitLabUserDTO>)
+  fun clearReviewers()
   fun setAssignees(assignees: List<GitLabUserDTO>)
+  fun clearAssignees()
   fun setLabels(labels: List<GitLabLabel>)
+  fun clearLabels()
 
   fun createMergeRequest()
 }
@@ -287,12 +290,24 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     GitLabStatistics.logMrCreationReviewersAdjusted(project)
   }
 
+  override fun clearReviewers() {
+    _reviewers.value = listOf()
+  }
+
   override fun setAssignees(assignees: List<GitLabUserDTO>) {
     _assignees.value = assignees
   }
 
+  override fun clearAssignees() {
+    _assignees.value = listOf()
+  }
+
   override fun setLabels(labels: List<GitLabLabel>) {
     _labels.value = labels
+  }
+
+  override fun clearLabels() {
+    _labels.value = listOf()
   }
 
   override fun createMergeRequest() {

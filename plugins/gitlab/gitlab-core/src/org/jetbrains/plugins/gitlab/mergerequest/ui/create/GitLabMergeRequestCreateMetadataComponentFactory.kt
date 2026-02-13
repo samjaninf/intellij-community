@@ -34,6 +34,7 @@ internal object GitLabMergeRequestCreateMetadataComponentFactory {
     val list = LabeledListComponentsFactory.createListPanel(
       vm.reviewers,
       { comp, _ -> chooseReviewers(comp, vm, vm.avatarIconProvider) },
+      { vm.clearReviewers() },
       { UserLabel(it, vm.avatarIconProvider) }
     )
 
@@ -64,6 +65,7 @@ internal object GitLabMergeRequestCreateMetadataComponentFactory {
     val list = LabeledListComponentsFactory.createListPanel(
       vm.assignees,
       { comp, _ -> chooseAssignees(comp, vm, vm.avatarIconProvider) },
+      { vm.clearAssignees() },
       { UserLabel(it, vm.avatarIconProvider) }
     )
 
@@ -112,6 +114,7 @@ internal object GitLabMergeRequestCreateMetadataComponentFactory {
     val list = LabeledListComponentsFactory.createListPanel(
       vm.labels,
       { comp, _ -> chooseLabels(comp, vm) },
+      { vm.clearLabels() },
       { LabelLabel(it) }
     )
 

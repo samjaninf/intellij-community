@@ -72,6 +72,7 @@ object LabeledListComponentsFactory {
   fun <T : Any> createListPanel(
     itemsState: StateFlow<List<T>>,
     editActionHandler: suspend (JComponent, ActionEvent) -> Unit,
+    clearActionHandler: ((ActionEvent) -> Unit)? = null,
     itemComponentFactory: (T) -> JComponent,
   ): JPanel {
     val editButton = InlineIconButton(AllIcons.General.Inline_edit).apply {
@@ -89,6 +90,13 @@ object LabeledListComponentsFactory {
         finally {
           actionListener = null
         }
+      }
+    }
+
+    val clearButton = clearActionHandler?.let { handler ->
+      InlineIconButton(AllIcons.Actions.Close).apply {
+        withBackgroundHover = true
+        actionListener = ActionListener { handler(it) }
       }
     }
 
@@ -110,6 +118,9 @@ object LabeledListComponentsFactory {
             val itemWithControls = HorizontalListPanel().apply {
               add(itemComponentFactory(lastItem))
               add(editButton)
+              if (clearButton != null) {
+                add(clearButton)
+              }
             }
             add(itemWithControls)
           }
@@ -119,6 +130,12 @@ object LabeledListComponentsFactory {
       }
     }
   }
+
+  fun <T : Any> createListPanel(
+    itemsState: StateFlow<List<T>>,
+    editActionHandler: suspend (JComponent, ActionEvent) -> Unit,
+    itemComponentFactory: (T) -> JComponent,
+  ): JPanel = createListPanel(itemsState, editActionHandler, null, itemComponentFactory)
 
   /**
    * Creates a grid panel with labeled lists where the labels column width is equal to the widest label
