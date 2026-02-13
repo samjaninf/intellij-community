@@ -27,7 +27,7 @@ fun PyClassLikeType.isProtocol(context: TypeEvalContext): Boolean = containsProt
 
 fun PyClass.isProtocol(context: TypeEvalContext): Boolean = containsProtocol(getSuperClassTypes(context))
 
-fun PyClassType.isRuntimeCheckable(context: TypeEvalContext): Boolean = 
+fun PyClassType.isRuntimeCheckable(context: TypeEvalContext): Boolean =
   PyKnownDecoratorUtil.getKnownDecorators(pyClass, context).any {
     it in listOf(TYPING_RUNTIME_CHECKABLE, TYPING_RUNTIME_CHECKABLE_EXT, TYPING_RUNTIME, TYPING_RUNTIME_EXT)
   }
@@ -45,12 +45,11 @@ fun inspectProtocolSubclass(protocol: PyClassType, subclass: PyClassType, contex
   val resolveContext = PyResolveContext.defaultContext(context)
   val result = mutableListOf<Pair<PyTypeMember, List<PyTypeMember>>>()
 
-  val protocolMembers = protocol.toInstance().getAllMembers(resolveContext)
   val superClassesMembers = protocol.toInstance().getSuperClassTypes(context)
     .filterNotNull()
     .filter { it.isProtocol(context) }
     .flatMap { it.toInstance().getAllMembers(resolveContext).asIterable() }
-  protocolMembers.addAll(superClassesMembers)
+  val protocolMembers = protocol.toInstance().getAllMembers(resolveContext) + superClassesMembers
 
   for (protocolMember in protocolMembers) {
     val protocolElement = protocolMember.element ?: continue

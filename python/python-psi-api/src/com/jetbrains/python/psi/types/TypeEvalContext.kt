@@ -302,7 +302,11 @@ sealed class TypeEvalContext(
       return mutableListOf()
     }
 
-    override fun getCompletionVariants(completionPrefix: String?, location: PsiElement?, context: ProcessingContext?): Array<Any?>? {
+    override fun getCompletionVariants(
+      completionPrefix: String?,
+      location: PsiElement,
+      context: ProcessingContext,
+    ): Array<Any> {
       return ArrayUtil.EMPTY_OBJECT_ARRAY
     }
 
