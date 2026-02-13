@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.completion.common.protocol
 
 import com.intellij.codeInsight.completion.CodeCompletionHandlerBase
@@ -11,32 +11,34 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RpcCompletionItem(
+  val id: RpcCompletionItemId,
+  val prefixMatcher: RpcPrefixMatcher,
+  val insertHandler: RpcInsertHandler = RpcInsertHandler.Backend,
   val lookupString: String,
   val allLookupStrings: Set<String>? = null, // null means setOf(lookupString)
   val presentation: RpcCompletionItemPresentation,
-  val id: RpcCompletionItemId,
   val hasExpensiveRenderer: Boolean = false,
-  val insertHandler: RpcInsertHandler = RpcInsertHandler.Backend,
   val requiresCommittedDocuments: Boolean = true,
   val autoCompletionPolicy: AutoCompletionPolicy = AutoCompletionPolicy.SETTINGS_DEPENDENT,
   val isCaseSensitive: Boolean = true,
   val shouldStopLookupInsertion: Boolean = false,
   val isDirectInsertion: Boolean = false,
-  val prefixMatcher: RpcPrefixMatcher,
   val isWorthShowingInAutoPopup: Boolean = false,
 ) {
   override fun toString(): String = buildToString("RpcCompletionItem") {
+    field("id", id)
+    field("prefixMatcher", prefixMatcher)
+    fieldWithDefault("insertHandler", insertHandler, RpcInsertHandler.Backend)
     field("lookupString", lookupString)
     fieldWithNullDefault("allLookupStrings", allLookupStrings)
     field("presentation", presentation)
-    field("id", id)
-    fieldWithDefault("insertHandler", insertHandler, RpcInsertHandler.Backend)
+    fieldWithDefault("hasExpensiveRenderer", hasExpensiveRenderer, false)
     fieldWithDefault("requiresCommittedDocuments", requiresCommittedDocuments, true)
     fieldWithDefault("autoCompletionPolicy", autoCompletionPolicy, AutoCompletionPolicy.SETTINGS_DEPENDENT)
     fieldWithDefault("isCaseSensitive", isCaseSensitive, true)
     fieldWithDefault("shouldStopLookupInsertion", shouldStopLookupInsertion, false)
     fieldWithDefault("isDirectInsertion", isDirectInsertion, false)
-    field("prefixMatcher", prefixMatcher)
+    fieldWithDefault("isWorthShowingInAutoPopup", isWorthShowingInAutoPopup, false)
   }
 }
 
