@@ -766,14 +766,14 @@ class GradleFacetImportTest8 : KotlinGradleImportingTestCase() {
         assertAllModulesConfigured()
     }
 
+    // kotlin-2js plugin
     @Test
     fun testStableModuleNameWhileUsingGradleJS() {
         configureByFiles()
         importProject()
 
-        checkStableModuleName("project.main", "project", JsPlatforms.defaultJsPlatform, isProduction = true)
-        // Note "_test" suffix: this is current behavior of K2JS Compiler
-        checkStableModuleName("project.test", "project_test", JsPlatforms.defaultJsPlatform, isProduction = false)
+        checkStableModuleName("project.main", "project.main", JsPlatforms.defaultJsPlatform, isProduction = true)
+        checkStableModuleName("project.test", "project.test", JsPlatforms.defaultJsPlatform, isProduction = false)
 
         assertAllModulesConfigured()
     }

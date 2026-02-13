@@ -28,10 +28,10 @@ import org.jetbrains.plugins.gradle.model.ProjectImportModelProvider.GradleModel
 import org.jetbrains.plugins.gradle.tooling.Message
 import org.jetbrains.plugins.gradle.tooling.ModelBuilderContext
 import org.jetbrains.plugins.gradle.tooling.ModelBuilderService
-import java.io.File
 import java.io.Serializable
 import java.lang.reflect.InvocationTargetException
 import java.util.Locale
+import kotlin.io.path.absolutePathString
 
 typealias AdditionalVisibleSourceSetsBySourceSet = Map</* Source Set Name */ String, /* Visible Source Set Names */ Set<String>>
 
@@ -48,6 +48,7 @@ interface KotlinGradleModel : Serializable {
     val kotlinTaskProperties: KotlinTaskPropertiesBySourceSet
     val gradleUserHome: String
     val kotlinGradlePluginVersion: KotlinGradlePluginVersion?
+    val generatedSourcesRoots: List<String>
 }
 
 data class KotlinGradleModelImpl(
@@ -60,7 +61,8 @@ data class KotlinGradleModelImpl(
     override val kotlinTarget: String? = null,
     override val kotlinTaskProperties: KotlinTaskPropertiesBySourceSet,
     override val gradleUserHome: String,
-    override val kotlinGradlePluginVersion: KotlinGradlePluginVersion?
+    override val kotlinGradlePluginVersion: KotlinGradlePluginVersion?,
+    override val generatedSourcesRoots: List<String>,
 ) : KotlinGradleModel
 
 abstract class AbstractKotlinGradleModelBuilder : ModelBuilderService {
@@ -235,6 +237,7 @@ class KotlinGradleModelBuilder : AbstractKotlinGradleModelBuilder(), ModelBuilde
         val compilerArgumentsBySourceSet = LinkedHashMap<String, List<String>>()
         val additionalVisibleSourceSets = LinkedHashMap<String, Set<String>>()
         val extraProperties = HashMap<String, KotlinTaskProperties>()
+        val generatedSources = mutableSetOf<String>()
 
         val kotlinCompileTasks = target?.let { it.compilations ?: emptyList() }
             ?.mapNotNull { compilation -> compilation.getCompileKotlinTaskName(project) }
@@ -250,6 +253,8 @@ class KotlinGradleModelBuilder : AbstractKotlinGradleModelBuilder(), ModelBuilde
             additionalVisibleSourceSets[sourceSetName] = getAdditionalVisibleSourceSets(project, sourceSetName)
             extraProperties.acknowledgeTask(compileTask, null)
         }
+
+        generatedSources.addAll(project.getKotlinSourceSetGeneratedSourceRoots().map { it.absolutePathString() })
 
         val platform = platformPluginId ?: pluginToPlatform.entries.singleOrNull { project.plugins.findPlugin(it.key) != null }?.value
 
@@ -267,7 +272,8 @@ class KotlinGradleModelBuilder : AbstractKotlinGradleModelBuilder(), ModelBuilde
             kotlinTarget = platform ?: kotlinPluginId,
             kotlinTaskProperties = extraProperties,
             gradleUserHome = project.gradle.gradleUserHomeDir.absolutePath,
-            kotlinGradlePluginVersion = project.kotlinGradlePluginVersion()
+            kotlinGradlePluginVersion = project.kotlinGradlePluginVersion(),
+            generatedSourcesRoots = generatedSources.toList(),
         )
     }
 
