@@ -155,6 +155,7 @@ internal class MavenAttachSourcesProvider : AttachSourcesProvider {
     val result: MutableCollection<MavenProject> = ArrayList()
     val currentSnapshot = WorkspaceModel.getInstance(project).currentSnapshot
     val mavenProjectsManager = MavenProjectsManager.getInstance(project)
+    if (!mavenProjectsManager.isInitialized) return emptyList()
 
     val fileIndex = ProjectRootManager.getInstance(project).getFileIndex()
     val libsAndSdks = fileIndex.findContainingLibraries(psiFile.getVirtualFile()) + fileIndex.findContainingSdks(psiFile.getVirtualFile())

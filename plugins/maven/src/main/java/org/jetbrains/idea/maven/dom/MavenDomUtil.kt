@@ -94,7 +94,7 @@ object MavenDomUtil {
     if (rootTag == null || "project" != rootTag.getName()) return false
 
     val xmlns = rootTag.getAttributeValue("xmlns")
-    if (xmlns != "http://maven.apache.org/POM/4.1.0" && xmlns != "https://maven.apache.org/POM/4.1.0"){
+    if (xmlns != "http://maven.apache.org/POM/4.1.0" && xmlns != "https://maven.apache.org/POM/4.1.0") {
       return false
     }
 
@@ -254,6 +254,7 @@ object MavenDomUtil {
     val file = getVirtualFile(element)
     if (file == null) return null
     val manager = MavenProjectsManager.getInstance(element.getProject())
+    if (!manager.isInitialized) return null
     return manager.findProject(file)
   }
 
