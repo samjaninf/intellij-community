@@ -36,6 +36,11 @@ fragment mergeRequest on MergeRequest {
   state
   draft
 
+  squash
+  squashOnMerge
+  squashReadOnly
+  defaultSquashCommitMessage
+  defaultMergeCommitMessage
   shouldRemoveSourceBranch
   shouldBeRebased
   rebaseInProgress

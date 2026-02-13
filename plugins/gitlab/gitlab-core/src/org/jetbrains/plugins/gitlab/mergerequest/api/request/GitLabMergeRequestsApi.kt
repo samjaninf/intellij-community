@@ -268,17 +268,40 @@ suspend fun GitLabApi.GraphQL.mergeRequestSetReviewers(
 suspend fun GitLabApi.GraphQL.mergeRequestAccept(
   projectPath: GitLabProjectPath,
   mrIid: String,
-  commitMessage: String,
+  commitMessage: String?,
   sha: String,
-  withSquash: Boolean,
-  shouldRemoveSourceBranch: Boolean
+  shouldRemoveSourceBranch: Boolean,
 ): HttpResponse<out GitLabGraphQLMutationResultDTO<GitLabMergeRequestDTO>?> {
   val parameters = mapOf(
     "projectId" to projectPath.fullPath(),
     "mergeRequestId" to mrIid,
     "commitMessage" to commitMessage,
     "sha" to sha,
-    "withSquash" to withSquash,
+    "withSquash" to false,
+    "shouldRemoveSourceBranch" to shouldRemoveSourceBranch
+  )
+  val request = gitLabQuery(GitLabGQLQuery.MERGE_REQUEST_ACCEPT, parameters)
+  return withErrorStats(GitLabGQLQuery.MERGE_REQUEST_ACCEPT) {
+    loadResponse<GitLabMergeRequestResult>(request, "mergeRequestAccept")
+  }
+}
+
+@SinceGitLab("13.10")
+suspend fun GitLabApi.GraphQL.mergeRequestAcceptSquash(
+  projectPath: GitLabProjectPath,
+  mrIid: String,
+  commitMessage: String?,
+  squashCommitMessage: String?,
+  sha: String,
+  shouldRemoveSourceBranch: Boolean,
+): HttpResponse<out GitLabGraphQLMutationResultDTO<GitLabMergeRequestDTO>?> {
+  val parameters = mapOf(
+    "projectId" to projectPath.fullPath(),
+    "mergeRequestId" to mrIid,
+    "commitMessage" to commitMessage,
+    "squashCommitMessage" to squashCommitMessage,
+    "sha" to sha,
+    "withSquash" to true,
     "shouldRemoveSourceBranch" to shouldRemoveSourceBranch
   )
   val request = gitLabQuery(GitLabGQLQuery.MERGE_REQUEST_ACCEPT, parameters)

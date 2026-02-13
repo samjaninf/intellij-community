@@ -4,9 +4,8 @@ package org.jetbrains.plugins.gitlab.mergerequest.ui.details.model
 import com.intellij.collaboration.async.childScope
 import com.intellij.collaboration.async.mapState
 import com.intellij.collaboration.async.modelFlow
+import com.intellij.collaboration.async.stateInNow
 import com.intellij.collaboration.async.withInitial
-import com.intellij.collaboration.messages.CollaborationToolsBundle
-import com.intellij.collaboration.ui.codereview.action.ReviewMergeCommitMessageDialog
 import com.intellij.collaboration.ui.codereview.details.data.ReviewRequestState
 import com.intellij.collaboration.ui.codereview.details.data.ReviewRole
 import com.intellij.collaboration.ui.codereview.details.data.ReviewState
@@ -15,13 +14,12 @@ import com.intellij.collaboration.ui.icon.IconsProvider
 import com.intellij.collaboration.util.IncrementallyComputedValue
 import com.intellij.collaboration.util.SingleCoroutineLauncher
 import com.intellij.collaboration.util.collectIncrementallyTo
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.text.StringUtil
+import com.intellij.openapi.util.NlsSafe
+import com.intellij.util.text.nullize
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
@@ -36,25 +34,28 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.plugins.gitlab.api.SinceGitLab
-import org.jetbrains.plugins.gitlab.api.dto.GitLabCiJobDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabReviewerDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabCiJobStatus
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequest
+import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabMergeRequestFullDetails
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProject
 import org.jetbrains.plugins.gitlab.mergerequest.data.reviewState
+import org.jetbrains.plugins.gitlab.mergerequest.ui.details.model.GitLabMergeRequestReviewFlowViewModel.MergeDetails
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSubmitReviewViewModel
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSubmitReviewViewModel.SubmittableReview
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.GitLabMergeRequestSubmitReviewViewModelImpl
 import org.jetbrains.plugins.gitlab.mergerequest.ui.review.getSubmittableReview
-import org.jetbrains.plugins.gitlab.util.GitLabBundle
 
 @ApiStatus.Internal
 interface GitLabMergeRequestReviewFlowViewModel : CodeReviewFlowViewModel<GitLabReviewerDTO> {
-  val isBusy: Flow<Boolean>
+  val project: Project
+
+  val number: @NlsSafe String
+
+  val isBusy: StateFlow<Boolean>
 
   val allowsMultipleReviewers: Flow<Boolean>
 
@@ -69,9 +70,7 @@ interface GitLabMergeRequestReviewFlowViewModel : CodeReviewFlowViewModel<GitLab
 
   val userCanApprove: SharedFlow<Boolean>
   val userCanManage: SharedFlow<Boolean>
-  val userCanMerge: SharedFlow<Boolean>
 
-  val isMergeEnabled: SharedFlow<Boolean>
   val isRebaseEnabled: SharedFlow<Boolean>
 
   val submittableReview: SharedFlow<SubmittableReview?>
@@ -79,14 +78,16 @@ interface GitLabMergeRequestReviewFlowViewModel : CodeReviewFlowViewModel<GitLab
 
   val projectMembers: StateFlow<IncrementallyComputedValue<List<GitLabUserDTO>>>
 
+  val mergeDetails: StateFlow<MergeDetails?>
+
   /**
    * Request the start of a submission process
    */
   fun submitReview()
 
-  fun merge()
+  fun merge(mergeCommitMessage: String, removeSourceBranch: Boolean)
 
-  fun squashAndMerge()
+  fun squashAndMerge(mergeCommitMessage: String, removeSourceBranch: Boolean, squashCommitMessage: String)
 
   fun rebase()
 
@@ -104,23 +105,37 @@ interface GitLabMergeRequestReviewFlowViewModel : CodeReviewFlowViewModel<GitLab
   fun removeReviewer(reviewer: GitLabUserDTO)
 
   fun reviewerRereview()
+
+  data class MergeDetails(
+    val canMerge: Boolean,
+    val ffOnlyMerge: Boolean,
+    val targetBranch: String,
+    val sourceBranch: String,
+    val mergeCommitMessageDefault: String?,
+    val removeSourceBranch: Boolean,
+    val squashCommits: Boolean,
+    val squashCommitsReadonly: Boolean,
+    val squashCommitMessageDefault: String?,
+  )
 }
 
 private val LOG = logger<GitLabMergeRequestReviewFlowViewModel>()
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class GitLabMergeRequestReviewFlowViewModelImpl(
-  private val project: Project,
+  override val project: Project,
   parentScope: CoroutineScope,
   override val currentUser: GitLabUserDTO,
   projectData: GitLabProject,
   private val mergeRequest: GitLabMergeRequest,
-  override val avatarIconsProvider: IconsProvider<GitLabUserDTO>
+  override val avatarIconsProvider: IconsProvider<GitLabUserDTO>,
 ) : GitLabMergeRequestReviewFlowViewModel {
   private val scope = parentScope.childScope(this::class)
   private val taskLauncher = SingleCoroutineLauncher(scope)
 
-  override val isBusy: Flow<Boolean> = taskLauncher.busy
+  override val number: @NlsSafe String = "!${mergeRequest.iid}"
+
+  override val isBusy: StateFlow<Boolean> = taskLauncher.busy
 
   override val allowsMultipleReviewers: Flow<Boolean> = suspend {
     try {
@@ -167,27 +182,10 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
     .modelFlow(scope, LOG)
   override val userCanManage: SharedFlow<Boolean> = mergeRequest.details.map { it.userPermissions.updateMergeRequest }
     .modelFlow(scope, LOG)
-  override val userCanMerge: SharedFlow<Boolean> = mergeRequest.details.map { it.userPermissions.canMerge }
-    .modelFlow(scope, LOG)
 
-  private val isMergeable: SharedFlow<Boolean> = mergeRequest.details.map { it.isMergeable && it.diffRefs?.headSha != null }
-    .modelFlow(scope, LOG)
-  private val shouldBeRebased: SharedFlow<Boolean> = mergeRequest.details.map { it.shouldBeRebased }
-    .modelFlow(scope, LOG)
-  private val isPipelineSucceeds: SharedFlow<Boolean> = mergeRequest.details.map { details ->
-    val ciJobs = details.headPipeline?.jobs ?: return@map true
-    if (!details.onlyAllowMergeIfPipelineSucceeds) return@map true
-    ciJobs.areAllJobsSuccessful(details.allowMergeOnSkippedPipeline)
+  override val isRebaseEnabled: SharedFlow<Boolean> = mergeRequest.details.map {
+    it.userPermissions.canMerge && it.shouldBeRebased
   }.modelFlow(scope, LOG)
-
-  override val isMergeEnabled: SharedFlow<Boolean> =
-    combine(userCanMerge, isMergeable, isPipelineSucceeds) { userCanMerge, isMergeable, isPipelineSucceeds ->
-      userCanMerge && isMergeable && isPipelineSucceeds
-    }.modelFlow(scope, LOG)
-  override val isRebaseEnabled: SharedFlow<Boolean> =
-    combine(userCanMerge, shouldBeRebased, isPipelineSucceeds) { userCanMerge, shouldBeRebased, isPipelineSucceeds ->
-      userCanMerge && shouldBeRebased && isPipelineSucceeds
-    }.modelFlow(scope, LOG)
 
   override val submittableReview: SharedFlow<SubmittableReview?> = mergeRequest.getSubmittableReview(currentUser).modelFlow(scope, LOG)
   override var submitReviewInputHandler: (suspend (GitLabMergeRequestSubmitReviewViewModel) -> Unit)? = null
@@ -196,6 +194,21 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
     projectData.dataReloadSignal.withInitial(Unit).transformLatest {
       projectData.getMembersBatches().collectIncrementallyTo(this)
     }.stateIn(scope, SharingStarted.Lazily, IncrementallyComputedValue.loading())
+
+  override val mergeDetails = mergeRequest.details.map { details ->
+    if (!details.userPermissions.canMerge) return@map null
+    MergeDetails(
+      canMerge = details.isMergeable && !details.isMergeBlockedByPipeline,
+      ffOnlyMerge = details.ffOnlyMerge,
+      targetBranch = details.targetBranch,
+      sourceBranch = details.sourceBranch,
+      mergeCommitMessageDefault = details.defaultMergeCommitMessage,
+      removeSourceBranch = details.shouldRemoveSourceBranch,
+      squashCommits = details.shouldSquashWithProject,
+      squashCommitsReadonly = details.shouldSquashReadOnly,
+      squashCommitMessageDefault = details.defaultSquashCommitMessage
+    )
+  }.stateInNow(scope, null)
 
   override fun submitReview() {
     scope.launch {
@@ -211,53 +224,12 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
     }
   }
 
-  override fun merge() = runAction {
-    val details = mergeRequest.details.first()
-    val title = details.title
-    val sourceBranch = details.sourceBranch
-    val targetBranch = details.targetBranch
-    val commitMessage: String? = withContext(scope.coroutineContext + Dispatchers.EDT) {
-      val dialog = ReviewMergeCommitMessageDialog(
-        project,
-        CollaborationToolsBundle.message("dialog.review.merge.commit.title"),
-        GitLabBundle.message("dialog.review.merge.commit.message.placeholder", sourceBranch, targetBranch),
-        title
-      )
-
-      if (!dialog.showAndGet()) {
-        return@withContext null
-      }
-
-      return@withContext dialog.message
-    }
-
-    if (commitMessage == null) return@runAction
-    mergeRequest.merge(commitMessage)
+  override fun merge(mergeCommitMessage: String, removeSourceBranch: Boolean) = runAction {
+    mergeRequest.merge(mergeCommitMessage.nullize(), removeSourceBranch)
   }
 
-  override fun squashAndMerge() = runAction {
-    val details = mergeRequest.details.first()
-    val sourceBranch = details.sourceBranch
-    val targetBranch = details.targetBranch
-    val commits = mergeRequest.changes.first().getCommits()
-    val commitMessage: String? = withContext(scope.coroutineContext + Dispatchers.EDT) {
-      val body = "* " + StringUtil.join(commits, { it.fullTitle }, "\n\n* ")
-      val dialog = ReviewMergeCommitMessageDialog(
-        project,
-        CollaborationToolsBundle.message("dialog.review.merge.commit.title.with.squash"),
-        GitLabBundle.message("dialog.review.merge.commit.message.placeholder", sourceBranch, targetBranch),
-        body
-      )
-
-      if (!dialog.showAndGet()) {
-        return@withContext null
-      }
-
-      return@withContext dialog.message
-    }
-
-    if (commitMessage == null) return@runAction
-    mergeRequest.squashAndMerge(commitMessage)
+  override fun squashAndMerge(mergeCommitMessage: String, removeSourceBranch: Boolean, squashCommitMessage: String) = runAction {
+    mergeRequest.squashAndMerge(mergeCommitMessage.nullize(), removeSourceBranch, squashCommitMessage.nullize())
   }
 
   override fun rebase() = runAction {
@@ -323,13 +295,19 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
         else -> ReviewState.NEED_REVIEW
       }
     }
-
-    private fun List<GitLabCiJobDTO>.areAllJobsSuccessful(allowSkippedJob: Boolean): Boolean {
-      val jobs = this
-      val requiredJobs = jobs.filterNot { it.allowFailure ?: false }.let { jobs ->
-        if (allowSkippedJob) jobs.filterNot { it.status == GitLabCiJobStatus.SKIPPED } else jobs
-      }
-      return requiredJobs.all { it.status == GitLabCiJobStatus.SUCCESS }
-    }
   }
 }
+
+private val GitLabMergeRequestFullDetails.isMergeBlockedByPipeline: Boolean
+  get() {
+    if (!onlyAllowMergeIfPipelineSucceeds) return false
+
+    return headPipeline?.jobs?.any {
+      val mandatory = it.allowFailure ?: true
+      if (!mandatory) return@any false
+
+      val skippedWhenNotAllowed = it.status == GitLabCiJobStatus.SKIPPED && !allowMergeOnSkippedPipeline
+      val notSuccessful = it.status != GitLabCiJobStatus.SUCCESS
+      skippedWhenNotAllowed || notSuccessful
+    } ?: false
+  }

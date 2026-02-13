@@ -8,7 +8,6 @@ import com.intellij.collaboration.ui.HorizontalListPanel
 import com.intellij.collaboration.ui.LoadingLabel
 import com.intellij.collaboration.ui.codereview.action.AutoDisablingActionGroup
 import com.intellij.collaboration.ui.codereview.details.CodeReviewDetailsActionsComponentFactory
-import com.intellij.collaboration.ui.codereview.details.CodeReviewDetailsActionsComponentFactory.CodeReviewActions
 import com.intellij.collaboration.ui.codereview.details.data.ReviewRole
 import com.intellij.collaboration.ui.codereview.details.data.ReviewState
 import com.intellij.collaboration.ui.util.bindChildIn
@@ -16,7 +15,6 @@ import com.intellij.collaboration.ui.util.bindVisibilityIn
 import com.intellij.collaboration.ui.util.toAnAction
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.ui.components.JBOptionButton
 import com.intellij.ui.components.panels.Wrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -30,7 +28,6 @@ import org.jetbrains.plugins.gitlab.mergerequest.action.GitLabMergeRequestRebase
 import org.jetbrains.plugins.gitlab.mergerequest.action.GitLabMergeRequestReopenAction
 import org.jetbrains.plugins.gitlab.mergerequest.action.GitLabMergeRequestRequestReviewAction
 import org.jetbrains.plugins.gitlab.mergerequest.action.GitLabMergeRequestSetMyselfAsReviewerAction
-import org.jetbrains.plugins.gitlab.mergerequest.action.GitLabMergeRequestSquashAndMergeAction
 import org.jetbrains.plugins.gitlab.mergerequest.action.GitLabMergeRequestSubmitReviewAction
 import org.jetbrains.plugins.gitlab.mergerequest.ui.details.model.GitLabMergeRequestReviewFlowViewModel
 import org.jetbrains.plugins.gitlab.mergerequest.ui.details.model.GitLabMergeRequestReviewFlowViewModelImpl.Companion.toReviewState
@@ -53,7 +50,6 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
       setMyselfAsReviewerAction = GitLabMergeRequestSetMyselfAsReviewerAction(scope, reviewFlowVm),
       postReviewAction = GitLabMergeRequestPostReviewAction(scope, reviewFlowVm),
       mergeReviewAction = GitLabMergeRequestMergeAction(scope, reviewFlowVm),
-      mergeSquashReviewAction = GitLabMergeRequestSquashAndMergeAction(scope, reviewFlowVm),
       rebaseReviewAction = GitLabMergeRequestRebaseAction(scope, reviewFlowVm)
     )
 
@@ -94,7 +90,7 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
     val reRequestReviewButton = CodeReviewDetailsActionsComponentFactory.createReRequestReviewButton(
       cs, reviewState, requestedReviewers, reviewActions.reRequestReviewAction
     )
-    val mergeReviewButton = JBOptionButton(reviewActions.mergeReviewAction, arrayOf(reviewActions.mergeSquashReviewAction)).apply {
+    val mergeReviewButton = JButton(reviewActions.mergeReviewAction).apply {
       bindVisibilityIn(cs, reviewState.map { it == ReviewState.ACCEPTED })
     }
     val moreActionsGroup = createMoreActionGroup()
@@ -104,7 +100,7 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
         moreActionsGroup.removeAll()
         when (reviewState) {
           ReviewState.NEED_REVIEW, ReviewState.WAIT_FOR_UPDATES -> {
-            moreActionsGroup.add(createMergeActionGroup(reviewActions))
+            moreActionsGroup.add(reviewActions.mergeReviewAction.toAnAction())
             moreActionsGroup.add(reviewActions.rebaseReviewAction.toAnAction())
             moreActionsGroup.add(reviewActions.closeReviewAction.toAnAction())
           }
@@ -141,7 +137,8 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
 
     val moreActionsGroup = createMoreActionGroup().apply {
       add(reviewActions.requestReviewAction.toAnAction())
-      add(createMergeActionGroup(reviewActions))
+      add(reviewActions.mergeReviewAction.toAnAction())
+      add(reviewActions.rebaseReviewAction.toAnAction())
       add(reviewActions.closeReviewAction.toAnAction())
     }
     val moreActionsButton = CodeReviewDetailsActionsComponentFactory.createMoreButton(moreActionsGroup)
@@ -161,20 +158,14 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
     moreActionsGroup.apply {
       removeAll()
       add(reviewActions.requestReviewAction.toAnAction())
-      add(createMergeActionGroup(reviewActions))
+      add(reviewActions.mergeReviewAction.toAnAction())
+      add(reviewActions.rebaseReviewAction.toAnAction())
       add(reviewActions.closeReviewAction.toAnAction())
     }
 
     return HorizontalListPanel(CodeReviewDetailsActionsComponentFactory.BUTTONS_GAP).apply {
       add(setMyselfAsReviewerButton)
       add(moreActionsButton)
-    }
-  }
-
-  private fun createMergeActionGroup(reviewActions: Actions): ActionGroup {
-    return AutoDisablingActionGroup(CollaborationToolsBundle.message("review.details.action.merge.group"), true).apply {
-      add(reviewActions.mergeReviewAction.toAnAction())
-      add(reviewActions.mergeSquashReviewAction.toAnAction())
     }
   }
 
@@ -188,7 +179,6 @@ internal object GitLabMergeRequestDetailsActionsComponentFactory {
     val setMyselfAsReviewerAction: Action,
     val postReviewAction: Action,
     val mergeReviewAction: Action,
-    val mergeSquashReviewAction: Action,
     val rebaseReviewAction: Action,
   )
 }

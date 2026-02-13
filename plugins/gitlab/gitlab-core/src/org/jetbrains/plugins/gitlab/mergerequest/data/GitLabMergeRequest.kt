@@ -20,6 +20,7 @@ import git4idea.remote.hosting.changesSignalFlow
 import git4idea.repo.GitRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -55,6 +56,7 @@ import org.jetbrains.plugins.gitlab.mergerequest.api.request.getMergeRequestMile
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.getMergeRequestStateEventsUri
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.loadMergeRequest
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestAccept
+import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestAcceptSquash
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestApprove
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestRebase
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.mergeRequestReviewerRereview
@@ -115,9 +117,9 @@ interface GitLabMergeRequest : GitLabMergeRequestDiscussionsContainer {
    */
   fun reloadDiscussions()
 
-  suspend fun merge(commitMessage: String)
+  suspend fun merge(commitMessage: String?, removeSourceBranch: Boolean)
 
-  suspend fun squashAndMerge(commitMessage: String)
+  suspend fun squashAndMerge(commitMessage: String?, removeSourceBranch: Boolean, squashCommitMessage: String?)
 
   suspend fun rebase()
 
@@ -308,18 +310,24 @@ internal class LoadedGitLabMergeRequest(
     discussionsContainer.requestDiscussionsRefresh()
   }
 
-  override suspend fun merge(commitMessage: String) {
-    withContext(cs.coroutineContext + Dispatchers.IO) {
-      runMerge(commitMessage, withSquash = false)
-    }
+  override suspend fun merge(commitMessage: String?, removeSourceBranch: Boolean) {
+    val sha = mergeRequestDetailsState.value.diffRefs?.headSha ?: return
+    cs.async(Dispatchers.IO) {
+      api.graphQL.mergeRequestAccept(projectCoordinates.projectPath, iid, commitMessage, sha, removeSourceBranch)
+        .getResultOrThrow()
+      awaitMerged()
+    }.await()
     discussionsContainer.requestDiscussionsRefresh()
     GitLabStatistics.logMrActionExecuted(project, GitLabStatistics.MergeRequestAction.MERGE)
   }
 
-  override suspend fun squashAndMerge(commitMessage: String) {
-    withContext(cs.coroutineContext + Dispatchers.IO) {
-      runMerge(commitMessage, withSquash = true)
-    }
+  override suspend fun squashAndMerge(commitMessage: String?, removeSourceBranch: Boolean, squashCommitMessage: String?) {
+    val sha = mergeRequestDetailsState.value.diffRefs?.headSha ?: return
+    cs.async(Dispatchers.IO) {
+      api.graphQL.mergeRequestAcceptSquash(projectCoordinates.projectPath, iid, commitMessage, squashCommitMessage, sha, removeSourceBranch)
+        .getResultOrThrow()
+      awaitMerged()
+    }.await()
     discussionsContainer.requestDiscussionsRefresh()
     GitLabStatistics.logMrActionExecuted(project, GitLabStatistics.MergeRequestAction.SQUASH_MERGE)
   }
@@ -443,12 +451,8 @@ internal class LoadedGitLabMergeRequest(
     }
   }
 
-  private suspend fun runMerge(commitMessage: String, withSquash: Boolean) {
+  private suspend fun awaitMerged() {
     var attempts = 0
-    val sha = mergeRequestDetailsState.value.diffRefs?.headSha ?: return
-    val shouldRemoveSourceBranch = mergeRequestDetailsState.value.shouldRemoveSourceBranch
-    api.graphQL.mergeRequestAccept(projectCoordinates.projectPath, iid, commitMessage, sha, withSquash, shouldRemoveSourceBranch)
-      .getResultOrThrow()
     do {
       val updatedMergeRequest = api.graphQL.loadMergeRequest(projectCoordinates.projectPath, iid).body()!!
       updateMergeRequestData(updatedMergeRequest)

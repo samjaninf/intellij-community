@@ -42,6 +42,11 @@ class GitLabMergeRequestDTO(
   val targetProject: GitLabProjectDTO,
   val sourceProject: GitLabProjectDTO?, // Is null when the source project is a private fork or is unavailable
   val userPermissions: GitLabMergeRequestPermissionsDTO,
+  val squash: Boolean, // property set on the MR
+  val squashOnMerge: Boolean, // [squash] can be overridden by project settings, and this is the final value after override
+  val squashReadOnly: Boolean, // if [squash] can be changed for this MR
+  val defaultSquashCommitMessage: String?,
+  val defaultMergeCommitMessage: String?,
   val shouldRemoveSourceBranch: Boolean?,
   val shouldBeRebased: Boolean,
   val rebaseInProgress: Boolean,
