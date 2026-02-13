@@ -51,6 +51,7 @@
                             order="before LineSeparator, after Position"/>
 
     <applicationService serviceImplementation="com.intellij.grazie.GrazieConfig"/>
+    <applicationService serviceImplementation="com.intellij.grazie.GrazieFolderConfig"/>
 
     <backgroundPostStartupActivity implementation="com.intellij.grazie.ide.notification.GrazieNotificationComponent"/>
     <backgroundPostStartupActivity implementation="com.intellij.grazie.cloud.license.LicenseStartupActivity"/>
