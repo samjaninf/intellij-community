@@ -5,6 +5,7 @@ import com.intellij.collaboration.async.launchNow
 import com.intellij.collaboration.ui.CollaborationToolsUIUtil
 import com.intellij.collaboration.ui.LabeledListComponentsFactory
 import com.intellij.collaboration.ui.SingleValueModel
+import com.intellij.collaboration.ui.VerticalListPanel
 import com.intellij.collaboration.ui.bindValueIn
 import com.intellij.collaboration.ui.codereview.commits.CommitsBrowserComponentBuilder
 import com.intellij.collaboration.ui.codereview.create.CodeReviewCreateReviewLayoutBuilder
@@ -54,6 +55,10 @@ internal object GitLabMergeRequestCreateComponentFactory {
     val metadataPanel = createMetadataPanel(createVm)
     val statusPanel = GitLabMergeRequestCreateStatusComponentFactory.create(cs, createVm)
     val actionsPanel = GitLabMergeRequestCreateActionsComponentFactory.create(project, cs, createVm)
+    val statusAndActionsPanel = VerticalListPanel(10).apply {
+      add(statusPanel)
+      add(actionsPanel)
+    }
 
     return CodeReviewCreateReviewLayoutBuilder()
       .addComponent(directionSelector, zeroMinWidth = true)
@@ -63,8 +68,7 @@ internal object GitLabMergeRequestCreateComponentFactory {
       .addSeparator()
       .addComponent(metadataPanel, zeroMinWidth = true)
       .addSeparator()
-      .addComponent(statusPanel)
-      .addComponent(actionsPanel, withListBackground = false)
+      .addComponent(statusAndActionsPanel, withListBackground = false)
       .build()
   }
 
