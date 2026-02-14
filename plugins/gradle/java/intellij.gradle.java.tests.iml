@@ -29,6 +29,7 @@
     <orderEntry type="module" module-name="intellij.java.rt" scope="TEST" />
     <orderEntry type="module" module-name="intellij.gradle.properties" scope="TEST" />
     <orderEntry type="module" module-name="intellij.gradle.java" scope="TEST" />
+    <orderEntry type="module" module-name="intellij.gradle.java.plugin" scope="TEST" />
     <orderEntry type="module" module-name="intellij.gradle.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.gradle.toolingExtension.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.java.compiler.impl" scope="TEST" />

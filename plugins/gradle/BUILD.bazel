@@ -153,6 +153,7 @@ jvm_library(
     "//platform/observable",
     "//platform/platform-util-io:ide-util-io",
     "//plugins/gradle/java",
+    "//plugins/gradle/java/plugin",
     "//java/openapi:java",
     "//platform/indexing-api:indexing",
     "//jps/model-api:model",
