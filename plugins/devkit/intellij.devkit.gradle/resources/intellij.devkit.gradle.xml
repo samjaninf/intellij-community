@@ -1,10 +1,10 @@
 <idea-plugin package="org.jetbrains.idea.devkit.gradle">
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
-    <plugin id="org.jetbrains.plugins.gradle"/>
     <module name="intellij.devkit.core"/>
-    <!-- endregion -->
+    <module name="intellij.gradle.java"/>
   </dependencies>
+  <!-- endregion -->
   <extensions defaultExtensionNs="org.jetbrains.plugins.gradle">
     <frameworkSupport implementation="org.jetbrains.idea.devkit.gradle.GradleIntellijPluginFrameworkSupportProvider"/>
     <kotlinDslFrameworkSupport implementation="org.jetbrains.idea.devkit.gradle.KdslGradleIntellijPluginFrameworkSupportProvider"/>

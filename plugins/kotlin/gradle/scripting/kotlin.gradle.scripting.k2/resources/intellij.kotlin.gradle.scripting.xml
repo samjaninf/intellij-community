@@ -1,17 +1,17 @@
 <idea-plugin package="org.jetbrains.kotlin.gradle.scripting.k2">
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
     <module name="intellij.kotlin.gradle.tooling"/>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
-    <plugin id="org.jetbrains.plugins.gradle"/>
     <module name="intellij.gradle"/>
+    <module name="intellij.gradle.java"/>
     <module name="intellij.gradle.java.groovy"/>
     <module name="intellij.gradle.java.toml"/>
     <module name="intellij.kotlin.base.scripting"/>
     <module name="intellij.kotlin.base.scripting.shared"/>
     <module name="kotlin.gradle.gradle-java"/>
     <module name="kotlin.gradle.scripting.shared"/>
-    <!-- endregion -->
   </dependencies>
+  <!-- endregion -->
 
   <projectListeners>
     <listener

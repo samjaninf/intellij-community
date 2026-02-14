@@ -1,12 +1,12 @@
 <idea-plugin visibility="internal">
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
     <plugin id="org.jetbrains.idea.maven"/>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="com.jetbrains.performancePlugin"/>
-    <plugin id="org.jetbrains.plugins.gradle"/>
     <module name="intellij.gradle"/>
-    <!-- endregion -->
+    <module name="intellij.gradle.java"/>
   </dependencies>
+  <!-- endregion -->
   <extensions defaultExtensionNs="com.jetbrains">
     <performancePlugin.commandProvider implementation="com.intellij.gradle.java.performance.GradleCommandProvider"/>
   </extensions>

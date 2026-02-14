@@ -1,14 +1,14 @@
 <idea-plugin package="org.jetbrains.kotlin.tools.projectWizard.gradle">
 
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
     <module name="intellij.kotlin.gradle.tooling"/>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
-    <plugin id="org.jetbrains.plugins.gradle"/>
+    <module name="intellij.gradle.java"/>
     <module name="intellij.kotlin.gradle.codeInsight.common"/>
     <module name="intellij.kotlin.projectWizard.idea"/>
     <module name="kotlin.gradle.gradle-java"/>
-    <!-- endregion -->
   </dependencies>
+  <!-- endregion -->
 
   <extensions defaultExtensionNs="com.intellij">
     <newProjectWizard.kotlin.buildSystem implementation="org.jetbrains.kotlin.tools.projectWizard.gradle.GradleKotlinNewProjectWizard"/>

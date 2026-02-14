@@ -1,10 +1,10 @@
 <idea-plugin>
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="org.jetbrains.idea.gradle.dsl"/>
-    <plugin id="org.jetbrains.plugins.gradle"/>
-    <!-- endregion -->
+    <module name="intellij.gradle.java"/>
   </dependencies>
+  <!-- endregion -->
 
   <extensions defaultExtensionNs="org.jetbrains.plugins.gradle">
     <externallyHandledExtensions implementation="org.jetbrains.plugins.gradle.service.resolve.static.GradleDslVersionCatalogHandler"/>

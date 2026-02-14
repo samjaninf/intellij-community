@@ -1,11 +1,11 @@
 <idea-plugin visibility="public">
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
-    <plugin id="org.jetbrains.plugins.gradle"/>
+    <module name="intellij.gradle.java"/>
     <module name="intellij.java.psi"/>
     <module name="intellij.toml.core"/>
-    <!-- endregion -->
   </dependencies>
+  <!-- endregion -->
 
   <extensions defaultExtensionNs="com.intellij">
     <elementDescriptionProvider implementation="com.intellij.gradle.java.toml.navigation.VersionCatalogDescriptionProvider"/>

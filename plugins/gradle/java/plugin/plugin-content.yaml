@@ -1,5 +1,7 @@
-- name: lib/gradle-java.jar
+- name: lib/gradle-java-plugin.jar
   modules:
+  - name: intellij.gradle.java.plugin
+  contentModules:
   - name: intellij.gradle.java
 - name: lib/gradle-jps.jar
   modules:

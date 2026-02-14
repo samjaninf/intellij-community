@@ -468,6 +468,7 @@
       <module fileurl="file://$PROJECT_DIR$/plugins/gradle/java/groovy/toml/intellij.gradle.java.groovy.toml.iml" filepath="$PROJECT_DIR$/plugins/gradle/java/groovy/toml/intellij.gradle.java.groovy.toml.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/gradle-maven/intellij.gradle.java.maven.iml" filepath="$PROJECT_DIR$/plugins/gradle-maven/intellij.gradle.java.maven.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/gradle/java/performance/intellij.gradle.java.performance.iml" filepath="$PROJECT_DIR$/plugins/gradle/java/performance/intellij.gradle.java.performance.iml" />
+      <module fileurl="file://$PROJECT_DIR$/plugins/gradle/java/plugin/intellij.gradle.java.plugin.iml" filepath="$PROJECT_DIR$/plugins/gradle/java/plugin/intellij.gradle.java.plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/gradle/java/properties/intellij.gradle.java.properties.iml" filepath="$PROJECT_DIR$/plugins/gradle/java/properties/intellij.gradle.java.properties.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/gradle/java/intellij.gradle.java.tests.iml" filepath="$PROJECT_DIR$/plugins/gradle/java/intellij.gradle.java.tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/gradle/java/toml/intellij.gradle.java.toml.iml" filepath="$PROJECT_DIR$/plugins/gradle/java/toml/intellij.gradle.java.toml.iml" />

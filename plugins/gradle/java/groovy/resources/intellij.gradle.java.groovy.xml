@@ -1,8 +1,8 @@
 <idea-plugin visibility="public">
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="org.intellij.groovy"/>
-    <plugin id="org.jetbrains.plugins.gradle"/>
+    <module name="intellij.gradle.java"/>
     <module name="intellij.java.compiler.impl"/>
     <module name="intellij.java.execution"/>
     <module name="intellij.java.execution.impl"/>
@@ -11,8 +11,8 @@
     <module name="intellij.java.psi"/>
     <module name="intellij.java.ui"/>
     <module name="intellij.properties.psi"/>
-    <!-- endregion -->
   </dependencies>
+  <!-- endregion -->
   <extensionPoints>
     <extensionPoint qualifiedName="org.jetbrains.plugins.gradle.resolve.contributor" interface="com.intellij.gradle.java.groovy.service.resolve.GradleMethodContextContributor"
                     dynamic="true"/>

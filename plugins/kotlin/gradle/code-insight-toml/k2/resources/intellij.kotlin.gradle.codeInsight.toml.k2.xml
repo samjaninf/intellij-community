@@ -1,13 +1,13 @@
 <idea-plugin package="org.jetbrains.kotlin.idea.gradle.versionCatalog.toml.k2">
 
+  <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
     <plugin id="com.intellij.modules.kotlin.k2"/>
-    <plugin id="org.jetbrains.plugins.gradle"/>
-    <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
+    <module name="intellij.gradle.java"/>
     <module name="intellij.gradle.java.toml"/>
     <module name="intellij.kotlin.gradle.codeInsight.toml"/>
-    <!-- endregion -->
   </dependencies>
+  <!-- endregion -->
 
   <extensions defaultExtensionNs="org.jetbrains.kotlin">
     <psiReferenceProvider implementation="org.jetbrains.kotlin.idea.gradle.versionCatalog.toml.k2.K2GradleTomlVersionCatalogPsiReferenceProviderContributor"/>
