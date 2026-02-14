@@ -40,7 +40,6 @@ jvm_library(
     "//platform/projectModel-api:projectModel",
     "//xml/xml-psi-api:psi",
     "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight",
-    "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight_test_lib",
     "//plugins/devkit",
     "//plugins/devkit/devkit-core:core",
     "//java/openapi:java",

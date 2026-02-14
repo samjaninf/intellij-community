@@ -94,7 +94,6 @@ jvm_library(
     "//java/java-psi-api:psi",
     "//plugins/kotlin/kotlin.searching",
     "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight",
-    "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight_test_lib",
     "//platform/core-ui",
     "//plugins/kotlin/highlighting/highlighting-shared:kotlin-highlighting-shared",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting",

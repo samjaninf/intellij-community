@@ -93,13 +93,32 @@ jvm_library(
     ":plugins_kotlin_code-insight_descriptions_provided",
   ]
 )
+### auto-generated section `build intellij.kotlin.codeInsight` end
+
+### auto-generated section `build intellij.kotlin.codeInsight.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-codeInsight-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.analysis.api.permissions.KaAllowProhibitedAnalyzeFromWriteAction",
+    "org.jetbrains.kotlin.analysis.api.KaIdeApi",
+    "org.jetbrains.kotlin.analysis.api.KaContextParameterApi",
+  ],
+  x_context_parameters = True
+)
 
 jvm_library(
-  name = "kotlin-codeInsight_test_lib",
+  name = "kotlin-codeInsight-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-codeInsight-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-codeInsight",
-  associates = [":kotlin-codeInsight"],
+  kotlinc_opts = ":custom_kotlin-codeInsight-tests",
+  associates = ["//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight"],
   deps = [
     "@lib//:kotlin-stdlib",
     "@lib//:kotlinc-kotlin-compiler-common",
@@ -138,6 +157,7 @@ jvm_library(
     "//platform/lang-impl",
     "//platform/lang-core",
     "//platform/platform-impl:ide-impl",
+    "//platform/platform-impl:ide-impl_test_lib",
     "//platform/core-ui",
     "//platform/util:util-ui",
     "//java/java-psi-api:psi",
@@ -178,16 +198,16 @@ jvm_library(
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
     "//libraries/kotlinx/collections-immutable:libraries-kotlinx-collections-immutable",
-    ":plugins_kotlin_code-insight_descriptions_provided",
-  ]
+  ],
+  runtime_deps = [":kotlin-codeInsight-tests"]
 )
-### auto-generated section `build intellij.kotlin.codeInsight` end
+### auto-generated section `build intellij.kotlin.codeInsight.tests` end
 
-### auto-generated section `test intellij.kotlin.codeInsight` start
+### auto-generated section `test intellij.kotlin.codeInsight.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-codeInsight_test",
-  runtime_deps = [":kotlin-codeInsight_test_lib"]
+  name = "kotlin-codeInsight-tests_test",
+  runtime_deps = [":kotlin-codeInsight-tests_test_lib"]
 )
-### auto-generated section `test intellij.kotlin.codeInsight` end
+### auto-generated section `test intellij.kotlin.codeInsight.tests` end
