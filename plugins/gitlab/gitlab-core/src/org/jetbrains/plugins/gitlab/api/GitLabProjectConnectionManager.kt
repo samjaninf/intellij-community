@@ -17,6 +17,7 @@ import org.jetbrains.plugins.gitlab.api.request.getCurrentUser
 import org.jetbrains.plugins.gitlab.api.request.getProject
 import org.jetbrains.plugins.gitlab.authentication.accounts.GitLabAccount
 import org.jetbrains.plugins.gitlab.authentication.accounts.GitLabAccountManager
+import org.jetbrains.plugins.gitlab.data.GitLabProjectDetails
 import org.jetbrains.plugins.gitlab.util.GitLabProjectMapping
 import org.jetbrains.plugins.gitlab.util.GitLabProjectPath
 
@@ -52,11 +53,12 @@ internal class GitLabProjectConnectionManager(project: Project, cs: CoroutineSco
                     ?: error("Could not find the project $actualProjectPath. Check if the project exists and you have access to it.")
     }
 
+    val details = GitLabProjectDetails(projectCoordinates.projectPath, projectData)
     GitLabProjectConnection(project,
                             scope,
                             glProjectMapping,
                             projectCoordinates,
-                            projectData,
+                            details,
                             account,
                             currentUser,
                             apiClient,

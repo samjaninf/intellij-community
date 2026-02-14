@@ -9,10 +9,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
-import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.authentication.accounts.GitLabAccount
 import org.jetbrains.plugins.gitlab.data.GitLabImageLoader
+import org.jetbrains.plugins.gitlab.data.GitLabProjectDetails
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProjectImpl
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProject
 import org.jetbrains.plugins.gitlab.util.GitLabProjectMapping
@@ -28,7 +28,7 @@ class GitLabProjectConnection(
   private val scope: CoroutineScope,
   override val repo: GitLabProjectMapping,
   actualProjectCoordinates: GitLabProjectCoordinates,
-  glProject: GitLabProjectDTO,
+  projectDetails: GitLabProjectDetails,
   override val account: GitLabAccount,
   val currentUser: GitLabUserDTO,
   apiClient: GitLabApi,
@@ -45,7 +45,7 @@ class GitLabProjectConnection(
                                                      scope,
                                                      apiClient,
                                                      glMetadata,
-                                                     glProject,
+                                                     projectDetails,
                                                      currentUser,
                                                      tokenRefreshFlow,
                                                      actualProjectCoordinates,

@@ -30,7 +30,6 @@ import org.jetbrains.plugins.gitlab.api.GitLabProjectCoordinates
 import org.jetbrains.plugins.gitlab.api.GitLabServerMetadata
 import org.jetbrains.plugins.gitlab.api.GitLabVersion
 import org.jetbrains.plugins.gitlab.api.dto.GitLabPlan
-import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabWorkItemDTO.GitLabWidgetDTO.WorkItemWidgetAssignees
 import org.jetbrains.plugins.gitlab.api.dto.GitLabWorkItemDTO.WorkItemType
@@ -39,6 +38,7 @@ import org.jetbrains.plugins.gitlab.api.request.createAllWorkItemsFlow
 import org.jetbrains.plugins.gitlab.api.request.getProjectNamespace
 import org.jetbrains.plugins.gitlab.api.request.getProjectUsers
 import org.jetbrains.plugins.gitlab.api.request.getProjectUsersURI
+import org.jetbrains.plugins.gitlab.data.GitLabProjectDetails
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestDTO
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.createMergeRequest
 import org.jetbrains.plugins.gitlab.mergerequest.api.request.loadMergeRequest
@@ -106,7 +106,7 @@ internal class GitLabProjectImpl(
   parentCs: CoroutineScope,
   private val api: GitLabApi,
   private val glMetadata: GitLabServerMetadata?,
-  private val initialData: GitLabProjectDTO,
+  private val details: GitLabProjectDetails,
   private val currentUser: GitLabUserDTO,
   private val tokenRefreshFlow: Flow<Unit>,
   override val projectCoordinates: GitLabProjectCoordinates,
@@ -115,7 +115,7 @@ internal class GitLabProjectImpl(
 
   private val cs = parentCs.childScope(javaClass.name)
 
-  override val projectId: String = initialData.id.guessRestId()
+  override val projectId: String = details.id
 
   private val _dataReloadSignal = MutableSharedFlow<Unit>(replay = 1)
   override val dataReloadSignal: SharedFlow<Unit> = _dataReloadSignal.asSharedFlow()
@@ -144,16 +144,16 @@ internal class GitLabProjectImpl(
                                             }.map { response -> response.body().map(GitLabUserDTO::fromRestDTO) })
 
   override suspend fun getEmojis(): List<GitLabReaction> = emojisRequest.await()
-  override val defaultBranch: String? = initialData.repository?.rootRef
+  override val defaultBranch: String? = details.defaultBranch
 
   override suspend fun isMultipleAssigneesAllowed(): Boolean {
-    return initialData.allowsMultipleMergeRequestAssignees
+    return details.allowsMultipleMergeRequestAssignees
            ?: multipleAssigneesAllowedFallbackRequest.await()
            ?: false
   }
 
   override suspend fun isMultipleReviewersAllowed(): Boolean {
-    return initialData.allowsMultipleMergeRequestReviewers
+    return details.allowsMultipleMergeRequestReviewers
            ?: multipleAssigneesAllowedFallbackRequest.await()
            ?: false
   }
