@@ -72,6 +72,7 @@ jvm_library(
     "//platform/util",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.tools.ide.starter.junit5` end

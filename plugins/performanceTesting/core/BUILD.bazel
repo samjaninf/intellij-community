@@ -128,7 +128,6 @@ jvm_library(
     "//libraries/fastutil",
     "//platform/xdebugger-api:debugger",
     "//platform/xdebugger-impl:debugger-impl",
-    "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//libraries/caffeine",
     "//platform/remote-driver/core:driver-impl",
     "//libraries/netty/codec-http:libraries-netty-codec-http",

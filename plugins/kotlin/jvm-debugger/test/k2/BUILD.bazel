@@ -72,7 +72,6 @@ jvm_library(
     "//jps/model-api:model",
     "//platform/external-system-api:externalSystem",
     "//platform/xdebugger-impl:debugger-impl",
-    "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//platform/xdebugger-testFramework:debugger-testFramework",
     "//java/debugger/impl",
     "//java/debugger/impl:impl_test_lib",

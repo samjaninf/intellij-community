@@ -72,6 +72,7 @@ jvm_library(
     "//platform/testFramework/junit5:junit5_test_lib",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ],
   runtime_deps = [":tests.pro"]
 )

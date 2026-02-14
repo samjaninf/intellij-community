@@ -93,7 +93,6 @@ jvm_library(
     "//platform/platform-impl/codeinsight-inline:ide-codeinsight-inline",
     "//platform/xdebugger-api:debugger",
     "//platform/xdebugger-impl:debugger-impl",
-    "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//platform/util/concurrency",
     "//platform/util/concurrency:concurrency_test_lib",
     "//platform/usageView",
@@ -106,6 +105,7 @@ jvm_library(
     "//libraries/rd/core",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ],
   runtime_deps = [":lambda-sampleTestsWithPlugin"]
 )

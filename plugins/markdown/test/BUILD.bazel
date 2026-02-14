@@ -100,6 +100,7 @@ jvm_library(
     "//platform/lang-api:lang",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

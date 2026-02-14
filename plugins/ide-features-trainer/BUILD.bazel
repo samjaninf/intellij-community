@@ -97,7 +97,6 @@ jvm_library(
     "//platform/platform-impl:ide-impl",
     "//platform/xdebugger-api:debugger",
     "//platform/xdebugger-impl:debugger-impl",
-    "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//platform/xdebugger-impl/shared",
     "//platform/projectModel-api:projectModel",
     "//platform/testFramework",

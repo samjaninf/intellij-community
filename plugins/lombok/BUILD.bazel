@@ -101,6 +101,7 @@ jvm_library(
     "//platform/ide-core-impl",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.lombok` end

@@ -50,7 +50,6 @@ jvm_library(
     "//java/debugger/openapi:java-debugger",
     "//plugins/xslt-debugger",
     "//platform/xdebugger-impl:debugger-impl",
-    "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//libraries/gson",
     "//plugins/tasks/tasks-core/jira",
     "//platform/testFramework",

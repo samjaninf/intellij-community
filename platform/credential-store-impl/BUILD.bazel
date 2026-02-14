@@ -83,6 +83,7 @@ jvm_library(
     "//platform/platform-api:ide",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.platform.credentialStore.impl` end

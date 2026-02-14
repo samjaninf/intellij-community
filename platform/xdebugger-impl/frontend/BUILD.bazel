@@ -63,7 +63,6 @@ jvm_library(
     "//platform/util:util-ui",
     "//platform/kernel/shared:kernel",
     "//platform/xdebugger-impl:debugger-impl",
-    "//platform/xdebugger-impl:debugger-impl_test_lib",
     "//platform/platform-impl:ide-impl",
     "//platform/xdebugger-api:debugger",
     "//platform/lang-api:lang",

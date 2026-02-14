@@ -23,6 +23,7 @@ jvm_library(
     "//platform/build-scripts/downloader",
     "//images:images-tests_test_lib",
     "//RegExpSupport:regexp-tests_test_lib",
+    "//platform/xdebugger-impl:debugger-impl-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )
