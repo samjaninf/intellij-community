@@ -17,6 +17,8 @@ jvm_library(
     "//plugins/agent-workbench/claude/common",
     "//plugins/agent-workbench/codex/common",
     "//plugins/agent-workbench/sessions",
+    "//plugins/agent-workbench/codex/sessions",
+    "//plugins/agent-workbench/claude/sessions",
   ]
 )
 

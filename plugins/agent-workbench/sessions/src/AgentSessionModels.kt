@@ -3,12 +3,36 @@ package com.intellij.agent.workbench.sessions
 
 import androidx.compose.runtime.Immutable
 
-internal enum class AgentSessionProvider {
-  CODEX,
-  CLAUDE,
+private val AGENT_SESSION_PROVIDER_ID_REGEX = Regex("[a-z][a-z0-9._-]*")
+
+@JvmInline
+value class AgentSessionProvider private constructor(val value: String) {
+  companion object {
+    val CODEX: AgentSessionProvider = from("codex")
+
+    val CLAUDE: AgentSessionProvider = from("claude")
+
+    fun from(value: String): AgentSessionProvider {
+      require(AGENT_SESSION_PROVIDER_ID_REGEX.matches(value)) {
+        "Invalid provider id '$value'. Expected: ${AGENT_SESSION_PROVIDER_ID_REGEX.pattern}"
+      }
+      return AgentSessionProvider(value)
+    }
+
+    fun fromOrNull(value: String): AgentSessionProvider? {
+      return if (AGENT_SESSION_PROVIDER_ID_REGEX.matches(value)) AgentSessionProvider(value) else null
+    }
+  }
+
+  override fun toString(): String = value
 }
 
-internal enum class AgentSessionActivity {
+enum class AgentSessionLaunchMode {
+  STANDARD,
+  YOLO,
+}
+
+enum class AgentSessionActivity {
   READY,
   PROCESSING,
   REVIEWING,
@@ -16,26 +40,33 @@ internal enum class AgentSessionActivity {
 }
 
 @Immutable
-internal data class AgentSubAgent(
+data class AgentSubAgent(
   @JvmField val id: String,
   @JvmField val name: String,
 )
 
 @Immutable
-internal data class AgentSessionThread(
+data class AgentSessionThreadPreview(
+  @JvmField val id: String,
+  @JvmField val title: String,
+  @JvmField val updatedAt: Long,
+)
+
+@Immutable
+data class AgentSessionThread(
   @JvmField val id: String,
   @JvmField val title: String,
   @JvmField val updatedAt: Long,
   @JvmField val archived: Boolean,
   @JvmField val activity: AgentSessionActivity = AgentSessionActivity.READY,
-  @JvmField val provider: AgentSessionProvider = AgentSessionProvider.CODEX,
+  val provider: AgentSessionProvider = AgentSessionProvider.CODEX,
   @JvmField val subAgents: List<AgentSubAgent> = emptyList(),
   @JvmField val originBranch: String? = null,
 )
 
 @Immutable
 internal data class AgentSessionProviderWarning(
-  @JvmField val provider: AgentSessionProvider,
+  val provider: AgentSessionProvider,
   @JvmField val message: String,
 )
 

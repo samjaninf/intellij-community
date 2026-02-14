@@ -5,7 +5,7 @@ import com.intellij.agent.workbench.sessions.AgentSessionProvider
 import com.intellij.agent.workbench.sessions.AgentSessionThread
 import com.intellij.openapi.project.Project
 
-internal abstract class BaseAgentSessionSource(
+abstract class BaseAgentSessionSource(
   final override val provider: AgentSessionProvider,
   final override val canReportExactThreadCount: Boolean = true,
 ) : AgentSessionSource {

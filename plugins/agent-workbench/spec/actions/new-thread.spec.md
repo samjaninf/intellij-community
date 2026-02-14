@@ -6,7 +6,7 @@ targets:
   - ../../sessions/src/SessionTreeRows.kt
   - ../../sessions/src/AgentSessionsToolWindow.kt
   - ../../sessions/src/AgentSessionsService.kt
-  - ../../codex/sessions/src/SharedCodexAppServerService.kt
+  - ../../codex/sessions/src/backend/appserver/SharedCodexAppServerService.kt
   - ../../sessions/src/AgentSessionCli.kt
   - ../../sessions/src/providers/codex/CodexCliCommands.kt
   - ../../sessions/resources/messages/AgentSessionsBundle.properties
@@ -50,6 +50,7 @@ Define project/worktree `New Session` actions (`+` and quick-provider icon) and 
   [@test] ../../sessions/testSrc/AgentSessionCliTest.kt
 
 - Codex new-session must call app-server `thread/start`, persist the new thread id, then open chat with `codex resume <threadId>`.
+- Rollout remains the default thread-discovery backend; this does not change Codex new-session creation flow.
 - Codex `yolo=true` must call `thread/start` with `approvalPolicy="on-request"` and `sandbox="workspace-write"`.
 - Codex `yolo=false` must call `thread/start` with default app-server parameters (no forced approval/sandbox overrides).
   [@test] ../../sessions/testSrc/CodexAppServerClientTest.kt

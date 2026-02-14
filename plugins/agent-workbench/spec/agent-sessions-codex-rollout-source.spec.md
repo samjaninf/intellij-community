@@ -3,7 +3,7 @@ name: Codex Sessions Rollout Source
 description: Codex thread list source and activity indicators for Agent Threads.
 targets:
   - ../sessions/src/providers/codex/*.kt
-  - ../codex/sessions/src/*.kt
+  - ../codex/sessions/src/**/*.kt
   - ../sessions/src/SessionTreeStyle.kt
   - ../sessions/src/AgentSessionModels.kt
   - ../sessions/src/AgentSessionsService.kt
@@ -33,6 +33,11 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
 ## Requirements
 - Introduce `CodexSessionBackend` interface (singular naming) for Codex thread loading.
 - Provide `CodexRolloutSessionBackend` as default backend and keep `CodexAppServerSessionBackend` as alternate.
+- Keep backend implementations separated by package:
+  - `com.intellij.agent.workbench.codex.sessions.backend.rollout`
+  - `com.intellij.agent.workbench.codex.sessions.backend.appserver`
+- Backend selection must default to rollout and only switch to app-server when `agent.workbench.codex.sessions.backend=app-server` is explicitly set.
+- Unknown backend override values must log a warning and fall back to rollout.
 - Rollout backend must scan only `~/.codex/sessions/**/rollout-*.jsonl`.
 - Rollout backend must filter sessions by normalized `cwd` matching project/worktree path.
 - Thread id must come from `session_meta.payload.id` (not rollout filename).

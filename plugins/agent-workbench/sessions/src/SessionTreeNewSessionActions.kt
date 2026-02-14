@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.unit.dp
+import com.intellij.agent.workbench.sessions.providers.AgentSessionProviderBridge
+import com.intellij.agent.workbench.sessions.providers.AgentSessionProviderBridges
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.modifier.onHover
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -34,23 +36,29 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 internal fun NewSessionHoverActions(
   path: String,
   lastUsedProvider: AgentSessionProvider?,
-  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit,
+  onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit,
   popupVisible: Boolean,
   onPopupVisibleChange: (Boolean) -> Unit,
 ) {
   val iconSize = projectActionIconSize()
+  val lastUsedBridge = remember(lastUsedProvider) { lastUsedProvider?.let(AgentSessionProviderBridges::find) }
+  val canQuickCreateWithLastUsed =
+    lastUsedProvider != null &&
+    (lastUsedBridge == null ||
+     (AgentSessionLaunchMode.STANDARD in lastUsedBridge.supportedLaunchModes && lastUsedBridge.isCliAvailable()))
+  val quickCreateProvider = if (canQuickCreateWithLastUsed) lastUsedProvider else null
 
   Row(
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    if (lastUsedProvider != null) {
-      Tooltip(tooltip = { Text(providerDisplayName(lastUsedProvider)) }) {
+    if (quickCreateProvider != null) {
+      Tooltip(tooltip = { Text(providerDisplayName(quickCreateProvider)) }) {
         IconButton(
-          onClick = { onCreateSession(path, lastUsedProvider, false) },
+          onClick = { onCreateSession(path, quickCreateProvider, AgentSessionLaunchMode.STANDARD) },
           modifier = Modifier.size(projectActionSlotSize()),
         ) {
-          ProviderIcon(provider = lastUsedProvider, modifier = Modifier.size(iconSize))
+          ProviderIcon(provider = quickCreateProvider, modifier = Modifier.size(iconSize))
         }
       }
     }
@@ -70,9 +78,9 @@ internal fun NewSessionHoverActions(
       if (popupVisible) {
         NewSessionPopup(
           onDismiss = { onPopupVisibleChange(false) },
-          onSelect = { provider, yolo ->
+          onSelect = { provider, mode ->
             onPopupVisibleChange(false)
-            onCreateSession(path, provider, yolo)
+            onCreateSession(path, provider, mode)
           },
         )
       }
@@ -83,10 +91,17 @@ internal fun NewSessionHoverActions(
 @Composable
 private fun NewSessionPopup(
   onDismiss: () -> Unit,
-  onSelect: (AgentSessionProvider, Boolean) -> Unit,
+  onSelect: (AgentSessionProvider, AgentSessionLaunchMode) -> Unit,
 ) {
-  val claudeAvailable = remember { isAgentCliAvailable(AgentSessionProvider.CLAUDE) }
-  val codexAvailable = remember { isAgentCliAvailable(AgentSessionProvider.CODEX) }
+  val providerMenuItems = rememberProviderMenuItems()
+  val standardProviders = remember(providerMenuItems) {
+    providerMenuItems.filter { AgentSessionLaunchMode.STANDARD in it.bridge.supportedLaunchModes }
+  }
+  val yoloProviders = remember(providerMenuItems) {
+    providerMenuItems.filter { item ->
+      AgentSessionLaunchMode.YOLO in item.bridge.supportedLaunchModes && item.bridge.yoloSessionLabelKey != null
+    }
+  }
   var isHovered by remember { mutableStateOf(false) }
 
   PopupMenu(
@@ -103,80 +118,81 @@ private fun NewSessionPopup(
     horizontalAlignment = Alignment.Start,
     modifier = Modifier.onHover { isHovered = it },
   ) {
-    selectableItem(
-      selected = false,
-      enabled = claudeAvailable,
-      onClick = { onSelect(AgentSessionProvider.CLAUDE, false) },
-    ) {
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 8.dp),
+    standardProviders.forEach { item ->
+      selectableItem(
+        selected = false,
+        enabled = item.isCliAvailable,
+        onClick = { onSelect(item.bridge.provider, AgentSessionLaunchMode.STANDARD) },
       ) {
-        ProviderIcon(provider = AgentSessionProvider.CLAUDE, modifier = Modifier.size(14.dp))
-        Text(AgentSessionsBundle.message("toolwindow.action.new.session.claude"))
-      }
-    }
-    selectableItem(
-      selected = false,
-      enabled = codexAvailable,
-      onClick = { onSelect(AgentSessionProvider.CODEX, false) },
-    ) {
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 8.dp),
-      ) {
-        ProviderIcon(provider = AgentSessionProvider.CODEX, modifier = Modifier.size(14.dp))
-        Text(AgentSessionsBundle.message("toolwindow.action.new.session.codex"))
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.padding(horizontal = 8.dp),
+        ) {
+          ProviderIcon(provider = item.bridge.provider, modifier = Modifier.size(14.dp))
+          Text(AgentSessionsBundle.message(item.bridge.newSessionLabelKey))
+        }
       }
     }
 
-    separator()
+    if (yoloProviders.isNotEmpty()) {
+      separator()
 
-    passiveItem {
-      Text(
-        text = AgentSessionsBundle.message("toolwindow.action.new.session.section.auto"),
-        color = JewelTheme.globalColors.text.info,
-        modifier = Modifier.padding(horizontal = 8.dp),
+      passiveItem {
+        Text(
+          text = AgentSessionsBundle.message("toolwindow.action.new.session.section.auto"),
+          color = JewelTheme.globalColors.text.info,
+          modifier = Modifier.padding(horizontal = 8.dp),
+        )
+      }
+
+      yoloProviders.forEach { item ->
+        val yoloKey = item.bridge.yoloSessionLabelKey ?: return@forEach
+        selectableItem(
+          selected = false,
+          enabled = item.isCliAvailable,
+          onClick = { onSelect(item.bridge.provider, AgentSessionLaunchMode.YOLO) },
+        ) {
+          Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp),
+          ) {
+            ProviderIcon(provider = item.bridge.provider, modifier = Modifier.size(14.dp))
+            Text(AgentSessionsBundle.message(yoloKey))
+          }
+        }
+      }
+    }
+  }
+}
+
+private data class ProviderMenuItem(
+  val bridge: AgentSessionProviderBridge,
+  val isCliAvailable: Boolean,
+)
+
+@Composable
+private fun rememberProviderMenuItems(): List<ProviderMenuItem> {
+  val bridges = remember { AgentSessionProviderBridges.allBridges() }
+  return remember(bridges) {
+    bridges.map { bridge ->
+      ProviderMenuItem(
+        bridge = bridge,
+        isCliAvailable = bridge.isCliAvailable(),
       )
-    }
-    selectableItem(
-      selected = false,
-      enabled = claudeAvailable,
-      onClick = { onSelect(AgentSessionProvider.CLAUDE, true) },
-    ) {
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 8.dp),
-      ) {
-        ProviderIcon(provider = AgentSessionProvider.CLAUDE, modifier = Modifier.size(14.dp))
-        Text(AgentSessionsBundle.message("toolwindow.action.new.session.claude.yolo"))
-      }
-    }
-    selectableItem(
-      selected = false,
-      enabled = codexAvailable,
-      onClick = { onSelect(AgentSessionProvider.CODEX, true) },
-    ) {
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 8.dp),
-      ) {
-        ProviderIcon(provider = AgentSessionProvider.CODEX, modifier = Modifier.size(14.dp))
-        Text(AgentSessionsBundle.message("toolwindow.action.new.session.codex.yolo"))
-      }
     }
   }
 }
 
 @Composable
 internal fun ProviderIcon(provider: AgentSessionProvider, modifier: Modifier = Modifier) {
-  val iconKey = when (provider) {
-    AgentSessionProvider.CLAUDE -> AgentSessionsIconKeys.Claude
-    AgentSessionProvider.CODEX -> AgentSessionsIconKeys.Codex
+  val bridge = AgentSessionProviderBridges.find(provider)
+  val iconId = bridge?.iconId ?: defaultIconId(provider)
+  val iconKey = iconId?.let(AgentSessionsIconKeys::byId)
+  if (iconKey == null) {
+    Text("?", modifier = modifier)
+    return
   }
   Icon(
     key = iconKey,
@@ -185,8 +201,15 @@ internal fun ProviderIcon(provider: AgentSessionProvider, modifier: Modifier = M
   )
 }
 
-private fun providerDisplayName(provider: AgentSessionProvider): String =
-  when (provider) {
-    AgentSessionProvider.CLAUDE -> AgentSessionsBundle.message("toolwindow.provider.claude")
-    AgentSessionProvider.CODEX -> AgentSessionsBundle.message("toolwindow.provider.codex")
+private fun defaultIconId(provider: AgentSessionProvider): String? {
+  return when (provider) {
+    AgentSessionProvider.CLAUDE -> AgentSessionProviderIconIds.CLAUDE
+    AgentSessionProvider.CODEX -> AgentSessionProviderIconIds.CODEX
+    else -> null
   }
+}
+
+internal fun providerDisplayName(provider: AgentSessionProvider): String {
+  val bridge = AgentSessionProviderBridges.find(provider)
+  return if (bridge != null) AgentSessionsBundle.message(bridge.displayNameKey) else provider.value
+}

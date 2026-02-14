@@ -47,6 +47,7 @@ Define the Agent Threads tool window as a provider-agnostic, project-scoped sess
   - Codex: `codex resume <sessionId>`
   - Claude: `claude --resume <sessionId>`
 - New-session action behavior (provider options, Codex/Claude command mapping, and Full Auto semantics) is defined in `spec/actions/new-thread.spec.md` and must be used by both project and worktree rows.
+- Codex thread discovery must default to rollout session files; app-server thread discovery remains an explicit compatibility override path.
 - Branch mismatch between thread origin and current worktree branch must show a warning confirmation before opening chat.
 
 [@test] ../sessions/testSrc/AgentSessionLoadAggregationTest.kt

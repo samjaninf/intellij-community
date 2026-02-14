@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions.providers.claude
+package com.intellij.agent.workbench.claude.sessions
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -23,3 +23,4 @@ class ClaudeCliSupportTest {
       .containsExactly("claude", "--resume", "sess-1")
   }
 }
+

@@ -5,7 +5,7 @@ import com.intellij.agent.workbench.sessions.AgentSessionProvider
 import com.intellij.agent.workbench.sessions.AgentSessionThread
 import com.intellij.openapi.project.Project
 
-internal interface AgentSessionSource {
+interface AgentSessionSource {
   val provider: AgentSessionProvider
   val canReportExactThreadCount: Boolean
     get() = true

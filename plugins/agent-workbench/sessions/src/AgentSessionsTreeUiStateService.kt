@@ -1,7 +1,6 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.agent.workbench.sessions
 
-import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.openapi.components.SerializablePersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.SettingsCategory
@@ -26,9 +25,9 @@ internal interface SessionsTreeUiState {
 
   fun resetVisibleThreadCount(path: String): Boolean
 
-  fun getOpenProjectThreadPreviews(path: String): List<CodexThread>?
+  fun getOpenProjectThreadPreviews(path: String): List<AgentSessionThreadPreview>?
 
-  fun setOpenProjectThreadPreviews(path: String, threads: List<CodexThread>): Boolean
+  fun setOpenProjectThreadPreviews(path: String, threads: List<AgentSessionThreadPreview>): Boolean
 
   fun retainOpenProjectThreadPreviews(paths: Set<String>): Boolean
 }
@@ -40,7 +39,7 @@ internal const val OPEN_PROJECT_THREAD_CACHE_LIMIT: Int = 10
 internal class InMemorySessionsTreeUiState : SessionsTreeUiState {
   private val collapsedProjectPaths = LinkedHashSet<String>()
   private val visibleThreadCountByProject = LinkedHashMap<String, Int>()
-  private val openProjectThreadPreviewsByProject = LinkedHashMap<String, List<CodexThread>>()
+  private val openProjectThreadPreviewsByProject = LinkedHashMap<String, List<AgentSessionThreadPreview>>()
 
   override fun isProjectCollapsed(path: String): Boolean {
     return normalizeSessionsProjectPath(path) in collapsedProjectPaths
@@ -79,11 +78,11 @@ internal class InMemorySessionsTreeUiState : SessionsTreeUiState {
     return visibleThreadCountByProject.remove(normalizeSessionsProjectPath(path)) != null
   }
 
-  override fun getOpenProjectThreadPreviews(path: String): List<CodexThread>? {
+  override fun getOpenProjectThreadPreviews(path: String): List<AgentSessionThreadPreview>? {
     return openProjectThreadPreviewsByProject[normalizeSessionsProjectPath(path)]
   }
 
-  override fun setOpenProjectThreadPreviews(path: String, threads: List<CodexThread>): Boolean {
+  override fun setOpenProjectThreadPreviews(path: String, threads: List<AgentSessionThreadPreview>): Boolean {
     val normalizedPath = normalizeSessionsProjectPath(path)
     val normalizedThreads = normalizeOpenProjectThreadPreviewList(threads)
     val current = openProjectThreadPreviewsByProject[normalizedPath]
@@ -147,20 +146,19 @@ internal class AgentSessionsTreeUiStateService
     return setVisibleThreadCountInternal(normalizedPath, DEFAULT_VISIBLE_THREAD_COUNT)
   }
 
-  override fun getOpenProjectThreadPreviews(path: String): List<CodexThread>? {
+  override fun getOpenProjectThreadPreviews(path: String): List<AgentSessionThreadPreview>? {
     val normalizedPath = normalizeSessionsProjectPath(path)
     val previews = state.openProjectThreadPreviewsByProject[normalizedPath] ?: return null
     return previews.map { preview ->
-      CodexThread(
+      AgentSessionThreadPreview(
         id = preview.id,
         title = preview.title,
         updatedAt = preview.updatedAt,
-        archived = false,
       )
     }
   }
 
-  override fun setOpenProjectThreadPreviews(path: String, threads: List<CodexThread>): Boolean {
+  override fun setOpenProjectThreadPreviews(path: String, threads: List<AgentSessionThreadPreview>): Boolean {
     val normalizedPath = normalizeSessionsProjectPath(path)
     val normalizedPreviews = normalizeOpenProjectThreadPreviewList(threads)
       .map { thread -> ThreadPreviewState(id = thread.id, title = thread.title, updatedAt = thread.updatedAt) }
@@ -233,20 +231,18 @@ internal class AgentSessionsTreeUiStateService
   }
 
   fun getLastUsedProvider(): AgentSessionProvider? {
-    val name = state.lastUsedProvider ?: return null
-    return AgentSessionProvider.entries.firstOrNull { it.name == name }
+    val id = state.lastUsedProvider ?: return null
+    return AgentSessionProvider.fromOrNull(id)
   }
 
   fun setLastUsedProvider(provider: AgentSessionProvider) {
-    updateState { it.copy(lastUsedProvider = provider.name) }
+    updateState { it.copy(lastUsedProvider = provider.value) }
     _lastUsedProviderFlow.value = provider
   }
 
   override fun loadState(state: SessionsTreeUiStateState) {
     super.loadState(state)
-    _lastUsedProviderFlow.value = state.lastUsedProvider?.let { name ->
-      AgentSessionProvider.entries.firstOrNull { it.name == name }
-    }
+    _lastUsedProviderFlow.value = state.lastUsedProvider?.let(AgentSessionProvider::fromOrNull)
   }
 
   @Serializable
@@ -269,7 +265,7 @@ private fun normalizeVisibleThreadCount(value: Int): Int {
   return value.coerceAtLeast(DEFAULT_VISIBLE_THREAD_COUNT)
 }
 
-private fun normalizeOpenProjectThreadPreviewList(threads: List<CodexThread>): List<CodexThread> {
+private fun normalizeOpenProjectThreadPreviewList(threads: List<AgentSessionThreadPreview>): List<AgentSessionThreadPreview> {
   return threads
     .sortedByDescending { it.updatedAt }
     .take(OPEN_PROJECT_THREAD_CACHE_LIMIT)

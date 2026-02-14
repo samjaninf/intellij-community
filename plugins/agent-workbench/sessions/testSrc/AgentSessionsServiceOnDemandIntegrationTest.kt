@@ -13,26 +13,28 @@ class AgentSessionsServiceOnDemandIntegrationTest {
   @Test
   fun ensureThreadVisibleExpandsProjectVisibleCountForHiddenThread() = runBlocking {
     withService(
-      sessionSources = listOf(
-        ScriptedSessionSource(
-          provider = AgentSessionProvider.CODEX,
-          canReportExactThreadCount = true,
-          listFromClosedProject = { path ->
-            if (path != PROJECT_PATH) {
-              emptyList()
-            }
-            else {
-              listOf(
-                thread(id = "codex-1", updatedAt = 500, provider = AgentSessionProvider.CODEX),
-                thread(id = "codex-2", updatedAt = 400, provider = AgentSessionProvider.CODEX),
-                thread(id = "codex-3", updatedAt = 300, provider = AgentSessionProvider.CODEX),
-                thread(id = "codex-4", updatedAt = 200, provider = AgentSessionProvider.CODEX),
-                thread(id = "codex-5", updatedAt = 100, provider = AgentSessionProvider.CODEX),
-              )
-            }
-          },
-        ),
-      ),
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CODEX,
+            canReportExactThreadCount = true,
+            listFromClosedProject = { path ->
+              if (path != PROJECT_PATH) {
+                emptyList()
+              }
+              else {
+                listOf(
+                  thread(id = "codex-1", updatedAt = 500, provider = AgentSessionProvider.CODEX),
+                  thread(id = "codex-2", updatedAt = 400, provider = AgentSessionProvider.CODEX),
+                  thread(id = "codex-3", updatedAt = 300, provider = AgentSessionProvider.CODEX),
+                  thread(id = "codex-4", updatedAt = 200, provider = AgentSessionProvider.CODEX),
+                  thread(id = "codex-5", updatedAt = 100, provider = AgentSessionProvider.CODEX),
+                )
+              }
+            },
+          ),
+        )
+      },
       projectEntriesProvider = {
         listOf(closedProjectEntry(PROJECT_PATH, "Project A"))
       },
@@ -57,24 +59,26 @@ class AgentSessionsServiceOnDemandIntegrationTest {
   @Test
   fun ensureThreadVisibleDoesNotChangeVisibleCountForAlreadyVisibleThread() = runBlocking {
     withService(
-      sessionSources = listOf(
-        ScriptedSessionSource(
-          provider = AgentSessionProvider.CODEX,
-          canReportExactThreadCount = true,
-          listFromClosedProject = { path ->
-            if (path == PROJECT_PATH) {
-              listOf(
-                thread(id = "codex-1", updatedAt = 300, provider = AgentSessionProvider.CODEX),
-                thread(id = "codex-2", updatedAt = 200, provider = AgentSessionProvider.CODEX),
-                thread(id = "codex-3", updatedAt = 100, provider = AgentSessionProvider.CODEX),
-              )
-            }
-            else {
-              emptyList()
-            }
-          },
-        ),
-      ),
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CODEX,
+            canReportExactThreadCount = true,
+            listFromClosedProject = { path ->
+              if (path == PROJECT_PATH) {
+                listOf(
+                  thread(id = "codex-1", updatedAt = 300, provider = AgentSessionProvider.CODEX),
+                  thread(id = "codex-2", updatedAt = 200, provider = AgentSessionProvider.CODEX),
+                  thread(id = "codex-3", updatedAt = 100, provider = AgentSessionProvider.CODEX),
+                )
+              }
+              else {
+                emptyList()
+              }
+            },
+          ),
+        )
+      },
       projectEntriesProvider = {
         listOf(closedProjectEntry(PROJECT_PATH, "Project A"))
       },
@@ -102,23 +106,25 @@ class AgentSessionsServiceOnDemandIntegrationTest {
     val release = CompletableDeferred<Unit>()
 
     withService(
-      sessionSources = listOf(
-        ScriptedSessionSource(
-          provider = AgentSessionProvider.CODEX,
-          canReportExactThreadCount = false,
-          listFromClosedProject = { path ->
-            if (path != PROJECT_PATH) {
-              emptyList()
-            }
-            else {
-              invocationCount.incrementAndGet()
-              started.complete(Unit)
-              release.await()
-              listOf(thread(id = "codex-1", updatedAt = 100, provider = AgentSessionProvider.CODEX))
-            }
-          },
-        ),
-      ),
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CODEX,
+            canReportExactThreadCount = false,
+            listFromClosedProject = { path ->
+              if (path != PROJECT_PATH) {
+                emptyList()
+              }
+              else {
+                invocationCount.incrementAndGet()
+                started.complete(Unit)
+                release.await()
+                listOf(thread(id = "codex-1", updatedAt = 100, provider = AgentSessionProvider.CODEX))
+              }
+            },
+          ),
+        )
+      },
       projectEntriesProvider = {
         listOf(closedProjectEntry(PROJECT_PATH, "Project A"))
       },
@@ -150,23 +156,25 @@ class AgentSessionsServiceOnDemandIntegrationTest {
     val release = CompletableDeferred<Unit>()
 
     withService(
-      sessionSources = listOf(
-        ScriptedSessionSource(
-          provider = AgentSessionProvider.CODEX,
-          canReportExactThreadCount = false,
-          listFromClosedProject = { path ->
-            if (path != WORKTREE_PATH) {
-              emptyList()
-            }
-            else {
-              invocationCount.incrementAndGet()
-              started.complete(Unit)
-              release.await()
-              listOf(thread(id = "wt-codex-1", updatedAt = 100, provider = AgentSessionProvider.CODEX))
-            }
-          },
-        ),
-      ),
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CODEX,
+            canReportExactThreadCount = false,
+            listFromClosedProject = { path ->
+              if (path != WORKTREE_PATH) {
+                emptyList()
+              }
+              else {
+                invocationCount.incrementAndGet()
+                started.complete(Unit)
+                release.await()
+                listOf(thread(id = "wt-codex-1", updatedAt = 100, provider = AgentSessionProvider.CODEX))
+              }
+            },
+          ),
+        )
+      },
       projectEntriesProvider = {
         listOf(
           closedProjectEntry(

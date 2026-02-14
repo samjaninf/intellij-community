@@ -41,7 +41,7 @@ internal fun thread(id: String, updatedAt: Long, provider: AgentSessionProvider)
 }
 
 internal suspend fun withService(
-  sessionSources: List<AgentSessionSource>,
+  sessionSourcesProvider: () -> List<AgentSessionSource>,
   projectEntriesProvider: suspend () -> List<AgentSessionsService.ProjectEntry>,
   action: suspend (AgentSessionsService) -> Unit,
 ) {
@@ -50,7 +50,7 @@ internal suspend fun withService(
   try {
     val service = AgentSessionsService(
       serviceScope = scope,
-      sessionSources = sessionSources,
+      sessionSourcesProvider = sessionSourcesProvider,
       projectEntriesProvider = projectEntriesProvider,
       subscribeToProjectLifecycle = false,
     )
@@ -131,4 +131,3 @@ internal suspend fun waitForCondition(timeoutMs: Long = 5_000, condition: () -> 
   }
   throw AssertionError("Condition was not satisfied within ${timeoutMs}ms")
 }
-

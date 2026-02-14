@@ -2,6 +2,11 @@
   <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
     <module name="intellij.agent.workbench.claude.common"/>
+    <module name="intellij.agent.workbench.sessions"/>
   </dependencies>
   <!-- endregion -->
+
+  <extensions defaultExtensionNs="com.intellij">
+    <agent.workbench.sessionProviderBridge implementation="com.intellij.agent.workbench.claude.sessions.ClaudeAgentSessionProviderBridge"/>
+  </extensions>
 </idea-plugin>

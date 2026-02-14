@@ -21,6 +21,7 @@ jvm_library(
     "//platform/platform-api:ide",
     "//platform/platform-util-io:ide-util-io",
     "//plugins/agent-workbench/codex/common",
+    "//plugins/agent-workbench/sessions",
     "//libraries/jackson/jackson",
   ]
 )
@@ -38,6 +39,8 @@ jvm_library(
     "//platform/platform-api:ide",
     "//platform/platform-util-io:ide-util-io",
     "//plugins/agent-workbench/codex/common",
+    "//plugins/agent-workbench/sessions",
+    "//plugins/agent-workbench/sessions:sessions_test_lib",
     "//libraries/jackson/jackson",
     "//libraries/junit5",
     "//platform/testFramework",

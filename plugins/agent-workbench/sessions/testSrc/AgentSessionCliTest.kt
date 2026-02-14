@@ -1,6 +1,12 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.agent.workbench.sessions
 
+import com.intellij.agent.workbench.sessions.providers.AgentSessionLaunchSpec
+import com.intellij.agent.workbench.sessions.providers.AgentSessionProviderBridge
+import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
+import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.junit5.TestApplication
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -11,9 +17,12 @@ import org.junit.jupiter.api.Test
 
 @TestApplication
 class AgentSessionCliTest {
+  private val extensionPoint =
+    ExtensionPointName<AgentSessionProviderBridge>("com.intellij.agent.workbench.sessionProviderBridge")
+
   @Test
   fun parseIdentityParsesProviderAndSessionId() {
-    val parsed = parseAgentSessionIdentity("CODEX:thread-1")
+    val parsed = parseAgentSessionIdentity("codex:thread-1")
 
     assertEquals(AgentSessionProvider.CODEX, parsed?.provider)
     assertEquals("thread-1", parsed?.sessionId)
@@ -21,49 +30,57 @@ class AgentSessionCliTest {
 
   @Test
   fun parseIdentityRejectsMalformedValue() {
-    assertNull(parseAgentSessionIdentity("CODEX"))
-    assertNull(parseAgentSessionIdentity("CODEX:"))
+    assertNull(parseAgentSessionIdentity("codex"))
+    assertNull(parseAgentSessionIdentity("codex:"))
     assertNull(parseAgentSessionIdentity(":thread-1"))
-    assertNull(parseAgentSessionIdentity("UNKNOWN:thread-1"))
+    assertNull(parseAgentSessionIdentity("Codex:thread-1"))
   }
 
   @Test
   fun buildResumeCommandUsesProviderSpecificCommands() {
-    assertEquals(
-      listOf("codex", "resume", "thread-1"),
-      buildAgentSessionResumeCommand(AgentSessionProvider.CODEX, "thread-1"),
-    )
-    assertEquals(
-      listOf("claude", "--resume", "session-1"),
-      buildAgentSessionResumeCommand(AgentSessionProvider.CLAUDE, "session-1"),
-    )
+    withTestBridges {
+      assertEquals(
+        listOf("codex", "resume", "thread-1"),
+        buildAgentSessionResumeCommand(AgentSessionProvider.CODEX, "thread-1"),
+      )
+      assertEquals(
+        listOf("claude", "--resume", "session-1"),
+        buildAgentSessionResumeCommand(AgentSessionProvider.CLAUDE, "session-1"),
+      )
+    }
   }
 
   @Test
   fun buildNewEntryCommandUsesProviderSpecificCommands() {
-    assertEquals(listOf("codex"), buildAgentSessionNewCommand(AgentSessionProvider.CODEX))
-    assertEquals(listOf("claude"), buildAgentSessionNewCommand(AgentSessionProvider.CLAUDE))
+    withTestBridges {
+      assertEquals(listOf("codex"), buildAgentSessionEntryCommand(AgentSessionProvider.CODEX))
+      assertEquals(listOf("claude"), buildAgentSessionEntryCommand(AgentSessionProvider.CLAUDE))
+    }
   }
 
   @Test
   fun buildNewClaudeCommands() {
-    assertEquals(
-      listOf("claude"),
-      buildAgentSessionNewCommand(AgentSessionProvider.CLAUDE, yolo = false),
-    )
-    assertEquals(
-      listOf("claude", "--dangerously-skip-permissions"),
-      buildAgentSessionNewCommand(AgentSessionProvider.CLAUDE, yolo = true),
-    )
+    withTestBridges {
+      assertEquals(
+        listOf("claude"),
+        buildAgentSessionNewCommand(AgentSessionProvider.CLAUDE, AgentSessionLaunchMode.STANDARD),
+      )
+      assertEquals(
+        listOf("claude", "--dangerously-skip-permissions"),
+        buildAgentSessionNewCommand(AgentSessionProvider.CLAUDE, AgentSessionLaunchMode.YOLO),
+      )
+    }
   }
 
   @Test
   fun buildNewCodexCommandsThrow() {
-    assertThrows(IllegalStateException::class.java) {
-      buildAgentSessionNewCommand(AgentSessionProvider.CODEX, yolo = false)
-    }
-    assertThrows(IllegalStateException::class.java) {
-      buildAgentSessionNewCommand(AgentSessionProvider.CODEX, yolo = true)
+    withTestBridges {
+      assertThrows(IllegalStateException::class.java) {
+        buildAgentSessionNewCommand(AgentSessionProvider.CODEX, AgentSessionLaunchMode.STANDARD)
+      }
+      assertThrows(IllegalStateException::class.java) {
+        buildAgentSessionNewCommand(AgentSessionProvider.CODEX, AgentSessionLaunchMode.YOLO)
+      }
     }
   }
 
@@ -73,13 +90,93 @@ class AgentSessionCliTest {
     val claudeB = buildAgentSessionNewIdentity(AgentSessionProvider.CLAUDE)
 
     assertNotEquals(claudeA, claudeB)
-    assertTrue(claudeA.startsWith("CLAUDE:"))
-    assertTrue(buildAgentSessionNewIdentity(AgentSessionProvider.CODEX).startsWith("CODEX:"))
+    assertTrue(claudeA.startsWith("claude:"))
+    assertTrue(buildAgentSessionNewIdentity(AgentSessionProvider.CODEX).startsWith("codex:"))
   }
 
   @Test
   fun buildExistingIdentityFormat() {
-    assertEquals("CLAUDE:abc", buildAgentSessionIdentity(AgentSessionProvider.CLAUDE, "abc"))
-    assertEquals("CODEX:xyz", buildAgentSessionIdentity(AgentSessionProvider.CODEX, "xyz"))
+    assertEquals("claude:abc", buildAgentSessionIdentity(AgentSessionProvider.CLAUDE, "abc"))
+    assertEquals("codex:xyz", buildAgentSessionIdentity(AgentSessionProvider.CODEX, "xyz"))
+  }
+
+  private fun withTestBridges(block: () -> Unit) {
+    val disposable = Disposer.newDisposable()
+    try {
+      extensionPoint.point.registerExtension(TestBridge.codex(), disposable)
+      extensionPoint.point.registerExtension(TestBridge.claude(), disposable)
+      block()
+    }
+    finally {
+      Disposer.dispose(disposable)
+    }
+  }
+
+  private class TestBridge private constructor(
+    override val provider: AgentSessionProvider,
+    private val resumeCommandBuilder: (String) -> List<String>,
+    private val newSessionCommandBuilder: (AgentSessionLaunchMode) -> List<String>,
+    private val newEntryCommand: List<String>,
+  ) : AgentSessionProviderBridge {
+    override val displayNameKey: String
+      get() = "toolwindow.provider.codex"
+
+    override val newSessionLabelKey: String
+      get() = "toolwindow.action.new.session.codex"
+
+    override val iconId: String
+      get() = AgentSessionProviderIconIds.CODEX
+
+    override val supportedLaunchModes: Set<AgentSessionLaunchMode>
+      get() = setOf(AgentSessionLaunchMode.STANDARD, AgentSessionLaunchMode.YOLO)
+
+    override val sessionSource: AgentSessionSource = object : AgentSessionSource {
+      override val provider: AgentSessionProvider
+        get() = this@TestBridge.provider
+
+      override suspend fun listThreadsFromOpenProject(path: String, project: Project): List<AgentSessionThread> = emptyList()
+
+      override suspend fun listThreadsFromClosedProject(path: String): List<AgentSessionThread> = emptyList()
+    }
+
+    override val cliMissingMessageKey: String
+      get() = "toolwindow.error"
+
+    override fun isCliAvailable(): Boolean = true
+
+    override fun buildResumeCommand(sessionId: String): List<String> = resumeCommandBuilder(sessionId)
+
+    override fun buildNewSessionCommand(mode: AgentSessionLaunchMode): List<String> = newSessionCommandBuilder(mode)
+
+    override fun buildNewEntryCommand(): List<String> = newEntryCommand
+
+    override suspend fun createNewSession(path: String, mode: AgentSessionLaunchMode): AgentSessionLaunchSpec {
+      return AgentSessionLaunchSpec(sessionId = null, command = buildNewSessionCommand(mode))
+    }
+
+    companion object {
+      fun codex(): TestBridge {
+        return TestBridge(
+          provider = AgentSessionProvider.CODEX,
+          resumeCommandBuilder = { sessionId -> listOf("codex", "resume", sessionId) },
+          newSessionCommandBuilder = {
+            error("Codex new sessions use thread/start + resume, not direct CLI")
+          },
+          newEntryCommand = listOf("codex"),
+        )
+      }
+
+      fun claude(): TestBridge {
+        return TestBridge(
+          provider = AgentSessionProvider.CLAUDE,
+          resumeCommandBuilder = { sessionId -> listOf("claude", "--resume", sessionId) },
+          newSessionCommandBuilder = { mode ->
+            if (mode == AgentSessionLaunchMode.YOLO) listOf("claude", "--dangerously-skip-permissions")
+            else listOf("claude")
+          },
+          newEntryCommand = listOf("claude"),
+        )
+      }
+    }
   }
 }

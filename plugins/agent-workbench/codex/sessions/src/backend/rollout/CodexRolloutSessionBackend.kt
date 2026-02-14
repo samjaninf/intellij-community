@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.codex.sessions
+package com.intellij.agent.workbench.codex.sessions.backend.rollout
 
 // @spec community/plugins/agent-workbench/spec/agent-sessions-codex-rollout-source.spec.md
 
@@ -9,6 +9,10 @@ import com.fasterxml.jackson.core.JsonToken
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.agent.workbench.codex.common.forEachObjectField
 import com.intellij.agent.workbench.codex.common.readStringOrNull
+import com.intellij.agent.workbench.codex.sessions.backend.CodexBackendThread
+import com.intellij.agent.workbench.codex.sessions.backend.CodexSessionActivity
+import com.intellij.agent.workbench.codex.sessions.backend.CodexSessionBackend
+import com.intellij.agent.workbench.codex.sessions.resolveProjectDirectoryFromPath
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +26,7 @@ private const val ROLLOUT_FILE_PREFIX = "rollout-"
 private const val ROLLOUT_FILE_SUFFIX = ".jsonl"
 private const val MAX_TITLE_LENGTH = 120
 
-class CodexRolloutSessionBackend(
+internal class CodexRolloutSessionBackend(
   private val codexHomeProvider: () -> Path = { Path.of(System.getProperty("user.home"), ".codex") },
 ) : CodexSessionBackend {
   private val jsonFactory = JsonFactory()
@@ -239,16 +243,16 @@ class CodexRolloutSessionBackend(
 }
 
 private data class RolloutEvent(
-  val topLevelType: String?,
-  val timestampMs: Long?,
-  val payloadType: String?,
-  val payloadRole: String?,
-  val payloadMessage: String?,
-  val sessionId: String?,
-  val sessionCwd: String?,
-  val sessionTimestampMs: Long?,
-  val gitBranch: String?,
-  val itemType: String?,
+  @JvmField val topLevelType: String?,
+  @JvmField val timestampMs: Long?,
+  @JvmField val payloadType: String?,
+  @JvmField val payloadRole: String?,
+  @JvmField val payloadMessage: String?,
+  @JvmField val sessionId: String?,
+  @JvmField val sessionCwd: String?,
+  @JvmField val sessionTimestampMs: Long?,
+  @JvmField val gitBranch: String?,
+  @JvmField val itemType: String?,
 )
 
 private fun parseIsoTimestamp(value: String?): Long? {
@@ -307,4 +311,3 @@ private fun maxTimestamp(current: Long, candidate: Long?): Long {
   if (candidate == null) return current
   return if (candidate > current) candidate else current
 }
-

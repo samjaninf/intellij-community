@@ -44,9 +44,7 @@
     <orderEntry type="module" module-name="intellij.platform.projectModel" />
     <orderEntry type="module" module-name="intellij.platform.util" />
     <orderEntry type="module" module-name="intellij.platform.ide.util.io" />
-    <orderEntry type="module" module-name="intellij.agent.workbench.claude.sessions" />
-    <orderEntry type="module" module-name="intellij.agent.workbench.codex.common" />
-    <orderEntry type="module" module-name="intellij.agent.workbench.codex.sessions" />
+    <orderEntry type="module" module-name="intellij.agent.workbench.codex.common" scope="TEST" />
     <orderEntry type="module" module-name="intellij.agent.workbench.chat" />
     <orderEntry type="module" module-name="intellij.libraries.jackson" />
     <orderEntry type="library" name="jna" level="project" />

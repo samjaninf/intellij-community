@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.codex.sessions
+package com.intellij.agent.workbench.codex.sessions.backend
 
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.openapi.project.Project
@@ -25,4 +25,3 @@ interface CodexSessionBackend {
    */
   suspend fun prefetchThreads(paths: List<String>): Map<String, List<CodexBackendThread>> = emptyMap()
 }
-

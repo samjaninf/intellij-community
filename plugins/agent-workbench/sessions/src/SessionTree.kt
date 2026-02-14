@@ -31,7 +31,7 @@ internal fun sessionTree(
   onWorktreeExpanded: (String, String) -> Unit = { _, _ -> },
   onOpenThread: (String, AgentSessionThread) -> Unit,
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit,
-  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit = { _, _, _ -> },
+  onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit = { _, _, _ -> },
   lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long,
   visibleProjectCount: Int = Int.MAX_VALUE,

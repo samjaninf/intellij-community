@@ -15,11 +15,11 @@ class AgentSessionLoadAggregationTest {
         AgentSessionSourceLoadResult(AgentSessionProvider.CODEX, Result.failure(codexFailure)),
         AgentSessionSourceLoadResult(AgentSessionProvider.CLAUDE, Result.failure(claudeFailure)),
       ),
-      resolveErrorMessage = { provider, _ -> "${provider.name} unavailable" },
+      resolveErrorMessage = { provider, _ -> "${provider.value} unavailable" },
     )
 
     assertThat(result.threads).isEmpty()
-    assertThat(result.errorMessage).isEqualTo("CODEX unavailable")
+    assertThat(result.errorMessage).isEqualTo("codex unavailable")
     assertThat(result.hasUnknownThreadCount).isFalse()
     assertThat(result.providerWarnings).isEmpty()
   }
@@ -33,8 +33,8 @@ class AgentSessionLoadAggregationTest {
         AgentSessionSourceLoadResult(AgentSessionProvider.CODEX, Result.failure(codexFailure)),
         AgentSessionSourceLoadResult(AgentSessionProvider.CLAUDE, Result.success(emptyList())),
       ),
-      resolveErrorMessage = { provider, _ -> "${provider.name} unavailable" },
-      resolveWarningMessage = { provider, _ -> "${provider.name} warning" },
+      resolveErrorMessage = { provider, _ -> "${provider.value} unavailable" },
+      resolveWarningMessage = { provider, _ -> "${provider.value} warning" },
     )
 
     assertThat(result.threads).isEmpty()
@@ -43,7 +43,7 @@ class AgentSessionLoadAggregationTest {
     assertThat(result.providerWarnings).hasSize(1)
     val warning = result.providerWarnings.single()
     assertThat(warning.provider).isEqualTo(AgentSessionProvider.CODEX)
-    assertThat(warning.message).isEqualTo("CODEX warning")
+    assertThat(warning.message).isEqualTo("codex warning")
   }
 
   @Test

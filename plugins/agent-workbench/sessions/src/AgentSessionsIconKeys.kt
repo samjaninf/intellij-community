@@ -3,7 +3,20 @@ package com.intellij.agent.workbench.sessions
 
 import org.jetbrains.jewel.ui.icon.PathIconKey
 
+object AgentSessionProviderIconIds {
+  const val CLAUDE: String = "claude"
+  const val CODEX: String = "codex"
+}
+
 internal object AgentSessionsIconKeys {
   val Claude: PathIconKey = PathIconKey("icons/claude@14x14.svg", AgentSessionsIconKeys::class.java)
   val Codex: PathIconKey = PathIconKey("icons/codex@14x14.svg", AgentSessionsIconKeys::class.java)
+
+  fun byId(iconId: String): PathIconKey? {
+    return when (iconId) {
+      AgentSessionProviderIconIds.CLAUDE -> Claude
+      AgentSessionProviderIconIds.CODEX -> Codex
+      else -> null
+    }
+  }
 }

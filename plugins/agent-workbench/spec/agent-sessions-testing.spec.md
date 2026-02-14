@@ -2,6 +2,8 @@
 name: Agent Threads Testing
 description: Coverage requirements for provider aggregation, tree rendering, and backend contracts in Agent Threads.
 targets:
+  - ../codex/sessions/testSrc/CodexRolloutSessionBackendTest.kt
+  - ../codex/sessions/testSrc/CodexSessionBackendSelectorTest.kt
   - ../sessions/testSrc/AgentSessionLoadAggregationTest.kt
   - ../sessions/testSrc/AgentSessionsServiceRefreshIntegrationTest.kt
   - ../sessions/testSrc/AgentSessionsServiceOnDemandIntegrationTest.kt
@@ -46,6 +48,8 @@ Define required test coverage for the multi-provider Agent Threads stack: source
   - project request deduplication,
   - worktree request deduplication with refresh interaction.
 - Concurrency integration tests must verify refresh mutex deduplicates overlapping refresh calls.
+- Codex rollout backend tests must cover rollout parsing/activity behavior as the default thread-discovery path.
+- Codex backend selector tests must verify rollout default behavior and explicit app-server override behavior.
 - Tree UI tests must cover:
   - provider warning rendering,
   - error row precedence over warnings,

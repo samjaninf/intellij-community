@@ -1,11 +1,11 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions.providers.claude
+package com.intellij.agent.workbench.claude.sessions
 
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import java.nio.file.Files
 import java.nio.file.Path
 
-internal object ClaudeCliSupport {
+object ClaudeCliSupport {
   const val CLAUDE_COMMAND: String = "claude"
 
   fun isAvailable(): Boolean = findExecutable() != null
@@ -29,3 +29,4 @@ internal object ClaudeCliSupport {
   fun buildResumeCommand(sessionId: String): List<String> =
     listOf(CLAUDE_COMMAND, "--resume", sessionId)
 }
+

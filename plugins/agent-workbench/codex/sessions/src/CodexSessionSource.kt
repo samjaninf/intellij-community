@@ -1,14 +1,14 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.sessions.providers.codex
+package com.intellij.agent.workbench.codex.sessions
 
 // @spec community/plugins/agent-workbench/spec/agent-sessions.spec.md
 // @spec community/plugins/agent-workbench/spec/agent-sessions-codex-rollout-source.spec.md
 
 import com.intellij.agent.workbench.codex.common.CodexThread
-import com.intellij.agent.workbench.codex.sessions.CodexBackendThread
-import com.intellij.agent.workbench.codex.sessions.CodexSessionActivity
-import com.intellij.agent.workbench.codex.sessions.CodexSessionBackend
-import com.intellij.agent.workbench.codex.sessions.createDefaultCodexSessionBackend
+import com.intellij.agent.workbench.codex.sessions.backend.CodexBackendThread
+import com.intellij.agent.workbench.codex.sessions.backend.CodexSessionActivity
+import com.intellij.agent.workbench.codex.sessions.backend.CodexSessionBackend
+import com.intellij.agent.workbench.codex.sessions.backend.createDefaultCodexSessionBackend
 import com.intellij.agent.workbench.sessions.AgentSessionActivity
 import com.intellij.agent.workbench.sessions.AgentSessionProvider
 import com.intellij.agent.workbench.sessions.AgentSessionThread
@@ -16,7 +16,7 @@ import com.intellij.agent.workbench.sessions.AgentSubAgent
 import com.intellij.agent.workbench.sessions.providers.BaseAgentSessionSource
 import com.intellij.openapi.project.Project
 
-internal class CodexSessionSource(
+class CodexSessionSource(
   private val backend: CodexSessionBackend = createDefaultCodexSessionBackend(),
 ) : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX, canReportExactThreadCount = false) {
   override suspend fun listThreads(path: String, openProject: Project?): List<AgentSessionThread> {

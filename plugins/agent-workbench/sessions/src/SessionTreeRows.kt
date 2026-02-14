@@ -50,7 +50,7 @@ internal fun SelectableLazyItemScope.sessionTreeNodeContent(
   element: Tree.Element<SessionTreeNode>,
   onOpenProject: (String) -> Unit,
   onRefresh: () -> Unit,
-  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit = { _, _, _ -> },
+  onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit = { _, _, _ -> },
   lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long,
 ) {
@@ -135,7 +135,7 @@ private fun rememberTreeRowChrome(
 private fun SelectableLazyItemScope.projectNodeRow(
   project: AgentProjectSessions,
   onOpenProject: (String) -> Unit,
-  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit,
+  onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit,
   lastUsedProvider: AgentSessionProvider?,
 ) {
   val chrome = rememberTreeRowChrome(
@@ -316,7 +316,7 @@ private fun SelectableLazyItemScope.subAgentNodeRow(
 @Composable
 private fun SelectableLazyItemScope.worktreeNodeRow(
   worktree: AgentWorktree,
-  onCreateSession: (String, AgentSessionProvider, Boolean) -> Unit,
+  onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit,
   lastUsedProvider: AgentSessionProvider?,
 ) {
   val chrome = rememberTreeRowChrome(isSelected = isSelected, isActive = isActive)
@@ -371,10 +371,7 @@ private fun SelectableLazyItemScope.worktreeNodeRow(
 }
 
 private fun providerLabel(provider: AgentSessionProvider): String {
-  return when (provider) {
-    AgentSessionProvider.CODEX -> AgentSessionsBundle.message("toolwindow.provider.codex")
-    AgentSessionProvider.CLAUDE -> AgentSessionsBundle.message("toolwindow.provider.claude")
-  }
+  return providerDisplayName(provider)
 }
 
 @Composable

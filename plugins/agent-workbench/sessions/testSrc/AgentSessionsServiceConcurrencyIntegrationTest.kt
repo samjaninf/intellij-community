@@ -17,22 +17,24 @@ class AgentSessionsServiceConcurrencyIntegrationTest {
     val release = CompletableDeferred<Unit>()
 
     withService(
-      sessionSources = listOf(
-        ScriptedSessionSource(
-          provider = AgentSessionProvider.CLAUDE,
-          listFromOpenProject = { path, _ ->
-            if (path != PROJECT_PATH) {
-              emptyList()
-            }
-            else {
-              openInvocationCount.incrementAndGet()
-              started.complete(Unit)
-              release.await()
-              listOf(thread(id = "claude-1", updatedAt = 200, provider = AgentSessionProvider.CLAUDE))
-            }
-          },
-        ),
-      ),
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CLAUDE,
+            listFromOpenProject = { path, _ ->
+              if (path != PROJECT_PATH) {
+                emptyList()
+              }
+              else {
+                openInvocationCount.incrementAndGet()
+                started.complete(Unit)
+                release.await()
+                listOf(thread(id = "claude-1", updatedAt = 200, provider = AgentSessionProvider.CLAUDE))
+              }
+            },
+          ),
+        )
+      },
       projectEntriesProvider = {
         listOf(openProjectEntry(PROJECT_PATH, "Project A"))
       },
@@ -50,4 +52,3 @@ class AgentSessionsServiceConcurrencyIntegrationTest {
     }
   }
 }
-

@@ -11,7 +11,9 @@ import java.nio.file.Files
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
 
-private val LOG = logger<SharedCodexAppServerService>()
+private object CodexProjectPathsLogCategory
+
+private val LOG = logger<CodexProjectPathsLogCategory>()
 
 internal fun parseProjectPath(path: String?): Path? {
   val trimmed = path?.trim().takeIf { !it.isNullOrEmpty() } ?: return null
@@ -77,4 +79,3 @@ internal fun registerShutdownOnCancellation(scope: CoroutineScope, onShutdown: (
     onShutdown()
   }
 }
-

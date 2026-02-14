@@ -30,7 +30,7 @@ class SessionTreeSelectionSyncTest {
 
     val selection = AgentChatTabSelection(
       projectPath = "/work/project-a",
-      threadIdentity = "CODEX:thread-1",
+      threadIdentity = "codex:thread-1",
       threadId = "thread-1",
       subAgentId = null,
     )
@@ -64,7 +64,7 @@ class SessionTreeSelectionSyncTest {
       projects,
       AgentChatTabSelection(
         projectPath = "/work/project-a",
-        threadIdentity = "CODEX:thread-1",
+        threadIdentity = "codex:thread-1",
         threadId = "thread-1",
         subAgentId = "alpha",
       ),
@@ -73,7 +73,7 @@ class SessionTreeSelectionSyncTest {
       projects,
       AgentChatTabSelection(
         projectPath = "/work/project-a",
-        threadIdentity = "CODEX:thread-1",
+        threadIdentity = "codex:thread-1",
         threadId = "thread-1",
         subAgentId = "beta",
       ),
@@ -114,7 +114,7 @@ class SessionTreeSelectionSyncTest {
       projects,
       AgentChatTabSelection(
         projectPath = "/work/project-feature",
-        threadIdentity = "CLAUDE:thread-wt",
+        threadIdentity = "claude:thread-wt",
         threadId = "thread-wt",
         subAgentId = null,
       ),
@@ -123,7 +123,7 @@ class SessionTreeSelectionSyncTest {
       projects,
       AgentChatTabSelection(
         projectPath = "/work/project-feature",
-        threadIdentity = "CLAUDE:thread-wt",
+        threadIdentity = "claude:thread-wt",
         threadId = "thread-wt",
         subAgentId = "agent-1",
       ),
@@ -162,7 +162,7 @@ class SessionTreeSelectionSyncTest {
       projects,
       AgentChatTabSelection(
         projectPath = "/work/missing",
-        threadIdentity = "CODEX:thread-1",
+        threadIdentity = "codex:thread-1",
         threadId = "thread-1",
         subAgentId = null,
       ),

@@ -1,6 +1,5 @@
 package com.intellij.agent.workbench.sessions
 
-import com.intellij.agent.workbench.codex.common.CodexThread
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -49,8 +48,8 @@ class AgentSessionsTreeUiStateServiceTest {
   fun openProjectThreadPreviewCacheRoundTrip() {
     val uiState = AgentSessionsTreeUiStateService()
     val threads = listOf(
-      CodexThread(id = "thread-1", title = "Thread 1", updatedAt = 5L, archived = false),
-      CodexThread(id = "thread-2", title = "Thread 2", updatedAt = 10L, archived = false),
+      AgentSessionThreadPreview(id = "thread-1", title = "Thread 1", updatedAt = 5L),
+      AgentSessionThreadPreview(id = "thread-2", title = "Thread 2", updatedAt = 10L),
     )
 
     assertTrue(uiState.setOpenProjectThreadPreviews("/work/project-a/", threads))
@@ -98,7 +97,7 @@ class AgentSessionsTreeUiStateServiceTest {
 
     uiState.setLastUsedProvider(AgentSessionProvider.CLAUDE)
     val storedName = uiState.state.lastUsedProvider
-    assertEquals("CLAUDE", storedName)
+    assertEquals("claude", storedName)
 
     // Verify the provider can be reconstructed from stored name
     assertEquals(AgentSessionProvider.CLAUDE, uiState.getLastUsedProvider())

@@ -1,9 +1,10 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.agent.workbench.codex.sessions
+package com.intellij.agent.workbench.codex.sessions.backend.appserver
 
 import com.intellij.agent.workbench.codex.common.CodexAppServerClient
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.agent.workbench.codex.common.normalizeRootPath
+import com.intellij.agent.workbench.codex.sessions.registerShutdownOnCancellation
 import com.intellij.openapi.components.Service
 import kotlinx.coroutines.CoroutineScope
 import java.nio.file.Path
@@ -37,4 +38,3 @@ class SharedCodexAppServerService(serviceScope: CoroutineScope) {
     return thread
   }
 }
-
