@@ -96,7 +96,7 @@ object GitLabStatistics {
   //endregion
 
   //region Counters
-  private val COUNTERS_GROUP = EventLogGroup("vcs.gitlab.counters", version = 31)
+  private val COUNTERS_GROUP = EventLogGroup("vcs.gitlab.counters", version = 32)
 
   /**
    * Server metadata was fetched
@@ -143,6 +143,22 @@ object GitLabStatistics {
 
   fun logJsonDeserializationError(clazz: Class<*>, serverVersion: GitLabVersion?): Unit =
     JSON_DESERIALIZATION_ERROR_EVENT.log(clazz, serverVersion?.toString())
+
+  private val PROJECT_NAMESPACE_NULL_IN_REST_DATA_EVENT =
+    COUNTERS_GROUP.registerEvent("api.rest.project.namespace.null",
+                                 EventFields.Version)
+
+  fun logNamespaceNullInProjectRestData(serverVersion: GitLabVersion?) {
+    PROJECT_NAMESPACE_NULL_IN_REST_DATA_EVENT.log(serverVersion?.toString())
+  }
+
+  private val PROJECT_NAMESPACE_LOADING_ERROR =
+    COUNTERS_GROUP.registerEvent("api.rest.project.namespace.loading.error",
+                                 EventFields.Version)
+
+  fun logProjectNamespaceLoadingError(serverVersion: GitLabVersion?) {
+    PROJECT_NAMESPACE_LOADING_ERROR.log(serverVersion?.toString())
+  }
 
   internal class GitLabCountersCollector : CounterUsagesCollector() {
     override fun getGroup(): EventLogGroup = COUNTERS_GROUP

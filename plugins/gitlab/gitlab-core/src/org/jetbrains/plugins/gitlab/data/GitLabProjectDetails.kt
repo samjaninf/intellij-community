@@ -3,7 +3,9 @@ package org.jetbrains.plugins.gitlab.data
 
 import com.intellij.openapi.util.NlsSafe
 import org.jetbrains.annotations.Nls
+import org.jetbrains.plugins.gitlab.api.dto.GitLabPlan
 import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
+import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectRestDTO
 import org.jetbrains.plugins.gitlab.util.GitLabProjectPath
 
 data class GitLabProjectDetails(
@@ -15,6 +17,7 @@ data class GitLabProjectDetails(
   val sshUrlToRepo: @NlsSafe String?,
   val defaultBranch: String?,
   val removeSourceBranchAfterMerge: Boolean?,
+  // can be null when loaded with REST and namespace plan loading failed
   val allowsMultipleMergeRequestAssignees: Boolean?,
   val allowsMultipleMergeRequestReviewers: Boolean?,
 ) {
@@ -29,5 +32,18 @@ data class GitLabProjectDetails(
     removeSourceBranchAfterMerge = dto.removeSourceBranchAfterMerge,
     allowsMultipleMergeRequestAssignees = dto.allowsMultipleMergeRequestAssignees,
     allowsMultipleMergeRequestReviewers = dto.allowsMultipleMergeRequestReviewers
+  )
+
+  constructor(parsedPath: GitLabProjectPath, dto: GitLabProjectRestDTO, plan: GitLabPlan?) : this(
+    id = dto.id,
+    name = dto.name,
+    nameWithNamespace = dto.nameWithNamespace,
+    path = parsedPath,
+    httpUrlToRepo = dto.httpUrlToRepo,
+    sshUrlToRepo = dto.sshUrlToRepo,
+    defaultBranch = dto.defaultBranch,
+    removeSourceBranchAfterMerge = dto.removeSourceBranchAfterMerge,
+    allowsMultipleMergeRequestAssignees = plan?.let { it != GitLabPlan.FREE },
+    allowsMultipleMergeRequestReviewers = plan?.let { it != GitLabPlan.FREE }
   )
 }
