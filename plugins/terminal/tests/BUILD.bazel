@@ -93,6 +93,7 @@ jvm_library(
     "//platform/execution",
     "@lib//:kotlinx-serialization-core",
     "@lib//:kotlinx-serialization-json",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

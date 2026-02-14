@@ -70,6 +70,7 @@ jvm_library(
     "@lib//:grazie-tests-pro-ai-grazie-model-swagger-annotations-jvm",
     "//platform/testFramework/junit5",
     "//platform/testFramework/junit5:junit5_test_lib",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests.pro"]
 )

@@ -50,5 +50,6 @@
     </orderEntry>
     <orderEntry type="module" module-name="intellij.libraries.hash4j" />
     <orderEntry type="library" name="jetbrains.intellij.deps.eclipse.jgit" level="project" />
+    <orderEntry type="module" module-name="intellij.platform.images.tests" scope="TEST" />
   </component>
 </module>

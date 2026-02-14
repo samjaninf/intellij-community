@@ -81,6 +81,7 @@ jvm_library(
     "@lib//:junit4",
     "//platform/analysis-api:analysis",
     "//platform/platform-api:ide",
+    "//images:images-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.platform.credentialStore.impl` end

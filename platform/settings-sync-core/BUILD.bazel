@@ -118,6 +118,7 @@ jvm_library(
     "//platform/pluginSystem/testFramework",
     "//platform/platform-tests:tests_test_lib",
     "//platform/lang-api:lang",
+    "//images:images-tests_test_lib",
   ],
   exports = ["@lib//:jetbrains-intellij-deps-eclipse-jgit"]
 )

@@ -21,6 +21,7 @@ jvm_library(
     "//platform/util",
     "//libraries/kotlinx/coroutines/core",
     "//platform/build-scripts/downloader",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

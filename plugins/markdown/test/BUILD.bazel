@@ -98,6 +98,7 @@ jvm_library(
     "//platform/testFramework/junit5:junit5_test_lib",
     "//xml/testFramework",
     "//platform/lang-api:lang",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

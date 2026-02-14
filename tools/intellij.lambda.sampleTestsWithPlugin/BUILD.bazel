@@ -104,6 +104,7 @@ jvm_library(
     "//libraries/junit5-pioneer",
     "//libraries/rd/framework",
     "//libraries/rd/core",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":lambda-sampleTestsWithPlugin"]
 )

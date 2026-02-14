@@ -85,6 +85,7 @@ jvm_library(
     "//platform/eel-provider",
     "//platform/testRunner",
     "//platform/testRunner:testRunner_test_lib",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

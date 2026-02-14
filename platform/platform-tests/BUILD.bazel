@@ -213,6 +213,7 @@ jvm_library(
     "//platform/execution",
     "@lib//:jet_check",
     "@lib//:jediterm-core",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

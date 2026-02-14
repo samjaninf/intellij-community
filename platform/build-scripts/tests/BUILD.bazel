@@ -51,6 +51,7 @@ jvm_library(
     "//jps/model-serialization",
     "//jps/model-api:model",
     "//libraries/jsoup",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

@@ -69,6 +69,7 @@ jvm_library(
     "@lib//:platform-images-build-pngencoder",
     "//libraries/hash4j",
     "@lib//:jetbrains-intellij-deps-eclipse-jgit",
+    "//images:images-tests_test_lib",
     ":platform_util_xmlDom_provided",
   ]
 )

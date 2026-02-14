@@ -99,6 +99,7 @@ jvm_library(
     "//java/java-tests:tests_test_lib",
     "//java/codeserver/highlighting",
     "//platform/ide-core-impl",
+    "//images:images-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.lombok` end

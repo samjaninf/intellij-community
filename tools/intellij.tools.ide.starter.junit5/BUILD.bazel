@@ -70,6 +70,7 @@ jvm_library(
     "@lib//:opentelemetry",
     "//platform/core-api:core",
     "//platform/util",
+    "//images:images-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.tools.ide.starter.junit5` end

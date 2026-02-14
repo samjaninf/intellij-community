@@ -30,6 +30,7 @@ jvm_library(
     "//plugins/kotlin/util/compiler-dependencies",
     "@lib//:kotlinc-kotlin-compiler-common",
     "//plugins/devkit/jps-plugin:jps",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":tests-from-compiler"]
 )

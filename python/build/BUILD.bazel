@@ -68,6 +68,7 @@ jvm_library(
     "//python/python-parser:parser",
     "//jps/model-api:model",
     "//libraries/jsoup",
+    "//images:images-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.pycharm.community.build` end

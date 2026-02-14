@@ -74,5 +74,6 @@
     <orderEntry type="module" module-name="kotlin.project-wizard.tests" scope="RUNTIME" />
     <orderEntry type="module" module-name="intellij.kotlin.base.facet.tests" scope="RUNTIME" />
     <orderEntry type="module" module-name="intellij.kotlin.compilerPlugins.support.tests" scope="RUNTIME" />
+    <orderEntry type="module" module-name="intellij.platform.images.tests" scope="TEST" />
   </component>
 </module>

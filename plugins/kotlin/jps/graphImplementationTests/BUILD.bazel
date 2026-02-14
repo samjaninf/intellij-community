@@ -39,6 +39,7 @@ jvm_library(
     "//platform/core-api:core",
     "//libraries/kotlin/reflect",
     "//plugins/kotlin/tests-from-compiler:tests-from-compiler_test_lib",
+    "//images:images-tests_test_lib",
   ],
   runtime_deps = [":graphImplementationTests"]
 )
