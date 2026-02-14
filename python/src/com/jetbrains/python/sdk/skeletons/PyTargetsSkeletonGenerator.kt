@@ -2,7 +2,6 @@
 package com.jetbrains.python.sdk.skeletons
 
 import com.intellij.execution.process.CapturingProcessHandler
-import com.intellij.execution.process.CapturingProcessRunner
 import com.intellij.execution.process.ProcessOutput
 import com.intellij.execution.target.TargetEnvironment
 import com.intellij.execution.target.TargetEnvironmentRequest
@@ -132,7 +131,7 @@ class PyTargetsSkeletonGenerator(skeletonPath: String, pySdk: Sdk, currentFolder
         listener?.let { capturingProcessHandler.addProcessListener(LineWiseProcessOutputListener.Adapter(it)) }
         val indicator = ProgressManager.getInstance().progressIndicator
         val result = if (indicator != null) {
-          CapturingProcessRunner(capturingProcessHandler).runProcess(indicator)
+          capturingProcessHandler.runProcessWithProgressIndicator(indicator)
         }
         else {
           capturingProcessHandler.runProcess()
