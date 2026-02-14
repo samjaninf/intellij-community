@@ -3,6 +3,7 @@ package org.jetbrains.plugins.gitlab.api
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import git4idea.remote.hosting.SingleHostedGitRepositoryConnectionManager
 import git4idea.remote.hosting.SingleHostedGitRepositoryConnectionManagerImpl
@@ -11,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.plugins.gitlab.GitLabProjectsManager
-import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.request.findProject
 import org.jetbrains.plugins.gitlab.api.request.getCurrentUser
 import org.jetbrains.plugins.gitlab.api.request.getProject
@@ -21,8 +21,10 @@ import org.jetbrains.plugins.gitlab.data.GitLabProjectDetails
 import org.jetbrains.plugins.gitlab.util.GitLabProjectMapping
 import org.jetbrains.plugins.gitlab.util.GitLabProjectPath
 
+private val LOG = logger<GitLabProjectConnectionManager>()
+
 @Service(Service.Level.PROJECT)
-internal class GitLabProjectConnectionManager(project: Project, cs: CoroutineScope) :
+internal class GitLabProjectConnectionManager(private val project: Project, cs: CoroutineScope) :
   SingleHostedGitRepositoryConnectionManager<GitLabProjectMapping, GitLabAccount, GitLabProjectConnection> {
 
   private val accountManager = service<GitLabAccountManager>()
@@ -32,38 +34,7 @@ internal class GitLabProjectConnectionManager(project: Project, cs: CoroutineSco
     { projectsManager },
     { accountManager }
   ) { glProjectMapping, account, tokenState ->
-    val scope = this
-    val apiClient = service<GitLabApiManager>().getClient(account.server) { tokenState.value }
-    val glMetadata = apiClient.getMetadataOrNull()
-    val currentUser = apiClient.graphQL.getCurrentUser()
-
-    var projectCoordinates: GitLabProjectCoordinates = glProjectMapping.repository
-    val projectData: GitLabProjectDTO
-    val originalProject = apiClient.graphQL.findProject(projectCoordinates.projectPath).body()
-    if (originalProject != null) {
-      projectCoordinates = glProjectMapping.repository
-      projectData = originalProject
-    }
-    else {
-      val restProjectResponse = apiClient.rest.getProject(projectCoordinates.projectPath).body()
-      val actualProjectPath = GitLabProjectPath.extractProjectPath(restProjectResponse.pathWithNamespace)
-                              ?: error("Unable to parse the project path: ${restProjectResponse.pathWithNamespace}")
-      projectCoordinates = projectCoordinates.copy(projectPath = actualProjectPath)
-      projectData = apiClient.graphQL.findProject(actualProjectPath).body()
-                    ?: error("Could not find the project $actualProjectPath. Check if the project exists and you have access to it.")
-    }
-
-    val details = GitLabProjectDetails(projectCoordinates.projectPath, projectData)
-    GitLabProjectConnection(project,
-                            scope,
-                            glProjectMapping,
-                            projectCoordinates,
-                            details,
-                            account,
-                            currentUser,
-                            apiClient,
-                            glMetadata,
-                            tokenState)
+    doOpenConnectionIn(this, glProjectMapping, account, tokenState)
   }
 
   private val delegate = SingleHostedGitRepositoryConnectionManagerImpl(cs, connectionFactory)
@@ -79,6 +50,45 @@ internal class GitLabProjectConnectionManager(project: Project, cs: CoroutineSco
           closeConnection()
         }
       }
+    }
+  }
+
+  private suspend fun doOpenConnectionIn(
+    scope: CoroutineScope,
+    glProjectMapping: GitLabProjectMapping,
+    account: GitLabAccount,
+    tokenState: StateFlow<String>,
+  ): GitLabProjectConnection {
+    val apiClient = service<GitLabApiManager>().getClient(account.server) { tokenState.value }
+    val glMetadata = apiClient.getMetadataOrNull()
+    val currentUser = apiClient.graphQL.getCurrentUser()
+    val projectDetails = apiClient.loadProjectDetails(glProjectMapping.repository.projectPath)
+    return GitLabProjectConnection(project,
+                                   scope,
+                                   glProjectMapping,
+                                   projectDetails,
+                                   account,
+                                   currentUser,
+                                   apiClient,
+                                   glMetadata,
+                                   tokenState)
+  }
+
+  private suspend fun GitLabApi.loadProjectDetails(
+    projectPath: GitLabProjectPath,
+  ): GitLabProjectDetails {
+    val projectData = graphQL.findProject(projectPath).body()
+    if (projectData != null) {
+      return GitLabProjectDetails(projectPath, projectData)
+    }
+    else {
+      LOG.warn("Project $projectPath not found on server $server. Trying to fetch with REST API")
+      val restProjectResponse = rest.getProject(projectPath).body()
+      val actualProjectPath = GitLabProjectPath.extractProjectPath(restProjectResponse.pathWithNamespace)
+                              ?: error("Unable to parse the project path: ${restProjectResponse.pathWithNamespace}")
+      val projectData = graphQL.findProject(actualProjectPath).body()
+                        ?: error("Could not find the project $actualProjectPath. Check if the project exists and you have access to it.")
+      return GitLabProjectDetails(actualProjectPath, projectData)
     }
   }
 
