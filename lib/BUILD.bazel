@@ -8636,6 +8636,13 @@ jvm_import(
   visibility = ["//visibility:public"]
 )
 
+jvm_import(
+  name = "kotlin-analysis-platform-tests-ehcache-sizeof",
+  jar = "@org_ehcache-sizeof-0_4_0_http//file",
+  source_jar = "@org_ehcache-sizeof-0_4_0-sources_http//file",
+  visibility = ["//visibility:public"]
+)
+
 copy_file(
   name = "org.jetbrains.intellij.deps.completion/completion-ranking-kotlin-0.4.0.jar_copy",
   src = "@org_jetbrains_intellij_deps_completion-completion-ranking-kotlin-0_4_0_http//file",

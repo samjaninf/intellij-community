@@ -60,13 +60,32 @@ jvm_library(
     "//java/java-psi-impl:psi-impl",
   ]
 )
+### auto-generated section `build intellij.kotlin.analysis.platform` end
+
+### auto-generated section `build intellij.kotlin.analysis.platform.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-analysis-platform-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.analysis.api.permissions.KaAllowProhibitedAnalyzeFromWriteAction",
+    "org.jetbrains.kotlin.analysis.api.KaPlatformInterface",
+    "org.jetbrains.kotlin.analysis.api.KaContextParameterApi",
+  ],
+  x_context_parameters = True
+)
 
 jvm_library(
-  name = "kotlin-analysis-platform_test_lib",
+  name = "kotlin-analysis-platform-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-analysis-platform-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-analysis-platform",
-  associates = [":kotlin-analysis-platform"],
+  kotlinc_opts = ":custom_kotlin-analysis-platform-tests",
+  associates = ["//plugins/kotlin/base/fir/analysis-api-platform:kotlin-analysis-platform"],
   deps = [
     "//platform/analysis-api:analysis",
     "//platform/core-api:core",
@@ -86,7 +105,7 @@ jvm_library(
     "@lib//:kotlinc-analysis-api-k2",
     "@lib//:kotlinc-low-level-api-fir",
     "@lib//:kotlinc-kotlin-compiler-tests",
-    "@lib//:kotlin-analysis-platform-ehcache-sizeof",
+    "@lib//:kotlin-analysis-platform-tests-ehcache-sizeof",
     "//libraries/gson",
     "//plugins/kotlin/base/util",
     "//plugins/kotlin/base/util:util_test_lib",
@@ -121,15 +140,16 @@ jvm_library(
     "//plugins/kotlin/base/fir/project-structure:project-structure_test_lib",
     "//plugins/kotlin/base/indices",
     "//plugins/kotlin/base/indices/tests:tests_test_lib",
-  ]
+  ],
+  runtime_deps = [":kotlin-analysis-platform-tests"]
 )
-### auto-generated section `build intellij.kotlin.analysis.platform` end
+### auto-generated section `build intellij.kotlin.analysis.platform.tests` end
 
-### auto-generated section `test intellij.kotlin.analysis.platform` start
+### auto-generated section `test intellij.kotlin.analysis.platform.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-analysis-platform_test",
-  runtime_deps = [":kotlin-analysis-platform_test_lib"]
+  name = "kotlin-analysis-platform-tests_test",
+  runtime_deps = [":kotlin-analysis-platform-tests_test_lib"]
 )
-### auto-generated section `test intellij.kotlin.analysis.platform` end
+### auto-generated section `test intellij.kotlin.analysis.platform.tests` end
