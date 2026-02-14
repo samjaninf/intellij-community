@@ -813,6 +813,7 @@
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/preferences/intellij.kotlin.preferences.iml" filepath="$PROJECT_DIR$/plugins/kotlin/preferences/intellij.kotlin.preferences.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/project-configuration/intellij.kotlin.projectConfiguration.iml" filepath="$PROJECT_DIR$/plugins/kotlin/project-configuration/intellij.kotlin.projectConfiguration.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/base/fir/project-structure/intellij.kotlin.projectStructure.iml" filepath="$PROJECT_DIR$/plugins/kotlin/base/fir/project-structure/intellij.kotlin.projectStructure.iml" />
+      <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/base/fir/project-structure/intellij.kotlin.projectStructure.tests.iml" filepath="$PROJECT_DIR$/plugins/kotlin/base/fir/project-structure/intellij.kotlin.projectStructure.tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/project-wizard/cli/intellij.kotlin.projectWizard.cli.iml" filepath="$PROJECT_DIR$/plugins/kotlin/project-wizard/cli/intellij.kotlin.projectWizard.cli.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/project-wizard/compose/intellij.kotlin.projectWizard.compose.iml" filepath="$PROJECT_DIR$/plugins/kotlin/project-wizard/compose/intellij.kotlin.projectWizard.compose.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/project-wizard/core/intellij.kotlin.projectWizard.core.iml" filepath="$PROJECT_DIR$/plugins/kotlin/project-wizard/core/intellij.kotlin.projectWizard.core.iml" />

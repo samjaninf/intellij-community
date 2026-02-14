@@ -148,7 +148,6 @@ jvm_library(
     "//plugins/groovy",
     "//plugins/groovy:groovy_test_lib",
     "//plugins/kotlin/base/fir/project-structure",
-    "//plugins/kotlin/base/fir/project-structure:project-structure_test_lib",
     "//plugins/kotlin/tests-common:common-tests_test_lib",
     "//platform/indexing-api:indexing",
     "//plugins/kotlin/base/project-structure",
@@ -172,6 +171,7 @@ jvm_library(
     "//plugins/gradle/java/toml",
     "//plugins/gradle/java/properties",
     "//plugins/gradle/java/groovy",
+    "//plugins/kotlin/base/fir/project-structure:kotlin-projectStructure-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.kotlin.gradle.scripting` end

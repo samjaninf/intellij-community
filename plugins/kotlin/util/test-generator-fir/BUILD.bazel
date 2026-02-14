@@ -74,12 +74,12 @@ jvm_library(
     "//plugins/kotlin/jvm-debugger/test/compose/testFramework:testFramework_test_lib",
     "//plugins/kotlin/injection/k2/tests:tests_test_lib",
     "//plugins/kotlin/base/fir/project-structure",
-    "//plugins/kotlin/base/fir/project-structure:project-structure_test_lib",
     "//plugins/kotlin/jvm-debugger/test/parcelize/testFramework:testFramework_test_lib",
     "//plugins/kotlin/gradle/code-insight-groovy/tests.k2:kotlin-gradle-codeInsight-groovy-tests_test_lib",
     "//plugins/kotlin/completion/tests-shared:kotlin-completion-tests-shared_test_lib",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
     "//plugins/kotlin/compiler-plugins/parcelize/tests/k2:kotlin-compilerPlugins-parcelize-tests_test_lib",
+    "//plugins/kotlin/base/fir/project-structure:kotlin-projectStructure-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )
