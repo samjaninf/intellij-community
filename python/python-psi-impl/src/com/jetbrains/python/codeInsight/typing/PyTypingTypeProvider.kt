@@ -117,6 +117,7 @@ import com.jetbrains.python.psi.types.PySelfType
 import com.jetbrains.python.psi.types.PyTupleType
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeChecker
+import com.jetbrains.python.psi.types.PyTypeChecker.collectGenerics
 import com.jetbrains.python.psi.types.PyTypeParameterMapping
 import com.jetbrains.python.psi.types.PyTypeParameterType
 import com.jetbrains.python.psi.types.PyTypeParser
@@ -1076,7 +1077,7 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
         .map { getType(it!!, context) }
         .map { Ref.deref(it) }
         .flatMap {
-          val typeParams = PyTypeChecker.collectGenerics(it, context.typeContext)
+          val typeParams = it.collectGenerics(context.typeContext)
           StreamEx.of<PyType>(typeParams.typeVars).append(typeParams.typeVarTuples)
             .append(StreamEx.of(typeParams.paramSpecs))
         }
@@ -2386,9 +2387,9 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
         }
         .append(PyTypingTypeProvider().getReturnType(function, context))
         .map { Ref.deref(it) }
-        .map { PyTypeChecker.collectGenerics(it, context) }
+        .map { it.collectGenerics(context) }
         .flatMap {
-          StreamEx.of<PyTypeParameterType>(it!!.typeVars)
+          StreamEx.of<PyTypeParameterType>(it.typeVars)
             .append(it.paramSpecs)
             .append(it.typeVarTuples)
         }
@@ -2507,7 +2508,7 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
           if (typeHint is PyReferenceExpression) {
             if (assignedType !is PyTypeParameterType) {
               val typeAliasTypeParams =
-                PyTypeChecker.collectGenerics(assignedType, context.typeContext).allTypeParameters
+                assignedType.collectGenerics(context.typeContext).allTypeParameters
               if (!typeAliasTypeParams.isEmpty()) {
                 return Ref(
                   PyTypeChecker.parameterizeType(

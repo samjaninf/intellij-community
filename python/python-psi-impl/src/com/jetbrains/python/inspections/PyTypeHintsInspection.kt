@@ -97,6 +97,8 @@ import com.jetbrains.python.psi.types.PySelfType
 import com.jetbrains.python.psi.types.PyTupleType
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeChecker
+import com.jetbrains.python.psi.types.PyTypeChecker.collectGenerics
+import com.jetbrains.python.psi.types.PyTypeChecker.hasGenerics
 import com.jetbrains.python.psi.types.PyTypeParameterMapping
 import com.jetbrains.python.psi.types.PyTypeParameterType
 import com.jetbrains.python.psi.types.PyTypeVarTupleType
@@ -607,7 +609,7 @@ class PyTypeHintsInspection : PyInspection() {
         if (it != null) {
           val type = PyTypingTypeProvider.getType(it, myTypeEvalContext)?.get()
 
-          if (PyTypeChecker.hasGenerics(type, myTypeEvalContext)) {
+          if (type.hasGenerics(myTypeEvalContext)) {
             registerProblem(it, PyPsiBundle.message("INSP.type.hints.typevar.constraints.cannot.be.parametrized.by.type.variables"))
           }
         }
@@ -1230,12 +1232,12 @@ class PyTypeHintsInspection : PyInspection() {
 
     private fun collectTypeParametersFromTypeAlias(assignedValue: PyExpression, assignedValueType: PyType, isExplicitTypeAlias: Boolean): PyTypeChecker.Generics {
       if (isExplicitTypeAlias || !(assignedValue is PyReferenceExpression && assignedValueType is PyClassType)) {
-        return PyTypeChecker.collectGenerics(assignedValueType, myTypeEvalContext)
+        return assignedValueType.collectGenerics(myTypeEvalContext)
       }
       else {
         val genericDefinitionType = PyTypeChecker.findGenericDefinitionType(assignedValueType.pyClass, myTypeEvalContext)
                                     ?: return PyTypeChecker.Generics()
-        return PyTypeChecker.collectGenerics(genericDefinitionType, myTypeEvalContext)
+        return genericDefinitionType.collectGenerics(myTypeEvalContext)
       }
     }
 
@@ -1323,7 +1325,7 @@ class PyTypeHintsInspection : PyInspection() {
                             PyPsiBundle.message("INSP.type.hints.default.type.var.cannot.follow.type.var.tuple"),
                             ProblemHighlightType.GENERIC_ERROR)
           }
-          val genericTypesInDefaultExpr = PyTypeChecker.collectGenerics(Ref.deref(defaultType), myTypeEvalContext)
+          val genericTypesInDefaultExpr = Ref.deref(defaultType).collectGenerics(myTypeEvalContext)
           val defaultOutOfScope = genericTypesInDefaultExpr.allTypeParameters
             .firstOrNull { typeVar -> typeVar.declarationElement != null && typeVar.declarationElement !in typeParamDeclarations }
 
@@ -1554,7 +1556,7 @@ class PyTypeHintsInspection : PyInspection() {
       val selfAnnotationValue = selfParameter.annotation?.value ?: return
       val selfAnnotationType = PyTypingTypeProvider.getType(selfAnnotationValue, myTypeEvalContext) ?: return
 
-      val generics = PyTypeChecker.collectGenerics(selfAnnotationType.get(), myTypeEvalContext)
+      val generics = selfAnnotationType.get().collectGenerics(myTypeEvalContext)
       if (generics.typeVars.any { it.scopeOwner === containingClass }) {
         registerProblem(selfAnnotationValue,
                         PyPsiBundle.message("INSP.type.hints.cannot.use.class.scope.type.variables.in.annotation.for.self.parameter.of__init__"))

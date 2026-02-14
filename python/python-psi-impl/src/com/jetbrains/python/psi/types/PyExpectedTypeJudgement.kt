@@ -302,7 +302,7 @@ object PyExpectedTypeJudgement {
     mappedParameters: Map<PyExpression, PyCallableParameter>,
     ctx: TypeEvalContext,
   ): PyType? {
-    if (!hasGenerics(paramType, ctx)) return paramType
+    if (!paramType.hasGenerics(ctx)) return paramType
 
     val receiver = callSite.getReceiver(null)
     val substitutions = unifyGenericCall(receiver, mappedParameters, ctx) // might cause recursion
