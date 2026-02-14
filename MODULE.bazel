@@ -21,6 +21,32 @@ single_version_override(
       "//:build/jvm-rules/protobuf-33.4-reuse-win64-for-arm.patch",
     ],
 )
+
+single_version_override(
+    module_name = "rules_jvm_external",
+    version = "6.10",
+    patches = [
+      "//:build/jvm-rules/rules-jvm-external-6.10-make-coursier-repo-targets-shell-free-and-hermetic.patch",
+      "//:build/jvm-rules/rules-jvm-external-6.10-default-to-maven-resolver.patch",
+    ],
+)
+
+single_version_override(
+    module_name = "rules_android",
+    version = "0.7.1",
+    patches = [
+      "//:build/jvm-rules/rules-android-0.7.1-pin-maven-installs.patch",
+    ],
+)
+
+single_version_override(
+    module_name = "bazel_worker_java",
+    version = "0.0.10",
+    patches = [
+      "//:build/jvm-rules/worker-java-0.0.9-pin-bazel-worker-maven.patch",
+    ],
+)
+
 bazel_dep(name = "lib")
 local_path_override(
     module_name = "lib",
