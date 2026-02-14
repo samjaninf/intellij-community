@@ -76,5 +76,6 @@
     <orderEntry type="module" module-name="intellij.kotlin.jvm.debugger.test.testFramework" scope="RUNTIME" />
     <orderEntry type="module" module-name="kotlin.jvm-debugger.test.k1.testFramework" scope="RUNTIME" />
     <orderEntry type="module" module-name="kotlin.jvm-debugger.testFramework" scope="RUNTIME" />
+    <orderEntry type="module" module-name="kotlin.code-insight.k1.tests" scope="RUNTIME" />
   </component>
 </module>
