@@ -1,14 +1,14 @@
 // Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.jetbrains.python.psi.types
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
-import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.RecursionManager
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.registry.Registry
-import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.util.ArrayUtil
@@ -47,7 +47,7 @@ sealed class TypeEvalContext(
 
   private object KeyImpl : Key()
 
-  private var myTrace: MutableList<String?>? = null
+  private var myTrace: MutableList<String>? = null
   private var myTraceIndent = ""
 
   private val myProcessingContext = ThreadLocal.withInitial { ProcessingContext() }
@@ -63,31 +63,28 @@ sealed class TypeEvalContext(
 
   init {
     if (constraints.myOrigin != null) {
-      externalTypeResolver = createTypeResolver(constraints.myOrigin.getProject())
+      externalTypeResolver = createTypeResolver(constraints.myOrigin.project)
     }
   }
 
   override fun toString(): String {
-    return String.format(
-      "TypeEvalContext(%b, %b, %s)", constraints.myAllowDataFlow, constraints.myAllowStubToAST,
-      constraints.myOrigin
-    )
+    return "TypeEvalContext(${constraints.myAllowDataFlow}, ${constraints.myAllowStubToAST}, ${constraints.myOrigin})"
   }
 
   fun allowDataFlow(element: PsiElement): Boolean {
-    return constraints.myAllowDataFlow && !inPyiFile(element) || inOrigin(element)
+    return constraints.myAllowDataFlow && !element.inPyiFile() || inOrigin(element)
   }
 
   fun allowReturnTypes(element: PsiElement): Boolean {
-    return constraints.myAllowDataFlow && !inPyiFile(element) || inOrigin(element)
+    return constraints.myAllowDataFlow && !element.inPyiFile() || inOrigin(element)
   }
 
   fun allowCallContext(element: PsiElement): Boolean {
-    return constraints.myAllowCallContext && !inPyiFile(element) && inOrigin(element)
+    return constraints.myAllowCallContext && !element.inPyiFile() && inOrigin(element)
   }
 
   fun maySwitchToAST(element: PsiElement): Boolean {
-    return constraints.myAllowStubToAST && !inPyiFile(element) || inOrigin(element)
+    return constraints.myAllowStubToAST && !element.inPyiFile() || inOrigin(element)
   }
 
   fun withTracing(): TypeEvalContext {
@@ -116,7 +113,7 @@ sealed class TypeEvalContext(
   }
 
   fun printTrace(): String {
-    return StringUtil.join(myTrace!!, "\n")
+    return myTrace!!.joinToString("\n")
   }
 
   fun tracing(): Boolean {
@@ -133,14 +130,12 @@ sealed class TypeEvalContext(
       return null
     }
     val context = AssumptionContext(this, element, type)
-    var result: R?
-    try {
-      result = func(context)
+    return try {
+      func(context)
     }
     finally {
-      element.getManager().dropResolveCaches()
+      element.manager.dropResolveCaches()
     }
-    return result
   }
 
   @ApiStatus.Internal
@@ -157,34 +152,27 @@ sealed class TypeEvalContext(
     if (element is PyInstantTypeProvider) {
       return element.getType(this, KeyImpl)
     }
-    val cachedType = myEvaluated[element]
-    if (cachedType != null) {
-      assertValid(cachedType, element)
-      return cachedType
+    return myEvaluated[element]?.also {
+      assertValid(it, element)
     }
-
-    return null
   }
 
   protected open fun getKnownReturnType(callable: PyCallable): PyType? {
-    val cachedType = myEvaluatedReturn[callable]
-    if (cachedType != null) {
-      assertValid(cachedType, callable)
-      return cachedType
+    return myEvaluatedReturn[callable]?.also {
+      assertValid(it, callable)
     }
-    return null
   }
 
   private fun getLibraryContext(project: Project): TypeEvalContext {
     // code completion will always have a new PsiFile, use the original file instead
-    val origin = constraints.myOrigin?.getOriginalFile()
+    val origin = constraints.myOrigin?.originalFile
     val constraints = TypeEvalConstraints(
       constraints.myAllowDataFlow,
       constraints.myAllowStubToAST,
       constraints.myAllowCallContext,
-      origin
+      origin,
     )
-    return project.getService(TypeEvalContextCache::class.java)
+    return project.service<TypeEvalContextCache>()
       .getLibraryContext(LibraryTypeEvalContext(constraints))
   }
 
@@ -192,12 +180,12 @@ sealed class TypeEvalContext(
    * If true the element's type will be calculated and stored in the long-life context bounded to the PyLibraryModificationTracker.
    */
   protected open fun canDelegateToLibraryContext(element: PyTypedElement): Boolean {
-    return Registry.`is`("python.use.separated.libraries.type.cache") && isLibraryElement(element)
+    return Registry.`is`("python.use.separated.libraries.type.cache") && element.isLibraryElement()
   }
 
   open fun getType(element: PyTypedElement): PyType? {
     if (canDelegateToLibraryContext(element)) {
-      val context = getLibraryContext(element.getProject())
+      val context = getLibraryContext(element.project)
       return context.getType(element)
     }
 
@@ -206,31 +194,25 @@ sealed class TypeEvalContext(
       return if (knownType === PyNullType) null else knownType
     }
 
-    val file = element.getContainingFile()
-
-    return RecursionManager.doPreventingRecursion<PyType?>(
-      element to this,
-      false,
-      Computable {
-        val type: PyType?
-        if (externalTypeResolver != null && externalTypeResolver!!.isSupportedForResolve(element)) {
-          type = Ref.deref<PyType?>(externalTypeResolver!!.resolveType(element, this is LibraryTypeEvalContext))
-        }
-        else {
-          type = element.getType(this, KeyImpl)
-        }
-
-        assertValid(type, element)
-        myEvaluated[element] = type ?: PyNullType
-        type
+    return RecursionManager.doPreventingRecursion(element to this, false) {
+      val type: PyType?
+      if (externalTypeResolver != null && externalTypeResolver!!.isSupportedForResolve(element)) {
+        type = Ref.deref(externalTypeResolver!!.resolveType(element, this is LibraryTypeEvalContext))
       }
-    )
+      else {
+        type = element.getType(this, KeyImpl)
+      }
+
+      assertValid(type, element)
+      myEvaluated[element] = type ?: PyNullType
+      type
+    }
   }
 
 
   open fun getReturnType(callable: PyCallable): PyType? {
     if (canDelegateToLibraryContext(callable)) {
-      val context = getLibraryContext(callable.getProject())
+      val context = getLibraryContext(callable.project)
       return context.getReturnType(callable)
     }
 
@@ -238,16 +220,12 @@ sealed class TypeEvalContext(
     if (knownReturnType != null) {
       return if (knownReturnType is PyNullType) null else knownReturnType
     }
-    return RecursionManager.doPreventingRecursion<PyType?>(
-      callable to this,
-      false,
-      Computable {
-        val type = callable.getReturnType(this, KeyImpl)
-        assertValid(type, callable)
-        myEvaluatedReturn[callable] = type ?: PyNullType
-        type
-      }
-    )
+    return RecursionManager.doPreventingRecursion(callable to this, false) {
+      val type = callable.getReturnType(this, KeyImpl)
+      assertValid(type, callable)
+      myEvaluatedReturn[callable] = type ?: PyNullType
+      type
+    }
   }
 
   @get:ApiStatus.Experimental
@@ -263,8 +241,7 @@ sealed class TypeEvalContext(
      */
     get() = myProcessingContext.get()
 
-  val origin: PsiFile?
-    get() = constraints.myOrigin
+  val origin: PsiFile? = constraints.myOrigin
 
   val usesExternalTypeProvider: Boolean
     get() = externalTypeResolver != null
@@ -288,8 +265,8 @@ sealed class TypeEvalContext(
   }
 
   private fun inOrigin(element: PsiElement): Boolean {
-    return isSameVirtualFile(constraints.myOrigin, element.getContainingFile()) ||
-           isSameVirtualFile(constraints.myOrigin, getContextFile(element))
+    return isSameVirtualFile(constraints.myOrigin, element.containingFile) ||
+           isSameVirtualFile(constraints.myOrigin, element.getContextFile())
   }
 
   private object PyNullType : PyType {
@@ -298,8 +275,8 @@ sealed class TypeEvalContext(
       location: PyExpression?,
       direction: AccessDirection,
       resolveContext: PyResolveContext,
-    ): List<RatedResolveResult?> {
-      return mutableListOf()
+    ): List<RatedResolveResult> {
+      return emptyList()
     }
 
     override fun getCompletionVariants(
@@ -310,13 +287,9 @@ sealed class TypeEvalContext(
       return ArrayUtil.EMPTY_OBJECT_ARRAY
     }
 
-    override fun getName(): String {
-      return "null"
-    }
+    override val name: String = "null"
 
-    override fun isBuiltin(): Boolean {
-      return false
-    }
+    override val isBuiltin: Boolean = false
 
     override fun assertValid(message: String?) {
     }
@@ -332,19 +305,11 @@ sealed class TypeEvalContext(
     }
 
     override fun getKnownType(element: PyTypedElement): PyType? {
-      val knownType = super.getKnownType(element)
-      if (knownType != null) {
-        return knownType
-      }
-      return myParent.getKnownType(element)
+      return super.getKnownType(element) ?: myParent.getKnownType(element)
     }
 
     override fun getKnownReturnType(callable: PyCallable): PyType? {
-      val knownReturnType = super.getKnownReturnType(callable)
-      if (knownReturnType != null) {
-        return knownReturnType
-      }
-      return myParent.getKnownReturnType(callable)
+      return super.getKnownReturnType(callable) ?: myParent.getKnownReturnType(callable)
     }
 
     override fun trace(message: String, vararg args: Any?) {
@@ -378,11 +343,11 @@ sealed class TypeEvalContext(
     private var codeInsightFallback: TypeEvalContext? = null
 
     fun shouldSwitchToFallbackContext(element: PsiElement): Boolean {
-      var file = element.getContainingFile()
+      var file = element.containingFile
       if (file is PyExpressionCodeFragment) {
-        val context = file.getContext()
+        val context = file.context
         if (context != null) {
-          file = context.getContainingFile()
+          file = context.containingFile
         }
       }
       val constraints = this.constraints
@@ -401,28 +366,28 @@ sealed class TypeEvalContext(
 
     override fun getKnownType(element: PyTypedElement): PyType? {
       if (shouldSwitchToFallbackContext(element)) {
-        return getFallbackContext(element.getProject())!!.getKnownType(element)
+        return getFallbackContext(element.project)!!.getKnownType(element)
       }
       return super.getKnownType(element)
     }
 
     override fun getKnownReturnType(callable: PyCallable): PyType? {
       if (shouldSwitchToFallbackContext(callable)) {
-        return getFallbackContext(callable.getProject())!!.getKnownReturnType(callable)
+        return getFallbackContext(callable.project)!!.getKnownReturnType(callable)
       }
       return super.getKnownReturnType(callable)
     }
 
     override fun getType(element: PyTypedElement): PyType? {
       if (shouldSwitchToFallbackContext(element)) {
-        return getFallbackContext(element.getProject())!!.getType(element)
+        return getFallbackContext(element.project)!!.getType(element)
       }
       return super.getType(element)
     }
 
     override fun getReturnType(callable: PyCallable): PyType? {
       if (shouldSwitchToFallbackContext(callable)) {
-        return getFallbackContext(callable.getProject())!!.getReturnType(callable)
+        return getFallbackContext(callable.project)!!.getReturnType(callable)
       }
       return super.getReturnType(callable)
     }
@@ -451,7 +416,7 @@ sealed class TypeEvalContext(
       }
     }
 
-    protected val logger: Logger = Logger.getInstance(TypeEvalContext::class.java)
+    protected val logger: Logger = logger<TypeEvalContext>()
 
     /**
      * Create a context for code completion.
@@ -534,13 +499,12 @@ sealed class TypeEvalContext(
      * @see TypeEvalContextCache.getContext
      */
     private fun getContextFromCache(project: Project, context: TypeEvalContext): TypeEvalContext {
-      return project.getService(TypeEvalContextCache::class.java).getContext(context)
+      return project.service<TypeEvalContextCache>().getContext(context)
     }
 
-    private fun isLibraryElement(element: PsiElement): Boolean {
-      val containingFile = element.getContainingFile()
-      val vFile = if (containingFile == null) null else containingFile.getOriginalFile().getVirtualFile()
-      return vFile != null && ("pyi" == vFile.getExtension() || ProjectFileIndex.getInstance(element.getProject()).isInLibrary(vFile))
+    private fun PsiElement.isLibraryElement(): Boolean {
+      val vFile = this.containingFile?.originalFile?.virtualFile
+      return vFile != null && ("pyi" == vFile.extension || ProjectFileIndex.getInstance(this.project).isInLibrary(vFile))
     }
 
     private fun assertValid(result: PyType?, element: PyTypedElement) {
@@ -550,35 +514,25 @@ sealed class TypeEvalContext(
     private fun isSameVirtualFile(file1: PsiFile?, file2: PsiFile?): Boolean {
       if (file1 == null) return false
       if (file2 == null) return false
-      return file1.getViewProvider().getVirtualFile() == file2.getViewProvider().getVirtualFile()
+      return file1.viewProvider.virtualFile == file2.viewProvider.virtualFile
     }
 
-    private fun inPyiFile(element: PsiElement): Boolean {
-      val containingFile = element.getContainingFile()
-      if (containingFile == null) {
-        return false
-      }
-      if (isPyiFile(containingFile)) {
+    private fun PsiElement.inPyiFile(): Boolean {
+      val containingFile = this.containingFile ?: return false
+      if (containingFile.isPyiFile) {
         return true
       }
-      val contextFile: PsiFile? = getContextFile(element)
-      return contextFile != null && isPyiFile(contextFile)
+      val contextFile: PsiFile? = getContextFile()
+      return contextFile != null && contextFile.isPyiFile
     }
 
-    private fun getContextFile(element: PsiElement): PsiFile? {
-      val file = element.getContainingFile()
-      if (file == null) return null
-      val context = file.getContext()
-      if (context == null) {
-        return file
-      }
-      else {
-        return getContextFile(context)
-      }
+    private fun PsiElement.getContextFile(): PsiFile? {
+      val file = this.containingFile ?: return null
+      val context = file.context ?: return file
+      return context.getContextFile()
     }
 
-    private fun isPyiFile(file: PsiFile): Boolean {
-      return file.getLanguage() == PyiLanguageDialect.getInstance()
-    }
+    private val PsiFile.isPyiFile: Boolean
+      get() = this.language == PyiLanguageDialect.getInstance()
   }
 }
