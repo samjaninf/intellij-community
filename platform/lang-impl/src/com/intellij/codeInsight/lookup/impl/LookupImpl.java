@@ -1269,6 +1269,11 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
         listener.currentItemChanged(event);
       }
     }
+    cacheModCommandResult(currentItem);
+    myPreview.updatePreview(currentItem);
+  }
+
+  private void cacheModCommandResult(@Nullable LookupElement currentItem) {
     if (currentItem instanceof CompletionItemLookupElement wrapper && !PowerSaveMode.isEnabled()) {
       PsiFile file = getPsiFile();
       if (file != null) {
@@ -1284,7 +1289,6 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
           .submit(AppExecutorUtil.getAppExecutorService());
       }
     }
-    myPreview.updatePreview(currentItem);
   }
 
   private void fireUiRefreshed() {
