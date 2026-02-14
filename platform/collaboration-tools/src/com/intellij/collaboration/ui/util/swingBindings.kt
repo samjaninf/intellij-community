@@ -66,8 +66,11 @@ import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JToggleButton
 import javax.swing.ListModel
 import javax.swing.border.Border
+import javax.swing.event.ChangeEvent
+import javax.swing.event.ChangeListener
 import javax.swing.event.ListDataEvent
 import javax.swing.event.ListDataListener
 import javax.swing.text.JTextComponent
@@ -525,9 +528,45 @@ fun JCheckBox.bindSelectedIn(scope: CoroutineScope, flow: MutableStateFlow<Boole
   }
 }
 
-fun Cell<JCheckBox>.bindSelectedIn(scope: CoroutineScope, flow: MutableStateFlow<Boolean>) = applyToComponent {
-  bindSelectedIn(scope, flow)
+fun JToggleButton.bindSelected(isSelected: Flow<Boolean>, onSelected: (selected: Boolean) -> Unit) {
+  launchOnShow("Checkbox state binding") {
+    val listener = object : ChangeListener {
+      var isActive = true
+
+      override fun stateChanged(e: ChangeEvent) {
+        if (isActive) {
+          onSelected(model.isSelected)
+        }
+      }
+    }
+    model.addChangeListener(listener)
+
+    try {
+      isSelected.collect {
+        try {
+          listener.isActive = false
+          model.isSelected = it
+        }
+        finally {
+          listener.isActive = true
+        }
+      }
+    }
+    finally {
+      model.removeChangeListener(listener)
+    }
+  }
 }
+
+fun Cell<JToggleButton>.bindSelected(isSelected: Flow<Boolean>, onSelected: (selected: Boolean) -> Unit): Cell<JToggleButton> =
+  applyToComponent {
+    bindSelected(isSelected, onSelected)
+  }
+
+fun Cell<JToggleButton>.bindSelectedIn(scope: CoroutineScope, flow: MutableStateFlow<Boolean>): Cell<JToggleButton> =
+  applyToComponent {
+    bindSelectedIn(scope, flow)
+  }
 
 fun <T> ComboBoxModel<T>.bindSelectedItemIn(scope: CoroutineScope, flow: MutableStateFlow<T?>) {
   @Suppress("UNCHECKED_CAST")

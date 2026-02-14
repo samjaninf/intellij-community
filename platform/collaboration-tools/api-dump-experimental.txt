@@ -1624,6 +1624,8 @@ f:com.intellij.collaboration.ui.codereview.diff.viewer.DiffViewerUtilKt
 - sf:bindIconIn(javax.swing.JLabel,kotlinx.coroutines.CoroutineScope,kotlinx.coroutines.flow.Flow):V
 - sf:bindIn(com.intellij.ui.MutableCollectionComboBoxModel,kotlinx.coroutines.CoroutineScope,kotlinx.coroutines.flow.Flow,kotlinx.coroutines.flow.MutableStateFlow,java.util.Comparator):V
 - sf:bindProgressIn(com.intellij.vcs.ui.ProgressStripe,kotlinx.coroutines.CoroutineScope,kotlinx.coroutines.flow.Flow):V
+- sf:bindSelected(com.intellij.ui.dsl.builder.Cell,kotlinx.coroutines.flow.Flow,kotlin.jvm.functions.Function1):com.intellij.ui.dsl.builder.Cell
+- sf:bindSelected(javax.swing.JToggleButton,kotlinx.coroutines.flow.Flow,kotlin.jvm.functions.Function1):V
 - sf:bindSelectedIn(com.intellij.ui.dsl.builder.Cell,kotlinx.coroutines.CoroutineScope,kotlinx.coroutines.flow.MutableStateFlow):com.intellij.ui.dsl.builder.Cell
 - sf:bindSelectedIn(javax.swing.JCheckBox,kotlinx.coroutines.CoroutineScope,kotlinx.coroutines.flow.MutableStateFlow):V
 - sf:bindSelectedItemIn(com.intellij.ui.dsl.builder.Cell,kotlinx.coroutines.CoroutineScope,kotlinx.coroutines.flow.MutableStateFlow):com.intellij.ui.dsl.builder.Cell

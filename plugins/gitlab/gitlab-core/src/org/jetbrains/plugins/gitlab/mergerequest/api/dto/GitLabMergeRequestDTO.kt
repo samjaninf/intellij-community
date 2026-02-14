@@ -47,7 +47,11 @@ class GitLabMergeRequestDTO(
   val squashReadOnly: Boolean, // if [squash] can be changed for this MR
   val defaultSquashCommitMessage: String?,
   val defaultMergeCommitMessage: String?,
+  // set after the merge is triggered, ignore for our purposes
+  // fetched purely to avoid confusion with [forceRemoveSourceBranch]
   val shouldRemoveSourceBranch: Boolean?,
+  // if it was set during MR creation at all, basically false if null
+  val forceRemoveSourceBranch: Boolean?,
   val shouldBeRebased: Boolean,
   val rebaseInProgress: Boolean,
   @SinceGitLab("13.5") approvedBy: UserCoreConnection,

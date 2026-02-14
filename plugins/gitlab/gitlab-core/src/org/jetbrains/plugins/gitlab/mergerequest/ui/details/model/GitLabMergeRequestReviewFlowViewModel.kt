@@ -203,7 +203,7 @@ internal class GitLabMergeRequestReviewFlowViewModelImpl(
       targetBranch = details.targetBranch,
       sourceBranch = details.sourceBranch,
       mergeCommitMessageDefault = details.defaultMergeCommitMessage,
-      removeSourceBranch = details.shouldRemoveSourceBranch,
+      removeSourceBranch = details.removeSourceBranch,
       squashCommits = details.shouldSquashWithProject,
       squashCommitsReadonly = details.shouldSquashReadOnly,
       squashCommitMessageDefault = details.defaultSquashCommitMessage

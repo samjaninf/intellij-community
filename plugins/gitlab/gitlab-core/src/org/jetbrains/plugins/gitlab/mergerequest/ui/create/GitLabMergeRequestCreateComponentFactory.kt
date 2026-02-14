@@ -11,10 +11,12 @@ import com.intellij.collaboration.ui.codereview.commits.CommitsBrowserComponentB
 import com.intellij.collaboration.ui.codereview.create.CodeReviewCreateReviewLayoutBuilder
 import com.intellij.collaboration.ui.codereview.create.CodeReviewCreateReviewUIUtil
 import com.intellij.collaboration.ui.codereview.create.CodeReviewTitleDescriptionComponentFactory
+import com.intellij.collaboration.ui.util.bindSelected
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.UiDataProvider
 import com.intellij.openapi.project.Project
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.vcs.log.VcsCommitMetadata
 import git4idea.ui.branch.MergeDirectionComponentFactory
 import git4idea.ui.branch.MergeDirectionModel
@@ -53,6 +55,7 @@ internal object GitLabMergeRequestCreateComponentFactory {
     val commitsLoadingPanel = createCommitsPanel(project, cs, createVm)
     val textPanel = cs.createTextPanel(project, createVm)
     val metadataPanel = createMetadataPanel(createVm)
+    val togglesPanel = createTogglesPanel(createVm)
     val statusPanel = GitLabMergeRequestCreateStatusComponentFactory.create(cs, createVm)
     val actionsPanel = GitLabMergeRequestCreateActionsComponentFactory.create(project, cs, createVm)
     val statusAndActionsPanel = VerticalListPanel(10).apply {
@@ -68,9 +71,24 @@ internal object GitLabMergeRequestCreateComponentFactory {
       .addSeparator()
       .addComponent(metadataPanel, zeroMinWidth = true)
       .addSeparator()
+      .addComponent(togglesPanel, zeroMinWidth = true)
+      .addSeparator()
       .addComponent(statusAndActionsPanel, withListBackground = false)
       .build()
   }
+
+  private fun createTogglesPanel(vm: GitLabMergeRequestCreateViewModel) =
+    panel {
+      row {
+        checkBox(GitLabBundle.message("merge.request.create.squash.commits"))
+          .bindSelected(vm.squashBeforeMerge, vm::setSquashBeforeMerge)
+          .enabled(!vm.squashBeforeMergeReadOnly)
+      }
+      row {
+        checkBox(GitLabBundle.message("merge.request.create.delete.source.branch"))
+          .bindSelected(vm.removeSourceBranch, vm::setRemoveSourceBranch)
+      }
+    }
 
   private fun CoroutineScope.createTextPanel(project: Project, createVm: GitLabMergeRequestCreateViewModel): JComponent {
     val cs = this

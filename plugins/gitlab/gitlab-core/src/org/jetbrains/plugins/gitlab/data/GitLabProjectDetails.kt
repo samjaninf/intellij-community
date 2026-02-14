@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nls
 import org.jetbrains.plugins.gitlab.api.dto.GitLabPlan
 import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectRestDTO
+import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectSquashOptionRest
 import org.jetbrains.plugins.gitlab.util.GitLabProjectPath
 
 data class GitLabProjectDetails(
@@ -16,6 +17,9 @@ data class GitLabProjectDetails(
   val httpUrlToRepo: @NlsSafe String?,
   val sshUrlToRepo: @NlsSafe String?,
   val defaultBranch: String?,
+  val squashBeforeMergeReadOnly: Boolean,
+  // can be null when loaded with GQL
+  val squashBeforeMergeDefault: Boolean?,
   val removeSourceBranchAfterMerge: Boolean?,
   // can be null when loaded with REST and namespace plan loading failed
   val allowsMultipleMergeRequestAssignees: Boolean?,
@@ -29,6 +33,8 @@ data class GitLabProjectDetails(
     httpUrlToRepo = dto.httpUrlToRepo,
     sshUrlToRepo = dto.sshUrlToRepo,
     defaultBranch = dto.repository?.rootRef,
+    squashBeforeMergeReadOnly = dto.squashReadOnly,
+    squashBeforeMergeDefault = null,
     removeSourceBranchAfterMerge = dto.removeSourceBranchAfterMerge,
     allowsMultipleMergeRequestAssignees = dto.allowsMultipleMergeRequestAssignees,
     allowsMultipleMergeRequestReviewers = dto.allowsMultipleMergeRequestReviewers
@@ -42,6 +48,12 @@ data class GitLabProjectDetails(
     httpUrlToRepo = dto.httpUrlToRepo,
     sshUrlToRepo = dto.sshUrlToRepo,
     defaultBranch = dto.defaultBranch,
+    squashBeforeMergeReadOnly = dto.squashOption == GitLabProjectSquashOptionRest.always
+                                || dto.squashOption == GitLabProjectSquashOptionRest.never,
+    squashBeforeMergeDefault = when (dto.squashOption) {
+      GitLabProjectSquashOptionRest.never, GitLabProjectSquashOptionRest.default_off -> false
+      GitLabProjectSquashOptionRest.always, GitLabProjectSquashOptionRest.default_on -> true
+    },
     removeSourceBranchAfterMerge = dto.removeSourceBranchAfterMerge,
     allowsMultipleMergeRequestAssignees = plan?.let { it != GitLabPlan.FREE },
     allowsMultipleMergeRequestReviewers = plan?.let { it != GitLabPlan.FREE }

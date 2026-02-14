@@ -70,6 +70,9 @@ interface GitLabProject {
   fun getMembersBatches(): Flow<List<GitLabUserDTO>>
 
   val defaultBranch: String?
+  val removeMergeRequestSourceBranch: Boolean
+  val squashMergeRequestBeforeMerge: Boolean
+  val squashMergeRequestBeforeMergeReadOnly: Boolean
   suspend fun isMultipleAssigneesAllowed(): Boolean
   suspend fun isMultipleReviewersAllowed(): Boolean
 
@@ -91,6 +94,8 @@ interface GitLabProject {
     reviewers: List<GitLabUserDTO> = emptyList(),
     assignees: List<GitLabUserDTO> = emptyList(),
     labels: List<GitLabLabel> = emptyList(),
+    squashBeforeMerge: Boolean? = null,
+    removeSourceBranch: Boolean? = null,
   ): GitLabMergeRequestDTO
 
   fun reloadData()
@@ -146,6 +151,10 @@ internal class GitLabProjectImpl(
   override suspend fun getEmojis(): List<GitLabReaction> = emojisRequest.await()
   override val defaultBranch: String? = details.defaultBranch
 
+  override val removeMergeRequestSourceBranch: Boolean = details.removeSourceBranchAfterMerge ?: false
+  override val squashMergeRequestBeforeMerge: Boolean = details.squashBeforeMergeDefault ?: false
+  override val squashMergeRequestBeforeMergeReadOnly: Boolean = details.squashBeforeMergeReadOnly
+
   override suspend fun isMultipleAssigneesAllowed(): Boolean {
     return details.allowsMultipleMergeRequestAssignees
            ?: multipleAssigneesAllowedFallbackRequest.await()
@@ -183,6 +192,8 @@ internal class GitLabProjectImpl(
     reviewers: List<GitLabUserDTO>,
     assignees: List<GitLabUserDTO>,
     labels: List<GitLabLabel>,
+    squashBeforeMerge: Boolean?,
+    removeSourceBranch: Boolean?,
   ): GitLabMergeRequestDTO {
     return cs.async(Dispatchers.IO) {
       val reviewerIds = reviewers.nullize()?.map { GitLabGidData(it.id).guessRestId() }
@@ -196,7 +207,9 @@ internal class GitLabProjectImpl(
         description,
         reviewerIds,
         assigneeIds,
-        labelTitles
+        labelTitles,
+        squashBeforeMerge,
+        removeSourceBranch
       ).body().iid
       val attempts = GitLabRegistry.getRequestPollingAttempts()
       repeat(attempts) {

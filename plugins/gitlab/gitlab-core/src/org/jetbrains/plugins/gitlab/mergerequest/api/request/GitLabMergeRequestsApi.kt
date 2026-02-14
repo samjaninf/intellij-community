@@ -49,7 +49,9 @@ suspend fun GitLabApi.Rest.createMergeRequest(
   description: String? = null,
   reviewerIds: List<String>? = null,
   assigneeIds: List<String>? = null,
-  labels: List<String>? = null
+  labels: List<String>? = null,
+  squashBeforeMerge: Boolean? = null,
+  removeSourceBranch: Boolean? = null,
 ): HttpResponse<out GitLabMergeRequestShortRestDTO> {
   val uri = projectApiUrl(projectId)
     .resolveRelative("merge_requests")
@@ -61,6 +63,8 @@ suspend fun GitLabApi.Rest.createMergeRequest(
       "reviewer_ids" eq reviewerIds
       "assignee_ids" eq assigneeIds
       "labels" eq labels
+      "squash" eq squashBeforeMerge
+      "remove_source_branch" eq removeSourceBranch
     }
   val request = request(uri).POST(HttpRequest.BodyPublishers.noBody()).build()
   return withErrorStats(GitLabApiRequestName.REST_CREATE_MERGE_REQUEST) {

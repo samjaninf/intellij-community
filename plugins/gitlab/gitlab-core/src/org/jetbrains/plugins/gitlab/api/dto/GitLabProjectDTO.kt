@@ -21,6 +21,7 @@ data class GitLabProjectDTO(
   val fullPath: @NlsSafe String,
   val httpUrlToRepo: @NlsSafe String?,
   val sshUrlToRepo: @NlsSafe String?,
+  val squashReadOnly: Boolean,
   val onlyAllowMergeIfAllDiscussionsAreResolved: Boolean?,
   val onlyAllowMergeIfPipelineSucceeds: Boolean?,
   @SinceGitLab("12.5") val removeSourceBranchAfterMerge: Boolean?,

@@ -88,6 +88,10 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   val projectLabels: StateFlow<IncrementallyComputedValue<List<GitLabLabel>>>
   val labels: StateFlow<List<GitLabLabel>>
 
+  val squashBeforeMergeReadOnly: Boolean
+  val squashBeforeMerge: StateFlow<Boolean>
+  val removeSourceBranch: StateFlow<Boolean>
+
   fun updateBranchState(state: BranchState?)
 
   fun getAllKnownProjects(): List<GitLabProjectMapping>
@@ -98,6 +102,9 @@ internal interface GitLabMergeRequestCreateViewModel : CodeReviewTitleDescriptio
   fun clearAssignees()
   fun setLabels(labels: List<GitLabLabel>)
   fun clearLabels()
+
+  fun setSquashBeforeMerge(value: Boolean)
+  fun setRemoveSourceBranch(value: Boolean)
 
   fun openExistingReview()
 
@@ -254,6 +261,12 @@ internal class GitLabMergeRequestCreateViewModelImpl(
       }, ::setDescription)
     }.stateIn(cs, SharingStarted.Lazily, null)
 
+  override val squashBeforeMergeReadOnly: Boolean = projectData.squashMergeRequestBeforeMergeReadOnly
+  private val _squashBeforeMerge = MutableStateFlow(projectData.squashMergeRequestBeforeMerge)
+  override val squashBeforeMerge: StateFlow<Boolean> = _squashBeforeMerge.asStateFlow()
+  private val _removeSourceBranch = MutableStateFlow(projectData.removeMergeRequestSourceBranch)
+  override val removeSourceBranch: StateFlow<Boolean> = _removeSourceBranch.asStateFlow()
+
   init {
     initBranchState()
 
@@ -336,6 +349,14 @@ internal class GitLabMergeRequestCreateViewModelImpl(
     _labels.value = listOf()
   }
 
+  override fun setSquashBeforeMerge(value: Boolean) {
+    _squashBeforeMerge.value = value
+  }
+
+  override fun setRemoveSourceBranch(value: Boolean) {
+    _removeSourceBranch.value = value
+  }
+
   override fun openExistingReview() {
     val mrIid = existingMergeRequest.value ?: return
     taskLauncher.launch {
@@ -357,7 +378,11 @@ internal class GitLabMergeRequestCreateViewModelImpl(
           description = descriptionText.value.ifBlank { null },
           reviewers = reviewers.value,
           assignees = assignees.value,
-          labels = labels.value
+          labels = labels.value,
+          // because we're not always sure about the exact value (hello GQL)
+          // don't pass the value here and hope it's handled by default
+          squashBeforeMerge = squashBeforeMerge.value.takeIf { !squashBeforeMergeReadOnly },
+          removeSourceBranch = removeSourceBranch.value
         )
         openReviewTabAction(mergeRequest.iid)
         onReviewCreated()

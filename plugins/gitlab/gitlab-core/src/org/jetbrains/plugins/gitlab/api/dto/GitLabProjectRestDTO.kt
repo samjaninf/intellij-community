@@ -19,6 +19,7 @@ data class GitLabProjectRestDTO(
   val sshUrlToRepo: String?,
   val defaultBranch: String?,
   val removeSourceBranchAfterMerge: Boolean,
+  val squashOption: GitLabProjectSquashOptionRest,
 ) {
   data class NamespaceDTO(
     val id: String,
