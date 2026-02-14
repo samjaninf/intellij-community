@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInsight.completion;
 
 import com.intellij.codeInsight.BlockUtils;
@@ -1544,7 +1544,7 @@ public class JavaKeywordCompletion {
            statement.getParent() instanceof PsiForStatement && statement != ((PsiForStatement)statement.getParent()).getBody();
   }
 
-  private LookupElement createKeyword(String keyword) {
+  private @NotNull LookupElement createKeyword(@NotNull String keyword) {
     return BasicExpressionCompletionContributor.createKeywordLookupItem(myPosition, keyword);
   }
 
@@ -1650,16 +1650,16 @@ public class JavaKeywordCompletion {
     }
   }
 
-  public static class OverridableSpace extends TailTypeDecorator<LookupElement> {
-    private final TailType myTail;
+  public static final class OverridableSpace extends TailTypeDecorator<LookupElement> {
+    private final @NotNull TailType myTail;
 
-    public OverridableSpace(LookupElement keyword, TailType tail) {
+    public OverridableSpace(@NotNull LookupElement keyword, @NotNull TailType tail) {
       super(keyword);
       myTail = tail;
     }
 
     @Override
-    protected TailType computeTailType(InsertionContext context) {
+    protected @NotNull TailType computeTailType(InsertionContext context) {
       return context.shouldAddCompletionChar() ? TailTypes.noneType() : myTail;
     }
   }

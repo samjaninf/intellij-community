@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.codeInsight;
 
 import com.intellij.openapi.editor.Document;
@@ -96,60 +96,60 @@ public final class TailTypes {
     }
   };
 
-  public static TailType unknownType() {
+  public static @NotNull TailType unknownType() {
     return UNKNOWN;
   }
 
-  public static TailType noneType() {
+  public static @NotNull TailType noneType() {
     return NONE;
   }
 
-  public static TailType semicolonType() {
+  public static @NotNull TailType semicolonType() {
     return SEMICOLON;
   }
 
   /**
    * insert a space, overtype if already present
    */
-  public static TailType spaceType() {
+  public static @NotNull TailType spaceType() {
     return SPACE;
   }
 
   /**
    * always insert a space
    */
-  public static TailType insertSpaceType() {
+  public static @NotNull TailType insertSpaceType() {
     return INSERT_SPACE;
   }
 
   /**
    * insert a space unless there's one at the caret position already, followed by a word or '@'
    */
-  public static TailType humbleSpaceBeforeWordType() {
+  public static @NotNull TailType humbleSpaceBeforeWordType() {
     return HUMBLE_SPACE_BEFORE_WORD;
   }
 
-  public static TailType dotType() {
+  public static @NotNull TailType dotType() {
     return DOT;
   }
 
-  public static TailType caseColonType() {
+  public static @NotNull TailType caseColonType() {
     return CASE_COLON;
   }
 
-  public static TailType equalsType() {
+  public static @NotNull TailType equalsType() {
     return EQUALS;
   }
 
-  public static TailType conditionalExpressionColonType() {
+  public static @NotNull TailType conditionalExpressionColonType() {
     return COND_EXPR_COLON;
   }
 
-  public static TailType charType(char aChar) {
+  public static @NotNull TailType charType(char aChar) {
     return new CharTailType(aChar);
   }
 
-  public static TailType charType(char aChar, boolean overwrite) {
+  public static @NotNull TailType charType(char aChar, boolean overwrite) {
     return new CharTailType(aChar, overwrite);
   }
 }
