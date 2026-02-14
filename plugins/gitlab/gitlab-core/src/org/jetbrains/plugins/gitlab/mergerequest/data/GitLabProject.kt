@@ -101,7 +101,7 @@ interface GitLabProject {
 }
 
 @CodeReviewDomainEntity
-class GitLabLazyProject(
+internal class GitLabProjectImpl(
   private val project: Project,
   parentCs: CoroutineScope,
   private val api: GitLabApi,

@@ -13,7 +13,7 @@ import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.authentication.accounts.GitLabAccount
 import org.jetbrains.plugins.gitlab.data.GitLabImageLoader
-import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabLazyProject
+import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProjectImpl
 import org.jetbrains.plugins.gitlab.mergerequest.data.GitLabProject
 import org.jetbrains.plugins.gitlab.util.GitLabProjectMapping
 import java.util.UUID
@@ -41,7 +41,7 @@ class GitLabProjectConnection(
 
   val imageLoader: GitLabImageLoader = GitLabImageLoader(apiClient)
 
-  val projectData: GitLabProject = GitLabLazyProject(project,
+  val projectData: GitLabProject = GitLabProjectImpl(project,
                                                      scope,
                                                      apiClient,
                                                      glMetadata,
