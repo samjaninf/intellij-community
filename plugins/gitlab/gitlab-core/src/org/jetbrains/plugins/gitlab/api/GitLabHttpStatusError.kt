@@ -1,9 +1,8 @@
-// Copyright 2000-2022 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gitlab.api.data
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package org.jetbrains.plugins.gitlab.api
 
 import com.intellij.collaboration.api.HttpStatusErrorException
 import com.intellij.openapi.util.NlsSafe
-import org.jetbrains.plugins.gitlab.api.GitLabRestJsonDataDeSerializer
 import java.io.StringReader
 
 data class GitLabHttpStatusError(val error: @NlsSafe String) {

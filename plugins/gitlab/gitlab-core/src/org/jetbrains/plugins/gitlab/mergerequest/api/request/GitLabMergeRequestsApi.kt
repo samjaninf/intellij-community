@@ -37,7 +37,7 @@ import java.net.http.HttpResponse
  * Creates a merge request
  *
  * Note: reviewer_ids parameter has different behavior depending on the user's subscription plan
- *  [org.jetbrains.plugins.gitlab.api.data.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
+ *  [org.jetbrains.plugins.gitlab.api.dto.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
  *  OTHER -- sets all reviewers from the list
  */
 @SinceGitLab("14.0", note = "No exact version, but definitely exists in minimal")
@@ -217,7 +217,7 @@ suspend fun GitLabApi.GraphQL.mergeRequestUpdate(
  * Sets the reviewers in the Merge Request
  *
  * Note: this request has different behavior depending on the user's subscription plan
- *  [org.jetbrains.plugins.gitlab.api.data.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
+ *  [org.jetbrains.plugins.gitlab.api.dto.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
  *  OTHER -- sets all reviewers from the list
  */
 @SinceGitLab("13.8")
@@ -244,7 +244,7 @@ suspend fun GitLabApi.Rest.mergeRequestSetReviewers(
  * Sets the reviewers in the Merge Request
  *
  * Note: this request has different behavior depending on the user's subscription plan
- *  [org.jetbrains.plugins.gitlab.api.data.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
+ *  [org.jetbrains.plugins.gitlab.api.dto.GitLabPlan.FREE] -- sets only one reviewer from the list (the last one)
  *  OTHER -- sets all reviewers from the list
  */
 @SinceGitLab("15.3")

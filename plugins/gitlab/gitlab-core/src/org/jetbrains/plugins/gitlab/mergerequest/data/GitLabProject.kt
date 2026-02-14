@@ -29,7 +29,7 @@ import org.jetbrains.plugins.gitlab.api.GitLabGraphQLMutationException
 import org.jetbrains.plugins.gitlab.api.GitLabProjectCoordinates
 import org.jetbrains.plugins.gitlab.api.GitLabServerMetadata
 import org.jetbrains.plugins.gitlab.api.GitLabVersion
-import org.jetbrains.plugins.gitlab.api.data.GitLabPlan
+import org.jetbrains.plugins.gitlab.api.dto.GitLabPlan
 import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabWorkItemDTO.GitLabWidgetDTO.WorkItemWidgetAssignees

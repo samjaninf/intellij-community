@@ -1,5 +1,5 @@
 // Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.plugins.gitlab.api.data
+package org.jetbrains.plugins.gitlab.api.dto
 
 // Values is taken from: https://gitlab.com/gitlab-org/gitlab/blob/5ae4e94690fda1727816bdf7e01dc520d0430547/ee/app/models/ee/plan.rb#L9
 enum class GitLabPlan {
