@@ -44,7 +44,7 @@ internal class GitLabMergeRequestBranchesViewModel(
       else return details.sourceBranch
     }
     if (details.targetProject == details.sourceProject) return details.sourceBranch
-    val sourceProjectOwner = details.sourceProject.ownerPath
+    val sourceProjectOwner = details.sourceProject.path.owner
     return "$sourceProjectOwner:${details.sourceBranch}"
   }
 

@@ -48,7 +48,7 @@ object GitLabMergeRequestBranchUtil {
     details: GitLabMergeRequestFullDetails
   ) {
     val localPrefix = if (details.isFork()) {
-      if (details.sourceProject != null) "${FORK_BRANCH_PREFIX}/${details.sourceProject.ownerPath}"
+      if (details.sourceProject != null) "${FORK_BRANCH_PREFIX}/${details.sourceProject.path.owner}"
       else "${FORK_BRANCH_PREFIX}/${details.author.username}"
     } else null
 

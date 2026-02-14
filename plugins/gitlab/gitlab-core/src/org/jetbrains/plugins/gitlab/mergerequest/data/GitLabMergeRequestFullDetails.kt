@@ -16,6 +16,7 @@ import org.jetbrains.plugins.gitlab.api.dto.GitLabProjectDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabReviewerDTO
 import org.jetbrains.plugins.gitlab.api.dto.GitLabUserDTO
 import org.jetbrains.plugins.gitlab.mergerequest.api.dto.GitLabMergeRequestDTO
+import org.jetbrains.plugins.gitlab.util.GitLabProjectPath
 import java.util.Date
 
 data class GitLabMergeRequestFullDetails(
@@ -31,8 +32,8 @@ data class GitLabMergeRequestFullDetails(
   val reviewers: List<GitLabReviewerDTO>,
   val webUrl: @NlsSafe String,
   val detailedLabels: List<GitLabLabelGQLDTO>,
-  val targetProject: GitLabProjectDTO,
-  val sourceProject: GitLabProjectDTO?,
+  val targetProject: ProjectDetails,
+  val sourceProject: ProjectDetails?,
   val description: String,
   val approvedBy: List<GitLabUserDTO>,
   val targetBranch: String,
@@ -56,6 +57,12 @@ data class GitLabMergeRequestFullDetails(
   val userPermissions: GitLabMergeRequestPermissionsDTO,
 ) {
 
+  data class ProjectDetails(
+    val path: GitLabProjectPath,
+    val httpUrlToRepo: String?,
+    val sshUrlToRepo: String?,
+  )
+
   companion object {
     fun fromGraphQL(dto: GitLabMergeRequestDTO): GitLabMergeRequestFullDetails = GitLabMergeRequestFullDetails(
       iid = dto.iid,
@@ -69,8 +76,8 @@ data class GitLabMergeRequestFullDetails(
       assignees = dto.assignees,
       reviewers = dto.reviewers,
       webUrl = dto.webUrl,
-      targetProject = dto.targetProject,
-      sourceProject = dto.sourceProject,
+      targetProject = dto.targetProject.toDetails(),
+      sourceProject = dto.sourceProject?.toDetails(),
       description = dto.description.orEmpty(),
       approvedBy = dto.approvedBy,
       targetBranch = dto.targetBranch,
@@ -94,6 +101,12 @@ data class GitLabMergeRequestFullDetails(
       shouldBeRebased = dto.shouldBeRebased,
       rebaseInProgress = dto.rebaseInProgress
     )
+
+    private fun GitLabProjectDTO.toDetails() = ProjectDetails(
+      path = GitLabProjectPath(ownerPath, path),
+      httpUrlToRepo = httpUrlToRepo,
+      sshUrlToRepo = sshUrlToRepo
+    )
   }
 }
 
@@ -109,11 +122,11 @@ val GitLabMergeRequestFullDetails.reviewState: ReviewRequestState
       else -> ReviewRequestState.OPENED // to avoid null state
     }
 
-fun GitLabProjectDTO.getRemoteDescriptor(server: GitLabServerPath): HostedGitRepositoryRemote =
+fun GitLabMergeRequestFullDetails.ProjectDetails.getRemoteDescriptor(server: GitLabServerPath): HostedGitRepositoryRemote =
   HostedGitRepositoryRemote(
-    ownerPath,
+    path.owner,
     server.toURI(),
-    fullPath,
+    path.fullPath(),
     httpUrlToRepo,
     sshUrlToRepo
   )
@@ -135,4 +148,4 @@ fun GitLabMergeRequestFullDetails.getSpecialRemoteBranchForHead(remote: GitRemot
   GitSpecialRefRemoteBranch("refs/merge-requests/${iid}/head", remote)
 
 fun GitLabMergeRequestFullDetails.isFork(): Boolean =
-  sourceProject?.fullPath != targetProject.fullPath
+  sourceProject != targetProject
