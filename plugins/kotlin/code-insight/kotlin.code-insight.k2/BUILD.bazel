@@ -176,7 +176,6 @@ jvm_library(
     "//platform/editor-ui-ex:editor-ex",
     "//plugins/kotlin/bundled-compiler-plugins-support:compilerPlugins-support-bundled",
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
-    "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting_test_lib",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
     "//libraries/kotlinx/collections-immutable:libraries-kotlinx-collections-immutable",
     ":plugins_kotlin_code-insight_descriptions_provided",

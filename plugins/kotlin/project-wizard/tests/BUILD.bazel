@@ -91,7 +91,6 @@ jvm_library(
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.shared:kotlin-gradle-scripting-shared",
     "@lib//:kotlinc-kotlin-scripting-compiler-impl",
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
-    "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting_test_lib",
     "//platform/backend/observation",
     "//platform/backend/observation:observation_test_lib",
     "//plugins/kotlin/code-insight/inspections-shared:kotlin-code-insight-inspections-shared",

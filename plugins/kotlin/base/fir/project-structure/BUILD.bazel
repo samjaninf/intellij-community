@@ -123,7 +123,6 @@ jvm_library(
     "//libraries/fastutil",
     "//java/openapi:java",
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
-    "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting_test_lib",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
   ],
   runtime_deps = [":kotlin-projectStructure-tests"]

@@ -123,7 +123,6 @@ jvm_library(
     "//platform/backend",
     "//plugins/kotlin/base/analysis",
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
-    "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting_test_lib",
     "@lib//:kotlinc-kotlin-scripting-common",
     "//plugins/kotlin/test-framework:test-framework_test_lib",
     "@lib//:kotlinc-kotlin-scripting-compiler-impl",
