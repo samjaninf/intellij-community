@@ -26,6 +26,7 @@ jvm_library(
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
     "//platform/testFramework/common",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":test-generator-all"]
 )

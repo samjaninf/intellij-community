@@ -120,7 +120,6 @@ jvm_library(
     "//plugins/java-decompiler/plugin:java-decompiler",
     "//plugins/java-decompiler/plugin:java-decompiler_test_lib",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//spellchecker",
     "//spellchecker:spellchecker_test_lib",
     "//platform/util:util-tests_test_lib",

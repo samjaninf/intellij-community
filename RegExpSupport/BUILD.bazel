@@ -33,12 +33,20 @@ jvm_library(
     "//platform/util/jdom",
   ]
 )
+### auto-generated section `build intellij.regexp` end
+
+### auto-generated section `build intellij.regexp.tests` start
+jvm_library(
+  name = "regexp-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
 
 jvm_library(
-  name = "regexp_test_lib",
+  name = "regexp-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  associates = [":regexp"],
+  associates = ["//RegExpSupport:regexp"],
   deps = [
     "//platform/analysis-api:analysis",
     "//platform/core-api:core",
@@ -49,6 +57,7 @@ jvm_library(
     "//platform/projectModel-api:projectModel",
     "//platform/util:util-ui",
     "//platform/platform-impl:ide-impl",
+    "//platform/platform-impl:ide-impl_test_lib",
     "//platform/projectModel-impl",
     "@lib//:junit4",
     "//platform/lang-impl",
@@ -61,15 +70,16 @@ jvm_library(
     "//platform/ide-core-impl",
     "//platform/core-ui",
     "//platform/util/jdom",
-  ]
+  ],
+  runtime_deps = [":regexp-tests"]
 )
-### auto-generated section `build intellij.regexp` end
+### auto-generated section `build intellij.regexp.tests` end
 
-### auto-generated section `test intellij.regexp` start
+### auto-generated section `test intellij.regexp.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "regexp_test",
-  runtime_deps = [":regexp_test_lib"]
+  name = "regexp-tests_test",
+  runtime_deps = [":regexp-tests_test_lib"]
 )
-### auto-generated section `test intellij.regexp` end
+### auto-generated section `test intellij.regexp.tests` end

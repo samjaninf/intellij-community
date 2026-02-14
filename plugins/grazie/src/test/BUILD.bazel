@@ -61,7 +61,6 @@ jvm_library(
     "@lib//:grazie-tests-org-languagetool-portuguese-pos-dict",
     "//libraries/stream",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//platform/vcs-impl",
     "//platform/vcs-impl:vcs-impl_test_lib",
     "//xml/xml-psi-api:psi",
@@ -80,6 +79,7 @@ jvm_library(
     "//tools/intellij.tools.ide.metrics.benchmark:ide-metrics-benchmark_test_lib",
     "@lib//:jet_check",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   exports = [
     "//plugins/grazie",

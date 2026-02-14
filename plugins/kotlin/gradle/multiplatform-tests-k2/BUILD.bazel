@@ -70,6 +70,7 @@ jvm_library(
     "@lib//:kotlinc-analysis-api",
     "//android/android-templates:templates-tests_test_lib",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":kotlin-gradle-multiplatform-tests"]
 )

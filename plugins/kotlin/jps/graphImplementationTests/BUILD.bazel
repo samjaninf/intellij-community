@@ -40,6 +40,7 @@ jvm_library(
     "//libraries/kotlin/reflect",
     "//plugins/kotlin/tests-from-compiler:tests-from-compiler_test_lib",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":graphImplementationTests"]
 )

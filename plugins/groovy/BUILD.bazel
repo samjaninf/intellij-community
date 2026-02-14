@@ -145,7 +145,6 @@ jvm_library(
     "//plugins/groovy/groovy-psi:psi",
     "//platform/external-system-api:externalSystem",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//platform/external-system-impl:externalSystem-impl",
     "//platform/lang-impl:lang-tests_test_lib",
     "//libraries/protobuf",

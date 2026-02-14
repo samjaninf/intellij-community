@@ -85,7 +85,6 @@ jvm_library(
     "//xml/impl",
     "//platform/editor-ui-ex:editor-ex",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//xml/xml-psi-api:psi",
     "//plugins/xpath/xslt-rt:rt",
     "//libraries/jaxen",

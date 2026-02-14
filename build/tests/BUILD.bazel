@@ -22,6 +22,7 @@ jvm_library(
     "//libraries/kotlinx/coroutines/core",
     "//platform/build-scripts/downloader",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

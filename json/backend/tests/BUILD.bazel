@@ -48,7 +48,6 @@ jvm_library(
     "//libraries/kotlinx/coroutines/core",
     "@lib//:assert_j",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//platform/ide-core-impl",
     "//tools/intellij.tools.ide.metrics.benchmark:ide-metrics-benchmark",
     "//tools/intellij.tools.ide.metrics.benchmark:ide-metrics-benchmark_test_lib",

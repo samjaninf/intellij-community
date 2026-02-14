@@ -39,6 +39,7 @@ jvm_library(
     "//tools/intellij.tools.ide.starter.driver:ide-starter-driver",
     "//tools/intellij.tools.ide.starter.build.server:ide-starter-build-server",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":lambda-sampleTests"]
 )

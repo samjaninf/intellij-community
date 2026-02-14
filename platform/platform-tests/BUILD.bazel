@@ -214,6 +214,7 @@ jvm_library(
     "@lib//:jet_check",
     "@lib//:jediterm-core",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

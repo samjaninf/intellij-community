@@ -71,6 +71,7 @@ jvm_library(
     "//platform/core-api:core",
     "//platform/util",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.tools.ide.starter.junit5` end

@@ -401,6 +401,7 @@ jvm_library(
     "//plugins/agent-workbench/sessions:sessions_test_lib",
     "//platform/polySymbols:polySymbols-tests_test_lib",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.idea.community.main` end

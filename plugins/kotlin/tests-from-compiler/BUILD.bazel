@@ -31,6 +31,7 @@ jvm_library(
     "@lib//:kotlinc-kotlin-compiler-common",
     "//plugins/devkit/jps-plugin:jps",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":tests-from-compiler"]
 )

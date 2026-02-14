@@ -70,6 +70,7 @@ jvm_library(
     "//libraries/hash4j",
     "@lib//:jetbrains-intellij-deps-eclipse-jgit",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
     ":platform_util_xmlDom_provided",
   ]
 )

@@ -170,7 +170,6 @@ jvm_library(
     "//java/java-psi-impl:psi-impl",
     "//java/java-frontback-impl:frontback-impl",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//java/java-indexing-impl:indexing-impl",
     "//java/java-indexing-api:indexing",
     "//jps/model-impl",

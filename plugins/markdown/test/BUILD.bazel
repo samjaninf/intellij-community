@@ -99,6 +99,7 @@ jvm_library(
     "//xml/testFramework",
     "//platform/lang-api:lang",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )

@@ -69,6 +69,7 @@ jvm_library(
     "//jps/model-api:model",
     "//libraries/jsoup",
     "//images:images-tests_test_lib",
+    "//RegExpSupport:regexp-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.pycharm.community.build` end

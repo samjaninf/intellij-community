@@ -61,7 +61,6 @@ jvm_library(
     "//platform/ide-core-impl",
     "@lib//:xml-resolver",
     "//RegExpSupport:regexp",
-    "//RegExpSupport:regexp_test_lib",
     "//platform/util/nanoxml",
     "//plugins/IntelliLang:langInjection",
     "//java/langInjection",
