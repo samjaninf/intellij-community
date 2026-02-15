@@ -80,7 +80,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/live-templates-shared:kotlin-code-insight-live-templates-shared",
     "//plugins/kotlin/code-insight/live-templates-shared:kotlin-code-insight-live-templates-shared_test_lib",
     "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates",
-    "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates_test_lib",
     "//platform/lang-api:lang",
     "//platform/lang-impl",
     "//platform/testFramework",

@@ -63,7 +63,6 @@ jvm_library(
     "//plugins/kotlin/copyright/fir-tests:kotlin-copyright-tests",
     "//plugins/kotlin/copyright/fir-tests:kotlin-copyright-tests_test_lib",
     "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates",
-    "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates_test_lib",
     "//plugins/kotlin/code-insight/fixes-k2/tests:tests_test_lib",
     "//plugins/gradle/tooling-extension-impl:toolingExtension-tests_test_lib",
     "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java",
@@ -80,6 +79,7 @@ jvm_library(
     "//plugins/kotlin/base/fir/project-structure:kotlin-projectStructure-tests_test_lib",
     "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight-tests_test_lib",
     "//plugins/kotlin/code-insight/line-markers:kotlin-codeInsight-lineMarkers-tests_test_lib",
+    "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )

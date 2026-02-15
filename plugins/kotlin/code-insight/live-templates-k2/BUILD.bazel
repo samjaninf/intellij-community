@@ -40,13 +40,30 @@ jvm_library(
     "//platform/util",
   ]
 )
+### auto-generated section `build intellij.kotlin.codeInsight.liveTemplates` end
+
+### auto-generated section `build intellij.kotlin.codeInsight.liveTemplates.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-codeInsight-liveTemplates-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.analysis.api.permissions.KaAllowProhibitedAnalyzeFromWriteAction",
+  ],
+  x_context_parameters = True
+)
 
 jvm_library(
-  name = "kotlin-codeInsight-liveTemplates_test_lib",
+  name = "kotlin-codeInsight-liveTemplates-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-codeInsight-liveTemplates-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-codeInsight-liveTemplates",
-  associates = [":kotlin-codeInsight-liveTemplates"],
+  kotlinc_opts = ":custom_kotlin-codeInsight-liveTemplates-tests",
+  associates = ["//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates"],
   deps = [
     "@lib//:kotlin-stdlib",
     "@lib//:kotlinc-kotlin-compiler-common",
@@ -73,15 +90,16 @@ jvm_library(
     "//plugins/kotlin/base/util",
     "//plugins/kotlin/base/util:util_test_lib",
     "@lib//:kotlinc-kotlin-compiler-tests",
-  ]
+  ],
+  runtime_deps = [":kotlin-codeInsight-liveTemplates-tests"]
 )
-### auto-generated section `build intellij.kotlin.codeInsight.liveTemplates` end
+### auto-generated section `build intellij.kotlin.codeInsight.liveTemplates.tests` end
 
-### auto-generated section `test intellij.kotlin.codeInsight.liveTemplates` start
+### auto-generated section `test intellij.kotlin.codeInsight.liveTemplates.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-codeInsight-liveTemplates_test",
-  runtime_deps = [":kotlin-codeInsight-liveTemplates_test_lib"]
+  name = "kotlin-codeInsight-liveTemplates-tests_test",
+  runtime_deps = [":kotlin-codeInsight-liveTemplates-tests_test_lib"]
 )
-### auto-generated section `test intellij.kotlin.codeInsight.liveTemplates` end
+### auto-generated section `test intellij.kotlin.codeInsight.liveTemplates.tests` end
