@@ -11,7 +11,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="kotlin-stdlib" level="project" />
     <orderEntry type="module" module-name="intellij.gradle" />
-    <orderEntry type="module" module-name="intellij.gradle.plugin" />
     <orderEntry type="module" module-name="intellij.gradle.common" exported="" />
     <orderEntry type="module" module-name="intellij.gradle.jps" />
     <orderEntry type="module" module-name="intellij.java.indexing" />
@@ -56,7 +55,6 @@
     <orderEntry type="module" module-name="intellij.java.compiler.impl" />
     <orderEntry type="module" module-name="intellij.libraries.kotlinx.coroutines.core" />
     <orderEntry type="module" module-name="intellij.platform.objectSerializer.annotations" />
-    <orderEntry type="module" module-name="intellij.performanceTesting" />
     <orderEntry type="module" module-name="intellij.platform.backend.workspace" />
     <orderEntry type="module" module-name="intellij.platform.backend.observation" />
     <orderEntry type="module" module-name="intellij.libraries.hash4j" />

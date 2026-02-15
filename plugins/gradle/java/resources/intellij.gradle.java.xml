@@ -1,8 +1,6 @@
 <idea-plugin visibility="public">
   <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
   <dependencies>
-    <plugin id="com.intellij.gradle"/>
-    <plugin id="com.jetbrains.performancePlugin"/>
     <module name="intellij.gradle"/>
     <module name="intellij.java"/>
     <module name="intellij.java.compiler"/>

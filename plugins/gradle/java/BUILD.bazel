@@ -16,7 +16,6 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//plugins/gradle",
-    "//plugins/gradle/plugin",
     "//plugins/gradle:gradle-common",
     "//plugins/gradle/jps-plugin:jps",
     "//java/java-indexing-api:indexing",
@@ -60,7 +59,6 @@ jvm_library(
     "//java/compiler/impl",
     "//libraries/kotlinx/coroutines/core",
     "//platform/object-serializer:objectSerializer-annotations",
-    "//plugins/performanceTesting/core:performanceTesting",
     "//platform/backend/workspace",
     "//platform/backend/observation",
     "//libraries/hash4j",
