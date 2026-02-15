@@ -102,7 +102,6 @@ jvm_library(
     "//platform/util/jdom",
     "//plugins/kotlin/base/statistics",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k2:kotlin-gradle-scripting",
-    "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k2:kotlin-gradle-scripting_test_lib",
   ],
   runtime_deps = [":tests"]
 )
