@@ -913,7 +913,7 @@ public class PyTypeHintsInspectionTest extends PyInspectionTestCase {
                    def d(x: AnnotatedExt[AnnotatedExt[str, dict(key="value")], ""]):
                        pass
                    
-                   def e(x: Annotated[str, list[<warning descr="Invalid type argument">dict(key="value")</warning>]]):
+                   def e(x: Annotated[str, list[<error descr="Invalid type argument">dict(key="value")</error>]]):
                       pass
                    
                    def f(x: Annotated[<warning descr="Generics should be specified through square brackets">dict(key="value")</warning>, ""]):
@@ -2251,22 +2251,22 @@ public class PyTypeHintsInspectionTest extends PyInspectionTestCase {
                    
                    class A:...
                    
-                   c1 = Clazz[<warning descr="Invalid type argument">print()</warning>, int]()
-                   c2 = Clazz[int, <warning descr="Invalid type argument">print()</warning>]()
-                   c3 = Clazz[<warning descr="Invalid type argument">1</warning>]
+                   c1 = Clazz[<error descr="Invalid type argument">print()</error>, int]()
+                   c2 = Clazz[int, <error descr="Invalid type argument">print()</error>]()
+                   c3 = Clazz[<error descr="Invalid type argument">1</error>]
                    c4 = Clazz["int", "str"]
                    c5 = Clazz[dict[int, str]]
-                   c7 = Clazz[<warning descr="Invalid type argument">True</warning>]
-                   c8 = Clazz[<warning descr="Invalid type argument">list or set</warning>]
+                   c7 = Clazz[<error descr="Invalid type argument">True</error>]
+                   c8 = Clazz[<error descr="Invalid type argument">list or set</error>]
                    c9 = Clazz[Literal[3]]
-                   c10 = Clazz[<warning descr="Invalid type argument">var</warning>]
+                   c10 = Clazz[<error descr="Parameters to generic types must be types">var</error>]
                    c11 = Clazz[myInt]
                    c12 = Clazz[myIntOrStr]
                    c13 = Clazz[myIntAlias]
                    c14 = Clazz[A]
-                   c15 = Clazz[<warning descr="Invalid type argument">{"a": "b"}</warning>]
-                   c16 = Clazz[<warning descr="Invalid type argument">(lambda: int)()</warning>]
-                   c17 = Clazz[<warning descr="Invalid type argument">(int, str)</warning>]
+                   c15 = Clazz[<error descr="Invalid type argument">{"a": "b"}</error>]
+                   c16 = Clazz[<error descr="Invalid type argument">(lambda: int)()</error>]
+                   c17 = Clazz[(int, str)]
                    """);
   }
 
@@ -3200,6 +3200,171 @@ public class PyTypeHintsInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
+  public void testSubscriptionParenthesesFlattening() {
+    generateVariableTypeAssertions(new Object[][]{
+      {"list[((int))]", "list[int]"},
+      // TODO: type: list[Any]
+      {"list[((<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'list'\">int, int</warning>))]"},
+
+      {"tuple[((int, int))]", "tuple[int, int]"},
+      {"tuple[<error descr=\"Invalid type argument\">((int, int))</error>, int]", "tuple[Any, int]"},
+
+      {"set[((int))]", "set[int]"},
+      // TODO: type: set[Any]
+      {"set[((<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'set'\">int, int</warning>))]"},
+
+      {"dict[((int)), (((str)))]", "dict[int, str]"},
+      // TODO: type: dict[Any, Any]
+      {"dict[((<warning descr=\"Passed type arguments do not match type parameters [_KT, _VT] of class 'dict'\">int</warning>))]"},
+
+      {"List[((int))]", "list[int]"},
+      // TODO: type: list[Any]
+      {"List[((<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'list'\">int, int</warning>))]"},
+
+      {"Tuple[((int)), (((str)))]", "tuple[int, str]"},
+      {"Tuple[<error descr=\"Invalid type argument\">((int, int))</error>, int]", "tuple[Any, int]"},
+
+      {"Set[((int))]", "set[int]"},
+      // TODO: type: set[Any]
+      {"Set[((<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'set'\">int, int</warning>))]"},
+
+      {"Dict[((int)), (((str)))]", "dict[int, str]"},
+      // TODO: type: dict[Any, Any]
+      {"Dict[((<warning descr=\"Passed type arguments do not match type parameters [_KT, _VT] of class 'dict'\">int</warning>))]"},
+
+      {"Union[((int, (((str)))))]", "int | str"},
+      {"Union[<error descr=\"Invalid type argument\">((int, int))</error>, <error descr=\"Invalid type argument\">(int, int)</error>]",
+        "Any"},
+
+      {"Optional[((int))]", "int | None"},
+      {"Optional[((<error descr=\"'Optional' must have exactly one argument\">int, int</error>))]", "Any"},
+
+      {"tuple[((int)), ((...))]", "tuple[int, ...]"},
+      {"tuple[((<error descr=\"'...' is allowed only as the second of two arguments\">...</error>)), ((int))]", "Any"},
+      {"tuple[<error descr=\"Invalid type argument\">(int,)</error>, ...]", "tuple[Any, ...]"},
+
+      {"C[(((int)))]", "C[int]"},
+      {"C2[(((int), (str)))]", "C2[int, str]"},
+    });
+  }
+
+  public void testSubscriptionEmptyParentheses() {
+    generateVariableTypeAssertions(new Object[][]{
+      {"tuple[()]", "tuple[()]"},
+      {"tuple[int, <error descr=\"Empty tuple is allowed only as a sole argument\">()</error>]", "Any"},
+
+      {"tuple[<error descr=\"Empty tuple is allowed only as a sole argument\">()</error>, int]", "Any"},
+      {"tuple[<error descr=\"Empty tuple is allowed only as a sole argument\">()</error>, ...]", "tuple[Any, ...]"},
+      {"tuple[<error descr=\"Empty tuple is allowed only as a sole argument\">()</error>, <error descr=\"Empty tuple is allowed only as a sole argument\">()</error>]",
+        "Any"},
+
+      {"Tuple[()]", "tuple[()]"},
+      {"Tuple[int, <error descr=\"Empty tuple is allowed only as a sole argument\">()</error>]", "Any"},
+
+      // TODO: type: list[Any]
+      {"list[<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'list'\">()</warning>]"},
+      // TODO: type: set[Any]
+      {"set[<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'set'\">()</warning>]"},
+      // TODO: type: dict[Any, Any]
+      {"dict[<error descr=\"Invalid type argument\">()</error>, <error descr=\"Invalid type argument\">()</error>]"},
+
+      // TODO: type: list[Any]
+      {"List[<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'list'\">()</warning>]"},
+      // TODO: type: set[Any]
+      {"Set[<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'set'\">()</warning>]"},
+      // TODO: type: dict[Any, Any]
+      {"Dict[<error descr=\"Invalid type argument\">()</error>, <error descr=\"Invalid type argument\">()</error>]"},
+
+      {"Union[()]", "Never"},
+
+      {"Optional[<error descr=\"'Optional' must have exactly one argument\">()</error>]", "Any"},
+
+      // TODO: type: C[Any]
+      {"C[<warning descr=\"Passed type arguments do not match type parameters [T] of class 'C'\">()</warning>]"},
+    });
+  }
+
+  public void testSubscriptionTypeForm() {
+    generateVariableTypeAssertions(new Object[][]{
+      {"list[((int,))]", "list[int]"},
+
+      {"tuple[((int,))]", "tuple[int]"},
+      {"tuple[<error descr=\"Invalid type argument\">(int,)</error>, int]", "tuple[Any, int]"},
+      {"tuple[<error descr=\"Invalid type argument\">(int, str)</error>, <error descr=\"Invalid type argument\">(int, str)</error>]",
+        "tuple[Any, Any]"},
+
+      {"set[((int,))]", "set[int]"},
+
+      {"dict[<error descr=\"Invalid type argument\">((int,))</error>, str]", "dict[Any, str]"},
+      {"dict[int, <error descr=\"Invalid type argument\">(int, str)</error>]", "dict[int, Any]"},
+      // TODO: type: dict[Any, Any]
+      {"dict[((<warning descr=\"Passed type arguments do not match type parameters [_KT, _VT] of class 'dict'\">[int]</warning>))]"},
+
+      {"List[((int,))]", "list[int]"},
+
+      {"Tuple[((int,))]", "tuple[int]"},
+      {"Tuple[<error descr=\"Invalid type argument\">(int,)</error>, int]", "tuple[Any, int]"},
+
+      {"Set[((int,))]", "set[int]"},
+
+      {"Dict[<error descr=\"Invalid type argument\">((int,))</error>, str]", "dict[Any, str]"},
+      {"Dict[int, <error descr=\"Invalid type argument\">(int, str)</error>]", "dict[int, Any]"},
+      {"Dict[((<error descr=\"Parameters to generic types must be types\">[int]</error>))]"},  // TODO: type: dict[Any, Any]
+
+      {"tuple[Tuple[int, str]]", "tuple[tuple[int, str]]"},
+      {"Tuple[tuple[int], ...]", "tuple[tuple[int], ...]"},
+      {"tuple[*Tuple[*tuple[int]]]", "tuple[int]"},
+      {"tuple[int, *Tuple[*Tuple[int, str]], str]", "tuple[int, int, str, str]"},
+      {"tuple[*tuple[int], *Tuple[int]]", "tuple[int, int]"},
+
+      {"Union[((int, int,))]", "int"},
+      {"Union[<error descr=\"Invalid type argument\">(int, int,)</error>, int]", "int | Any"},
+
+      {"Optional[<error descr=\"'Optional' must have exactly one argument\">int, int</error>]", "Any"},
+      {"Optional[(int,)]", "int | None"},
+
+      {"Callable[<error descr=\"'Callable' first parameter must be a parameter expression\">int</error>, int]", "Any"},
+      {"Callable[[int], ((<error descr=\"Parameters to generic types must be types\">[int]</error>))]", "Callable[[int], Any]"},
+
+      // TODO: type: list[Any]
+      {"list[((<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'list'\">[int]</warning>))]"},
+      {"List[((<error descr=\"Parameters to generic types must be types\">[int]</error>))]"},
+
+      {"C[((int,))]", "C[int]"},
+    });
+  }
+
+  public void testSubscriptionEllipsisTypeForm() {
+    generateVariableTypeAssertions(new Object[][]{
+      {"tuple[int, ...]", "tuple[int, ...]"},
+
+      {"tuple[<error descr=\"'...' is allowed only as the second of two arguments\">...</error>, int]", "Any"},
+      {"tuple[int, int, <error descr=\"'...' is allowed only as the second of two arguments\">...</error>]", "Any"},
+      {"tuple[int, <error descr=\"'...' is allowed only as the second of two arguments\">...</error>, int]", "Any"},
+      {"tuple[<error descr=\"'...' is allowed only as the second of two arguments\">...</error>]", "Any"},
+      {"tuple[<error descr=\"'...' is allowed only as the second of two arguments\">...</error>, ...]", "Any"},
+
+      {"set[<error descr=\"Invalid type argument\">...</error>]", "set[Any]"},
+      {"list[<error descr=\"Invalid type argument\">...</error>]", "list[Any]"},
+      {"dict[<error descr=\"Invalid type argument\">...</error>]"},  // TODO: type: "dict[Any, Any]"
+
+      {"Union[int, <error descr=\"Invalid type argument\">...</error>]", "int | Any"},
+      {"Optional[<error descr=\"Invalid type argument\">...</error>]", "Any"},
+
+      {"tuple[*tuple[str], <error descr=\"'...' cannot be used with an unpacked 'TypeVarTuple' or tuple\">...</error>]", "Any"},
+      {"tuple[*tuple[str, ...], <error descr=\"'...' cannot be used with an unpacked 'TypeVarTuple' or tuple\">...</error>]",
+        "Any"},
+
+      {"Set[<error descr=\"Invalid type argument\">...</error>]", "set[Any]"},
+      {"List[<error descr=\"Invalid type argument\">...</error>]", "list[Any]"},
+      {"Dict[<error descr=\"Invalid type argument\">...</error>]"},  // TODO: type: "dict[Any, Any]"
+
+      {"Tuple[int, ...]", "tuple[int, ...]"},
+      {"Tuple[<error descr=\"'...' is allowed only as the second of two arguments\">...</error>]", "Any"},
+
+      {"C[<error descr=\"Invalid type argument\">...</error>]", "C[Any]"},
+    });
+  }
 
   // PY-84289
   public void testExponentialAnalysisTimeWhenMapLookupKeyEqualsVariableName() {
@@ -3262,6 +3427,36 @@ public class PyTypeHintsInspectionTest extends PyInspectionTestCase {
                        assert_type(x, list[T])
                        assert_type(x, list["T"])
                    """);
+  }
+
+  private void generateVariableTypeAssertions(@NotNull Object @NotNull [][] cases) {
+    StringBuilder body = new StringBuilder();
+
+    for (int i = 0; i < cases.length; i++) {
+      Object[] c = cases[i];
+
+      String annotationText = (String)c[0];
+      String variableName = "variable_" + (i + 1);
+
+      body.append(variableName).append(": ").append(annotationText).append("\n");
+
+      if (c.length > 1) {
+        String expectedTypeText = (String)c[1];
+        body.append("assert_type(").append(variableName).append(", ").append(expectedTypeText).append(")\n");
+      }
+    }
+
+    myFixture.enableInspections(PyAssertTypeInspection.class);
+
+    doTestByText(
+      ("""
+         from typing import assert_type, Any, Never, Generic, List, Set, Dict, Tuple, Union, Optional, Callable
+         
+         class C[T]: ...
+         class C2[T1, T2]: ...
+         """
+       + body).trim()
+    );
   }
 
   @NotNull
