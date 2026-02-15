@@ -24,12 +24,21 @@ jvm_library(
   ],
   runtime_deps = ["//platform/backend"]
 )
+### auto-generated section `build intellij.python.markdown` end
+
+### auto-generated section `build intellij.python.markdown.tests` start
+jvm_library(
+  name = "markdown-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = ["//platform/backend"]
+)
 
 jvm_library(
-  name = "markdown_test_lib",
+  name = "markdown-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  associates = [":markdown"],
+  associates = ["//python/python-markdown:markdown"],
   deps = [
     "@lib//:kotlin-stdlib",
     "//platform/analysis-api:analysis",
@@ -42,15 +51,16 @@ jvm_library(
     "//python:python-community-tests_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
-  ]
+  ],
+  runtime_deps = [":markdown-tests"]
 )
-### auto-generated section `build intellij.python.markdown` end
+### auto-generated section `build intellij.python.markdown.tests` end
 
-### auto-generated section `test intellij.python.markdown` start
+### auto-generated section `test intellij.python.markdown.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "markdown_test",
-  runtime_deps = [":markdown_test_lib"]
+  name = "markdown-tests_test",
+  runtime_deps = [":markdown-tests_test_lib"]
 )
-### auto-generated section `test intellij.python.markdown` end
+### auto-generated section `test intellij.python.markdown.tests` end
