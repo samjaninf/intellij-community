@@ -269,11 +269,11 @@ public class JavaKeywordCompletion {
   }
 
   private void addKeyword(@NlsSafe @NotNull String keyword, @NotNull TailType tailType) {
-    addKeyword(new OverridableSpace(createKeyword(keyword), tailType));
+    addKeyword(OverridableSpace.create(createKeyword(keyword), tailType));
   }
 
   private void addWrapRuleIntoBlock(@NlsSafe @NotNull String keyword, @NotNull TailType tail) {
-    addKeyword(wrapRuleIntoBlock(new OverridableSpace(createKeyword(keyword), tail)));
+    addKeyword(wrapRuleIntoBlock(OverridableSpace.create(createKeyword(keyword), tail)));
   }
 
   List<LookupElement> getResults() {
@@ -355,7 +355,7 @@ public class JavaKeywordCompletion {
 
     if (psiElement().withText(";").withSuperParent(2, PsiIfStatement.class).accepts(myPrevLeaf) ||
         psiElement().withText("}").withSuperParent(3, PsiIfStatement.class).accepts(myPrevLeaf)) {
-      LookupElement elseKeyword = new OverridableSpace(createKeyword(JavaKeywords.ELSE), TailTypes.humbleSpaceBeforeWordType());
+      LookupElement elseKeyword = OverridableSpace.create(createKeyword(JavaKeywords.ELSE), TailTypes.humbleSpaceBeforeWordType());
       CharSequence text = myParameters.getEditor().getDocument().getCharsSequence();
       int offset = myParameters.getOffset();
       while (text.length() > offset && Character.isWhitespace(text.charAt(offset))) {
@@ -374,7 +374,7 @@ public class JavaKeywordCompletion {
     TailType returnTail = getReturnTail(myPosition);
     LookupElement ret = createKeyword(JavaKeywords.RETURN);
     if (returnTail != TailTypes.noneType()) {
-      ret = new OverridableSpace(ret, returnTail);
+      ret = OverridableSpace.create(ret, returnTail);
     }
     return ret;
   }
@@ -474,8 +474,7 @@ public class JavaKeywordCompletion {
       return;
     }
 
-    final OverridableSpace defaultCaseRule =
-      new OverridableSpace(createKeyword(JavaKeywords.DEFAULT), JavaTailTypes.forSwitchLabel(switchBlock));
+    LookupElement defaultCaseRule = OverridableSpace.create(createKeyword(JavaKeywords.DEFAULT), JavaTailTypes.forSwitchLabel(switchBlock));
     addKeyword(prioritizeForRule(LookupElementDecorator.withInsertHandler(defaultCaseRule, ADJUST_LINE_OFFSET), switchBlock));
   }
 
@@ -657,8 +656,7 @@ public class JavaKeywordCompletion {
     if (defaultElement != null) {
       return;
     }
-    final OverridableSpace defaultCaseRule =
-      new OverridableSpace(createKeyword(JavaKeywords.DEFAULT), JavaTailTypes.forSwitchLabel(switchBlock));
+    LookupElement defaultCaseRule = OverridableSpace.create(createKeyword(JavaKeywords.DEFAULT), JavaTailTypes.forSwitchLabel(switchBlock));
     addKeyword(prioritizeForRule(LookupElementDecorator.withInsertHandler(defaultCaseRule, ADJUST_LINE_OFFSET), switchBlock));
   }
 
@@ -843,7 +841,7 @@ public class JavaKeywordCompletion {
         if (tryStatement == null ||
             tryStatement.getCatchSections().length > 0 ||
             tryStatement.getFinallyBlock() != null || tryStatement.getResourceList() != null) {
-          LookupElement finalKeyword = new OverridableSpace(createKeyword(JavaKeywords.FINAL), TailTypes.humbleSpaceBeforeWordType());
+          LookupElement finalKeyword = OverridableSpace.create(createKeyword(JavaKeywords.FINAL), TailTypes.humbleSpaceBeforeWordType());
           if (statement.getParent() instanceof PsiSwitchLabeledRuleStatement) {
             finalKeyword = wrapRuleIntoBlock(finalKeyword);
           }
@@ -1022,7 +1020,7 @@ public class JavaKeywordCompletion {
 
       if (psiElement().insideStarting(psiElement(PsiLocalVariable.class, PsiExpressionStatement.class)).accepts(myPosition)) {
         addKeyword(JavaKeywords.CLASS, TailTypes.humbleSpaceBeforeWordType());
-        addKeyword(new OverridableSpace(LookupElementBuilder.create("abstract class").bold(), TailTypes.humbleSpaceBeforeWordType()));
+        addKeyword(OverridableSpace.create(LookupElementBuilder.create("abstract class").bold(), TailTypes.humbleSpaceBeforeWordType()));
         if (PsiUtil.isAvailable(JavaFeature.RECORDS, myPosition)) {
           addKeyword(JavaKeywords.RECORD, TailTypes.humbleSpaceBeforeWordType());
         }
@@ -1198,7 +1196,7 @@ public class JavaKeywordCompletion {
               }
             };
             LookupElement element =
-              new OverridableSpace(LookupElementDecorator.withInsertHandler(createKeyword(JavaKeywords.PERMITS), handler),
+              OverridableSpace.create(LookupElementDecorator.withInsertHandler(createKeyword(JavaKeywords.PERMITS), handler),
                                    TailTypes.humbleSpaceBeforeWordType());
             addKeyword(element);
           }
@@ -1330,7 +1328,7 @@ public class JavaKeywordCompletion {
           TailType tailType = JavaTailTypes.forSwitchLabel(switchBlock);
           for (String keyword : List.of(JavaKeywords.TRUE, JavaKeywords.FALSE)) {
             if (branches.contains(keyword)) continue;
-            result.accept(new JavaKeywordCompletion.OverridableSpace(
+            result.accept(OverridableSpace.create(
               BasicExpressionCompletionContributor.createKeywordLookupItem(position, keyword), tailType));
           }
         }
@@ -1380,7 +1378,7 @@ public class JavaKeywordCompletion {
     }
     if (declaration) {
       LookupElement item = BasicExpressionCompletionContributor.createKeywordLookupItem(position, JavaKeywords.VOID);
-      result.consume(new OverridableSpace(item, TailTypes.humbleSpaceBeforeWordType()));
+      result.consume(OverridableSpace.create(item, TailTypes.humbleSpaceBeforeWordType()));
     }
     else if (typeFragment && ((PsiTypeCodeFragment)position.getContainingFile()).isVoidValid()) {
       result.consume(BasicExpressionCompletionContributor.createKeywordLookupItem(position, JavaKeywords.VOID));
@@ -1663,20 +1661,6 @@ public class JavaKeywordCompletion {
     }
     else if (context instanceof PsiProvidesStatement && prevElement instanceof PsiJavaCodeReferenceElement) {
       addKeyword(JavaKeywords.WITH, TailTypes.humbleSpaceBeforeWordType());
-    }
-  }
-
-  public static final class OverridableSpace extends TailTypeDecorator<LookupElement> {
-    private final @NotNull TailType myTail;
-
-    public OverridableSpace(@NotNull LookupElement keyword, @NotNull TailType tail) {
-      super(keyword);
-      myTail = tail;
-    }
-
-    @Override
-    protected @NotNull TailType computeTailType(InsertionContext context) {
-      return context.shouldAddCompletionChar() ? TailTypes.noneType() : myTail;
     }
   }
 }
