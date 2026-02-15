@@ -7,6 +7,7 @@ import com.intellij.codeInsight.hint.QuestionAction
 import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.codeInspection.HintAction
 import com.intellij.codeInspection.util.IntentionName
+import com.intellij.modcommand.ModCommandAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -125,6 +126,16 @@ class ImportQuickFix(
                 }
             }
         }
+    }
+
+    /**
+     * We have to provide a proper [ModCommandAction] for import fixes to work with Kotlin LSP;
+     * see [AddImportModCommandAction] KDoc.
+     */
+    override fun asModCommandAction(): ModCommandAction? {
+        val element = element ?: return null
+        val symbolBasedAutoImportVariants = importVariants.map { it as SymbolBasedAutoImportVariant }
+        return AddImportModCommandAction(element, title = text, symbolBasedAutoImportVariants)
     }
 
     override fun isClassDefinitelyPositivelyImportedAlready(containingFile: KtFile, classFqName: FqName): Boolean {
