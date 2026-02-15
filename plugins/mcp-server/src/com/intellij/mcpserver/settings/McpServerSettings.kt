@@ -9,7 +9,7 @@ import com.intellij.openapi.components.service
 
 @Service
 @State(name = "McpServerSettings", storages = [Storage("mcpServer.xml")])
-class McpServerSettings : SimplePersistentStateComponent<McpServerSettings.MyState>(MyState()) {
+internal class McpServerSettings : SimplePersistentStateComponent<McpServerSettings.MyState>(MyState()) {
   companion object {
     @JvmStatic
     fun getInstance(): McpServerSettings = service()
@@ -23,7 +23,7 @@ class McpServerSettings : SimplePersistentStateComponent<McpServerSettings.MySta
 
   }
 
-  class MyState : BaseState() {
+  internal class MyState : BaseState() {
     var enableBraveMode: Boolean by property(false)
     var enableMcpServer: Boolean by property(false)
     var mcpServerPort: Int by property(DEFAULT_MCP_PORT)
