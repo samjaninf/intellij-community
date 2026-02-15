@@ -3,6 +3,8 @@ package com.intellij.agent.workbench.codex.sessions.backend
 
 import com.intellij.agent.workbench.codex.common.CodexThread
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 data class CodexBackendThread(
   val thread: CodexThread,
@@ -18,6 +20,9 @@ enum class CodexSessionActivity {
 
 interface CodexSessionBackend {
   suspend fun listThreads(path: String, openProject: Project?): List<CodexBackendThread>
+
+  val updates: Flow<Unit>
+    get() = emptyFlow()
 
   /**
    * Prefetch threads for multiple paths in a single backend call.

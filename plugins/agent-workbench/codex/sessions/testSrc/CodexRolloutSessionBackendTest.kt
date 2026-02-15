@@ -208,6 +208,200 @@ class CodexRolloutSessionBackendTest {
       assertThat(threads.single().thread.gitBranch).isEqualTo("feature/codex-rollout")
     }
   }
+
+  @Test
+  fun prefetchThreadsMapsPerResolvedPath() {
+    runBlocking {
+      val projectA = tempDir.resolve("project-prefetch-a")
+      val projectB = tempDir.resolve("project-prefetch-b")
+      val projectC = tempDir.resolve("project-prefetch-c")
+      Files.createDirectories(projectA)
+      Files.createDirectories(projectB)
+      Files.createDirectories(projectC)
+
+      val sessionsRoot = tempDir.resolve("sessions").resolve("2026").resolve("02").resolve("14")
+      writeRollout(
+        file = sessionsRoot.resolve("rollout-prefetch-a-old.jsonl"),
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-14T09:00:00.000Z", id = "session-a-old", cwd = projectA),
+          """{"timestamp":"2026-02-14T09:00:05.000Z","type":"event_msg","payload":{"type":"user_message","message":"A old"}}""",
+        ),
+      )
+      writeRollout(
+        file = sessionsRoot.resolve("rollout-prefetch-a-new.jsonl"),
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-14T10:00:00.000Z", id = "session-a-new", cwd = projectA),
+          """{"timestamp":"2026-02-14T10:00:05.000Z","type":"event_msg","payload":{"type":"user_message","message":"A new"}}""",
+        ),
+      )
+      writeRollout(
+        file = sessionsRoot.resolve("rollout-prefetch-b.jsonl"),
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-14T11:00:00.000Z", id = "session-b", cwd = projectB),
+        ),
+      )
+
+      val backend = CodexRolloutSessionBackend(codexHomeProvider = { tempDir })
+      val unresolvedPath = tempDir.resolve("project-prefetch-missing").toString()
+      val prefetched = backend.prefetchThreads(
+        listOf(projectA.toString(), projectB.toString(), projectC.toString(), unresolvedPath)
+      )
+
+      assertThat(prefetched.keys).containsExactlyInAnyOrder(projectA.toString(), projectB.toString(), projectC.toString())
+      assertThat(prefetched.getValue(projectA.toString()).map { it.thread.id }).containsExactly("session-a-new", "session-a-old")
+      assertThat(prefetched.getValue(projectB.toString()).map { it.thread.id }).containsExactly("session-b")
+      assertThat(prefetched.getValue(projectC.toString())).isEmpty()
+    }
+  }
+
+  @Test
+  fun refreshesCachedThreadsWhenRolloutFilesChangeAndDelete() {
+    runBlocking {
+      val projectDir = tempDir.resolve("project-cache")
+      Files.createDirectories(projectDir)
+
+      val sessionsRoot = tempDir.resolve("sessions").resolve("2026").resolve("02").resolve("15")
+      val rolloutA = sessionsRoot.resolve("rollout-cache-a.jsonl")
+      val rolloutB = sessionsRoot.resolve("rollout-cache-b.jsonl")
+
+      writeRollout(
+        file = rolloutA,
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-15T10:00:00.000Z", id = "session-a", cwd = projectDir),
+          """{"timestamp":"2026-02-15T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Initial title"}}""",
+        ),
+      )
+
+      val backend = CodexRolloutSessionBackend(codexHomeProvider = { tempDir })
+
+      val initialThreads = backend.listThreads(path = projectDir.toString(), openProject = null)
+      assertThat(initialThreads.map { it.thread.id }).containsExactly("session-a")
+      assertThat(initialThreads.single().thread.title).isEqualTo("Initial title")
+
+      writeRollout(
+        file = rolloutA,
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-15T10:00:00.000Z", id = "session-a", cwd = projectDir),
+          """{"timestamp":"2026-02-15T10:05:00.000Z","type":"event_msg","payload":{"type":"user_message","message":"Updated title with extra text"}}""",
+          """{"timestamp":"2026-02-15T10:05:01.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Done"}}""",
+        ),
+      )
+      writeRollout(
+        file = rolloutB,
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-15T10:06:00.000Z", id = "session-b", cwd = projectDir),
+          """{"timestamp":"2026-02-15T10:06:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Newest"}}""",
+        ),
+      )
+
+      val afterRewriteAndAdd = backend.listThreads(path = projectDir.toString(), openProject = null)
+      assertThat(afterRewriteAndAdd.map { it.thread.id }).containsExactly("session-b", "session-a")
+      assertThat(afterRewriteAndAdd.first { it.thread.id == "session-a" }.thread.title).isEqualTo("Updated title with extra text")
+      assertThat(afterRewriteAndAdd.first { it.thread.id == "session-a" }.thread.updatedAt)
+        .isEqualTo(Instant.parse("2026-02-15T10:05:01.000Z").toEpochMilli())
+
+      Files.delete(rolloutB)
+
+      val afterDelete = backend.listThreads(path = projectDir.toString(), openProject = null)
+      assertThat(afterDelete.map { it.thread.id }).containsExactly("session-a")
+    }
+  }
+
+  @Test
+  fun retriesPreviouslyUnparseableRolloutAfterRewrite() {
+    runBlocking {
+      val projectDir = tempDir.resolve("project-retry")
+      Files.createDirectories(projectDir)
+
+      val rollout = tempDir.resolve("sessions").resolve("2026").resolve("02").resolve("15")
+        .resolve("rollout-retry.jsonl")
+      writeRollout(
+        file = rollout,
+        lines = listOf(
+          sessionMetaLineWithoutId(cwd = projectDir),
+          """{"timestamp":"2026-02-15T11:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Ignored without id"}}""",
+        ),
+      )
+
+      val backend = CodexRolloutSessionBackend(codexHomeProvider = { tempDir })
+
+      val beforeRewrite = backend.listThreads(path = projectDir.toString(), openProject = null)
+      assertThat(beforeRewrite).isEmpty()
+
+      writeRollout(
+        file = rollout,
+        lines = listOf(
+          sessionMetaLine(timestamp = "2026-02-15T11:00:00.000Z", id = "session-retry", cwd = projectDir),
+          """{"timestamp":"2026-02-15T11:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"Recovered title"}}""",
+        ),
+      )
+
+      val afterRewrite = backend.listThreads(path = projectDir.toString(), openProject = null)
+      assertThat(afterRewrite).hasSize(1)
+      assertThat(afterRewrite.single().thread.id).isEqualTo("session-retry")
+      assertThat(afterRewrite.single().thread.title).isEqualTo("Recovered title")
+    }
+  }
+
+  @Test
+  fun usesFirstNonEnvironmentUserMessageAsTitle() {
+    runBlocking {
+      val projectDir = tempDir.resolve("project-title")
+      Files.createDirectories(projectDir)
+      writeRollout(
+        file = tempDir.resolve("sessions").resolve("2026").resolve("02").resolve("14")
+          .resolve("rollout-title.jsonl"),
+        lines = listOf(
+          sessionMetaLine(
+            timestamp = "2026-02-14T12:00:00.000Z",
+            id = "session-title",
+            cwd = projectDir,
+          ),
+          """{"timestamp":"2026-02-14T12:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"<environment_context>\n<cwd>${projectDir.toString().replace("\\", "\\\\")}</cwd>"}}""",
+          """{"timestamp":"2026-02-14T12:00:03.000Z","type":"event_msg","payload":{"type":"user_message","message":"<TURN_ABORTED>\nreason"}}""",
+          """{"timestamp":"2026-02-14T12:00:04.000Z","type":"event_msg","payload":{"type":"user_message","message":"<prior context> ## My request for Codex:   Real   title    line   "}}""",
+        ),
+      )
+
+      val backend = CodexRolloutSessionBackend(codexHomeProvider = { tempDir })
+      val threads = backend.listThreads(path = projectDir.toString(), openProject = null)
+
+      assertThat(threads).hasSize(1)
+      assertThat(threads.single().thread.title).isEqualTo("Real title line")
+    }
+  }
+
+  @Test
+  fun skipsMalformedJsonLineAndKeepsParsingLaterEvents() {
+    runBlocking {
+      val projectDir = tempDir.resolve("project-malformed")
+      Files.createDirectories(projectDir)
+      writeRollout(
+        file = tempDir.resolve("sessions").resolve("2026").resolve("02").resolve("14")
+          .resolve("rollout-malformed.jsonl"),
+        lines = listOf(
+          sessionMetaLine(
+            timestamp = "2026-02-14T13:00:00.000Z",
+            id = "session-malformed",
+            cwd = projectDir,
+          ),
+          """{"timestamp":"2026-02-14T13:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"Initial title"}}""",
+          """{"timestamp":"2026-02-14T13:00:03.000Z","type":"event_msg","payload":{"type":"user_message"""",
+          """{"timestamp":"2026-02-14T13:00:04.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Still works"}}""",
+        ),
+      )
+
+      val backend = CodexRolloutSessionBackend(codexHomeProvider = { tempDir })
+      val threads = backend.listThreads(path = projectDir.toString(), openProject = null)
+
+      assertThat(threads).hasSize(1)
+      val thread = threads.single()
+      assertThat(thread.thread.id).isEqualTo("session-malformed")
+      assertThat(thread.thread.title).isEqualTo("Initial title")
+      assertThat(thread.thread.updatedAt).isEqualTo(Instant.parse("2026-02-14T13:00:04.000Z").toEpochMilli())
+      assertThat(thread.activity).isEqualTo(CodexSessionActivity.UNREAD)
+    }
+  }
 }
 
 private fun sessionMetaLine(timestamp: String, id: String, cwd: Path): String {

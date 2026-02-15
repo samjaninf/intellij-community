@@ -15,6 +15,7 @@ jvm_library(
   resources = [":common_resources"],
   deps = [
     "@lib//:kotlin-stdlib",
+    "//plugins/agent-workbench/json",
     "//libraries/jackson/jackson",
   ]
 )

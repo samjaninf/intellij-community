@@ -14,7 +14,7 @@ targets:
 # Agent Threads Tool Window
 
 Status: Draft
-Date: 2026-02-13
+Date: 2026-02-15
 
 ## Summary
 Define the Agent Threads tool window as a provider-agnostic, project-scoped session browser. Threads from supported providers are aggregated per project/worktree, rendered in one tree, and opened through a shared chat routing flow.
@@ -48,6 +48,7 @@ Define the Agent Threads tool window as a provider-agnostic, project-scoped sess
   - Claude: `claude --resume <sessionId>`
 - New-session action behavior (provider options, Codex/Claude command mapping, and Full Auto semantics) is defined in `spec/actions/new-thread.spec.md` and must be used by both project and worktree rows.
 - Codex thread discovery must default to rollout session files; app-server thread discovery remains an explicit compatibility override path.
+- Codex thread title normalization and filtering rules are defined in `spec/agent-sessions-codex-rollout-source.spec.md` and must be used for Codex thread rows.
 - Branch mismatch between thread origin and current worktree branch must show a warning confirmation before opening chat.
 
 [@test] ../sessions/testSrc/AgentSessionLoadAggregationTest.kt
@@ -88,3 +89,4 @@ Define the Agent Threads tool window as a provider-agnostic, project-scoped sess
 - `spec/agent-dedicated-frame.spec.md`
 - `spec/agent-chat-editor.spec.md`
 - `spec/actions/new-thread.spec.md`
+- `spec/agent-sessions-codex-rollout-source.spec.md`

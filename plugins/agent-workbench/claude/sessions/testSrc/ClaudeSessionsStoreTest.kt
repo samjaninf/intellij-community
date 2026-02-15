@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Instant
 
 class ClaudeSessionsStoreTest {
   @TempDir
@@ -173,5 +174,31 @@ class ClaudeSessionsStoreTest {
 
     assertThat(threads).isEmpty()
   }
-}
 
+  @Test
+  fun skipsMalformedJsonlLineWhenReadingFallbackMetadata() {
+    val projectPath = "/work/project-malformed"
+    val encodedPath = "-work-project-malformed"
+    val projectDir = tempDir.resolve(".claude").resolve("projects").resolve(encodedPath)
+    Files.createDirectories(projectDir)
+    val transcript = projectDir.resolve("malformed-1111-2222-3333-444444444444.jsonl")
+    Files.writeString(
+      transcript,
+      """
+      {"type":"user","sessionId":"malformed-1111-2222-3333-444444444444","cwd":"$projectPath","isSidechain":false,"timestamp":"2026-02-08T01:00:00.000Z","message":{"role":"user","content":"Recover after malformed line"}}
+      {"type":"assistant","sessionId":"malformed-1111-2222-3333-444444444444","cwd":"$projectPath","isSidechain":false,"timestamp":"2026-02-08T01:00:01.000Z","message":{"role":"assistant"
+      {"type":"assistant","sessionId":"malformed-1111-2222-3333-444444444444","cwd":"$projectPath","isSidechain":false,"timestamp":"2026-02-08T01:00:02.000Z","message":{"role":"assistant","content":[{"type":"text","text":"done"}]}}
+      """.trimIndent()
+    )
+
+    val store = ClaudeSessionsStore(claudeHomeProvider = { tempDir.resolve(".claude") })
+
+    val threads = runBlocking { store.listThreads(projectPath) }
+
+    assertThat(threads).hasSize(1)
+    val thread = threads.single()
+    assertThat(thread.id).isEqualTo("malformed-1111-2222-3333-444444444444")
+    assertThat(thread.title).contains("Recover after malformed line")
+    assertThat(thread.updatedAt).isEqualTo(Instant.parse("2026-02-08T01:00:02.000Z").toEpochMilli())
+  }
+}

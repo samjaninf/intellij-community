@@ -15,6 +15,7 @@ jvm_library(
   resources = [":sessions_resources"],
   deps = [
     "@lib//:kotlin-stdlib",
+    "//libraries/fastutil",
     "//libraries/kotlinx/serialization/core",
     "//platform/compose",
     "//platform/core-api:core",
@@ -40,6 +41,7 @@ jvm_library(
   associates = [":sessions"],
   deps = [
     "@lib//:kotlin-stdlib",
+    "//libraries/fastutil",
     "//libraries/kotlinx/serialization/core",
     "//platform/compose",
     "//platform/compose:compose_test_lib",

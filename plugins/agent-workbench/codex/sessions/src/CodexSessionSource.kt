@@ -15,10 +15,14 @@ import com.intellij.agent.workbench.sessions.AgentSessionThread
 import com.intellij.agent.workbench.sessions.AgentSubAgent
 import com.intellij.agent.workbench.sessions.providers.BaseAgentSessionSource
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.flow.Flow
 
 class CodexSessionSource(
   private val backend: CodexSessionBackend = createDefaultCodexSessionBackend(),
 ) : BaseAgentSessionSource(provider = AgentSessionProvider.CODEX, canReportExactThreadCount = false) {
+  override val updates: Flow<Unit>
+    get() = backend.updates
+
   override suspend fun listThreads(path: String, openProject: Project?): List<AgentSessionThread> {
     return backend.listThreads(path = path, openProject = openProject).map { it.toAgentSessionThread() }
   }

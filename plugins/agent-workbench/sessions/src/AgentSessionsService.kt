@@ -6,6 +6,7 @@ package com.intellij.agent.workbench.sessions
 // @spec community/plugins/agent-workbench/spec/actions/new-thread.spec.md
 
 import com.intellij.agent.workbench.chat.AgentChatEditorService
+import com.intellij.agent.workbench.chat.AgentChatTabSelectionService
 import com.intellij.agent.workbench.sessions.providers.AgentSessionProviderBridges
 import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
 import com.intellij.ide.RecentProjectsManager
@@ -26,12 +27,17 @@ import com.intellij.openapi.ui.DoNotAskOption
 import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.io.FileUtilRt
+import com.intellij.openapi.wm.ToolWindowManager
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +50,7 @@ import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
+import kotlin.time.Duration.Companion.milliseconds
 
 private val LOG = logger<AgentSessionsService>()
 
@@ -52,6 +59,7 @@ private const val OPEN_PROJECT_ACTION_KEY_PREFIX = "project-open"
 private const val CREATE_SESSION_ACTION_KEY_PREFIX = "session-create"
 private const val OPEN_THREAD_ACTION_KEY_PREFIX = "thread-open"
 private const val OPEN_SUB_AGENT_ACTION_KEY_PREFIX = "subagent-open"
+private const val SOURCE_UPDATE_DEBOUNCE_MS = 350L
 
 @Service(Service.Level.APP)
 internal class AgentSessionsService private constructor(
@@ -85,11 +93,15 @@ internal class AgentSessionsService private constructor(
   private val actionGate = SingleFlightActionGate()
   private val onDemandLoading = LinkedHashSet<String>()
   private val onDemandWorktreeLoading = LinkedHashSet<String>()
+  private val sourceRefreshJobs = Object2ObjectOpenHashMap<AgentSessionProvider, Job>()
+  private val sourceRefreshJobsLock = Any()
 
   private val mutableState = MutableStateFlow(AgentSessionsState())
   val state: StateFlow<AgentSessionsState> = mutableState.asStateFlow()
 
   init {
+    observeSessionSourceUpdates()
+
     if (subscribeToProjectLifecycle) {
       ApplicationManager.getApplication().messageBus.connect(serviceScope)
         .subscribe(ProjectManager.TOPIC, object : ProjectManagerListener {
@@ -104,6 +116,161 @@ internal class AgentSessionsService private constructor(
           }
         })
     }
+  }
+
+  private fun observeSessionSourceUpdates() {
+    serviceScope.launch {
+      for (source in sessionSourcesProvider()) {
+        launch {
+          source.updates.collect {
+            scheduleSourceRefresh(source.provider)
+          }
+        }
+      }
+    }
+  }
+
+  private fun scheduleSourceRefresh(provider: AgentSessionProvider) {
+    synchronized(sourceRefreshJobsLock) {
+      sourceRefreshJobs.remove(provider)?.cancel()
+      val job = serviceScope.launch(Dispatchers.IO) {
+        delay(SOURCE_UPDATE_DEBOUNCE_MS.milliseconds)
+        if (!isSourceRefreshGateActive()) return@launch
+        refreshLoadedProviderThreads(provider)
+      }
+      sourceRefreshJobs[provider] = job
+      job.invokeOnCompletion {
+        synchronized(sourceRefreshJobsLock) {
+          if (sourceRefreshJobs[provider] === job) {
+            sourceRefreshJobs.remove(provider)
+          }
+        }
+      }
+    }
+  }
+
+  private suspend fun refreshLoadedProviderThreads(provider: AgentSessionProvider) {
+    if (!refreshMutex.tryLock()) return
+    try {
+      val source = sessionSourcesProvider().firstOrNull { it.provider == provider } ?: return
+      val stateSnapshot = mutableState.value
+      val targetPaths = collectLoadedPaths(stateSnapshot)
+      if (targetPaths.isEmpty()) return
+
+      val prefetched = try {
+        source.prefetchThreads(targetPaths)
+      }
+      catch (_: Throwable) {
+        emptyMap()
+      }
+
+      val outcomes = Object2ObjectOpenHashMap<String, ProviderRefreshOutcome>(targetPaths.size)
+      for (path in targetPaths) {
+        val prefetchedThreads = prefetched[path]
+        if (prefetchedThreads != null) {
+          outcomes[path] = ProviderRefreshOutcome(threads = prefetchedThreads)
+          continue
+        }
+
+        try {
+          outcomes[path] = ProviderRefreshOutcome(threads = source.listThreadsFromClosedProject(path))
+        }
+        catch (e: Throwable) {
+          if (e is CancellationException) throw e
+          LOG.warn("Failed to refresh ${provider.value} sessions for $path", e)
+          outcomes[path] = ProviderRefreshOutcome(
+            warningMessage = resolveProviderWarningMessage(provider, e),
+          )
+        }
+      }
+
+      mutableState.update { state ->
+        var changed = false
+        val nextProjects = state.projects.map { project ->
+          val updatedProject = if (project.hasLoaded) {
+            val outcome = outcomes[project.path]
+            if (outcome != null) {
+              changed = true
+              project.withProviderRefreshOutcome(provider, outcome)
+            }
+            else {
+              project
+            }
+          }
+          else {
+            project
+          }
+
+          val nextWorktrees = updatedProject.worktrees.map { worktree ->
+            if (!worktree.hasLoaded) return@map worktree
+            val outcome = outcomes[worktree.path] ?: return@map worktree
+            changed = true
+            worktree.withProviderRefreshOutcome(provider, outcome)
+          }
+
+          if (nextWorktrees == updatedProject.worktrees) {
+            updatedProject
+          }
+          else {
+            updatedProject.copy(worktrees = nextWorktrees)
+          }
+        }
+
+        if (!changed) {
+          state
+        }
+        else {
+          state.copy(
+            projects = nextProjects,
+            lastUpdatedAt = System.currentTimeMillis(),
+          )
+        }
+      }
+    }
+    finally {
+      refreshMutex.unlock()
+    }
+  }
+
+  private fun collectLoadedPaths(state: AgentSessionsState): List<String> {
+    val paths = ObjectOpenHashSet<String>()
+    for (project in state.projects) {
+      if (project.hasLoaded) {
+        paths.add(project.path)
+      }
+      for (worktree in project.worktrees) {
+        if (worktree.hasLoaded) {
+          paths.add(worktree.path)
+        }
+      }
+    }
+    return ArrayList(paths)
+  }
+
+  private suspend fun isSourceRefreshGateActive(): Boolean = withContext(Dispatchers.EDT) {
+    val openProjects = ProjectManager.getInstance().openProjects
+    if (openProjects.isEmpty()) {
+      val stateSnapshot = mutableState.value
+      return@withContext stateSnapshot.projects.any { project ->
+        project.isOpen || project.worktrees.any { it.isOpen }
+      }
+    }
+
+    openProjects.any { project ->
+      isSessionsToolWindowVisible(project) || isAgentChatActive(project)
+    }
+  }
+
+  private fun isSessionsToolWindowVisible(project: Project): Boolean {
+    return ToolWindowManager.getInstance(project)
+      .getToolWindow(AGENT_SESSIONS_TOOL_WINDOW_ID)
+      ?.isVisible == true
+  }
+
+  private fun isAgentChatActive(project: Project): Boolean {
+    return runCatching {
+      project.service<AgentChatTabSelectionService>().selectedChatTab.value != null
+    }.getOrDefault(false)
   }
 
   fun refresh() {
@@ -617,6 +784,58 @@ internal class AgentSessionsService private constructor(
       return warnings
     }
     return warnings + warning
+  }
+
+  private fun AgentProjectSessions.withProviderRefreshOutcome(
+    provider: AgentSessionProvider,
+    outcome: ProviderRefreshOutcome,
+  ): AgentProjectSessions {
+    val mergedThreads = outcome.threads?.let { threads ->
+      mergeThreadsForProvider(this.threads, provider, threads)
+    } ?: this.threads
+    return copy(
+      threads = mergedThreads,
+      providerWarnings = replaceProviderWarning(this.providerWarnings, provider, outcome.warningMessage),
+    )
+  }
+
+  private fun AgentWorktree.withProviderRefreshOutcome(
+    provider: AgentSessionProvider,
+    outcome: ProviderRefreshOutcome,
+  ): AgentWorktree {
+    val mergedThreads = outcome.threads?.let { threads ->
+      mergeThreadsForProvider(this.threads, provider, threads)
+    } ?: this.threads
+    return copy(
+      threads = mergedThreads,
+      providerWarnings = replaceProviderWarning(this.providerWarnings, provider, outcome.warningMessage),
+    )
+  }
+
+  private fun replaceProviderWarning(
+    warnings: List<AgentSessionProviderWarning>,
+    provider: AgentSessionProvider,
+    warningMessage: String?,
+  ): List<AgentSessionProviderWarning> {
+    val withoutProvider = warnings.filterNot { it.provider == provider }
+    return if (warningMessage == null) {
+      withoutProvider
+    }
+    else {
+      withoutProvider + AgentSessionProviderWarning(provider = provider, message = warningMessage)
+    }
+  }
+
+  private fun mergeThreadsForProvider(
+    existingThreads: List<AgentSessionThread>,
+    provider: AgentSessionProvider,
+    newProviderThreads: List<AgentSessionThread>,
+  ): List<AgentSessionThread> {
+    val mergedThreads = ArrayList<AgentSessionThread>(existingThreads.size + newProviderThreads.size)
+    existingThreads.filterTo(mergedThreads) { it.provider != provider }
+    mergedThreads.addAll(newProviderThreads)
+    mergedThreads.sortByDescending { it.updatedAt }
+    return mergedThreads
   }
 
   private suspend fun openOrFocusProjectInternal(path: String) {
@@ -1166,6 +1385,11 @@ internal class AgentSessionsService private constructor(
 
     return null
   }
+
+  private data class ProviderRefreshOutcome(
+    val threads: List<AgentSessionThread>? = null,
+    val warningMessage: String? = null,
+  )
 
   internal data class ProjectEntry(
     val path: String,

@@ -4,11 +4,16 @@ package com.intellij.agent.workbench.sessions.providers
 import com.intellij.agent.workbench.sessions.AgentSessionProvider
 import com.intellij.agent.workbench.sessions.AgentSessionThread
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 interface AgentSessionSource {
   val provider: AgentSessionProvider
   val canReportExactThreadCount: Boolean
     get() = true
+
+  val updates: Flow<Unit>
+    get() = emptyFlow()
 
   suspend fun listThreadsFromOpenProject(path: String, project: Project): List<AgentSessionThread>
 

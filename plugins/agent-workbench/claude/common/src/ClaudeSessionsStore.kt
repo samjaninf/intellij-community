@@ -4,16 +4,16 @@ package com.intellij.agent.workbench.claude.common
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
+import com.intellij.agent.workbench.json.WorkbenchJsonlScanner
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import kotlin.io.path.invariantSeparatorsPathString
-import kotlin.io.path.nameWithoutExtension
 
 private const val CLAUDE_PROJECTS_DIR = "projects"
 private const val CLAUDE_INDEX_FILE = "sessions-index.json"
 private const val CLAUDE_INDEX_VERSION = 1L
-private const val MAX_JSONL_SCAN_LINES = 240
+private const val MAX_JSONL_SCAN_OBJECTS = 240
 private const val MAX_TITLE_LENGTH = 120
 
 data class ClaudeSessionThread(
@@ -180,64 +180,54 @@ class ClaudeSessionsStore(
   }
 
   private fun parseJsonlMetadata(path: Path, targetProjectPath: String): ParsedJsonlMetadata? {
-    var firstPrompt: String? = null
-    var sessionId: String? = null
-    var isSidechain = false
-    var hasPathSignal = false
-    var pathMatches = false
-    var updatedAt: Long? = null
-    var hasConversationSignal = false
-
-    Files.newBufferedReader(path).use { reader ->
-      var scannedLines = 0
-      while (scannedLines < MAX_JSONL_SCAN_LINES) {
-        val line = reader.readLine() ?: break
-        scannedLines++
-        val trimmed = line.trim()
-        if (trimmed.isEmpty()) continue
-        parseJsonlLine(trimmed)?.let { lineData ->
-          if (lineData.isSidechain) {
-            isSidechain = true
-            return@use
-          }
-          if (sessionId == null && !lineData.sessionId.isNullOrBlank()) {
-            sessionId = lineData.sessionId
-          }
-          if (firstPrompt == null && !lineData.firstPrompt.isNullOrBlank()) {
-            firstPrompt = lineData.firstPrompt
-          }
-          if (lineData.hasConversationSignal) {
-            hasConversationSignal = true
-          }
-          val lineTimestamp = lineData.timestampMillis
-          if (lineTimestamp != null) {
-            updatedAt = maxOf(updatedAt ?: 0L, lineTimestamp)
-          }
-          if (!lineData.cwd.isNullOrBlank()) {
-            hasPathSignal = true
-            val normalizedCwd = normalizePath(lineData.cwd)
-            if (normalizedCwd == targetProjectPath) {
-              pathMatches = true
-            }
-          }
+    val state = WorkbenchJsonlScanner.scanJsonObjects(
+      path = path,
+      jsonFactory = jsonFactory,
+      maxObjects = MAX_JSONL_SCAN_OBJECTS,
+      newState = ::JsonlMetadataScanState,
+    ) { parser, scanState ->
+      val lineData = parseJsonlLine(parser) ?: return@scanJsonObjects true
+      if (lineData.isSidechain) {
+        scanState.isSidechain = true
+        return@scanJsonObjects false
+      }
+      if (scanState.sessionId == null && !lineData.sessionId.isNullOrBlank()) {
+        scanState.sessionId = lineData.sessionId
+      }
+      if (scanState.firstPrompt == null && !lineData.firstPrompt.isNullOrBlank()) {
+        scanState.firstPrompt = lineData.firstPrompt
+      }
+      if (lineData.hasConversationSignal) {
+        scanState.hasConversationSignal = true
+      }
+      val lineTimestamp = lineData.timestampMillis
+      if (lineTimestamp != null) {
+        scanState.updatedAt = maxOf(scanState.updatedAt ?: 0L, lineTimestamp)
+      }
+      if (!lineData.cwd.isNullOrBlank()) {
+        scanState.hasPathSignal = true
+        val normalizedCwd = normalizePath(lineData.cwd)
+        if (normalizedCwd == targetProjectPath) {
+          scanState.pathMatches = true
         }
       }
+      true
     }
 
-    if (hasPathSignal && !pathMatches) return null
-    if (!hasConversationSignal) return null
-    val normalizedSessionId = sessionId?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    if (state.hasPathSignal && !state.pathMatches) return null
+    if (!state.hasConversationSignal) return null
+    val normalizedSessionId = state.sessionId?.trim()?.takeIf { it.isNotEmpty() } ?: return null
     return ParsedJsonlMetadata(
       sessionId = normalizedSessionId,
-      firstPrompt = firstPrompt,
-      isSidechain = isSidechain,
-      updatedAt = updatedAt,
+      firstPrompt = state.firstPrompt,
+      isSidechain = state.isSidechain,
+      updatedAt = state.updatedAt,
     )
   }
 
-  private fun parseJsonlLine(line: String): ParsedJsonlLine? {
-    jsonFactory.createParser(line).use { parser ->
-      if (parser.nextToken() != JsonToken.START_OBJECT) return null
+  private fun parseJsonlLine(parser: JsonParser): ParsedJsonlLine? {
+    return try {
+      if (parser.currentToken != JsonToken.START_OBJECT) return null
       var sessionId: String? = null
       var cwd: String? = null
       var isSidechain = false
@@ -280,6 +270,9 @@ class ClaudeSessionsStore(
         firstPrompt = firstPrompt,
         hasConversationSignal = hasConversationSignal,
       )
+    }
+    catch (_: Throwable) {
+      null
     }
   }
 
@@ -464,4 +457,14 @@ private data class ParsedJsonlMetadata(
   val firstPrompt: String?,
   val isSidechain: Boolean,
   val updatedAt: Long?,
+)
+
+private data class JsonlMetadataScanState(
+  var firstPrompt: String? = null,
+  var sessionId: String? = null,
+  var isSidechain: Boolean = false,
+  var hasPathSignal: Boolean = false,
+  var pathMatches: Boolean = false,
+  var updatedAt: Long? = null,
+  var hasConversationSignal: Boolean = false,
 )

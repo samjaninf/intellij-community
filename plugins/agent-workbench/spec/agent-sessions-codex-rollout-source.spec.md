@@ -14,10 +14,10 @@ targets:
 # Codex Sessions Rollout Source
 
 Status: Draft
-Date: 2026-02-13
+Date: 2026-02-15
 
 ## Summary
-Codex thread discovery for Agent Threads defaults to rollout files under `~/.codex/sessions` instead of app-server `thread/list`. The source computes thread activity (`unread`, `reviewing`, `processing`, `ready`) and maps it to indicator colors. Existing app-server loading remains available behind an alternative `SessionBackend` implementation.
+Codex thread discovery for Agent Threads defaults to rollout files under `~/.codex/sessions` instead of app-server `thread/list`. The source computes thread activity (`unread`, `reviewing`, `processing`, `ready`) and maps it to indicator colors. Existing app-server loading remains available behind an alternative `SessionBackend` implementation. Title extraction semantics are aligned with Codex rollout parsing behavior.
 
 ## Goals
 - Make Codex thread indicators reflect real activity based on rollout data.
@@ -40,8 +40,14 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
 - Unknown backend override values must log a warning and fall back to rollout.
 - Rollout backend must scan only `~/.codex/sessions/**/rollout-*.jsonl`.
 - Rollout backend must filter sessions by normalized `cwd` matching project/worktree path.
+- Rollout backend must support multi-path prefetch and return per-path filtered thread lists from a shared scan.
 - Thread id must come from `session_meta.payload.id` (not rollout filename).
 - Rollout backend must skip files missing `session_meta.payload.id` (no filename fallback).
+- Title extraction must use the first qualifying `event_msg` with `payload.type=user_message`.
+- Title extraction must strip `## My request for Codex:` when present and use the text after the marker.
+- Title extraction must ignore session-prefix user messages starting with `<environment_context>` or `<turn_aborted>` (case-insensitive, leading whitespace ignored).
+- Title extraction must trim and whitespace-normalize text, then apply bounded title trim.
+- If no qualifying title is found, title must fall back to `Thread <id-prefix>`.
 - Thread activity precedence must be: `unread` > `reviewing` > `processing` > `ready`.
 - Session tree indicator colors must match CodexMonitor classes:
   - `unread`: blue (`#4DA3FF`)
@@ -53,13 +59,17 @@ Codex thread discovery for Agent Threads defaults to rollout files under `~/.cod
 
 ## Data & Backend
 - Rollout backend computes `updatedAt` from latest event timestamp with file mtime fallback.
-- Rollout backend derives title from user-message content with bounded trim and fallback `Thread <id-prefix>`.
+- Rollout backend derives title from the first qualifying `event_msg.user_message`, using Codex marker stripping and session-prefix filtering rules.
+- `response_item` entries contribute to unread/activity timing but do not provide title source data.
+- Rollout backend prefetch for multiple paths uses one filesystem scan and groups parsed threads by normalized `cwd`.
 - Rollout backend carries branch from session meta when present; no branch fallback source is used.
 - `CodexSessionSource` maps rollout backend data directly and does not use `CodexSessionBranchStore` fallback.
 
 ## Testing / Local Run
 - `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.codex.sessions.CodexRolloutSessionBackendTest'`
 - `./tests.cmd '-Dintellij.build.test.patterns=com.intellij.agent.workbench.sessions.AgentSessionCliTest'`
+
+[@test] ../codex/sessions/testSrc/CodexRolloutSessionBackendTest.kt
 
 ## References
 - `spec/agent-sessions.spec.md`
