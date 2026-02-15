@@ -44,7 +44,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/intentions-k2/tests:tests_test_lib",
     "//plugins/kotlin/code-insight/inspections-shared/tests/k2:k2_test_lib",
     "//plugins/kotlin/code-insight/postfix-templates",
-    "//plugins/kotlin/code-insight/postfix-templates:postfix-templates_test_lib",
     "//plugins/kotlin/code-insight/line-markers",
     "//plugins/kotlin/navigation/tests:tests_test_lib",
     "//plugins/kotlin/jvm-debugger/test/k2/testFramework:testFramework_test_lib",
@@ -80,6 +79,7 @@ jvm_library(
     "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight-tests_test_lib",
     "//plugins/kotlin/code-insight/line-markers:kotlin-codeInsight-lineMarkers-tests_test_lib",
     "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates-tests_test_lib",
+    "//plugins/kotlin/code-insight/postfix-templates:kotlin-codeInsight-postfixTemplates-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )
