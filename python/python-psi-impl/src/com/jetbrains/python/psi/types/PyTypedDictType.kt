@@ -318,7 +318,7 @@ class PyTypedDictType(
     val hasErrors: Boolean get() = valueTypeErrors.isNotEmpty() || missingKeys.isNotEmpty() || extraKeys.isNotEmpty()
   }
 
-  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T {
+  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T? {
     if (visitor is PyTypeVisitorExt) {
       return visitor.visitPyTypedDictType(this)
     }

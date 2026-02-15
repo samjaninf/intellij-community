@@ -51,7 +51,7 @@ class PyIntersectionType private constructor(members: Collection<PyType?>) : PyT
     }
   }
 
-  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T {
+  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T? {
     if (visitor is PyTypeVisitorExt<T>) {
       return visitor.visitPyIntersectionType(this)
     }

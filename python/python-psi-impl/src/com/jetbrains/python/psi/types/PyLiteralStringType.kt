@@ -33,7 +33,7 @@ class PyLiteralStringType private constructor(val cls: PyClass) : PyClassTypeImp
     return Objects.hash(super.hashCode(), cls)
   }
 
-  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T {
+  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T? {
     if (visitor is PyTypeVisitorExt) {
       return visitor.visitPyLiteralStringType(this)
     }

@@ -80,14 +80,14 @@ public interface PyCallableType extends PyType {
                                                builder.append(name);
                                                builder.append(": ");
                                              }
-                                             builder.append(type != null ? type.getName() : PyNames.UNKNOWN_TYPE);
+                                             builder.append(type != null ? type.getName() : PyNames.ANY_TYPE);
                                              return builder.toString();
                                            }
-                                           return PyNames.UNKNOWN_TYPE;
+                                           return PyNames.ANY_TYPE;
                                          },
                                          ", ") :
                          "...",
-                         returnType != null ? returnType.getName() : PyNames.UNKNOWN_TYPE);
+                         returnType != null ? returnType.getName() : PyNames.ANY_TYPE);
   }
 
   default @Nullable PyCallable getCallable() {

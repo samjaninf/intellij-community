@@ -1269,12 +1269,12 @@ object PyTypeChecker {
     generics: GenericsImpl,
   ) {
     PyRecursiveTypeVisitor.traverse(type, context, object : PyTypeTraverser() {
-      override fun visitPyTypeVarType(typeVarType: PyTypeVarType): PyRecursiveTypeVisitor.Traversal {
+      override fun visitPyTypeVarType(typeVarType: PyTypeVarType): PyRecursiveTypeVisitor.Traversal? {
         generics.typeVars.add(typeVarType)
         return super.visitPyTypeVarType(typeVarType)
       }
 
-      override fun visitPyTypeVarTupleType(typeVarTupleType: PyTypeVarTupleType): PyRecursiveTypeVisitor.Traversal {
+      override fun visitPyTypeVarTupleType(typeVarTupleType: PyTypeVarTupleType): PyRecursiveTypeVisitor.Traversal? {
         generics.typeVarTuples.add(typeVarTupleType)
         return super.visitPyTypeVarTupleType(typeVarTupleType)
       }

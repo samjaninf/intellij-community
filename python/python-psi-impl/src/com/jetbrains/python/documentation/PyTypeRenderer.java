@@ -220,7 +220,7 @@ public abstract class PyTypeRenderer extends PyTypeVisitorExt<@NotNull HtmlChunk
     }
 
     @Override
-    public @NotNull HtmlChunk visitPyIntersectionType(com.jetbrains.python.psi.types.@NotNull PyIntersectionType intersectionType) {
+    public @NotNull HtmlChunk visitPyIntersectionType(@NotNull PyIntersectionType intersectionType) {
       // There is no way to represent intersections through the standard type hints at the moment
       return visitUnknownType();
     }
@@ -466,8 +466,14 @@ public abstract class PyTypeRenderer extends PyTypeVisitorExt<@NotNull HtmlChunk
   }
 
   @Override
+  public HtmlChunk visitAnyType() {
+    return HtmlChunk.raw(isRenderingFqn() ? PyTypingTypeProvider.ANY : PyNames.ANY_TYPE); //NON-NLS
+  }
+
+  @Override
   public HtmlChunk visitUnknownType() {
-    return HtmlChunk.raw(isRenderingFqn() ? "typing.Any" : "Any"); //NON-NLS
+    // TODO: show "Unknown" instead of "typing.Any" when we convert to it
+    return visitAnyType();
   }
 
   @Override
@@ -533,10 +539,7 @@ public abstract class PyTypeRenderer extends PyTypeVisitorExt<@NotNull HtmlChunk
       case ", " -> {
         yield styled(separator, PyHighlighter.PY_COMMA);
       }
-      case " | " -> {
-        yield styled(separator, PyHighlighter.PY_OPERATION_SIGN);
-      }
-      case " & " -> {
+      case " | ", " & " -> {
         yield styled(separator, PyHighlighter.PY_OPERATION_SIGN);
       }
       default -> {

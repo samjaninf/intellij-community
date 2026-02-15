@@ -96,7 +96,7 @@ class PyTypingNewType(
     return 31 * classType.hashCode() + name.hashCode()
   }
 
-  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T {
+  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T? {
     if (visitor is PyTypeVisitorExt) {
       return visitor.visitPyTypingNewType(this)
     }

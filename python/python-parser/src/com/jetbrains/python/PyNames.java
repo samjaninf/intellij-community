@@ -243,7 +243,8 @@ public final @NonNls class PyNames {
 
   public static final String NOT_IMPLEMENTED_ERROR = "NotImplementedError";
 
-  public static final @NlsSafe String UNKNOWN_TYPE = "Any";
+  public static final @NlsSafe String ANY_TYPE = "Any";
+  public static final @NlsSafe String UNKNOWN_TYPE = "Unknown";
 
   public static final @NlsSafe String UNNAMED_ELEMENT = "<unnamed>";
 

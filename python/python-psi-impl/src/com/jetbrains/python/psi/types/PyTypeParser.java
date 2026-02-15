@@ -546,7 +546,7 @@ public final class PyTypeParser {
       final String name = token.getText().toString();
       final TextRange range = token.getRange();
 
-      if (PyNames.UNKNOWN_TYPE.equals(name)) {
+      if (PyNames.ANY_TYPE.equals(name)) {
         return EMPTY_RESULT;
       }
       else if (PyNames.NONE.equals(name)) {

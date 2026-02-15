@@ -64,7 +64,7 @@ interface PyType {
    * @param context  to share state between nested invocations
    * @return completion variants good for [com.intellij.psi.PsiReference.getVariants] return value.
    */
-  fun getCompletionVariants(completionPrefix: String?, location: PsiElement, context: ProcessingContext): Array<out @JvmWildcard Any>
+  fun getCompletionVariants(completionPrefix: String?, location: PsiElement, context: ProcessingContext): Array<out Any>
 
   @get:NlsSafe
   val name: @NlsSafe String?

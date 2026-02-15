@@ -52,7 +52,7 @@ class PyLiteralType private constructor(cls: PyClass, val expression: PyExpressi
 
   override fun hashCode(): Int = 31 * pyClass.hashCode()
 
-  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T {
+  override fun <T> acceptTypeVisitor(visitor: PyTypeVisitor<T>): T? {
     if (visitor is PyTypeVisitorExt) {
       return visitor.visitPyLiteralType(this)
     }
