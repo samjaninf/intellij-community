@@ -65,7 +65,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/fixes-k2/tests:tests_test_lib",
     "//plugins/gradle/tooling-extension-impl:toolingExtension-tests_test_lib",
     "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java",
-    "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java_test_lib",
     "//plugins/kotlin/base/analysis-api/analysis-api-k2-tests:kotlin-base-analysis-analysis-api-k2-tests_test_lib",
     "//plugins/kotlin/jvm-debugger/test/compose/testFramework:testFramework_test_lib",
     "//plugins/kotlin/injection/k2/tests:tests_test_lib",
@@ -80,6 +79,7 @@ jvm_library(
     "//plugins/kotlin/code-insight/line-markers:kotlin-codeInsight-lineMarkers-tests_test_lib",
     "//plugins/kotlin/code-insight/live-templates-k2:kotlin-codeInsight-liveTemplates-tests_test_lib",
     "//plugins/kotlin/code-insight/postfix-templates:kotlin-codeInsight-postfixTemplates-tests_test_lib",
+    "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )
