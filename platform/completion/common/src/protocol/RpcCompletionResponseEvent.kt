@@ -1,8 +1,9 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.platform.completion.common.protocol
 
 import com.intellij.ide.ui.icons.IconId
 import com.intellij.openapi.util.NlsContexts
+import com.intellij.platform.completion.common.protocol.modCommand.RpcModCommandResult
 import kotlinx.serialization.Serializable
 
 /**
@@ -41,6 +42,15 @@ sealed interface RpcCompletionResponseEvent {
   @Serializable
   data class ExpensivePresentations(
     val presentations: List<RpcCompletionExpensivePresentation>
+  ) : RpcCompletionResponseEvent
+
+  /**
+   * This event is sent when ModCommand computation results are available.
+   * Similar to [ExpensivePresentations], but for ModCommand (from [com.intellij.modcompletion.ModCompletionItem]).
+   */
+  @Serializable
+  data class ModCommandResults(
+    val results: List<RpcModCommandResult>
   ) : RpcCompletionResponseEvent
 
   /**

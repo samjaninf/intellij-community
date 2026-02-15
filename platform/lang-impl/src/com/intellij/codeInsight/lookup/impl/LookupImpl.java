@@ -12,6 +12,7 @@ import com.intellij.codeInsight.completion.CompletionLookupArrangerImpl;
 import com.intellij.codeInsight.completion.CompletionUtil;
 import com.intellij.codeInsight.completion.FinishCompletionInfo;
 import com.intellij.codeInsight.completion.LookupElementListPresenter;
+import com.intellij.codeInsight.completion.ModCompletionInserter;
 import com.intellij.codeInsight.completion.PrefixMatcher;
 import com.intellij.codeInsight.completion.ShowHideIntentionIconLookupAction;
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher;
@@ -42,7 +43,6 @@ import com.intellij.lang.LangBundle;
 import com.intellij.lang.injection.InjectedLanguageManager;
 import com.intellij.modcommand.ActionContext;
 import com.intellij.modcommand.ModCommand;
-import com.intellij.modcommand.ModCommandExecutor;
 import com.intellij.modcompletion.ModCompletionItem;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionManager;
@@ -55,7 +55,6 @@ import com.intellij.openapi.actionSystem.ex.ActionUtil;
 import com.intellij.openapi.application.AccessToken;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.application.WriteIntentReadAction;
 import com.intellij.openapi.client.ClientProjectSession;
 import com.intellij.openapi.client.ClientSessionsUtil;
@@ -748,8 +747,7 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
                                  @NotNull PsiFile psiFile,
                                  CompletionItemLookupElement wrapper) {
     ModCompletionItem.InsertionContext insertionContext = new ModCompletionItem.InsertionContext(
-      completionChar == REPLACE_SELECT_CHAR ?
-      ModCompletionItem.InsertionMode.OVERWRITE : ModCompletionItem.InsertionMode.INSERT,
+      completionChar == REPLACE_SELECT_CHAR ? ModCompletionItem.InsertionMode.OVERWRITE : ModCompletionItem.InsertionMode.INSERT,
       completionChar);
     ActionContext actionContext = ActionContext.from(editor, psiFile);
     ActionContext finalActionContext = actionContext
@@ -763,8 +761,7 @@ public class LookupImpl extends LightweightHint implements LookupEx, Disposable,
           () -> wrapper.computeCommand(finalActionContext, insertionContext)).executeSynchronously(),
         AnalysisBundle.message("complete"), true, project);
     }
-    WriteAction.run(() -> editor.getDocument().deleteString(start, actionContext.offset()));
-    ModCommandExecutor.getInstance().executeInteractively(actionContext, command, editor);
+    ModCompletionInserter.executeModCommand(editor, psiFile, start, actionContext.offset(), command);
   }
 
   void finishLookupInWritableFile(char completionChar, @Nullable LookupElement item) {
