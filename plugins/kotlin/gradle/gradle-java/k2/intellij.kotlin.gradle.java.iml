@@ -39,5 +39,6 @@
     <orderEntry type="module" module-name="intellij.kotlin.projectConfiguration" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.fir.tests" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.gradle.codeInsight.toml.k2" scope="TEST" />
+    <orderEntry type="module" module-name="kotlin.fir.testFramework" scope="TEST" />
   </component>
 </module>

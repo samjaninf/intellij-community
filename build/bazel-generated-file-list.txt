@@ -1221,6 +1221,7 @@ plugins/kotlin/coverage/tests
 plugins/kotlin/features-trainer
 plugins/kotlin/features-trainer/tests
 plugins/kotlin/fir
+plugins/kotlin/fir/testFramework
 plugins/kotlin/fir/tests
 plugins/kotlin/formatter
 plugins/kotlin/formatter/minimal

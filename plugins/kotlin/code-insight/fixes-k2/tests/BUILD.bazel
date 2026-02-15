@@ -32,6 +32,7 @@ jvm_library(
     "//plugins/kotlin/code-insight/fixes-k2:kotlin-codeInsight-fixes",
     "//plugins/kotlin/fir/tests:tests_test_lib",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
+    "//plugins/kotlin/fir/testFramework:testFramework_test_lib",
   ],
   runtime_deps = [":tests"]
 )

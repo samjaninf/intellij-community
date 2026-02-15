@@ -23,11 +23,11 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="kotlin-stdlib" level="project" scope="TEST" />
-    <orderEntry type="library" name="kotlinc.kotlin-compiler-common" level="project" scope="TEST" />
+    <orderEntry type="library" scope="TEST" name="kotlin-stdlib" level="project" />
+    <orderEntry type="library" scope="TEST" name="kotlinc.kotlin-compiler-common" level="project" />
     <orderEntry type="library" scope="TEST" name="kotlinc.kotlin-compiler-tests" level="project" />
-    <orderEntry type="library" name="kotlinc.analysis-api" level="project" scope="TEST" />
-    <orderEntry type="library" name="kotlinc.analysis-api-platform-interface" level="project" scope="TEST" />
+    <orderEntry type="library" scope="TEST" name="kotlinc.analysis-api" level="project" />
+    <orderEntry type="library" scope="TEST" name="kotlinc.analysis-api-platform-interface" level="project" />
     <orderEntry type="module" module-name="intellij.java.indexing" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.analysis" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.codeStyle" scope="TEST" />
@@ -51,7 +51,6 @@
     <orderEntry type="module" module-name="intellij.kotlin.codeInsight.shared" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.usageView" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.common.tests" scope="TEST" />
-    <orderEntry type="module" module-name="kotlin.fir.tests" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.fir.frontend-independent" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.lang.impl" scope="TEST" />
     <orderEntry type="module" module-name="intellij.platform.lang.core" scope="TEST" />
@@ -63,13 +62,13 @@
     <orderEntry type="module" module-name="intellij.kotlin.base.analysis.utils" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.highlighting.shared" scope="TEST" />
     <orderEntry type="module" module-name="intellij.java.impl" scope="TEST" />
-    <orderEntry type="library" name="kotlinc.analysis-api-impl-base" level="project" scope="TEST" />
+    <orderEntry type="library" scope="TEST" name="kotlinc.analysis-api-impl-base" level="project" />
     <orderEntry type="module" module-name="intellij.libraries.guava" scope="TEST" />
     <orderEntry type="module" module-name="kotlin.refactorings.common" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.base.analysis" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.base.facet" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.codeInsight.utils" scope="TEST" />
-    <orderEntry type="library" name="kotlinc.analysis-api-k2" level="project" scope="TEST" />
+    <orderEntry type="library" scope="TEST" name="kotlinc.analysis-api-k2" level="project" />
     <orderEntry type="module" module-name="intellij.kotlin.formatter.minimal" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.refactorings" scope="TEST" />
     <orderEntry type="module" module-name="intellij.java" scope="TEST" />
@@ -94,6 +93,7 @@
     <orderEntry type="module" module-name="intellij.kotlin.base.test" scope="TEST" />
     <orderEntry type="module" module-name="intellij.libraries.kotlinx.collections.immutable" scope="TEST" />
     <orderEntry type="module" module-name="intellij.kotlin.codeInsight" scope="TEST" />
+    <orderEntry type="module" module-name="kotlin.fir.testFramework" scope="TEST" />
   </component>
   <component name="TestModuleProperties" production-module="intellij.kotlin.codeInsight" />
 </module>

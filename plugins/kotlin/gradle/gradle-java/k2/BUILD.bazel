@@ -62,6 +62,7 @@ jvm_library(
     "//plugins/kotlin/project-configuration",
     "//plugins/kotlin/fir/tests:tests_test_lib",
     "//plugins/kotlin/gradle/code-insight-toml/k2",
+    "//plugins/kotlin/fir/testFramework:testFramework_test_lib",
   ]
 )
 ### auto-generated section `build intellij.kotlin.gradle.java` end

@@ -152,7 +152,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/impl-base:kotlin-codeInsight-shared",
     "//platform/usageView",
     "//plugins/kotlin/tests-common:common-tests_test_lib",
-    "//plugins/kotlin/fir/tests:tests_test_lib",
     "//plugins/kotlin/frontend-independent",
     "//platform/lang-impl",
     "//platform/lang-core",
@@ -198,6 +197,7 @@ jvm_library(
     "//plugins/kotlin/base/scripting/scripting.k2:kotlin-base-scripting",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
     "//libraries/kotlinx/collections-immutable:libraries-kotlinx-collections-immutable",
+    "//plugins/kotlin/fir/testFramework:testFramework_test_lib",
   ],
   runtime_deps = [":kotlin-codeInsight-tests"]
 )

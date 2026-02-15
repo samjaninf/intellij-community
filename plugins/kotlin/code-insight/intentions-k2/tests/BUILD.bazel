@@ -46,6 +46,7 @@ jvm_library(
     "//platform/lang-core",
     "//platform/core-ui",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
+    "//plugins/kotlin/fir/testFramework:testFramework_test_lib",
   ],
   runtime_deps = [":tests"]
 )
