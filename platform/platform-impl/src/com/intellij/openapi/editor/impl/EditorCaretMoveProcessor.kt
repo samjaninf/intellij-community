@@ -13,11 +13,15 @@ import com.intellij.openapi.editor.EditorSettings
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.platform.util.coroutines.childScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.awt.geom.Point2D
 import kotlin.math.abs
@@ -39,60 +43,36 @@ private data class CaretUpdate(
 private data class AnimationState(val startPos: Point2D, val startLogicalPosition: LogicalPosition?, val update: CaretUpdate)
 
 @Service(Service.Level.APP)
-internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
+internal class EditorCaretMoveProcessorFactory(private val scope: CoroutineScope) {
   companion object {
-    private val TICK_MS = 4.milliseconds
+    @JvmStatic
+    fun getInstance(): EditorCaretMoveProcessorFactory = service()
 
     @JvmStatic
-    fun getInstance(): EditorCaretMoveService = service()
-
-    private fun calculateUpdates(editor: EditorImpl) = editor.caretModel.allCarets.map { caret ->
-      val isRtl = caret.isAtRtlLocation()
-      val caretPosition = caret.visualPosition
-      val pos1: Point2D = editor.visualPositionToPoint2D(caretPosition.leanRight(!isRtl))
-      val pos2: Point2D =
-        editor.visualPositionToPoint2D(VisualPosition(caretPosition.line, max(0, caretPosition.column + (if (isRtl) -1 else 1)), isRtl))
-
-      var width = abs(pos2.x - pos1.x).toFloat()
-      if (!isRtl && editor.inlayModel.hasInlineElementAt(caretPosition)) {
-        width = min(width, ceil(editor.view.plainSpaceWidth.toDouble()).toFloat())
-      }
-
-      CaretUpdate(pos1, caret.logicalPosition, width, caret, isRtl)
-    }
+    fun createProcessor(editor: EditorImpl): EditorCaretMoveProcessor =
+      getInstance().doCreateProcessor(editor)
   }
 
-  /**
-   * Set the cursor position immediately without animation. This does not go through the
-   * coroutine-based logic which can delay the cursor position update. This is required for
-   * the ImmediatePainterTest to work.
-   */
-  fun setCursorPositionImmediately(editor: EditorImpl) {
-    editor.caretAnimationJob?.cancel()
-    editor.caretAnimationJob = null
+  private fun doCreateProcessor(editor: EditorImpl) =
+    EditorCaretMoveProcessor(scope.childScope("Caret Move Scope for $editor"), editor)
+}
 
-    val animationStates = calculateUpdates(editor)
-    for (state in animationStates) {
-      editor.lastPosMap[state.caret] = state.finalPos to state.finalLogicalPosition
-    }
-    editor.myCaretCursor.setPositions(animationStates.map { state ->
-      EditorImpl.CaretRectangle(state.finalPos, state.width, state.caret, state.isRtl)
-    }.toTypedArray())
-  }
+private val TICK_MS = 4.milliseconds
 
-  // Replaying 128 requests is probably way too much, actually 2 should be enough. It shouldn't break
-  // anything, though, since most of the time this would not contain more than 2 elements,
-  // one for the main editor and one for the lite editor that can sometimes be opened on top
-  private val setPositionRequests = MutableSharedFlow<EditorImpl>(replay = 128, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+internal class EditorCaretMoveProcessor(private val coroutineScope: CoroutineScope, private val editor: EditorImpl) {
+  private val lastPosMap = mutableMapOf<Caret, Pair<Point2D, LogicalPosition?>>()
+  private val cursor = editor.myCaretCursor
+  private var animationJob: Job? = null
+
+  private val setPositionRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
   init {
     coroutineScope.launch(Dispatchers.UI + ModalityState.any().asContextElement()) {
-      setPositionRequests.collect { editor ->
+      setPositionRequests.collectLatest { _ ->
         if (!editor.isDisposed) {
-          editor.caretAnimationJob?.cancel()
-          editor.caretAnimationJob = launch {
+          animationJob = this@launch.launch {
             runCatching {
-              processRequest(editor)
+              processRequest()
             }.getOrHandleException { e ->
               LOG.error("An exception occurred while setting caret positions", e)
             }
@@ -102,19 +82,22 @@ internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
     }
   }
 
-  fun setCursorPosition(editor: EditorImpl) {
-    check(setPositionRequests.tryEmit(editor))
+  fun clear()  {
+    runCatching { coroutineScope.cancel() }
   }
 
-  private suspend fun processRequest(editor: EditorImpl) {
-    val cursor = editor.myCaretCursor
+  fun setCursorPosition() {
+    check(setPositionRequests.tryEmit(Unit))
+  }
+
+  private suspend fun processRequest() {
     val animationDuration = Registry.intValue("editor.smooth.caret.duration")
 
     cursor.blinkOpacity = 1.0f
     cursor.startTime = System.currentTimeMillis() + animationDuration
 
-    val animationStates = calculateUpdates(editor).map {
-      val (lastPos, lastVisualPosition) = editor.lastPosMap.getOrPut(it.caret) {
+    val animationStates = calculateUpdates().map {
+      val (lastPos, lastVisualPosition) = lastPosMap.getOrPut(it.caret) {
         it.finalPos to it.finalLogicalPosition
       }
 
@@ -145,7 +128,7 @@ internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
         val y = startPos.y + (finalPos.y - startPos.y) * ease
 
         val interpolated = if (isInAnimation) Point2D.Double(x, y) else finalPos
-        editor.lastPosMap[update.caret] = Pair(
+        lastPosMap[update.caret] = Pair(
           interpolated,
           state.update.finalLogicalPosition.takeUnless { isInAnimation }
         )
@@ -163,9 +146,42 @@ internal class EditorCaretMoveService(coroutineScope: CoroutineScope) {
       delay(TICK_MS)
     }
   }
+
+  private fun calculateUpdates() = editor.caretModel.allCarets.map { caret ->
+    val isRtl = caret.isAtRtlLocation()
+    val caretPosition = caret.visualPosition
+    val pos1: Point2D = editor.visualPositionToPoint2D(caretPosition.leanRight(!isRtl))
+    val pos2: Point2D =
+      editor.visualPositionToPoint2D(VisualPosition(caretPosition.line, max(0, caretPosition.column + (if (isRtl) -1 else 1)), isRtl))
+
+    var width = abs(pos2.x - pos1.x).toFloat()
+    if (!isRtl && editor.inlayModel.hasInlineElementAt(caretPosition)) {
+      width = min(width, ceil(editor.view.plainSpaceWidth.toDouble()).toFloat())
+    }
+
+    CaretUpdate(pos1, caret.logicalPosition, width, caret, isRtl)
+  }
+
+  /**
+   * Set the cursor position immediately without animation. This does not go through the
+   * coroutine-based logic which can delay the cursor position update. This is required for
+   * the ImmediatePainterTest to work.
+   */
+  fun setCursorPositionImmediately() {
+    animationJob?.cancel()
+    animationJob = null
+
+    val animationStates = calculateUpdates()
+    for (state in animationStates) {
+      lastPosMap[state.caret] = state.finalPos to state.finalLogicalPosition
+    }
+    cursor.setPositions(animationStates.map { state ->
+      EditorImpl.CaretRectangle(state.finalPos, state.width, state.caret, state.isRtl)
+    }.toTypedArray())
+  }
 }
 
-private val LOG = logger<EditorCaretMoveService>()
+private val LOG = logger<EditorCaretMoveProcessor>()
 
 private enum class CaretEasingType {
   Ninja,
