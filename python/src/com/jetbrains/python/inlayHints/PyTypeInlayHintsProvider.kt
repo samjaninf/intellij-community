@@ -19,6 +19,7 @@ import com.jetbrains.python.documentation.PythonDocumentationProvider
 import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyFunction
 import com.jetbrains.python.psi.resolve.PyResolveContext
+import com.jetbrains.python.psi.types.PyCollectionType
 import com.jetbrains.python.psi.types.TypeEvalContext
 
 class PyTypeInlayHintsProvider : InlayHintsProvider {
@@ -75,8 +76,14 @@ class PyTypeInlayHintsProvider : InlayHintsProvider {
       val function = element.parent as? PyFunction ?: return
       if (element == function.nameIdentifier && function.annotationValue == null && function.typeCommentAnnotation == null) {
         val type = typeEvalContext.getReturnType(function)
-        val typeHint = PythonDocumentationProvider.getTypeHint(type, typeEvalContext)
-        sink.addPresentation(position = InlineInlayPosition(function.parameterList.textRange.endOffset, true), hintFormat = returnTypeHintFormat) {
+        val inlayType = if (function.isAsync) {
+          (type as? PyCollectionType)?.elementTypes[2]
+        }
+        else type
+
+        val typeHint = PythonDocumentationProvider.getTypeHint(inlayType, typeEvalContext)
+        sink.addPresentation(position = InlineInlayPosition(function.parameterList.textRange.endOffset, true),
+                             hintFormat = returnTypeHintFormat) {
           text("-> ")
           if (typeHint.length >= MAX_SEGMENT_TEXT_LENGTH) {
             // Platform doesn't allow one text node to be more than 30 characters, but that might not be enough for some types,

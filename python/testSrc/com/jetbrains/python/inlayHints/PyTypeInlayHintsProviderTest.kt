@@ -1,6 +1,7 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.jetbrains.python.inlayHints
 
+import com.intellij.idea.TestFor
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.utils.inlays.declarative.DeclarativeInlayHintsProviderTestCase
 import com.jetbrains.python.fixtures.PyLightProjectDescriptor
@@ -46,6 +47,14 @@ def example(x: int, y: float)/*<# -> float #>*/:
     return x + y
 
 reveal_type(example(1, 2.5))/*<# float #>*/
+    """.trimIndent())
+  }
+
+  @TestFor(issues = ["PY-82956"])
+  fun `test async def`() {
+    doTest("""
+      async def foo()/*<# -> int #>*/:
+          return 1
     """.trimIndent())
   }
 
