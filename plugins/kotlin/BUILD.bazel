@@ -670,7 +670,6 @@ jvm_library(
     "//plugins/kotlin/base/fir/scripting",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.shared:kotlin-gradle-scripting-shared",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k1:kotlin-gradle-scripting-k1",
-    "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k1:kotlin-gradle-scripting-k1_test_lib",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k2:kotlin-gradle-scripting",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k2:kotlin-gradle-scripting_test_lib",
     "//plugins/kotlin/base/kotlin.base.serialization",
@@ -691,7 +690,6 @@ jvm_library(
     "//plugins/kotlin/project-wizard/compose:compose_test_lib",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting_test_lib",
     "//plugins/kotlin/onboarding:onboarding_test_lib",
-    "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k1:kotlin-gradle-scripting-k1_test_lib",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k2:kotlin-gradle-scripting_test_lib",
   ]
 )

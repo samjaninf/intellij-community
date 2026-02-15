@@ -50,13 +50,29 @@ jvm_library(
     "//plugins/kotlin/base/scripting/scripting.shared",
   ]
 )
+### auto-generated section `build kotlin.gradle.scripting.k1` end
+
+### auto-generated section `build kotlin.gradle.scripting.k1.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-gradle-scripting-k1-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.K1Deprecation",
+  ]
+)
 
 jvm_library(
-  name = "kotlin-gradle-scripting-k1_test_lib",
+  name = "kotlin-gradle-scripting-k1-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-gradle-scripting-k1-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-gradle-scripting-k1",
-  associates = [":kotlin-gradle-scripting-k1"],
+  kotlinc_opts = ":custom_kotlin-gradle-scripting-k1-tests",
+  associates = ["//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k1:kotlin-gradle-scripting-k1"],
   deps = [
     "@lib//:kotlin-stdlib",
     "//plugins/gradle",
@@ -103,15 +119,16 @@ jvm_library(
     "//platform/core-ui",
     "@lib//:kotlinc-kotlin-compiler-tests",
     "@lib//:kotlin-tooling-core",
-  ]
+  ],
+  runtime_deps = [":kotlin-gradle-scripting-k1-tests"]
 )
-### auto-generated section `build kotlin.gradle.scripting.k1` end
+### auto-generated section `build kotlin.gradle.scripting.k1.tests` end
 
-### auto-generated section `test kotlin.gradle.scripting.k1` start
+### auto-generated section `test kotlin.gradle.scripting.k1.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-gradle-scripting-k1_test",
-  runtime_deps = [":kotlin-gradle-scripting-k1_test_lib"]
+  name = "kotlin-gradle-scripting-k1-tests_test",
+  runtime_deps = [":kotlin-gradle-scripting-k1-tests_test_lib"]
 )
-### auto-generated section `test kotlin.gradle.scripting.k1` end
+### auto-generated section `test kotlin.gradle.scripting.k1.tests` end
