@@ -128,7 +128,6 @@ fun createBuildContext(
       cacheDir = it,
       productionClassOutDir = compilationContext.classesOutputDirectory.resolve("production"),
       maxAccessTimeAge = compilationContext.options.jarCacheMaxAccessAge,
-      scope = scope,
     )
   } ?: NonCachingJarCacheManager
   return BuildContextImpl(

@@ -13,7 +13,6 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 internal const val entriesDirName = "entries"
-internal const val stripedLockFileName = "striped-lock-slots.lck"
 internal const val metadataFileSuffix = ".meta"
 internal const val markedForCleanupFileSuffix = ".mark"
 internal const val entryNameSeparator = "__"
@@ -65,10 +64,6 @@ internal fun getCacheKeyFromEntryStem(entryStem: String): String? {
     return null
   }
   return entryStem.substring(0, separatorIndex)
-}
-
-internal fun getStripedLockFile(versionedCacheDir: Path): Path {
-  return versionedCacheDir.resolve(stripedLockFileName)
 }
 
 internal fun getLockSlot(leastSignificantBits: Long): Long {

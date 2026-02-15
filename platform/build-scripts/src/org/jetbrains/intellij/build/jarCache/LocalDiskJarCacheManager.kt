@@ -5,24 +5,17 @@ package org.jetbrains.intellij.build.jarCache
 
 import com.dynatrace.hash4j.hashing.Hashing
 import io.opentelemetry.api.trace.Span
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import org.jetbrains.intellij.build.Source
 import org.jetbrains.intellij.build.StripedMutex
 import org.jetbrains.intellij.build.ZipSource
 import org.jetbrains.intellij.build.createSourceAndCacheStrategyList
-import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 private val keyLocks = StripedMutex(256)
-private val lockSlotGuards = StripedMutex(256)
 // Bump this version when build scripts semantics affecting cache contents change.
 private const val CACHE_VERSION = 0
 
@@ -31,12 +24,9 @@ class LocalDiskJarCacheManager(
   private val productionClassOutDir: Path,
   private val maxAccessTimeAge: Duration = 3.days,
   metadataTouchInterval: Duration = metadataTouchMinInterval,
-  scope: CoroutineScope? = null,
 ) : JarCacheManager {
   private val versionedCacheDir = cacheDir.resolve("v$CACHE_VERSION")
   private val entriesDir = versionedCacheDir.resolve(entriesDirName)
-  private val stripedLockFile = getStripedLockFile(versionedCacheDir)
-  private val scopedStripedLockChannel: FileChannel?
   private val lastCleanupMarkerFile = versionedCacheDir.resolve(cleanupMarkerFileName)
   private val legacyPurgeMarkerFile = cacheDir.resolve("$legacyPurgeMarkerPrefix$CACHE_VERSION")
   private val tempFilePrefix = longToString(ProcessHandle.current().pid())
@@ -47,21 +37,6 @@ class LocalDiskJarCacheManager(
     Files.createDirectories(cacheDir)
     Files.createDirectories(versionedCacheDir)
     Files.createDirectories(entriesDir)
-    val scopeJob = scope?.coroutineContext?.get(Job)
-    if (scopeJob == null) {
-      scopedStripedLockChannel = null
-    }
-    else {
-      val channel = FileChannel.open(stripedLockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-      scopedStripedLockChannel = channel
-      scopeJob.invokeOnCompletion {
-        try {
-          channel.close()
-        }
-        catch (_: Exception) {
-        }
-      }
-    }
     purgeLegacyCacheIfRequired(
       cacheDir = cacheDir,
       versionedCacheDir = versionedCacheDir,
@@ -75,6 +50,7 @@ class LocalDiskJarCacheManager(
       lastCleanupMarkerFile = lastCleanupMarkerFile,
       maxAccessTimeAge = maxAccessTimeAge,
       cleanupCandidateIndex = cleanupCandidateIndex,
+      metadataTouchTracker = metadataTouchTracker,
       withCacheEntryLock = { lockSlot, task -> withCacheEntryLock(lockSlot, task) },
     )
   }
@@ -147,37 +123,7 @@ class LocalDiskJarCacheManager(
     }
   }
 
-  @Suppress("ConvertTryFinallyToUseCall")
   private suspend fun <T> withCacheEntryLock(lockSlot: Long, task: suspend () -> T): T {
-    return keyLocks.getLockByHash(lockSlot).withLock {
-      lockSlotGuards.getLockByHash(lockSlot).withLock {
-        withContext(Dispatchers.IO) {
-          val channel = scopedStripedLockChannel
-          if (channel == null) {
-            val temporaryChannel = FileChannel.open(stripedLockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-            try {
-              withFileLock(channel = temporaryChannel, lockSlot = lockSlot, task = task)
-            }
-            finally {
-              temporaryChannel.close()
-            }
-          }
-          else {
-            withFileLock(channel = channel, lockSlot = lockSlot, task = task)
-          }
-        }
-      }
-    }
-  }
-}
-
-@Suppress("BlockingMethodInNonBlockingContext")
-private suspend fun <T> withFileLock(channel: FileChannel, lockSlot: Long, task: suspend () -> T): T {
-  val fileLock = channel.lock(lockSlot, 1, false)
-  try {
-    return task()
-  }
-  finally {
-    fileLock.release()
+    return keyLocks.getLockByHash(lockSlot).withLock { task() }
   }
 }

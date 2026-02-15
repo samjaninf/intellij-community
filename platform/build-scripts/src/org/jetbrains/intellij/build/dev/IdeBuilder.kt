@@ -496,7 +496,6 @@ private suspend fun createBuildContext(
       productionClassOutDir = classOutDir.resolve("production"),
       maxAccessTimeAge = buildOptionsTemplate?.jarCacheMaxAccessAge
                          ?: (System.getProperty(BuildOptions.JAR_CACHE_MAX_ACCESS_AGE_DAYS_PROPERTY)?.toLong()?.days ?: 3.days),
-      scope = scope,
     )
     launch(Dispatchers.IO + CoroutineName("cleanup jar cache")) {
       jarCacheManager.cleanup()

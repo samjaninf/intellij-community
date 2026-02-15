@@ -12,10 +12,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.FileTime
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
 internal class LocalDiskJarCacheCleanupTest {
@@ -43,9 +46,6 @@ internal class LocalDiskJarCacheCleanupTest {
       val metadataFile = entryPaths.metadataFile
       val markFile = entryPaths.markFile
       val cleanupMarkerFile = versionDir.resolve(".last.cleanup.marker")
-      val lockFile = getStripedLockFile(versionDir)
-
-      assertThat(Files.exists(lockFile)).isTrue()
 
       Files.setLastModifiedTime(metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
 
@@ -59,7 +59,6 @@ internal class LocalDiskJarCacheCleanupTest {
 
       assertThat(Files.exists(entryPaths.metadataFile)).isFalse()
       assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
-      assertThat(Files.exists(lockFile)).isTrue()
     }
   }
 
@@ -79,17 +78,13 @@ internal class LocalDiskJarCacheCleanupTest {
         producer = builder,
       )
 
-      val versionDir = findVersionDir(cacheDir)
       val entryPaths = findSingleEntryPaths(cacheDir)
       val metadataFile = entryPaths.metadataFile
-      val lockFile = getStripedLockFile(versionDir)
-      assertThat(Files.exists(lockFile)).isTrue()
 
       Files.delete(metadataFile)
       manager.cleanup()
 
       assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
-      assertThat(Files.exists(lockFile)).isTrue()
     }
   }
 
@@ -227,14 +222,12 @@ internal class LocalDiskJarCacheCleanupTest {
 
       val versionDir = findVersionDir(cacheDir)
       val cleanupMarkerFile = versionDir.resolve(".last.cleanup.marker")
-      val lockFile = getStripedLockFile(versionDir)
       val entryPaths = findSingleEntryPaths(cacheDir)
       Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
 
       manager.cleanup()
       assertThat(Files.exists(entryPaths.markFile)).isTrue()
 
-      Files.deleteIfExists(lockFile)
       manager.computeIfAbsent(
         sources = sources,
         targetFile = tempDir.resolve("out2/first.jar"),
@@ -244,9 +237,7 @@ internal class LocalDiskJarCacheCleanupTest {
       )
 
       assertThat(Files.exists(entryPaths.markFile)).isFalse()
-      assertThat(Files.exists(lockFile)).isTrue()
 
-      Files.deleteIfExists(lockFile)
       manager.computeIfAbsent(
         sources = sources,
         targetFile = tempDir.resolve("out3/first.jar"),
@@ -255,7 +246,6 @@ internal class LocalDiskJarCacheCleanupTest {
         producer = builder,
       )
 
-      assertThat(Files.exists(lockFile)).isFalse()
       assertThat(produceCalls.get()).isEqualTo(1)
 
       Files.setLastModifiedTime(cleanupMarkerFile, FileTime.fromMillis(System.currentTimeMillis() - 2.days.inWholeMilliseconds))
@@ -295,7 +285,67 @@ internal class LocalDiskJarCacheCleanupTest {
   }
 
   @Test
-  fun `cleanup skips lock acquisition for fresh unmarked entries`() {
+  fun `cleanup keeps stale entry when metadata touch recently failed`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val builder = TestSourceBuilder(produceCalls = AtomicInteger(), useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val entryPaths = findSingleEntryPaths(cacheDir)
+      Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
+      registerTouchFailure(manager = manager, entryStem = entryPaths.entryStem, attemptedTouchTime = System.currentTimeMillis())
+
+      manager.cleanup()
+
+      assertThat(entryPaths.payloadFile).exists()
+      assertThat(entryPaths.metadataFile).exists()
+      assertThat(entryPaths.markFile).doesNotExist()
+    }
+  }
+
+  @Test
+  fun `cleanup marks stale entry when metadata touch failure is older than grace`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val builder = TestSourceBuilder(produceCalls = AtomicInteger(), useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val entryPaths = findSingleEntryPaths(cacheDir)
+      Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
+      registerTouchFailure(
+        manager = manager,
+        entryStem = entryPaths.entryStem,
+        attemptedTouchTime = System.currentTimeMillis() - 2.hours.inWholeMilliseconds,
+      )
+
+      manager.cleanup()
+
+      assertThat(entryPaths.payloadFile).exists()
+      assertThat(entryPaths.metadataFile).exists()
+      assertThat(entryPaths.markFile).exists()
+    }
+  }
+
+  @Test
+  fun `cleanup keeps fresh unmarked entries intact`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
       val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
@@ -307,7 +357,6 @@ internal class LocalDiskJarCacheCleanupTest {
       )
       val metadataFile = entryPaths.metadataFile
       val markFile = entryPaths.markFile
-      val lockFile = getStripedLockFile(versionDir)
 
       Files.createDirectories(entryPaths.payloadFile.parent)
       Files.writeString(entryPaths.payloadFile, "payload")
@@ -316,14 +365,13 @@ internal class LocalDiskJarCacheCleanupTest {
 
       manager.cleanup()
 
-      assertThat(Files.exists(lockFile)).isFalse()
       assertThat(Files.exists(entryPaths.payloadFile)).isTrue()
       assertThat(Files.exists(markFile)).isFalse()
     }
   }
 
   @Test
-  fun `cleanup removes malformed key entries without lock acquisition`() {
+  fun `cleanup removes malformed key entries`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
       val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
@@ -335,7 +383,6 @@ internal class LocalDiskJarCacheCleanupTest {
       )
       val metadataFile = entryPaths.metadataFile
       val markFile = entryPaths.markFile
-      val lockFile = getStripedLockFile(versionDir)
 
       Files.createDirectories(entryPaths.payloadFile.parent)
       Files.writeString(entryPaths.payloadFile, "payload")
@@ -344,7 +391,6 @@ internal class LocalDiskJarCacheCleanupTest {
 
       manager.cleanup()
 
-      assertThat(Files.exists(lockFile)).isFalse()
       assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
       assertThat(Files.exists(metadataFile)).isFalse()
       assertThat(Files.exists(markFile)).isFalse()
@@ -352,7 +398,7 @@ internal class LocalDiskJarCacheCleanupTest {
   }
 
   @Test
-  fun `cleanup removes entries with missing key prefix without lock acquisition`() {
+  fun `cleanup removes entries with missing key prefix`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
       val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
@@ -363,7 +409,6 @@ internal class LocalDiskJarCacheCleanupTest {
       )
       val metadataFile = entryPaths.metadataFile
       val markFile = entryPaths.markFile
-      val lockFile = getStripedLockFile(versionDir)
 
       Files.createDirectories(entryPaths.payloadFile.parent)
       Files.writeString(entryPaths.payloadFile, "payload")
@@ -372,7 +417,6 @@ internal class LocalDiskJarCacheCleanupTest {
 
       manager.cleanup()
 
-      assertThat(Files.exists(lockFile)).isFalse()
       assertThat(Files.exists(entryPaths.payloadFile)).isFalse()
       assertThat(Files.exists(metadataFile)).isFalse()
       assertThat(Files.exists(markFile)).isFalse()
@@ -421,6 +465,110 @@ internal class LocalDiskJarCacheCleanupTest {
       assertThat(staleEntryPaths.metadataFile).doesNotExist()
       assertThat(staleEntryPaths.markFile).doesNotExist()
     }
+  }
+
+  @Test
+  fun `cleanup adaptive shard scan reaches entries past fixed sixty-four shard window`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val entriesDir = versionDir.resolve("entries")
+
+      val targetShardIndex = 69
+      var targetEntryPaths: TestEntryPaths? = null
+      repeat(700) { shardIndex ->
+        val shardDir = entriesDir.resolve(shardIndex.toString().padStart(3, '0'))
+        Files.createDirectories(shardDir)
+        val entryStem = createEntryStemInShard(index = 100_000 + shardIndex)
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 10)
+        if (shardIndex == targetShardIndex) {
+          targetEntryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
+        }
+      }
+
+      manager.cleanup()
+
+      assertThat(targetEntryPaths).isNotNull
+      assertThat(targetEntryPaths!!.markFile).exists()
+    }
+  }
+
+  @Test
+  fun `cleanup keeps scan cursor file readable across repeated updates`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val entriesDir = versionDir.resolve("entries")
+      val cleanupMarkerFile = versionDir.resolve(".last.cleanup.marker")
+      val scanCursorFile = versionDir.resolve(".cleanup.scan.cursor")
+
+      repeat(3) { shardIndex ->
+        val shardDir = entriesDir.resolve(shardIndex.toString().padStart(2, '0'))
+        Files.createDirectories(shardDir)
+        repeat(20) { entryIndex ->
+          writeEntry(
+            shardDir = shardDir,
+            entryStem = createEntryStemInShard(index = shardIndex * 1_000 + entryIndex),
+            metadataAgeDays = 10,
+          )
+        }
+      }
+
+      repeat(8) { pass ->
+        if (pass > 0 && Files.exists(cleanupMarkerFile)) {
+          Files.setLastModifiedTime(cleanupMarkerFile, FileTime.fromMillis(System.currentTimeMillis() - 2.days.inWholeMilliseconds))
+        }
+        manager.cleanup()
+
+        assertThat(scanCursorFile).exists()
+        val cursorValue = Files.readString(scanCursorFile).trim()
+        assertThat(cursorValue).isNotBlank()
+
+        val shardName = cursorValue.substringBefore('|')
+        assertThat(shardName).isNotBlank()
+
+        val hasEntryStem = cursorValue.contains('|')
+        if (hasEntryStem) {
+          assertThat(cursorValue.substringAfter('|')).isNotBlank()
+        }
+      }
+    }
+  }
+
+  @Test
+  fun `scan cursor write supports fallback move strategy`() {
+    val cursorDir = tempDir.resolve("cursor")
+    Files.createDirectories(cursorDir)
+    val scanCursorFile = cursorDir.resolve(".cleanup.scan.cursor")
+    val tempFilePrefix = "scan-cursor-fallback"
+    val maintenanceClass = Class.forName("org.jetbrains.intellij.build.jarCache.LocalDiskJarCacheMaintenanceKt")
+    val writeMethod = maintenanceClass.declaredMethods.single {
+      it.name.startsWith("writeCleanupScanCursorAtomically") &&
+      it.parameterTypes.size == 4 &&
+      it.parameterTypes[0] == Path::class.java &&
+      it.parameterTypes[1] == String::class.java &&
+      it.parameterTypes[2] == String::class.java
+    }
+    writeMethod.isAccessible = true
+
+    writeMethod.invoke(
+      null,
+      scanCursorFile,
+      "aa|key__first.jar",
+      tempFilePrefix,
+      { from: Path, to: Path -> Files.move(from, to, StandardCopyOption.REPLACE_EXISTING) },
+    )
+
+    assertThat(Files.readString(scanCursorFile)).isEqualTo("aa|key__first.jar")
+
+    val leftovers = Files.newDirectoryStream(cursorDir).use { stream ->
+      stream.filterTo(mutableListOf()) {
+        it.fileName.toString().contains(".tmp.$tempFilePrefix-")
+      }
+    }
+    assertThat(leftovers).isEmpty()
   }
 
   private fun createManager(
@@ -503,10 +651,6 @@ internal class LocalDiskJarCacheCleanupTest {
     return entryStem.substring(0, separatorIndex)
   }
 
-  private fun getStripedLockFile(versionDir: Path): Path {
-    return versionDir.resolve("striped-lock-slots.lck")
-  }
-
   private fun writeEntry(shardDir: Path, entryStem: String, metadataAgeDays: Int) {
     val entryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
     Files.writeString(entryPaths.payloadFile, "payload")
@@ -532,6 +676,14 @@ internal class LocalDiskJarCacheCleanupTest {
     repeat(45_000) { offset ->
       registerMethod.invoke(cleanupCandidateIndex, "queued${seed + offset}${entryNameSeparatorForTests}dummy.jar", "zz")
     }
+  }
+
+  private fun registerTouchFailure(manager: LocalDiskJarCacheManager, entryStem: String, attemptedTouchTime: Long) {
+    val metadataTouchTrackerField = LocalDiskJarCacheManager::class.java.getDeclaredField("metadataTouchTracker")
+    metadataTouchTrackerField.isAccessible = true
+    val metadataTouchTracker = metadataTouchTrackerField.get(manager)
+    val onTouchFailureMethod = metadataTouchTracker.javaClass.getDeclaredMethod("onTouchFailure", String::class.java, Long::class.javaPrimitiveType)
+    onTouchFailureMethod.invoke(metadataTouchTracker, entryStem, attemptedTouchTime)
   }
 
   private fun findVersionDir(cacheDir: Path): Path {
@@ -560,7 +712,7 @@ internal class LocalDiskJarCacheCleanupTest {
     override suspend fun produce(targetFile: Path) {
       produceCalls.incrementAndGet()
       if (produceDelayMs > 0) {
-        delay(produceDelayMs)
+        delay(produceDelayMs.milliseconds)
       }
       Files.createDirectories(targetFile.parent)
       Files.writeString(targetFile, "payload")

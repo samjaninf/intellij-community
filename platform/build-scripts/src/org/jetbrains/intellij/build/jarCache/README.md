@@ -2,6 +2,8 @@
 
 This directory implements the local on-disk cache for built jar payloads in build scripts.
 
+The normative behavior contract is defined in [`SPEC.md`](./SPEC.md).
+
 ## File Map
 
 ```
@@ -41,7 +43,6 @@ LocalDiskJarCacheCommon.kt
         <key>__<target-file-name>.jar
         <key>__<target-file-name>.jar.meta
         <key>__<target-file-name>.jar.mark     (optional)
-    striped-lock-slots.lck
     .last.cleanup.marker
     .cleanup.scan.cursor
 
@@ -96,20 +97,18 @@ computeIfAbsent
   |     - materialize target (link/copy)
   |     - touch metadata mtime (throttled in-memory, no read-before-touch)
   |
-  +-- fallback under per-key lock
+  +-- fallback under in-process per-key lock
         - re-check hit path (strict, delete invalid)
         - on miss: produceAndCache
 ```
 
 ## Locking Model
 
-Per key, two layers are used:
+Per key, one in-process striped mutex layer (`StripedMutex`) is used.
 
-1. In-process striped mutex (`StripedMutex`)
-2. Cross-process byte-range lock (`FileChannel.lock(position = keySlot, size = 1)`) on `striped-lock-slots.lck`
+`keySlot = leastSignificantBits(hash128) mod 4096`. This serializes operations per key slot inside one process.
 
-`keySlot = leastSignificantBits(hash128) mod 4096`. This keeps locking centralized while serializing operations per key slot across processes.
-When a manager scope is available, the lock file channel is reused for the manager lifetime; otherwise lock operations open and close a channel per use.
+Cross-process writes are lock-free: duplicate producers for the same key are allowed. Publication is `payload -> metadata`, where metadata is the commit marker.
 
 ## Metadata Semantics
 
@@ -129,11 +128,13 @@ Metadata file modification time is treated as last access timestamp for retentio
 - Metadata file `mtime` is the authoritative access-time signal for stale cleanup and external cache retention.
 - Cache hits never read `mtime` before touching; they use in-memory throttling and periodic `setLastModifiedTime`.
 - Marked entries bypass throttle to make reaccess visible immediately and avoid stale second-pass deletion.
+- If metadata touch fails, cleanup applies a bounded in-memory grace window before treating the entry as stale.
 
 ### Cleanup Candidate Queue Plus Reserved Scan
 
 - Cleanup consumes a bounded in-memory candidate queue for hot entries.
 - Every cleanup run also reserves scan capacity for shard-window traversal (`.cleanup.scan.cursor`) so cold or misplaced entries are still discovered.
+- Shard scan budget is adaptive (`max(64, ceil(10% of shard count))`) and still capped by current shard count.
 
 ### Metadata Safety Limits
 
@@ -177,3 +178,21 @@ At startup, once per epoch marker (`.legacy-format-purged.<version>`):
 `CACHE_VERSION` (`LocalDiskJarCacheManager.kt`) defines cache namespace.
 
 Bump it when build-script semantics that affect jar contents change.
+
+## Running Tests
+
+Run `jarCache` tests from repository root with the build-scripts test module explicitly selected:
+
+```bash
+./tests.cmd \
+  -Dintellij.build.test.main.module=intellij.platform.buildScripts.tests \
+  '-Dintellij.build.test.patterns=org.jetbrains.intellij.build.jarCache.LocalDiskJarCacheManagerTest;org.jetbrains.intellij.build.jarCache.LocalDiskJarCacheCleanupTest'
+```
+
+Run a single class:
+
+```bash
+./tests.cmd \
+  -Dintellij.build.test.main.module=intellij.platform.buildScripts.tests \
+  -Dintellij.build.test.patterns=org.jetbrains.intellij.build.jarCache.LocalDiskJarCacheCleanupTest
+```
