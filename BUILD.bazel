@@ -380,7 +380,6 @@ jvm_library(
     "//python/python-exec-service:community-execService",
     "//python/python-exec-service:community-execService_test_lib",
     "//python/python-pyproject:pyproject",
-    "//python/python-pyproject:pyproject_test_lib",
     "//platform/indexing-tests:indexing-tests_test_lib",
     "//platform/testFramework/monorepo",
     "//platform/testFramework/monorepo:monorepo_test_lib",
@@ -421,6 +420,7 @@ jvm_library(
     "//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename-tests_test_lib",
     "//python/python-venv:venv-tests_test_lib",
     "//python/services/system-python:python-community-services-systemPython-tests_test_lib",
+    "//python/python-pyproject:pyproject-tests_test_lib",
   ]
 )
 ### auto-generated section `build intellij.idea.community.main` end

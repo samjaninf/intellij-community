@@ -361,7 +361,6 @@ jvm_library(
     "//platform/backend/observation:observation_test_lib",
     "//python/python-exec-service:community-execService_test_lib",
     "//python/services/internal-impl:python-community-services-internal-impl_test_lib",
-    "//python/python-pyproject:pyproject_test_lib",
     "//platform/xdebugger-impl/ui:ui_test_lib",
   ]
 )
@@ -538,7 +537,6 @@ jvm_library(
     "//platform/backend/workspace",
     "//python/impl.helperLocator:community-helpersLocator",
     "//python/python-pyproject:pyproject",
-    "//python/python-pyproject:pyproject_test_lib",
     "//python/python-syntax:syntax",
     "//python/python-exec-service:community-execService",
     "//python/python-exec-service:community-execService_test_lib",
