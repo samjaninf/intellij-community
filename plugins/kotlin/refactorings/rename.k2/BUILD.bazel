@@ -48,13 +48,33 @@ jvm_library(
     "//java/java-impl-refactorings:impl-refactorings",
   ]
 )
+### auto-generated section `build intellij.kotlin.refactorings.rename` end
+
+### auto-generated section `build intellij.kotlin.refactorings.rename.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-refactorings-rename-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction",
+    "org.jetbrains.kotlin.analysis.api.permissions.KaAllowProhibitedAnalyzeFromWriteAction",
+    "org.jetbrains.kotlin.analysis.api.KaIdeApi",
+    "org.jetbrains.kotlin.analysis.api.KaContextParameterApi",
+  ],
+  x_context_parameters = True
+)
 
 jvm_library(
-  name = "kotlin-refactorings-rename_test_lib",
+  name = "kotlin-refactorings-rename-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-refactorings-rename-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-refactorings-rename",
-  associates = [":kotlin-refactorings-rename"],
+  kotlinc_opts = ":custom_kotlin-refactorings-rename-tests",
+  associates = ["//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename"],
   deps = [
     "@lib//:kotlinc-kotlin-compiler-common",
     "@lib//:kotlinc-kotlin-compiler-tests",
@@ -79,7 +99,6 @@ jvm_library(
     "//platform/lang-impl",
     "//plugins/kotlin/tests-common:common-tests_test_lib",
     "//plugins/kotlin/test-framework:test-framework_test_lib",
-    "//plugins/kotlin/fir/tests:tests_test_lib",
     "//plugins/kotlin/base/fir/code-insight:kotlin-codeInsight-base",
     "//java/testFramework",
     "//plugins/kotlin/refactorings/kotlin.refactorings.common:kotlin-refactorings-common",
@@ -91,15 +110,16 @@ jvm_library(
     "//java/java-indexing-api:indexing",
     "//java/java-impl-refactorings:impl-refactorings",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
-  ]
+  ],
+  runtime_deps = [":kotlin-refactorings-rename-tests"]
 )
-### auto-generated section `build intellij.kotlin.refactorings.rename` end
+### auto-generated section `build intellij.kotlin.refactorings.rename.tests` end
 
-### auto-generated section `test intellij.kotlin.refactorings.rename` start
+### auto-generated section `test intellij.kotlin.refactorings.rename.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-refactorings-rename_test",
-  runtime_deps = [":kotlin-refactorings-rename_test_lib"]
+  name = "kotlin-refactorings-rename-tests_test",
+  runtime_deps = [":kotlin-refactorings-rename-tests_test_lib"]
 )
-### auto-generated section `test intellij.kotlin.refactorings.rename` end
+### auto-generated section `test intellij.kotlin.refactorings.rename.tests` end

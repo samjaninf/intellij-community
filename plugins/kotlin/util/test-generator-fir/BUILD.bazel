@@ -48,7 +48,6 @@ jvm_library(
     "//plugins/kotlin/navigation/tests:tests_test_lib",
     "//plugins/kotlin/jvm-debugger/test/k2/testFramework:testFramework_test_lib",
     "//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename",
-    "//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename_test_lib",
     "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting",
     "//plugins/kotlin/refactorings/kotlin.refactorings.tests.k2:kotlin-refactorings-tests_test_lib",
@@ -80,6 +79,7 @@ jvm_library(
     "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java-tests_test_lib",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting-tests_test_lib",
     "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move-tests_test_lib",
+    "//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )
