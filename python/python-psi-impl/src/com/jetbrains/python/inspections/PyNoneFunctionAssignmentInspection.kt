@@ -1,83 +1,84 @@
 // Copyright 2000-2017 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-package com.jetbrains.python.inspections;
+package com.jetbrains.python.inspections
 
-import com.intellij.codeInspection.LocalInspectionToolSession;
-import com.intellij.codeInspection.ProblemsHolder;
-import com.intellij.openapi.util.Condition;
-import com.intellij.psi.PsiElementVisitor;
-import com.intellij.util.containers.ContainerUtil;
-import com.jetbrains.python.PyPsiBundle;
-import com.jetbrains.python.inspections.quickfix.PyRemoveAssignmentQuickFix;
-import com.jetbrains.python.psi.PyAssignmentStatement;
-import com.jetbrains.python.psi.PyCallExpression;
-import com.jetbrains.python.psi.PyCallable;
-import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.psi.PyFunction;
-import com.jetbrains.python.psi.search.PyOverridingMethodsSearch;
-import com.jetbrains.python.psi.types.PyType;
-import com.jetbrains.python.psi.types.TypeEvalContext;
-import com.jetbrains.python.sdk.legacy.PythonSdkUtil;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.jetbrains.python.psi.types.PyNoneTypeKt.isNoneType;
+import com.intellij.codeInspection.LocalInspectionToolSession
+import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementVisitor
+import com.jetbrains.python.PyPsiBundle
+import com.jetbrains.python.inspections.quickfix.PyRemoveAssignmentQuickFix
+import com.jetbrains.python.psi.PyAssignmentStatement
+import com.jetbrains.python.psi.PyCallExpression
+import com.jetbrains.python.psi.PyExpressionStatement
+import com.jetbrains.python.psi.PyFunction
+import com.jetbrains.python.psi.PyParenthesizedExpression
+import com.jetbrains.python.psi.search.PyOverridingMethodsSearch
+import com.jetbrains.python.psi.types.TypeEvalContext
+import com.jetbrains.python.psi.types.isNoneType
+import com.jetbrains.python.sdk.legacy.PythonSdkUtil
 
 /**
  * User: ktisha
- *
+ * 
  * pylint E1111
- *
+ * 
  * Used when an assignment is done on a function call but the inferred function doesn't return anything.
+ * Also reports when the result of such a function is used in other contexts (e.g., as an argument, in f-strings).
  */
-public final class PyNoneFunctionAssignmentInspection extends PyInspection {
-
-  @Override
-  public @NotNull PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder,
-                                                 boolean isOnTheFly,
-                                                 @NotNull LocalInspectionToolSession session) {
-    return new Visitor(holder, PyInspectionVisitor.getContext(session));
+class PyNoneFunctionAssignmentInspection : PyInspection() {
+  override fun buildVisitor(
+    holder: ProblemsHolder,
+    isOnTheFly: Boolean,
+    session: LocalInspectionToolSession,
+  ): PsiElementVisitor {
+    return Visitor(holder, PyInspectionVisitor.getContext(session))
   }
 
+  private class Visitor(holder: ProblemsHolder, context: TypeEvalContext) : PyInspectionVisitor(holder, context) {
+    private val myHasInheritors = mutableMapOf<PyFunction, Boolean>()
 
-  private static final class Visitor extends PyInspectionVisitor {
-    private final Map<PyFunction, Boolean> myHasInheritors = new HashMap<>();
+    override fun visitPyCallExpression(call: PyCallExpression) {
+      if (!call.isReturnValueUsed()) {
+        return
+      }
 
-    private Visitor(@NotNull ProblemsHolder holder, @NotNull TypeEvalContext context) {
-      super(holder, context);
-    }
+      val type = myTypeEvalContext.getType(call)
+      val callee = call.callee
 
-    @Override
-    public void visitPyAssignmentStatement(@NotNull PyAssignmentStatement node) {
-      final PyExpression value = node.getAssignedValue();
-      if (value instanceof PyCallExpression call) {
-        final PyType type = myTypeEvalContext.getType(value);
-        final PyExpression callee = call.getCallee();
-
-        if (isNoneType(type) && callee != null) {
-          final Condition<PyCallable> ignoredCallable =
-            callable -> !isNoneType(myTypeEvalContext.getReturnType(callable)) ||
-                        PythonSdkUtil.isElementInSkeletons(callable) ||
-                        callable instanceof PyFunction && hasInheritors((PyFunction)callable);
-
-          final List<PyCallable> callables = call.multiResolveCalleeFunction(getResolveContext());
-          if (!callables.isEmpty() && !ContainerUtil.exists(callables, ignoredCallable)) {
-            registerProblem(node, PyPsiBundle.message("INSP.none.function.assignment", callee.getName()), new PyRemoveAssignmentQuickFix());
-          }
-        }
+      if (!type.isNoneType || callee == null) return
+      val callables = call.multiResolveCalleeFunction(resolveContext)
+      if (callables.isEmpty() || callables.any { callable ->
+          !myTypeEvalContext.getReturnType(callable).isNoneType ||
+          PythonSdkUtil.isElementInSkeletons(callable) ||
+          callable is PyFunction && callable.hasInheritors()
+        }) return
+      val parent = call.parent
+      if (parent is PyAssignmentStatement) {
+        registerProblem(
+          parent, PyPsiBundle.message("INSP.none.function.assignment", callee.name),
+          PyRemoveAssignmentQuickFix()
+        )
+      }
+      else {
+        registerProblem(call, PyPsiBundle.message("INSP.none.function.assignment", callee.name))
       }
     }
 
-    private boolean hasInheritors(@NotNull PyFunction function) {
-      final Boolean cached = myHasInheritors.get(function);
-      if (cached != null) {
-        return cached;
-      }
-      final boolean result = PyOverridingMethodsSearch.search(function, true).findFirst() != null;
-      myHasInheritors.put(function, result);
-      return result;
+    fun PyFunction.hasInheritors(): Boolean =
+      myHasInheritors.getOrPut(this) { PyOverridingMethodsSearch.search(this, true).findFirst() != null }
+
+    /**
+     * Checks if the return value of the call expression is used.
+     * Returns false if the call is a standalone expression statement.
+     */
+    private fun PyCallExpression.isReturnValueUsed(): Boolean {
+      // Standalone expression statement - value not used
+      return getParentSkippingParentheses() !is PyExpressionStatement
+    }
+
+    private fun PsiElement.getParentSkippingParentheses(): PsiElement {
+      return generateSequence(parent) { it.parent }
+        .first { it !is PyParenthesizedExpression }
     }
   }
 }

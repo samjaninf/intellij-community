@@ -13,72 +13,90 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.jetbrains.python.inspections;
+package com.jetbrains.python.inspections
 
-import com.jetbrains.python.fixtures.PyInspectionTestCase;
-import org.jetbrains.annotations.NotNull;
+import com.intellij.idea.TestFor
+import com.jetbrains.python.fixtures.PyInspectionTestCase
 
-public class PyNoneFunctionAssignmentInspectionTest extends PyInspectionTestCase {
-
-  public void testPass() {
-    doTest();
+class PyNoneFunctionAssignmentInspectionTest : PyInspectionTestCase() {
+  fun testPass() {
+    doTest()
   }
 
-  public void testReturnNone() {
-    doTest();
+  fun testReturnNone() {
+    doTest()
   }
 
-  public void testNoReturn() {
-    doTest();
+  fun testNoReturn() {
+    doTest()
   }
 
-  public void testTrueNegative() {
-    doTest();
+  fun testTrueNegative() {
+    doTest()
   }
 
-  public void testNoType() {
-    doTest();
-  }
-
-  // PY-10883
-  public void testMethodWithInheritors() {
-    doTest();
+  fun testNoType() {
+    doTest()
   }
 
   // PY-10883
-  public void testDecoratedMethod() {
-    doTest();
+  fun testMethodWithInheritors() {
+    doTest()
+  }
+
+  // PY-10883
+  fun testDecoratedMethod() {
+    doTest()
   }
 
   // PY-28729
-  public void testGenericSubstitutedWithNone() {
+  fun testGenericSubstitutedWithNone() {
     doTestByText(
       """
         test1 = max([])
         test2 = max([], default=None)
-        test3 = max([], default=0)"""
-    );
+        test3 = max([], default=0)
+        """.trimIndent()
+    )
   }
 
   // PY-30467
-  public void testAssigningAbstractMethodResult() {
-    doTestByText("""
+  fun testAssigningAbstractMethodResult() {
+    doTestByText(
+      """
                    from abc import ABC, abstractmethod
-
+                   
                    class A(ABC):
                        def get_something(self):
                            something = self.get_another_thing()
                            return something
-
+                   
                        @abstractmethod
                        def get_another_thing(self):
                            pass
-                   """);
+                   
+                   """.trimIndent()
+    )
   }
 
-  @NotNull
-  @Override
-  protected Class<? extends PyInspection> getInspectionClass() {
-    return PyNoneFunctionAssignmentInspection.class;
+  @TestFor(issues = ["PY-80351"])
+  fun `test used in other contexts`() {
+    doTestByText("""
+             def f() -> None:
+                 return None
+             
+             <weak_warning descr="Function 'f' doesn't return anything">y = f() # comment</weak_warning>
+             print(<weak_warning descr="Function 'f' doesn't return anything">f()</weak_warning>)
+             f"{<weak_warning descr="Function 'f' doesn't return anything">f()</weak_warning>}"
+             [<weak_warning descr="Function 'f' doesn't return anything">f()</weak_warning>]
+             (<weak_warning descr="Function 'f' doesn't return anything">f()</weak_warning>,)
+             
+             f()
+             """.trimIndent()
+    )
+  }
+
+  override fun getInspectionClass(): Class<out PyInspection?> {
+    return PyNoneFunctionAssignmentInspection::class.java
   }
 }
