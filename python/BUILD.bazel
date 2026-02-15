@@ -360,7 +360,6 @@ jvm_library(
     "//platform/statistics:statistics_test_lib",
     "//platform/backend/observation:observation_test_lib",
     "//python/python-exec-service:community-execService_test_lib",
-    "//python/services/system-python:system-python_test_lib",
     "//python/services/internal-impl:python-community-services-internal-impl_test_lib",
     "//python/python-pyproject:pyproject_test_lib",
     "//platform/xdebugger-impl/ui:ui_test_lib",
@@ -561,7 +560,6 @@ jvm_library(
     "//python/services/shared:shared_test_lib",
     "//python/python-venv:venv",
     "//python/services/system-python",
-    "//python/services/system-python:system-python_test_lib",
     "//python/interpreters",
   ],
   runtime_deps = [":python-community-tests"]

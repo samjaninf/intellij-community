@@ -62,7 +62,6 @@ jvm_library(
     "//libraries/junit5",
     "//platform/testFramework/common",
     "//python/services/system-python",
-    "//python/services/system-python:system-python_test_lib",
   ],
   exports = [
     "//python/python-test-env/core",
