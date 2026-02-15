@@ -197,10 +197,16 @@ sealed class TypeEvalContext(
     return RecursionManager.doPreventingRecursion(element to this, false) {
       val type: PyType?
       if (typeEngine != null && typeEngine!!.isSupportedForResolve(element)) {
+        val startTime = System.currentTimeMillis()
         type = Ref.deref(typeEngine!!.resolveType(element, this is LibraryTypeEvalContext))
+        val duration = System.currentTimeMillis() - startTime
+        PyTypeEvaluationStatisticsService.getInstance().logHybridTypeEngineTime(duration)
       }
       else {
+        val startTime = System.currentTimeMillis()
         type = element.getType(this, KeyImpl)
+        val duration = System.currentTimeMillis() - startTime
+        PyTypeEvaluationStatisticsService.getInstance().logJBTypeEngineTime(duration)
       }
 
       assertValid(type, element)
