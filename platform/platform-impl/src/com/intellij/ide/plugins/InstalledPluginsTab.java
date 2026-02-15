@@ -223,13 +223,10 @@ class InstalledPluginsTab extends PluginsTab {
 
         String defaultCategory = IdeBundle.message("plugins.configurable.other.bundled");
 
-        Map<String, JComponent> promotionPanels = new HashMap<>();
+        Map<String, Supplier<JComponent>> promotionPanelSuppliers = new HashMap<>();
         if (Registry.is("ide.plugins.category.promotion.enabled")) {
           for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
-            JComponent panel = provider.createPromotionPanel();
-            if (panel != null) {
-              promotionPanels.put(provider.getCategoryName(), panel);
-            }
+            promotionPanelSuppliers.put(provider.getCategoryName(), provider::createPromotionPanel);
           }
         }
 
@@ -242,21 +239,29 @@ class InstalledPluginsTab extends PluginsTab {
             ComparablePluginsGroup group =
               new ComparablePluginsGroup(entry.getKey(), entry.getValue(), model.getVisiblePluginsRequiresUltimate());
             if (Registry.is("ide.plugins.category.promotion.enabled")) {
-              JComponent promotionPanel = promotionPanels.get(entry.getKey());
-              if (promotionPanel != null) {
-                group.setPromotionPanel(promotionPanel);
+              Supplier<JComponent> promotionPanelSupplier = promotionPanelSuppliers.get(entry.getKey());
+              if (promotionPanelSupplier != null) {
+                JComponent promotionPanel = promotionPanelSupplier.get();
+                if (promotionPanel != null) {
+                  group.setPromotionPanel(promotionPanel);
+                }
               }
             }
             return group;
           })
           .sorted((o1, o2) -> {
             if (Registry.is("ide.plugins.category.promotion.enabled")) {
+              boolean isPriorityO1 = false;
+              boolean isPriorityO2 = false;
               for (PluginCategoryPromotionProvider provider : PROMOTION_EP_NAME.getExtensionList()) {
                 if (provider.isPriorityCategory()) {
                   String priorityCategory = provider.getCategoryName();
-                  if (priorityCategory.equals(o1.title)) return -1;
-                  if (priorityCategory.equals(o2.title)) return 1;
+                  if (priorityCategory.equals(o1.title)) isPriorityO1 = true;
+                  if (priorityCategory.equals(o2.title)) isPriorityO2 = true;
                 }
+              }
+              if (isPriorityO1 != isPriorityO2) {
+                return isPriorityO1 ? -1 : 1;
               }
             }
             if (defaultCategory.equals(o1.title)) return 1;
