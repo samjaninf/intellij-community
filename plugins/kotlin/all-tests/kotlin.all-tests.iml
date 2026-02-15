@@ -78,5 +78,6 @@
     <orderEntry type="module" module-name="kotlin.jvm-debugger.testFramework" scope="RUNTIME" />
     <orderEntry type="module" module-name="kotlin.code-insight.k1.tests" scope="RUNTIME" />
     <orderEntry type="module" module-name="kotlin.code-insight.live-templates.k1.tests" scope="RUNTIME" />
+    <orderEntry type="module" module-name="kotlin.gradle.gradle-java.k1.tests" scope="RUNTIME" />
   </component>
 </module>
