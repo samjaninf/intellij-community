@@ -21,6 +21,7 @@ import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider.GeneratorTyp
 import com.jetbrains.python.documentation.PythonDocumentationProvider;
 import com.jetbrains.python.inspections.quickfix.PyMakeFunctionReturnTypeQuickFix;
 import com.jetbrains.python.psi.PyAnnotation;
+import com.jetbrains.python.psi.PyAnnotationOwner;
 import com.jetbrains.python.psi.PyBinaryExpression;
 import com.jetbrains.python.psi.PyCallExpression;
 import com.jetbrains.python.psi.PyCallSiteExpression;
@@ -31,6 +32,7 @@ import com.jetbrains.python.psi.PyComprehensionForComponent;
 import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.PyForStatement;
 import com.jetbrains.python.psi.PyFunction;
+import com.jetbrains.python.psi.PyNamedParameter;
 import com.jetbrains.python.psi.PyQualifiedExpression;
 import com.jetbrains.python.psi.PyReferenceExpression;
 import com.jetbrains.python.psi.PyReferenceOwner;
@@ -38,6 +40,7 @@ import com.jetbrains.python.psi.PyReturnStatement;
 import com.jetbrains.python.psi.PyStatement;
 import com.jetbrains.python.psi.PySubscriptionExpression;
 import com.jetbrains.python.psi.PyTargetExpression;
+import com.jetbrains.python.psi.PyTypeCommentOwner;
 import com.jetbrains.python.psi.PyUtil;
 import com.jetbrains.python.psi.PyWithItem;
 import com.jetbrains.python.psi.PyWithStatement;
@@ -163,9 +166,7 @@ public class PyTypeCheckerInspection extends PyInspection {
     public void visitPyReturnStatement(@NotNull PyReturnStatement node) {
       ScopeOwner owner = ScopeUtil.getScopeOwner(node);
       if (owner instanceof PyFunction function) {
-        PyAnnotation annotation = function.getAnnotation();
-        String typeCommentAnnotation = function.getTypeCommentAnnotation();
-        if (annotation != null || typeCommentAnnotation != null) {
+        if (hasExplicitType(function)) {
           PyType expected = getExpectedReturnStatementType(function, myTypeEvalContext);
           if (expected == null) return;
 
@@ -242,9 +243,7 @@ public class PyTypeCheckerInspection extends PyInspection {
 
     private @Nullable GeneratorTypeDescriptor getGeneratorDescriptorFromAnnotation(@NotNull PyFunction function,
                                                                                    @NotNull PyYieldExpression yieldExpr) {
-      final PyAnnotation annotation = function.getAnnotation();
-      final String typeCommentAnnotation = function.getTypeCommentAnnotation();
-      if (annotation == null && typeCommentAnnotation == null) return null;
+      if (!hasExplicitType(function)) return null;
 
       final PyType annotatedReturnType = myTypeEvalContext.getReturnType(function);
       if (annotatedReturnType == null) return null;
@@ -395,17 +394,16 @@ public class PyTypeCheckerInspection extends PyInspection {
       });
     }
 
-    private @Nullable PyType tryPromotingType(@NotNull PyExpression value, @Nullable PyType expected) {
-      final PyType promotedToLiteral = PyLiteralType.Companion.promoteToLiteral(value, expected, myTypeEvalContext, null);
+    private @Nullable PyType tryPromotingType(@NotNull PyExpression expr, @Nullable PyType expected) {
+      final PyType promotedToLiteral = PyLiteralType.Companion.promoteToLiteral(expr, expected, myTypeEvalContext, null);
       if (promotedToLiteral != null) return promotedToLiteral;
-      return myTypeEvalContext.getType(value);
+      return myTypeEvalContext.getType(expr);
     }
 
     @Override
     public void visitPyFunction(@NotNull PyFunction node) {
-      final PyAnnotation annotation = node.getAnnotation();
-      final String typeCommentAnnotation = node.getTypeCommentAnnotation();
-      if (annotation != null || typeCommentAnnotation != null) {
+      if (hasExplicitType(node)) {
+        final PyAnnotation annotation = node.getAnnotation();
         final PyType expected = getExpectedReturnStatementType(node, myTypeEvalContext);
         final PyType noneType = PyBuiltinCache.getInstance(node).getNoneType();
         final boolean returnsNone = isNoneType(expected);
@@ -454,6 +452,22 @@ public class PyTypeCheckerInspection extends PyInspection {
             }
           }
         }
+      }
+    }
+
+    @Override
+    public void visitPyNamedParameter(@NotNull PyNamedParameter node) {
+      if (!hasExplicitType(node)) return;
+
+      final PyExpression defaultValue = node.getDefaultValue();
+      if (defaultValue == null) return;
+
+      final PyType expected = myTypeEvalContext.getType(node);
+      final PyType actual = tryPromotingType(defaultValue, expected);
+      if (!PyTypeChecker.match(expected, actual, myTypeEvalContext)) {
+        final String expectedName = PythonDocumentationProvider.getVerboseTypeName(expected, myTypeEvalContext);
+        final String actualName = PythonDocumentationProvider.getTypeName(actual, myTypeEvalContext);
+        registerProblem(defaultValue, PyPsiBundle.message("INSP.type.checker.expected.type.got.type.instead", expectedName, actualName));
       }
     }
 
@@ -753,6 +767,12 @@ public class PyTypeCheckerInspection extends PyInspection {
           .orElse(Collections.emptyList()),
         AnalyzeArgumentResult::getActualType
       );
+    }
+
+    private static boolean hasExplicitType(@NotNull PsiElement node) {
+      if (node instanceof PyAnnotationOwner owner && owner.getAnnotation() != null) return true;
+      if (node instanceof PyTypeCommentOwner owner && owner.getTypeCommentAnnotation() != null) return true;
+      return false;
     }
   }
 
