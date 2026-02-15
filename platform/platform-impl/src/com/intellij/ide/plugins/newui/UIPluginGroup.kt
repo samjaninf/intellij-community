@@ -10,6 +10,7 @@ class UIPluginGroup {
   @JvmField var panel: Component? = null
   @JvmField var plugins: MutableList<ListPluginComponent> = ArrayList()
   @JvmField var isBundledUpdatesGroup: Boolean = false
+  @JvmField var promotionPanel: Component? = null
 
   fun findComponent(pluginId: PluginId): ListPluginComponent? =
     plugins.find { pluginId == it.getPluginDescriptor().getPluginId() }

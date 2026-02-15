@@ -163,6 +163,9 @@ public abstract class PluginsGroupComponent extends JBPanelWithEmptyText {
   private void addGroup(@NotNull PluginsGroup group, @NotNull List<PluginUiModel> models, int groupIndex) {
     UIPluginGroup uiGroup = new UIPluginGroup();
     group.ui = uiGroup;
+    if (Registry.is("ide.plugins.category.promotion.enabled") && group.promotionPanel != null) {
+      uiGroup.promotionPanel = group.promotionPanel;
+    }
     myGroups.add(groupIndex == -1 ? myGroups.size() : groupIndex, uiGroup);
 
     OpaquePanel panel = new OpaquePanel(new BorderLayout(), SECTION_HEADER_BACKGROUND) {
@@ -245,11 +248,11 @@ public abstract class PluginsGroupComponent extends JBPanelWithEmptyText {
     uiGroup.panel = panel;
 
     if (Registry.is("ide.plugins.category.promotion.enabled")) {
-      if (group.promotionPanel != null) {
+      if (group.ui.promotionPanel != null) {
         if (index == -1) {
-          add(group.promotionPanel);
+          add(group.ui.promotionPanel);
         } else {
-          add(group.promotionPanel, index);
+          add(group.ui.promotionPanel, index);
           index++;
         }
       }
