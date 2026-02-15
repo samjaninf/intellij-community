@@ -63,13 +63,32 @@ jvm_library(
     "//platform/util/jdom",
   ]
 )
+### auto-generated section `build intellij.kotlin.refactorings.move` end
+
+### auto-generated section `build intellij.kotlin.refactorings.move.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-refactorings-move-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.analysis.api.permissions.KaAllowProhibitedAnalyzeFromWriteAction",
+    "org.jetbrains.kotlin.analysis.api.KaIdeApi",
+    "org.jetbrains.kotlin.analysis.api.KaContextParameterApi",
+  ],
+  x_context_parameters = True
+)
 
 jvm_library(
-  name = "kotlin-refactorings-move_test_lib",
+  name = "kotlin-refactorings-move-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-refactorings-move-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-refactorings-move",
-  associates = [":kotlin-refactorings-move"],
+  kotlinc_opts = ":custom_kotlin-refactorings-move-tests",
+  associates = ["//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move"],
   deps = [
     "@lib//:kotlin-stdlib",
     "@lib//:kotlinc-kotlin-compiler-common",
@@ -86,6 +105,7 @@ jvm_library(
     "//plugins/kotlin/plugin/k2",
     "//platform/lang-impl",
     "//platform/platform-impl:ide-impl",
+    "//platform/platform-impl:ide-impl_test_lib",
     "//platform/core-ui",
     "//platform/core-api:core",
     "//java/java-impl:impl",
@@ -122,15 +142,16 @@ jvm_library(
     "//plugins/kotlin/base/external-build-system:kotlin-base-externalSystem",
     "//platform/util/jdom",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
-  ]
+  ],
+  runtime_deps = [":kotlin-refactorings-move-tests"]
 )
-### auto-generated section `build intellij.kotlin.refactorings.move` end
+### auto-generated section `build intellij.kotlin.refactorings.move.tests` end
 
-### auto-generated section `test intellij.kotlin.refactorings.move` start
+### auto-generated section `test intellij.kotlin.refactorings.move.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-refactorings-move_test",
-  runtime_deps = [":kotlin-refactorings-move_test_lib"]
+  name = "kotlin-refactorings-move-tests_test",
+  runtime_deps = [":kotlin-refactorings-move-tests_test_lib"]
 )
-### auto-generated section `test intellij.kotlin.refactorings.move` end
+### auto-generated section `test intellij.kotlin.refactorings.move.tests` end

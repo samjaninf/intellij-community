@@ -55,7 +55,6 @@ jvm_library(
     "//plugins/kotlin/kotlin.searching/kotlin.searching.test.k2:test_test_lib",
     "//plugins/kotlin/compiler-reference-index/tests.k2:kotlin-compilerReferenceIndex-tests_test_lib",
     "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move",
-    "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "//plugins/kotlin/copyright/fir-tests:kotlin-copyright-tests",
@@ -80,6 +79,7 @@ jvm_library(
     "//plugins/kotlin/code-insight/postfix-templates:kotlin-codeInsight-postfixTemplates-tests_test_lib",
     "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java-tests_test_lib",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting-tests_test_lib",
+    "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )

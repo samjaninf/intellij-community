@@ -112,7 +112,6 @@ jvm_library(
     "//plugins/kotlin/run-configurations/jvm",
     "//java/execution/impl",
     "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move",
-    "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move_test_lib",
     "//plugins/kotlin/completion/api",
     "//libraries/kotlinx/serialization/core",
     "//libraries/kotlinx/serialization/json",
@@ -140,6 +139,7 @@ jvm_library(
     "//plugins/kotlin/gradle/gradle-java/k2:kotlin-gradle-java-tests_test_lib",
     "//plugins/kotlin/gradle/scripting/kotlin.gradle.scripting.k2:kotlin-gradle-scripting-tests_test_lib",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting-tests_test_lib",
+    "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move-tests_test_lib",
   ],
   runtime_deps = [":tests"]
 )
