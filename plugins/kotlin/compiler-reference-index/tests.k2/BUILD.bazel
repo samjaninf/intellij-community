@@ -30,7 +30,6 @@ jvm_library(
     "@lib//:junit4",
     "//plugins/kotlin/tests-common:common-tests_test_lib",
     "//plugins/kotlin/code-insight/line-markers",
-    "//plugins/kotlin/code-insight/line-markers:line-markers_test_lib",
     "//plugins/kotlin/base/plugin",
     "//plugins/kotlin/base/plugin:plugin_test_lib",
     "//plugins/kotlin/test-framework:test-framework_test_lib",

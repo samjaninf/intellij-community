@@ -46,7 +46,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/postfix-templates",
     "//plugins/kotlin/code-insight/postfix-templates:postfix-templates_test_lib",
     "//plugins/kotlin/code-insight/line-markers",
-    "//plugins/kotlin/code-insight/line-markers:line-markers_test_lib",
     "//plugins/kotlin/navigation/tests:tests_test_lib",
     "//plugins/kotlin/jvm-debugger/test/k2/testFramework:testFramework_test_lib",
     "//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename",
@@ -80,6 +79,7 @@ jvm_library(
     "//plugins/kotlin/compiler-plugins/parcelize/tests/k2:kotlin-compilerPlugins-parcelize-tests_test_lib",
     "//plugins/kotlin/base/fir/project-structure:kotlin-projectStructure-tests_test_lib",
     "//plugins/kotlin/code-insight/kotlin.code-insight.k2:kotlin-codeInsight-tests_test_lib",
+    "//plugins/kotlin/code-insight/line-markers:kotlin-codeInsight-lineMarkers-tests_test_lib",
   ],
   runtime_deps = [":test-generator-fir"]
 )
