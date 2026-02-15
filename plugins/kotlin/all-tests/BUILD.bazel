@@ -77,6 +77,7 @@ jvm_library(
     "//plugins/kotlin/jvm-debugger/test/kotlin.jvm-debugger.test.k1/testFramework",
     "//plugins/kotlin/jvm-debugger/testFramework",
     "//plugins/kotlin/code-insight/kotlin.code-insight.k1:kotlin-code-insight-k1-tests",
+    "//plugins/kotlin/code-insight/live-templates-k1:kotlin-code-insight-live-templates-k1-tests",
   ]
 )
 ### auto-generated section `build kotlin.all-tests` end
