@@ -6,9 +6,10 @@ import com.intellij.codeInsight.TailTypes;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.TailTypeDecorator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public final class OverridableSpace extends TailTypeDecorator<LookupElement> {
-  private final @NotNull TailType myTail;
+public final class OverridableSpace extends TailTypeDecorator<LookupElement> implements LookupElementWithEffectiveInsertHandler {
+  final @NotNull TailType myTail;
 
   private OverridableSpace(@NotNull LookupElement keyword, @NotNull TailType tail) {
     super(keyword);
@@ -18,6 +19,16 @@ public final class OverridableSpace extends TailTypeDecorator<LookupElement> {
   @Override
   protected @NotNull TailType computeTailType(@NotNull InsertionContext context) {
     return context.shouldAddCompletionChar() ? TailTypes.noneType() : myTail;
+  }
+
+  @Override
+  protected @Nullable InsertHandler<?> getDelegateEffectiveInsertHandler() {
+    return super.getDelegateEffectiveInsertHandler();
+  }
+
+  @Override
+  public @Nullable InsertHandler<?> getEffectiveInsertHandler() {
+    return FrontendFriendlyOverridableSpaceInsertHandler.createIfFrontendFriendly(this);
   }
 
   public static LookupElement create(@NotNull LookupElement delegate, @NotNull TailType tail) {
