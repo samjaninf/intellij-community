@@ -560,7 +560,6 @@ jvm_library(
     "//python/services/shared",
     "//python/services/shared:shared_test_lib",
     "//python/python-venv:venv",
-    "//python/python-venv:venv_test_lib",
     "//python/services/system-python",
     "//python/services/system-python:system-python_test_lib",
     "//python/interpreters",

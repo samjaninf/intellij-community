@@ -1,11 +1,9 @@
 <idea-plugin>
   <dependencies>
-    <module name="intellij.python.processOutput.impl"/>
-    <module name="intellij.python.venv.tests._test"/>
     <module name="intellij.python.community.junit5Tests.framework._test"/>
-    <module name="intellij.python.test.env.junit5"/>
     <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
-    <module name="intellij.libraries.kotlinTest"/>
+    <module name="intellij.platform.testFramework.junit5"/>
+    <module name="intellij.python.venv"/>
     <!-- endregion -->
   </dependencies>
 </idea-plugin>

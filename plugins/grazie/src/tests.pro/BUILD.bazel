@@ -90,7 +90,10 @@ jvm_library(
     "//plugins/kotlin/refactorings/kotlin.refactorings.move.k2:kotlin-refactorings-move-tests_test_lib",
     "//plugins/kotlin/refactorings/rename.k2:kotlin-refactorings-rename-tests_test_lib",
   ],
-  runtime_deps = [":tests.pro"]
+  runtime_deps = [
+    ":tests.pro",
+    "//python/python-venv:venv-tests_test_lib",
+  ]
 )
 ### auto-generated section `build intellij.grazie.tests.pro` end
 
