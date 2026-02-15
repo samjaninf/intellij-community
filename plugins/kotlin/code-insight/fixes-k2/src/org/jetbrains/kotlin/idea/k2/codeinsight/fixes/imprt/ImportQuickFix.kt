@@ -42,8 +42,11 @@ import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.psiUtil.getQualifiedElement
 
+/**
+ * Note: Avoid instantiating directly, see [KotlinAddImportActionFactory] for that.
+ */
 @ApiStatus.Internal
-class ImportQuickFix(
+class ImportQuickFix internal constructor(
     element: KtElement,
     @IntentionName private val text: String,
     importVariants: List<AutoImportVariant>
@@ -129,13 +132,13 @@ class ImportQuickFix(
     }
 
     /**
-     * We have to provide a proper [ModCommandAction] for import fixes to work with Kotlin LSP;
-     * see [AddImportModCommandAction] KDoc.
+     * We cannot provide [AddImportModCommandAction] here, because it would be used in the regular IntelliJ IDEA,
+     * leading to an unfamiliar UX.
+     *
+     * See [KotlinAddImportActionFactory] for details.
      */
     override fun asModCommandAction(): ModCommandAction? {
-        val element = element ?: return null
-        val symbolBasedAutoImportVariants = importVariants.map { it as SymbolBasedAutoImportVariant }
-        return AddImportModCommandAction(element, title = text, symbolBasedAutoImportVariants)
+        return null
     }
 
     override fun isClassDefinitelyPositivelyImportedAlready(containingFile: KtFile, classFqName: FqName): Boolean {
