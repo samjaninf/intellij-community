@@ -35,6 +35,71 @@ class AgentSessionsToolWindowTest {
   }
 
   @Test
+  fun claudeQuotaHintIsShownWhenRequested() {
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = emptyList(), lastUpdatedAt = 1L),
+        onRefresh = {},
+        onOpenProject = {},
+        showClaudeQuotaHint = true,
+      )
+    }
+
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.claude.quota.hint.title"))
+      .assertIsDisplayed()
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.claude.quota.hint.body"))
+      .assertIsDisplayed()
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.claude.quota.hint.enable"))
+      .assertIsDisplayed()
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.claude.quota.hint.dismiss"))
+      .assertIsDisplayed()
+  }
+
+  @Test
+  fun claudeQuotaHintEnableInvokesCallback() {
+    var enabled = false
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = emptyList(), lastUpdatedAt = 1L),
+        onRefresh = {},
+        onOpenProject = {},
+        showClaudeQuotaHint = true,
+        onEnableClaudeQuotaWidget = { enabled = true },
+      )
+    }
+
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.claude.quota.hint.enable"))
+      .performClick()
+
+    composeRule.runOnIdle {
+      assertThat(enabled).isTrue()
+    }
+  }
+
+  @Test
+  fun claudeQuotaHintDismissInvokesCallback() {
+    var dismissed = false
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = emptyList(), lastUpdatedAt = 1L),
+        onRefresh = {},
+        onOpenProject = {},
+        showClaudeQuotaHint = true,
+        onDismissClaudeQuotaHint = { dismissed = true },
+      )
+    }
+
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.claude.quota.hint.dismiss"))
+      .performClick()
+
+    composeRule.runOnIdle {
+      assertThat(dismissed).isTrue()
+    }
+  }
+
+  @Test
   fun projectsDoNotShowGlobalEmptyStateWhenNoThreadsLoadedYet() {
     val projects = listOf(
       AgentProjectSessions(

@@ -541,6 +541,7 @@ internal class AgentSessionsService private constructor(
   fun openChatThread(path: String, thread: AgentSessionThread, currentProject: Project? = null) {
     val normalized = normalizePath(path)
     val key = buildOpenThreadActionKey(path = normalized, thread = thread)
+    markClaudeQuotaHintEligible(thread.provider)
     actionGate.launch(
       scope = serviceScope,
       key = key,
@@ -565,6 +566,7 @@ internal class AgentSessionsService private constructor(
   fun openChatSubAgent(path: String, thread: AgentSessionThread, subAgent: AgentSubAgent, currentProject: Project? = null) {
     val normalized = normalizePath(path)
     val key = buildOpenSubAgentActionKey(path = normalized, thread = thread, subAgent = subAgent)
+    markClaudeQuotaHintEligible(thread.provider)
     actionGate.launch(
       scope = serviceScope,
       key = key,
@@ -586,6 +588,7 @@ internal class AgentSessionsService private constructor(
   ) {
     val normalized = normalizePath(path)
     val key = buildCreateSessionActionKey(normalized, provider, mode)
+    markClaudeQuotaHintEligible(provider)
     actionGate.launch(
       scope = serviceScope,
       key = key,
@@ -897,6 +900,13 @@ internal class AgentSessionsService private constructor(
 
   private fun buildOpenProjectActionKey(path: String): String {
     return "$OPEN_PROJECT_ACTION_KEY_PREFIX:$path"
+  }
+
+  private fun markClaudeQuotaHintEligible(provider: AgentSessionProvider) {
+    if (provider != AgentSessionProvider.CLAUDE) {
+      return
+    }
+    service<AgentSessionsTreeUiStateService>().markClaudeQuotaHintEligible()
   }
 
   private fun buildCreateSessionActionKey(path: String, provider: AgentSessionProvider, mode: AgentSessionLaunchMode): String {

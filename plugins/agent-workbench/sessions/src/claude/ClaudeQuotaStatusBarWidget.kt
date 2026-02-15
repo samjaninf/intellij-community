@@ -26,17 +26,17 @@ import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.Timer
 
-private const val WIDGET_ID = "claude.quota"
+internal const val CLAUDE_QUOTA_WIDGET_ID = "claude.quota"
 private const val UI_REFRESH_INTERVAL_MS = 5_000
 private const val UI_REFRESH_INITIAL_DELAY_MS = 1_000
 private const val WARNING_QUOTA_PERCENT = 80
 
 internal class ClaudeQuotaStatusBarWidgetFactory : StatusBarWidgetFactory {
-  override fun getId(): String = WIDGET_ID
+  override fun getId(): String = CLAUDE_QUOTA_WIDGET_ID
 
   override fun getDisplayName(): String = AgentSessionsBundle.message("status.bar.claude.quota.display.name")
 
-  override fun isEnabledByDefault(): Boolean = true
+  override fun isEnabledByDefault(): Boolean = false
 
   override fun createWidget(project: Project): StatusBarWidget = ClaudeQuotaStatusBarWidget()
 }
@@ -62,7 +62,7 @@ internal class ClaudeQuotaStatusBarWidget : CustomStatusBarWidget, Activatable {
 
   override fun getPresentation(): StatusBarWidget.WidgetPresentation? = null
 
-  override fun ID(): String = WIDGET_ID
+  override fun ID(): String = CLAUDE_QUOTA_WIDGET_ID
 
   override fun getComponent(): JComponent = myComponent.get()
 

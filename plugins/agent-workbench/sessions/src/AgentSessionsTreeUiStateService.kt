@@ -114,6 +114,10 @@ internal class AgentSessionsTreeUiStateService
 
   private val _lastUsedProviderFlow = MutableStateFlow(getLastUsedProvider())
   val lastUsedProviderFlow: StateFlow<AgentSessionProvider?> = _lastUsedProviderFlow.asStateFlow()
+  private val _claudeQuotaHintEligibleFlow = MutableStateFlow(state.claudeQuotaHintEligible)
+  val claudeQuotaHintEligibleFlow: StateFlow<Boolean> = _claudeQuotaHintEligibleFlow.asStateFlow()
+  private val _claudeQuotaHintAcknowledgedFlow = MutableStateFlow(state.claudeQuotaHintAcknowledged)
+  val claudeQuotaHintAcknowledgedFlow: StateFlow<Boolean> = _claudeQuotaHintAcknowledgedFlow.asStateFlow()
 
   override fun isProjectCollapsed(path: String): Boolean {
     return normalizeSessionsProjectPath(path) in state.collapsedProjectPaths
@@ -240,9 +244,23 @@ internal class AgentSessionsTreeUiStateService
     _lastUsedProviderFlow.value = provider
   }
 
+  fun markClaudeQuotaHintEligible() {
+    if (state.claudeQuotaHintEligible) return
+    updateState { it.copy(claudeQuotaHintEligible = true) }
+    _claudeQuotaHintEligibleFlow.value = true
+  }
+
+  fun acknowledgeClaudeQuotaHint() {
+    if (state.claudeQuotaHintAcknowledged) return
+    updateState { it.copy(claudeQuotaHintAcknowledged = true) }
+    _claudeQuotaHintAcknowledgedFlow.value = true
+  }
+
   override fun loadState(state: SessionsTreeUiStateState) {
     super.loadState(state)
     _lastUsedProviderFlow.value = state.lastUsedProvider?.let(AgentSessionProvider::fromOrNull)
+    _claudeQuotaHintEligibleFlow.value = state.claudeQuotaHintEligible
+    _claudeQuotaHintAcknowledgedFlow.value = state.claudeQuotaHintAcknowledged
   }
 
   @Serializable
@@ -251,6 +269,8 @@ internal class AgentSessionsTreeUiStateService
     @JvmField val visibleThreadCountByProject: Map<String, Int> = emptyMap(),
     @JvmField val openProjectThreadPreviewsByProject: Map<String, List<ThreadPreviewState>> = emptyMap(),
     @JvmField val lastUsedProvider: String? = null,
+    @JvmField val claudeQuotaHintEligible: Boolean = false,
+    @JvmField val claudeQuotaHintAcknowledged: Boolean = false,
   )
 
   @Serializable

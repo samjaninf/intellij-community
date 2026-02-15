@@ -3,11 +3,14 @@ package com.intellij.agent.workbench.sessions
 // @spec community/plugins/agent-workbench/spec/agent-sessions.spec.md
 // @spec community/plugins/agent-workbench/spec/agent-sessions-thread-visibility.spec.md
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,12 +18,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.unit.dp
 import com.intellij.agent.workbench.chat.AgentChatTabSelectionService
+import com.intellij.agent.workbench.sessions.claude.ClaudeQuotaStatusBarWidgetSettings
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.delay
 import org.jetbrains.jewel.foundation.theme.JewelTheme
+import org.jetbrains.jewel.ui.component.OutlinedButton
 import org.jetbrains.jewel.ui.component.Text
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 internal fun agentSessionsToolWindow(currentProject: Project) {
@@ -30,9 +38,25 @@ internal fun agentSessionsToolWindow(currentProject: Project) {
   val state by service.state.collectAsState()
   val selectedChatTab by chatSelectionService.selectedChatTab.collectAsState()
   val lastUsedProvider by uiStateService.lastUsedProviderFlow.collectAsState()
+  val claudeQuotaHintEligible by uiStateService.claudeQuotaHintEligibleFlow.collectAsState()
+  val claudeQuotaHintAcknowledged by uiStateService.claudeQuotaHintAcknowledgedFlow.collectAsState()
+  val isClaudeQuotaWidgetEnabled by ClaudeQuotaStatusBarWidgetSettings.enabledFlow.collectAsState()
 
   LaunchedEffect(Unit) {
     service.refresh()
+  }
+
+  LaunchedEffect(Unit) {
+    while (true) {
+      ClaudeQuotaStatusBarWidgetSettings.syncEnabledState()
+      delay(1.seconds)
+    }
+  }
+
+  LaunchedEffect(claudeQuotaHintEligible, claudeQuotaHintAcknowledged, isClaudeQuotaWidgetEnabled) {
+    if (claudeQuotaHintEligible && !claudeQuotaHintAcknowledged && isClaudeQuotaWidgetEnabled) {
+      uiStateService.acknowledgeClaudeQuotaHint()
+    }
   }
 
   LaunchedEffect(selectedChatTab, state.projects) {
@@ -66,6 +90,14 @@ internal fun agentSessionsToolWindow(currentProject: Project) {
     visibleThreadCounts = state.visibleThreadCounts,
     onShowMoreThreads = { path -> service.showMoreThreads(path) },
     selectedTreeId = selectedTreeId,
+    showClaudeQuotaHint = claudeQuotaHintEligible && !claudeQuotaHintAcknowledged && !isClaudeQuotaWidgetEnabled,
+    onEnableClaudeQuotaWidget = {
+      ClaudeQuotaStatusBarWidgetSettings.setEnabled(true)
+      uiStateService.acknowledgeClaudeQuotaHint()
+    },
+    onDismissClaudeQuotaHint = {
+      uiStateService.acknowledgeClaudeQuotaHint()
+    },
   )
 }
 
@@ -86,6 +118,9 @@ internal fun agentSessionsToolWindowContent(
   visibleThreadCounts: Map<String, Int> = emptyMap(),
   onShowMoreThreads: (String) -> Unit = {},
   selectedTreeId: SessionTreeId? = null,
+  showClaudeQuotaHint: Boolean = false,
+  onEnableClaudeQuotaWidget: () -> Unit = {},
+  onDismissClaudeQuotaHint: () -> Unit = {},
 ) {
   Column(
     modifier = Modifier
@@ -93,6 +128,13 @@ internal fun agentSessionsToolWindowContent(
       .padding(horizontal = 10.dp, vertical = 12.dp),
     verticalArrangement = Arrangement.spacedBy(10.dp),
   ) {
+    if (showClaudeQuotaHint) {
+      claudeQuotaHintBanner(
+        onEnableClaudeQuotaWidget = onEnableClaudeQuotaWidget,
+        onDismiss = onDismissClaudeQuotaHint,
+      )
+    }
+
     when {
       state.projects.isEmpty() -> emptyState(isLoading = state.lastUpdatedAt == null)
       else -> sessionTree(
@@ -112,6 +154,44 @@ internal fun agentSessionsToolWindowContent(
         onShowMoreThreads = onShowMoreThreads,
         selectedTreeId = selectedTreeId,
       )
+    }
+  }
+}
+
+@Composable
+private fun claudeQuotaHintBanner(
+  onEnableClaudeQuotaWidget: () -> Unit,
+  onDismiss: () -> Unit,
+) {
+  val shape = RoundedCornerShape(8.dp)
+  val borderColor = JewelTheme.globalColors.borders.normal
+    .takeOrElse { JewelTheme.globalColors.text.disabled }
+    .copy(alpha = 0.35f)
+  val bodyColor = JewelTheme.globalColors.text.normal.copy(alpha = 0.84f)
+
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .border(width = 1.dp, color = borderColor, shape = shape)
+      .padding(10.dp),
+    verticalArrangement = Arrangement.spacedBy(6.dp),
+  ) {
+    Text(
+      text = AgentSessionsBundle.message("toolwindow.claude.quota.hint.title"),
+      style = AgentSessionsTextStyles.projectTitle(),
+    )
+    Text(
+      text = AgentSessionsBundle.message("toolwindow.claude.quota.hint.body"),
+      style = AgentSessionsTextStyles.threadTitle(),
+      color = bodyColor,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      OutlinedButton(onClick = onEnableClaudeQuotaWidget) {
+        Text(AgentSessionsBundle.message("toolwindow.claude.quota.hint.enable"))
+      }
+      OutlinedButton(onClick = onDismiss) {
+        Text(AgentSessionsBundle.message("toolwindow.claude.quota.hint.dismiss"))
+      }
     }
   }
 }

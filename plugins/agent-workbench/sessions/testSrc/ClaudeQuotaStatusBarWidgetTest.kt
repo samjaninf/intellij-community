@@ -2,6 +2,7 @@
 package com.intellij.agent.workbench.sessions
 
 import com.intellij.agent.workbench.sessions.claude.ClaudeQuotaInfo
+import com.intellij.agent.workbench.sessions.claude.ClaudeQuotaStatusBarWidgetFactory
 import com.intellij.agent.workbench.sessions.claude.dominantPercent
 import com.intellij.agent.workbench.sessions.claude.formatQuotaResetTime
 import com.intellij.agent.workbench.sessions.claude.formatWidgetText
@@ -11,6 +12,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class ClaudeQuotaStatusBarWidgetTest {
+  @Test
+  fun widgetIsDisabledByDefault() {
+    assertThat(ClaudeQuotaStatusBarWidgetFactory().isEnabledByDefault).isFalse()
+  }
+
   @Test
   fun formatTextShowsSessionWhenHigher() {
     val info = ClaudeQuotaInfo(fiveHourPercent = 45, fiveHourReset = null, sevenDayPercent = 12, sevenDayReset = null)

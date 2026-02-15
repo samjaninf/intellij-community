@@ -68,6 +68,29 @@ class AgentSessionsTreeUiStateServiceTest {
   }
 
   @Test
+  fun claudeQuotaHintDefaultsToDisabledAndUnacknowledged() {
+    val uiState = AgentSessionsTreeUiStateService()
+
+    assertFalse(uiState.state.claudeQuotaHintEligible)
+    assertFalse(uiState.state.claudeQuotaHintAcknowledged)
+    assertFalse(uiState.claudeQuotaHintEligibleFlow.value)
+    assertFalse(uiState.claudeQuotaHintAcknowledgedFlow.value)
+  }
+
+  @Test
+  fun claudeQuotaHintStateRoundTrip() {
+    val uiState = AgentSessionsTreeUiStateService()
+
+    uiState.markClaudeQuotaHintEligible()
+    assertTrue(uiState.state.claudeQuotaHintEligible)
+    assertTrue(uiState.claudeQuotaHintEligibleFlow.value)
+
+    uiState.acknowledgeClaudeQuotaHint()
+    assertTrue(uiState.state.claudeQuotaHintAcknowledged)
+    assertTrue(uiState.claudeQuotaHintAcknowledgedFlow.value)
+  }
+
+  @Test
   fun setAndGetLastUsedProvider() {
     val uiState = AgentSessionsTreeUiStateService()
 
