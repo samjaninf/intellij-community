@@ -34,7 +34,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/api",
     "//plugins/kotlin/code-insight/utils",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting",
-    "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting_test_lib",
     "//plugins/kotlin/fir/tests:tests_test_lib",
     "//plugins/kotlin/tests-common:common-tests_test_lib",
     "//platform/core-impl",

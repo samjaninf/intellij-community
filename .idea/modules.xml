@@ -781,6 +781,7 @@
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/grazie/intellij.kotlin.grazie.tests/intellij.kotlin.grazie.tests.iml" filepath="$PROJECT_DIR$/plugins/kotlin/grazie/intellij.kotlin.grazie.tests/intellij.kotlin.grazie.tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/highlighting/highlighting-k2/intellij.kotlin.highlighting.iml" filepath="$PROJECT_DIR$/plugins/kotlin/highlighting/highlighting-k2/intellij.kotlin.highlighting.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/highlighting/highlighting-minimal/intellij.kotlin.highlighting.minimal.iml" filepath="$PROJECT_DIR$/plugins/kotlin/highlighting/highlighting-minimal/intellij.kotlin.highlighting.minimal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/highlighting/highlighting-k2/intellij.kotlin.highlighting.tests.iml" filepath="$PROJECT_DIR$/plugins/kotlin/highlighting/highlighting-k2/intellij.kotlin.highlighting.tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/i18n/intellij.kotlin.i18n.iml" filepath="$PROJECT_DIR$/plugins/kotlin/i18n/intellij.kotlin.i18n.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/i18n/tests/intellij.kotlin.i18n.tests.iml" filepath="$PROJECT_DIR$/plugins/kotlin/i18n/tests/intellij.kotlin.i18n.tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/kotlin/kotlin.ide/intellij.kotlin.ide.iml" filepath="$PROJECT_DIR$/plugins/kotlin/kotlin.ide/intellij.kotlin.ide.iml" />

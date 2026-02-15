@@ -113,7 +113,6 @@ jvm_library(
     "//platform/core-ui",
     "//plugins/kotlin/highlighting/highlighting-shared:kotlin-highlighting-shared",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting",
-    "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting_test_lib",
     "//platform/platform-impl:ide-impl",
     "//platform/platform-impl:ide-impl_test_lib",
     "//plugins/kotlin/base/indices",

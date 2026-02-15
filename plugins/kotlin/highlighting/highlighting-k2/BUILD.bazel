@@ -67,13 +67,32 @@ jvm_library(
     "//platform/platform-api:ide",
   ]
 )
+### auto-generated section `build intellij.kotlin.highlighting` end
+
+### auto-generated section `build intellij.kotlin.highlighting.tests` start
+create_kotlinc_options(
+  name = "custom_kotlin-highlighting-tests",
+  opt_in = [
+    "com.intellij.openapi.util.IntellijInternalApi",
+    "org.jetbrains.kotlin.analysis.api.KaIdeApi",
+    "org.jetbrains.kotlin.analysis.api.KaNonPublicApi",
+    "org.jetbrains.kotlin.analysis.api.KaContextParameterApi",
+  ],
+  x_context_parameters = True
+)
 
 jvm_library(
-  name = "kotlin-highlighting_test_lib",
+  name = "kotlin-highlighting-tests",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True)
+)
+
+jvm_library(
+  name = "kotlin-highlighting-tests_test_lib",
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
-  kotlinc_opts = ":custom_kotlin-highlighting",
-  associates = [":kotlin-highlighting"],
+  kotlinc_opts = ":custom_kotlin-highlighting-tests",
+  associates = ["//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting"],
   deps = [
     "//java/java-indexing-api:indexing",
     "//platform/indexing-api:indexing",
@@ -133,15 +152,16 @@ jvm_library(
     "//plugins/kotlin/base/scripting/scripting.shared",
     "//platform/platform-api:ide",
     "//plugins/kotlin/intellij.kotlin.base.test:base-test_test_lib",
-  ]
+  ],
+  runtime_deps = [":kotlin-highlighting-tests"]
 )
-### auto-generated section `build intellij.kotlin.highlighting` end
+### auto-generated section `build intellij.kotlin.highlighting.tests` end
 
-### auto-generated section `test intellij.kotlin.highlighting` start
+### auto-generated section `test intellij.kotlin.highlighting.tests` start
 load("@community//build:tests-options.bzl", "jps_test")
 
 jps_test(
-  name = "kotlin-highlighting_test",
-  runtime_deps = [":kotlin-highlighting_test_lib"]
+  name = "kotlin-highlighting-tests_test",
+  runtime_deps = [":kotlin-highlighting-tests_test_lib"]
 )
-### auto-generated section `test intellij.kotlin.highlighting` end
+### auto-generated section `test intellij.kotlin.highlighting.tests` end

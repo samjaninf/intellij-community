@@ -627,7 +627,6 @@ jvm_library(
     "//plugins/kotlin/highlighting/highlighting-shared:kotlin-highlighting-shared",
     "//plugins/kotlin/highlighting/highlighting-k1:kotlin-highlighting-k1",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting",
-    "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting_test_lib",
     "//plugins/kotlin/code-insight/postfix-templates",
     "//plugins/kotlin/features-trainer",
     "@lib//:kotlinc-kotlin-jps-common",
@@ -687,7 +686,6 @@ jvm_library(
     "//plugins/kotlin/code-insight/live-templates-shared:kotlin-code-insight-live-templates-shared_test_lib",
     "//plugins/kotlin/project-wizard/core:core_test_lib",
     "//plugins/kotlin/project-wizard/compose:compose_test_lib",
-    "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting_test_lib",
     "//plugins/kotlin/onboarding:onboarding_test_lib",
   ]
 )

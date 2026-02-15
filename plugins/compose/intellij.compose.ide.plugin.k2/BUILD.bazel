@@ -76,7 +76,6 @@ jvm_library(
     "//plugins/kotlin/tests-common:common-tests_test_lib",
     "//plugins/kotlin/test-framework:test-framework_test_lib",
     "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting",
-    "//plugins/kotlin/highlighting/highlighting-k2:kotlin-highlighting_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "//platform/testFramework/core",
