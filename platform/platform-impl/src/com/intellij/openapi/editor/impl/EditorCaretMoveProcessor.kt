@@ -114,6 +114,12 @@ internal class EditorCaretMoveProcessor(private val coroutineScope: CoroutineSco
 
       var allDone = true
 
+      val oldRects = animationStates.mapNotNull {
+        val (pos, _) = lastPosMap[it.update.caret] ?: return@mapNotNull null
+
+        EditorImpl.CaretRectangle(pos, it.update.width, it.update.caret, it.update.isRtl)
+      }.toTypedArray()
+
       val interpolatedRects = animationStates.map { state ->
         val sameLogicalPosition = state.startLogicalPosition == state.update.finalLogicalPosition
         val isInAnimation = !sameLogicalPosition && t < 1
@@ -135,8 +141,8 @@ internal class EditorCaretMoveProcessor(private val coroutineScope: CoroutineSco
         EditorImpl.CaretRectangle(interpolated, update.width, update.caret, update.isRtl)
       }.toTypedArray()
 
-      cursor.repaint()
       cursor.setPositions(interpolatedRects)
+      cursor.repaint(oldRects)
       cursor.repaint()
 
       if (allDone) {

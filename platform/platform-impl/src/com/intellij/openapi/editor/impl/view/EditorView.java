@@ -255,6 +255,12 @@ public final class EditorView implements TextDrawingCallback, Disposable, Dumpab
     myPainter.repaintCarets();
   }
 
+  @ApiStatus.Internal
+  @RequiresEdt
+  public void repaintCarets(EditorImpl.CaretRectangle @NotNull [] locations) {
+    myPainter.repaintCarets(locations);
+  }
+
   @RequiresEdt
   public @NotNull Dimension getPreferredSize() {
     assert !myEditor.isPurePaintingMode();

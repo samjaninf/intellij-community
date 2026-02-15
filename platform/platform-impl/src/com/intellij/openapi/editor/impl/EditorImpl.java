@@ -3569,6 +3569,10 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       myView.repaintCarets();
     }
 
+    void repaint(CaretRectangle @NotNull [] locations) {
+      myView.repaintCarets(locations);
+    }
+
     private boolean isEditorInputFocusOwner() {
       Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
       Component content = getContentComponent();
