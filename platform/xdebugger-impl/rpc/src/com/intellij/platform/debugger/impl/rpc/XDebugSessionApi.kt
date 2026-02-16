@@ -103,6 +103,7 @@ data class XDebugSessionDto(
   val leftToolbarActions: List<AnActionId>,
   val topToolbarActions: List<AnActionId>,
   val settingsActions: List<AnActionId>,
+  @Serializable(with = DeferredSerializer::class) val processDescriptor: Deferred<XDescriptor>?,
 )
 
 @ApiStatus.Internal

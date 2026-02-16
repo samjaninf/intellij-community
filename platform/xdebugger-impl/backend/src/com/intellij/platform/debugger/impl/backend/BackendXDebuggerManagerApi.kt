@@ -49,6 +49,7 @@ import fleet.rpc.core.toRpc
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.consumeEach
@@ -124,6 +125,7 @@ internal class BackendXDebuggerManagerApi : XDebuggerManagerApi {
       leftToolbarActions,
       topToolbarActions,
       settingsActions,
+      processDescriptor = debugProcess.processDescriptor?.asDeferred(),
     )
   }
 
