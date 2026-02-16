@@ -8,12 +8,13 @@ targets:
   - ../sessions/resources/messages/AgentSessionsBundle.properties
   - ../sessions/testSrc/AgentSessionsToolWindowTest.kt
   - ../sessions/testSrc/AgentSessionsServiceRefreshIntegrationTest.kt
+  - ../sessions/testSrc/AgentSessionsServiceOnDemandIntegrationTest.kt
 ---
 
 # Agent Threads Visibility and More Row
 
 Status: Draft
-Date: 2026-02-11
+Date: 2026-02-16
 
 ## Summary
 Define one consistent visibility model for project/worktree thread rows so empty state, warning/error rows, and `More` rows never conflict.
@@ -29,6 +30,10 @@ Define one consistent visibility model for project/worktree thread rows so empty
 
 ## Requirements
 - Initial visible thread count per path is `DEFAULT_VISIBLE_THREAD_COUNT` (3).
+- Visible thread count lookup order per normalized path is:
+  - in-memory runtime `visibleThreadCounts` entry,
+  - persisted tree UI state visible count,
+  - default value (`DEFAULT_VISIBLE_THREAD_COUNT`).
 - For project rows, show `More` row only when `project.threads.size > visibleCount`.
 - For worktree rows, show `More` row only when `worktree.threads.size > visibleCount`.
 - If `hasUnknownThreadCount=true` for the corresponding node, `More` row must render without count (`toolwindow.action.more`).
@@ -41,15 +46,21 @@ Define one consistent visibility model for project/worktree thread rows so empty
   - no provider warnings.
 - Project/worktree error rows take precedence over provider warning and empty rows.
 - Clicking a `More` row must increase visible count for that path by +3.
+- Clicking a `More` row must persist that +3 increment to tree UI state for the same normalized path.
+- `ensureThreadVisible(path, provider, threadId)` must raise visible count in +3 steps until the target thread is visible and persist the increment.
+- Refresh bootstrap must restore persisted visible counts greater than default for known project/worktree paths.
+- Persisted visibility keys must use normalized paths so `/path` and `/path/` resolve to one entry.
 - Tree-side `More` click handling must not issue backend calls directly; it only updates visibility state.
 
 [@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
 [@test] ../sessions/testSrc/AgentSessionsServiceRefreshIntegrationTest.kt
+[@test] ../sessions/testSrc/AgentSessionsServiceOnDemandIntegrationTest.kt
 
 ## User Experience
 - Exact count case: `More (N)`.
 - Unknown count case: `More…`.
 - Empty row is muted helper text and mutually exclusive with `More` for the same node.
+- Non-default per-path thread visibility must persist across refresh/reopen for the same normalized path.
 
 ## Data & Backend
 - Unknown-count state is produced by the service aggregation layer (`hasUnknownThreadCount`), not by tree rendering logic.

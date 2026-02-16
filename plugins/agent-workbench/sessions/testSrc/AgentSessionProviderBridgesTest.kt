@@ -7,6 +7,7 @@ import com.intellij.agent.workbench.sessions.providers.AgentSessionProviderBridg
 import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
 import com.intellij.agent.workbench.sessions.providers.InMemoryAgentSessionProviderRegistry
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.extensions.LoadingOrder
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.junit5.TestApplication
@@ -72,16 +73,16 @@ class AgentSessionProviderBridgesTest {
   }
 
   @Test
-  fun allBridgesAreSortedByOrder() {
+  fun allBridgesFollowExtensionOrder() {
     val disposable = Disposer.newDisposable()
     try {
-      val highOrder = TestAgentSessionProviderBridge(provider = AgentSessionProvider.from("aaa"), sourceId = "high", order = 200)
-      val lowOrder = TestAgentSessionProviderBridge(provider = AgentSessionProvider.from("bbb"), sourceId = "low", order = -5)
-      extensionPoint.point.registerExtension(highOrder, disposable)
-      extensionPoint.point.registerExtension(lowOrder, disposable)
+      val lastBridge = TestAgentSessionProviderBridge(provider = AgentSessionProvider.from("aaa"), sourceId = "last")
+      val firstBridge = TestAgentSessionProviderBridge(provider = AgentSessionProvider.from("bbb"), sourceId = "first")
+      extensionPoint.point.registerExtension(lastBridge, LoadingOrder.LAST, disposable)
+      extensionPoint.point.registerExtension(firstBridge, LoadingOrder.FIRST, disposable)
 
       val orderedIds = AgentSessionProviderBridges.allBridges().map { it.provider.value }
-      assertThat(orderedIds.indexOf(lowOrder.provider.value)).isLessThan(orderedIds.indexOf(highOrder.provider.value))
+      assertThat(orderedIds.indexOf(firstBridge.provider.value)).isLessThan(orderedIds.indexOf(lastBridge.provider.value))
     }
     finally {
       Disposer.dispose(disposable)
@@ -90,9 +91,9 @@ class AgentSessionProviderBridgesTest {
 
   @Test
   fun registryCanBeOverriddenForIsolatedTests() {
-    val codexBridge = TestAgentSessionProviderBridge(provider = AgentSessionProvider.CODEX, sourceId = "override-codex", order = 50)
-    val claudeBridge = TestAgentSessionProviderBridge(provider = AgentSessionProvider.CLAUDE, sourceId = "override-claude", order = -50)
-    val overrideRegistry = InMemoryAgentSessionProviderRegistry(listOf(codexBridge, claudeBridge))
+    val codexBridge = TestAgentSessionProviderBridge(provider = AgentSessionProvider.CODEX, sourceId = "override-codex")
+    val claudeBridge = TestAgentSessionProviderBridge(provider = AgentSessionProvider.CLAUDE, sourceId = "override-claude")
+    val overrideRegistry = InMemoryAgentSessionProviderRegistry(listOf(claudeBridge, codexBridge))
     val baselineClaude = AgentSessionProviderBridges.find(AgentSessionProvider.CLAUDE)
 
     AgentSessionProviderBridges.withRegistryForTest(overrideRegistry) {
@@ -108,7 +109,6 @@ class AgentSessionProviderBridgesTest {
   private class TestAgentSessionProviderBridge(
     override val provider: AgentSessionProvider,
     sourceId: String,
-    override val order: Int = 0,
   ) : AgentSessionProviderBridge {
     override val sessionSource: AgentSessionSource = TestAgentSessionSource(provider, sourceId)
 

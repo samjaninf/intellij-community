@@ -158,6 +158,9 @@ internal class AgentSessionsTreeUiStateService
         id = preview.id,
         title = preview.title,
         updatedAt = preview.updatedAt,
+        provider = preview.provider
+          ?.let(AgentSessionProvider::fromOrNull)
+          ?: AgentSessionProvider.CODEX,
       )
     }
   }
@@ -165,7 +168,14 @@ internal class AgentSessionsTreeUiStateService
   override fun setOpenProjectThreadPreviews(path: String, threads: List<AgentSessionThreadPreview>): Boolean {
     val normalizedPath = normalizeSessionsProjectPath(path)
     val normalizedPreviews = normalizeOpenProjectThreadPreviewList(threads)
-      .map { thread -> ThreadPreviewState(id = thread.id, title = thread.title, updatedAt = thread.updatedAt) }
+      .map { thread ->
+        ThreadPreviewState(
+          id = thread.id,
+          title = thread.title,
+          updatedAt = thread.updatedAt,
+          provider = thread.provider.value,
+        )
+      }
     val current = state.openProjectThreadPreviewsByProject[normalizedPath]
     if (current == normalizedPreviews) {
       return false
@@ -278,6 +288,7 @@ internal class AgentSessionsTreeUiStateService
     @JvmField val id: String,
     @JvmField val title: String,
     @JvmField val updatedAt: Long,
+    @JvmField val provider: String? = null,
   )
 }
 

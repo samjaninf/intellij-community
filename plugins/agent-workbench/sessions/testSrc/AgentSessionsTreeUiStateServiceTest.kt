@@ -62,6 +62,59 @@ class AgentSessionsTreeUiStateServiceTest {
   }
 
   @Test
+  fun openProjectThreadPreviewCachePreservesProvider() {
+    val uiState = AgentSessionsTreeUiStateService()
+    val threads = listOf(
+      AgentSessionThreadPreview(
+        id = "claude-thread",
+        title = "Claude Thread",
+        updatedAt = 5L,
+        provider = AgentSessionProvider.CLAUDE,
+      )
+    )
+
+    assertTrue(uiState.setOpenProjectThreadPreviews("/work/project-a", threads))
+    assertEquals(
+      AgentSessionProvider.CLAUDE,
+      uiState.getOpenProjectThreadPreviews("/work/project-a")?.single()?.provider,
+    )
+  }
+
+  @Test
+  fun treeStateFieldsSurviveServiceStateRoundTrip() {
+    val original = AgentSessionsTreeUiStateService()
+    val path = "/work/project-a/"
+    original.setProjectCollapsed(path, collapsed = true)
+    original.incrementVisibleThreadCount(path, delta = 4)
+    original.setOpenProjectThreadPreviews(
+      path,
+      listOf(
+        AgentSessionThreadPreview(
+          id = "claude-thread",
+          title = "Claude Thread",
+          updatedAt = 20,
+          provider = AgentSessionProvider.CLAUDE,
+        ),
+        AgentSessionThreadPreview(
+          id = "codex-thread",
+          title = "Codex Thread",
+          updatedAt = 10,
+          provider = AgentSessionProvider.CODEX,
+        ),
+      )
+    )
+
+    val reloaded = AgentSessionsTreeUiStateService()
+    reloaded.loadState(original.state)
+
+    assertTrue(reloaded.isProjectCollapsed("/work/project-a"))
+    assertEquals(DEFAULT_VISIBLE_THREAD_COUNT + 4, reloaded.getVisibleThreadCount("/work/project-a"))
+    val previews = reloaded.getOpenProjectThreadPreviews("/work/project-a").orEmpty()
+    assertEquals(listOf("claude-thread", "codex-thread"), previews.map { it.id })
+    assertEquals(listOf(AgentSessionProvider.CLAUDE, AgentSessionProvider.CODEX), previews.map { it.provider })
+  }
+
+  @Test
   fun lastUsedProviderDefaultsToNull() {
     val uiState = AgentSessionsTreeUiStateService()
     assertNull(uiState.getLastUsedProvider())

@@ -46,6 +46,7 @@ internal fun thread(id: String, updatedAt: Long, provider: AgentSessionProvider)
 internal suspend fun withService(
   sessionSourcesProvider: () -> List<AgentSessionSource>,
   projectEntriesProvider: suspend () -> List<AgentSessionsService.ProjectEntry>,
+  treeUiState: SessionsTreeUiState = InMemorySessionsTreeUiState(),
   action: suspend (AgentSessionsService) -> Unit,
 ) {
   @Suppress("RAW_SCOPE_CREATION")
@@ -55,6 +56,7 @@ internal suspend fun withService(
       serviceScope = scope,
       sessionSourcesProvider = sessionSourcesProvider,
       projectEntriesProvider = projectEntriesProvider,
+      treeUiState = treeUiState,
       subscribeToProjectLifecycle = false,
     )
     action(service)

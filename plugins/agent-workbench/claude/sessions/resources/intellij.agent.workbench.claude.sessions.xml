@@ -7,6 +7,8 @@
   <!-- endregion -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <agent.workbench.sessionProviderBridge implementation="com.intellij.agent.workbench.claude.sessions.ClaudeAgentSessionProviderBridge"/>
+    <agent.workbench.sessionProviderBridge
+      id="agentWorkbenchClaude"
+      implementation="com.intellij.agent.workbench.claude.sessions.ClaudeAgentSessionProviderBridge"/>
   </extensions>
 </idea-plugin>

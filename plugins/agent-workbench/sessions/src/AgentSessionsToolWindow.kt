@@ -84,6 +84,7 @@ internal fun agentSessionsToolWindow(currentProject: Project) {
     onOpenThread = { path, thread -> service.openChatThread(path, thread, currentProject) },
     onOpenSubAgent = { path, thread, subAgent -> service.openChatSubAgent(path, thread, subAgent, currentProject) },
     onCreateSession = { path, provider, mode -> service.createNewSession(path, provider, mode, currentProject) },
+    treeUiState = uiStateService,
     lastUsedProvider = lastUsedProvider,
     visibleProjectCount = state.visibleProjectCount,
     onShowMoreProjects = { service.showMoreProjects() },
@@ -111,6 +112,7 @@ internal fun agentSessionsToolWindowContent(
   onOpenThread: (String, AgentSessionThread) -> Unit = { _, _ -> },
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit = { _, _, _ -> },
   onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit = { _, _, _ -> },
+  treeUiState: SessionsTreeUiState? = null,
   lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long = { System.currentTimeMillis() },
   visibleProjectCount: Int = Int.MAX_VALUE,
@@ -122,6 +124,7 @@ internal fun agentSessionsToolWindowContent(
   onEnableClaudeQuotaWidget: () -> Unit = {},
   onDismissClaudeQuotaHint: () -> Unit = {},
 ) {
+  val effectiveTreeUiState = treeUiState ?: remember { InMemorySessionsTreeUiState() }
   Column(
     modifier = Modifier
       .fillMaxSize()
@@ -146,6 +149,7 @@ internal fun agentSessionsToolWindowContent(
         onOpenThread = onOpenThread,
         onOpenSubAgent = onOpenSubAgent,
         onCreateSession = onCreateSession,
+        treeUiState = effectiveTreeUiState,
         lastUsedProvider = lastUsedProvider,
         nowProvider = nowProvider,
         visibleProjectCount = visibleProjectCount,

@@ -11,9 +11,6 @@ import com.intellij.agent.workbench.sessions.providers.AgentSessionSource
 internal class ClaudeAgentSessionProviderBridge(
   override val sessionSource: AgentSessionSource = ClaudeSessionSource(),
 ) : AgentSessionProviderBridge {
-  override val order: Int
-    get() = 10
-
   override val provider: AgentSessionProvider
     get() = AgentSessionProvider.CLAUDE
 

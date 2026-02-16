@@ -14,7 +14,7 @@ targets:
 # Agent Threads Tool Window
 
 Status: Draft
-Date: 2026-02-15
+Date: 2026-02-16
 
 ## Summary
 Define the Agent Threads tool window as a provider-agnostic, project-scoped session browser. Threads from supported providers are aggregated per project/worktree, rendered in one tree, and opened through a shared chat routing flow.
@@ -39,6 +39,18 @@ Define the Agent Threads tool window as a provider-agnostic, project-scoped sess
 - If at least one provider succeeds, successful threads must be shown and failed providers must surface provider-local warning rows.
 - If all providers fail for a project/worktree load, show blocking project/worktree error state and suppress provider warning rows for that load.
 - Unknown provider totals must propagate via `hasUnknownThreadCount` and drive unknown-count `More…` rendering.
+- Sessions tree UI state must persist by normalized path:
+  - collapsed project/worktree state,
+  - per-path visible thread count,
+  - open-path thread preview cache.
+- Refresh bootstrap must immediately seed open project/worktree nodes from cached previews when available and mark those paths loaded until live provider results arrive.
+- Refresh bootstrap must restore persisted visible thread counts above default for known project/worktree paths.
+- Refresh bootstrap must retain preview cache only for currently open project/worktree paths and prune stale closed-path entries.
+- Final merged refresh results must update preview cache for a path only when that path does not end in blocking error.
+- Auto-open default project expansion must skip paths persisted as collapsed.
+- User collapse/expand interactions must update persisted collapsed state.
+- Cached preview entries must preserve provider identity; missing legacy provider value must default to Codex for backward compatibility.
+- `More` and programmatic visibility expansion (`ensureThreadVisible`) must persist visible-count increments in tree UI state.
 - On-demand project/worktree loading must deduplicate concurrent requests for the same path.
 - Concurrent refresh requests must be deduplicated while a refresh is already running.
 - Project primary click must open/focus the project; closed projects must expose `Open` in context menu.
@@ -56,6 +68,7 @@ Define the Agent Threads tool window as a provider-agnostic, project-scoped sess
 [@test] ../sessions/testSrc/AgentSessionsServiceOnDemandIntegrationTest.kt
 [@test] ../sessions/testSrc/AgentSessionsServiceConcurrencyIntegrationTest.kt
 [@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
+[@test] ../sessions/testSrc/AgentSessionsTreeUiStateServiceTest.kt
 
 ## User Experience
 - Project rows are always expandable and may show worktree children.

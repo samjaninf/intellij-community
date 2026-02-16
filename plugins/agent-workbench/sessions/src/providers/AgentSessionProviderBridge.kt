@@ -5,9 +5,6 @@ import com.intellij.agent.workbench.sessions.AgentSessionLaunchMode
 import com.intellij.agent.workbench.sessions.AgentSessionProvider
 
 interface AgentSessionProviderBridge {
-  val order: Int
-    get() = 0
-
   val provider: AgentSessionProvider
   val displayNameKey: String
   val newSessionLabelKey: String

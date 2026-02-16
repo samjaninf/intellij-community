@@ -32,6 +32,7 @@ internal fun sessionTree(
   onOpenThread: (String, AgentSessionThread) -> Unit,
   onOpenSubAgent: (String, AgentSessionThread, AgentSubAgent) -> Unit,
   onCreateSession: (String, AgentSessionProvider, AgentSessionLaunchMode) -> Unit = { _, _, _ -> },
+  treeUiState: SessionsTreeUiState,
   lastUsedProvider: AgentSessionProvider? = null,
   nowProvider: () -> Long,
   visibleProjectCount: Int = Int.MAX_VALUE,
@@ -41,12 +42,17 @@ internal fun sessionTree(
   selectedTreeId: SessionTreeId? = null,
 ) {
   val stateHolder = rememberSessionTreeStateHolder(
-    onProjectExpanded = onProjectExpanded,
-    onProjectCollapsed = {},
+    onProjectExpanded = { path ->
+      treeUiState.setProjectCollapsed(path, collapsed = false)
+      onProjectExpanded(path)
+    },
+    onProjectCollapsed = { path ->
+      treeUiState.setProjectCollapsed(path, collapsed = true)
+    },
     onWorktreeExpanded = onWorktreeExpanded,
   )
   val treeState = stateHolder.treeState
-  val autoOpenNodes = remember(projects, visibleProjectCount) {
+  val autoOpenNodes = remember(projects, visibleProjectCount, treeUiState) {
     projects.take(visibleProjectCount)
       .filter {
         it.isOpen ||
@@ -54,6 +60,7 @@ internal fun sessionTree(
         it.providerWarnings.isNotEmpty() ||
         it.worktrees.any { wt -> wt.isOpen }
       }
+      .filterNot { treeUiState.isProjectCollapsed(it.path) }
       .map { SessionTreeId.Project(it.path) }
   }
   LaunchedEffect(autoOpenNodes) {

@@ -399,6 +399,99 @@ class AgentSessionsToolWindowTest {
   }
 
   @Test
+  fun collapsedProjectInUiStateIsNotAutoExpandedAndExpandingClearsCollapsedFlag() {
+    val projectPath = "/work/project-a"
+    val treeUiState = InMemorySessionsTreeUiState()
+    treeUiState.setProjectCollapsed(projectPath, collapsed = true)
+    val projects = listOf(
+      AgentProjectSessions(
+        path = projectPath,
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects),
+        onRefresh = {},
+        onOpenProject = {},
+        treeUiState = treeUiState,
+      )
+    }
+
+    composeRule.onNodeWithText("Project A").assertIsDisplayed()
+    composeRule.onAllNodesWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
+      .assertCountEquals(0)
+
+    composeRule.onNodeWithText("Project A")
+      .assertIsDisplayed()
+      .performMouseInput { doubleClick() }
+
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
+      .assertIsDisplayed()
+    composeRule.runOnIdle {
+      assertThat(treeUiState.isProjectCollapsed(projectPath)).isFalse()
+    }
+  }
+
+  @Test
+  fun collapsedProjectInPersistentUiStateRemainsCollapsedAfterContentRefresh() {
+    val projectPath = "/work/project-a"
+    val treeUiState = AgentSessionsTreeUiStateService()
+    val projects = listOf(
+      AgentProjectSessions(
+        path = projectPath,
+        name = "Project A",
+        isOpen = true,
+        hasLoaded = true,
+      ),
+    )
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects, lastUpdatedAt = 1L),
+        onRefresh = {},
+        onOpenProject = {},
+        treeUiState = treeUiState,
+      )
+    }
+
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
+      .assertIsDisplayed()
+    composeRule.onNodeWithText("Project A")
+      .assertIsDisplayed()
+      .performMouseInput { doubleClick() }
+    composeRule.onAllNodesWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
+      .assertCountEquals(0)
+    composeRule.runOnIdle {
+      assertThat(treeUiState.isProjectCollapsed(projectPath)).isTrue()
+    }
+
+    composeRule.setContentWithTheme {
+      agentSessionsToolWindowContent(
+        state = AgentSessionsState(projects = projects, lastUpdatedAt = 2L),
+        onRefresh = {},
+        onOpenProject = {},
+        treeUiState = treeUiState,
+      )
+    }
+
+    composeRule.onNodeWithText("Project A").assertIsDisplayed()
+    composeRule.onAllNodesWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
+      .assertCountEquals(0)
+    composeRule.onNodeWithText("Project A")
+      .assertIsDisplayed()
+      .performMouseInput { doubleClick() }
+    composeRule.onNodeWithText(AgentSessionsBundle.message("toolwindow.empty.project"))
+      .assertIsDisplayed()
+    composeRule.runOnIdle {
+      assertThat(treeUiState.isProjectCollapsed(projectPath)).isFalse()
+    }
+  }
+
+  @Test
   fun expandingLoadedEmptyProjectShowsEmptyChildRow() {
     val now = 1_700_000_000_000L
     val thread = AgentSessionThread(id = "thread-1", title = "Thread One", updatedAt = now - 10 * 60 * 1000L, archived = false)

@@ -15,9 +15,6 @@ import com.intellij.openapi.components.service
 internal class CodexAgentSessionProviderBridge(
   override val sessionSource: AgentSessionSource = CodexSessionSource(),
 ) : AgentSessionProviderBridge {
-  override val order: Int
-    get() = 20
-
   override val provider: AgentSessionProvider
     get() = AgentSessionProvider.CODEX
 

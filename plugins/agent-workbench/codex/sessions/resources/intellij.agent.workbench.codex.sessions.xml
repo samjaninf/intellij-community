@@ -8,7 +8,9 @@
   <!-- endregion -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <agent.workbench.sessionProviderBridge implementation="com.intellij.agent.workbench.codex.sessions.CodexAgentSessionProviderBridge"/>
+    <agent.workbench.sessionProviderBridge
+      id="agentWorkbenchCodex"
+      order="before agentWorkbenchClaude"
+      implementation="com.intellij.agent.workbench.codex.sessions.CodexAgentSessionProviderBridge"/>
   </extensions>
-
 </idea-plugin>

@@ -50,6 +50,7 @@ data class AgentSessionThreadPreview(
   @JvmField val id: String,
   @JvmField val title: String,
   @JvmField val updatedAt: Long,
+  val provider: AgentSessionProvider = AgentSessionProvider.CODEX,
 )
 
 @Immutable

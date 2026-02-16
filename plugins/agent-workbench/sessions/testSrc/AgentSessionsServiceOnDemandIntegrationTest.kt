@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class AgentSessionsServiceOnDemandIntegrationTest {
   @Test
   fun ensureThreadVisibleExpandsProjectVisibleCountForHiddenThread() = runBlocking {
+    val treeUiState = InMemorySessionsTreeUiState()
     withService(
       sessionSourcesProvider = {
         listOf(
@@ -38,6 +39,7 @@ class AgentSessionsServiceOnDemandIntegrationTest {
       projectEntriesProvider = {
         listOf(closedProjectEntry(PROJECT_PATH, "Project A"))
       },
+      treeUiState = treeUiState,
     ) { service ->
       service.refresh()
       waitForCondition {
@@ -52,6 +54,39 @@ class AgentSessionsServiceOnDemandIntegrationTest {
       service.ensureThreadVisible(PROJECT_PATH, AgentSessionProvider.CODEX, "codex-5")
 
       assertThat(service.state.value.visibleThreadCounts[PROJECT_PATH])
+        .isEqualTo(DEFAULT_VISIBLE_THREAD_COUNT + DEFAULT_VISIBLE_THREAD_COUNT)
+      assertThat(treeUiState.getVisibleThreadCount(PROJECT_PATH))
+        .isEqualTo(DEFAULT_VISIBLE_THREAD_COUNT + DEFAULT_VISIBLE_THREAD_COUNT)
+    }
+  }
+
+  @Test
+  fun showMoreThreadsPersistsVisibleCountToUiState() = runBlocking {
+    val treeUiState = InMemorySessionsTreeUiState()
+    withService(
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CODEX,
+            canReportExactThreadCount = true,
+          ),
+        )
+      },
+      projectEntriesProvider = {
+        listOf(closedProjectEntry(PROJECT_PATH, "Project A"))
+      },
+      treeUiState = treeUiState,
+    ) { service ->
+      service.refresh()
+      waitForCondition {
+        service.state.value.projects.any { it.path == PROJECT_PATH }
+      }
+
+      service.showMoreThreads(PROJECT_PATH)
+
+      assertThat(service.state.value.visibleThreadCounts[PROJECT_PATH])
+        .isEqualTo(DEFAULT_VISIBLE_THREAD_COUNT + DEFAULT_VISIBLE_THREAD_COUNT)
+      assertThat(treeUiState.getVisibleThreadCount(PROJECT_PATH))
         .isEqualTo(DEFAULT_VISIBLE_THREAD_COUNT + DEFAULT_VISIBLE_THREAD_COUNT)
     }
   }

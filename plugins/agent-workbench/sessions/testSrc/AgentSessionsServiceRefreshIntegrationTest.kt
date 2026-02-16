@@ -2,6 +2,7 @@
 package com.intellij.agent.workbench.sessions
 
 import com.intellij.testFramework.junit5.TestApplication
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -9,6 +10,92 @@ import org.junit.jupiter.api.Test
 
 @TestApplication
 class AgentSessionsServiceRefreshIntegrationTest {
+  @Test
+  fun refreshShowsCachedOpenProjectThreadsBeforeProviderLoadCompletes() = runBlocking {
+    val started = CompletableDeferred<Unit>()
+    val release = CompletableDeferred<Unit>()
+    val treeUiState = InMemorySessionsTreeUiState()
+    treeUiState.setOpenProjectThreadPreviews(
+      PROJECT_PATH,
+      listOf(
+        AgentSessionThreadPreview(
+          id = "cached-1",
+          title = "Cached",
+          updatedAt = 100,
+          provider = AgentSessionProvider.CLAUDE,
+        )
+      ),
+    )
+
+    withService(
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CLAUDE,
+            listFromOpenProject = { path, _ ->
+              if (path != PROJECT_PATH) {
+                emptyList()
+              }
+              else {
+                started.complete(Unit)
+                release.await()
+                listOf(thread(id = "claude-1", updatedAt = 200, provider = AgentSessionProvider.CLAUDE))
+              }
+            },
+          )
+        )
+      },
+      projectEntriesProvider = {
+        listOf(openProjectEntry(PROJECT_PATH, "Project A"))
+      },
+      treeUiState = treeUiState,
+    ) { service ->
+      service.refresh()
+      started.await()
+
+      waitForCondition {
+        val project = service.state.value.projects.firstOrNull { it.path == PROJECT_PATH } ?: return@waitForCondition false
+        project.hasLoaded && project.threads.map { it.id } == listOf("cached-1")
+      }
+
+      release.complete(Unit)
+      waitForCondition {
+        service.state.value.projects.firstOrNull { it.path == PROJECT_PATH }?.threads?.map { it.id } == listOf("claude-1")
+      }
+
+      assertThat(treeUiState.getOpenProjectThreadPreviews(PROJECT_PATH).orEmpty().map { it.id })
+        .containsExactly("claude-1")
+    }
+  }
+
+  @Test
+  fun refreshRestoresPersistedVisibleThreadCountForKnownPath() = runBlocking {
+    val treeUiState = InMemorySessionsTreeUiState()
+    treeUiState.incrementVisibleThreadCount(PROJECT_PATH, delta = 6)
+
+    withService(
+      sessionSourcesProvider = {
+        listOf(
+          ScriptedSessionSource(
+            provider = AgentSessionProvider.CODEX,
+          )
+        )
+      },
+      projectEntriesProvider = {
+        listOf(closedProjectEntry(PROJECT_PATH, "Project A"))
+      },
+      treeUiState = treeUiState,
+    ) { service ->
+      service.refresh()
+      waitForCondition {
+        service.state.value.projects.any { it.path == PROJECT_PATH }
+      }
+
+      assertThat(service.state.value.visibleThreadCounts[PROJECT_PATH])
+        .isEqualTo(DEFAULT_VISIBLE_THREAD_COUNT + 6)
+    }
+  }
+
   @Test
   fun refreshMergesMixedProviderThreadsAndMarksUnknownCount() = runBlocking {
     withService(

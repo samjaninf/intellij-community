@@ -2,6 +2,7 @@
 name: Agent Threads Testing
 description: Coverage requirements for provider aggregation, tree rendering, and backend contracts in Agent Threads.
 targets:
+  - ../sessions/src/AgentSessionsTreeUiStateService.kt
   - ../codex/sessions/testSrc/CodexRolloutSessionBackendTest.kt
   - ../codex/sessions/testSrc/CodexSessionBackendSelectorTest.kt
   - ../sessions/testSrc/AgentSessionLoadAggregationTest.kt
@@ -10,6 +11,7 @@ targets:
   - ../sessions/testSrc/AgentSessionsServiceConcurrencyIntegrationTest.kt
   - ../sessions/testSrc/AgentSessionsServiceIntegrationTestSupport.kt
   - ../sessions/testSrc/AgentSessionsToolWindowTest.kt
+  - ../sessions/testSrc/AgentSessionsTreeUiStateServiceTest.kt
   - ../sessions/testSrc/CodexSessionsPagingLogicTest.kt
   - ../sessions/testSrc/CodexAppServerClientTest.kt
   - ../sessions/testSrc/CodexAppServerClientTestSupport.kt
@@ -19,7 +21,7 @@ targets:
 # Agent Threads Testing
 
 Status: Draft
-Date: 2026-02-11
+Date: 2026-02-16
 
 ## Summary
 Define required test coverage for the multi-provider Agent Threads stack: source aggregation, service behavior, tree/UI rendering, and Codex backend protocol compatibility.
@@ -43,10 +45,14 @@ Define required test coverage for the multi-provider Agent Threads stack: source
 - Service integration tests must cover:
   - mixed-provider refresh merge,
   - provider warning and blocking error paths,
-  - unknown-count behavior when unknown provider fails/succeeds.
+  - unknown-count behavior when unknown provider fails/succeeds,
+  - cached preview rows rendered before open-path provider load completes,
+  - persisted visible thread count restoration during refresh bootstrap.
 - On-demand integration tests must cover:
   - project request deduplication,
-  - worktree request deduplication with refresh interaction.
+  - worktree request deduplication with refresh interaction,
+  - `showMoreThreads` visible-count persistence,
+  - `ensureThreadVisible` visible-count persistence.
 - Concurrency integration tests must verify refresh mutex deduplicates overlapping refresh calls.
 - Codex rollout backend tests must cover rollout parsing/activity behavior as the default thread-discovery path.
 - Codex backend selector tests must verify rollout default behavior and explicit app-server override behavior.
@@ -54,7 +60,13 @@ Define required test coverage for the multi-provider Agent Threads stack: source
   - provider warning rendering,
   - error row precedence over warnings,
   - `More…` rendering for unknown count,
-  - `More (N)` rendering for exact count.
+  - `More (N)` rendering for exact count,
+  - persisted collapsed state blocking default auto-expand,
+  - collapsed-state persistence across content refresh/recreation when persistent tree UI state is used.
+- Tree UI state service tests must cover:
+  - collapsed/visible-count/open-preview state round-trip,
+  - preview provider identity persistence,
+  - backward-compatible provider default for legacy preview entries with missing provider value.
 - Codex compatibility tests must cover cursor-loop/no-progress guard behavior in `seedInitialVisibleThreads`.
 - Codex app-server contract tests must run against mock backend always and real backend when available.
 
@@ -63,6 +75,7 @@ Define required test coverage for the multi-provider Agent Threads stack: source
 [@test] ../sessions/testSrc/AgentSessionsServiceOnDemandIntegrationTest.kt
 [@test] ../sessions/testSrc/AgentSessionsServiceConcurrencyIntegrationTest.kt
 [@test] ../sessions/testSrc/AgentSessionsToolWindowTest.kt
+[@test] ../sessions/testSrc/AgentSessionsTreeUiStateServiceTest.kt
 [@test] ../sessions/testSrc/CodexSessionsPagingLogicTest.kt
 [@test] ../sessions/testSrc/CodexAppServerClientTest.kt
 
