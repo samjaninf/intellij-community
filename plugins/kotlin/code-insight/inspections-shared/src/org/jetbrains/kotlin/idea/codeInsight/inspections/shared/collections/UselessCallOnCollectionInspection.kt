@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.api.types.KaTypeArgumentWithVariance
 import org.jetbrains.kotlin.idea.base.resources.KotlinBundle
 import org.jetbrains.kotlin.name.CallableId
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLabeledExpression
@@ -97,8 +98,23 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
 
     private inner class UselessMapNotNullConversion(
         override val targetCallableId: CallableId,
-        val replacementName: String,
+        val replacementCallableId: CallableId,
     ): QualifiedFunctionCallConversion {
+
+        /**
+         * Assumes that [replacementName] is a "sibling" of [targetCallableId].
+         */
+        constructor(
+            targetCallableId: CallableId,
+            replacementName: String,
+        ): this(
+            targetCallableId,
+            replacementCallableId = targetCallableId.copy(Name.identifier(replacementName))
+        )
+
+        private val replacementName: String
+            get() = replacementCallableId.callableName.asString()
+
         context(_: KaSession)
         override fun createProblemDescriptor(
             manager: InspectionManager,
@@ -132,7 +148,7 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
                 KotlinBundle.message("call.on.collection.type.may.be.reduced"),
                 ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
                 isOnTheFly,
-                RenameUselessCallFix(replacementName)
+                RenameUselessCallFix(replacementName, callableIdToImport = replacementCallableId)
             )
         }
     }
