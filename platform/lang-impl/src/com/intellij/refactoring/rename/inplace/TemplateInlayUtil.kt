@@ -399,8 +399,10 @@ object TemplateInlayUtil {
               .selected(it)
               .applyToComponent {
                 addActionListener {
-                  commentsStringsOccurrences = isSelected
-                  optionsListener(TextOptions(commentStringOccurrences = commentsStringsOccurrences, textOccurrences = textOccurrences))
+                  WriteIntentReadAction.run {
+                    commentsStringsOccurrences = isSelected
+                    optionsListener(TextOptions(commentStringOccurrences = commentsStringsOccurrences, textOccurrences = textOccurrences))
+                  }
                 }
               }.gap(RightGap.SMALL)
               .focused()
