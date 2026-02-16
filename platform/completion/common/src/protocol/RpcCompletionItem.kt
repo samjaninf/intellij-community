@@ -5,6 +5,7 @@ import com.intellij.codeInsight.completion.CodeCompletionHandlerBase
 import com.intellij.codeInsight.completion.CompletionItemLookupElement
 import com.intellij.codeInsight.completion.CompletionResult
 import com.intellij.codeInsight.completion.command.RemDevCommandCompletionHelpers
+import com.intellij.codeInsight.completion.impl.TopPriorityLookupElement
 import com.intellij.codeInsight.lookup.AutoCompletionPolicy
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementInsertStopper
@@ -28,6 +29,8 @@ data class RpcCompletionItem(
   val isWorthShowingInAutoPopup: Boolean = false,
   val commandState: RemDevCommandCompletionHelpers.CommandState? = null,
   val hasModCommand: Boolean = false,
+  val isTopPriorityItem: Boolean = false,
+  val isNeverAutoselectTopPriorityItem: Boolean = false,
 ) {
   override fun toString(): String = buildToString("RpcCompletionItem") {
     field("id", id)
@@ -68,6 +71,8 @@ fun CompletionResult.toRpc(): RpcCompletionItem {
     isWorthShowingInAutoPopup = element.isWorthShowingInAutoPopup(),
     commandState = RemDevCommandCompletionHelpers.getCommandState(element),
     hasModCommand = element is CompletionItemLookupElement,
+    isTopPriorityItem = TopPriorityLookupElement.isTopPriorityItem(element),
+    isNeverAutoselectTopPriorityItem = TopPriorityLookupElement.isNeverAutoselectTopPriorityItem(element),
   )
 }
 
