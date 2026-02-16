@@ -34,6 +34,8 @@ import com.jetbrains.python.psi.PyUtil
 import com.jetbrains.python.psi.impl.PyBuiltinCache
 import com.jetbrains.python.psi.impl.PyEvaluator
 import com.jetbrains.python.psi.resolve.PyResolveContext
+import com.jetbrains.python.psi.types.PyTypeUtil.getEffectiveBound
+import com.jetbrains.python.psi.types.PyTypeUtil.toStream
 import org.jetbrains.annotations.ApiStatus
 
 
@@ -199,7 +201,7 @@ class PyLiteralType private constructor(cls: PyClass, val expression: PyExpressi
       substitutions: PyTypeChecker.GenericSubstitutions?,
     ): PyType? {
       val substitution = if (substitutions != null) PyTypeChecker.substitute(expected, substitutions, context) else expected
-      val substitutionOrBound = if (substitution is PyTypeVarType) PyTypeUtil.getEffectiveBound(substitution) else substitution
+      val substitutionOrBound = if (substitution is PyTypeVarType) substitution.getEffectiveBound() else substitution
       if (substitutionOrBound == null) return null
       return TypePromoter(context, containsLiteral(substitutionOrBound)).promoteToType(substitutionOrBound, expression)
     }
@@ -224,7 +226,7 @@ class PyLiteralType private constructor(cls: PyClass, val expression: PyExpressi
 
       if (expression is PyReferenceExpression || expression is PySubscriptionExpression) {
         val subLiteralType = Ref.deref(PyTypingTypeProvider.getType(expression, context))
-        if (PyTypeUtil.toStream(subLiteralType).all { it is PyLiteralType }) return subLiteralType
+        if (subLiteralType.toStream().all { it is PyLiteralType }) return subLiteralType
       }
 
       return literalType(expression, context, true)

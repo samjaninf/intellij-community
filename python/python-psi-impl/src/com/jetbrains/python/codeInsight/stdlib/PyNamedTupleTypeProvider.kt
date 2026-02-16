@@ -39,7 +39,7 @@ import com.jetbrains.python.psi.types.PyNamedTupleType
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeMember
 import com.jetbrains.python.psi.types.PyTypeProviderBase
-import com.jetbrains.python.psi.types.PyTypeUtil
+import com.jetbrains.python.psi.types.PyTypeUtil.notNullToRef
 import com.jetbrains.python.psi.types.PyUnionType
 import com.jetbrains.python.psi.types.TypeEvalContext
 import one.util.streamex.StreamEx
@@ -51,7 +51,7 @@ private typealias ImmutableNTFields = Map<String, PyNamedTupleType.FieldTypeAndD
 class PyNamedTupleTypeProvider : PyTypeProviderBase() {
 
   override fun getReferenceType(referenceTarget: PsiElement, context: TypeEvalContext, anchor: PsiElement?): Ref<PyType>? {
-    return PyTypeUtil.notNullToRef(getNamedTupleTypeForResolvedCallee(referenceTarget, context, anchor))
+    return getNamedTupleTypeForResolvedCallee(referenceTarget, context, anchor).notNullToRef
   }
 
   override fun getReferenceExpressionType(referenceExpression: PyReferenceExpression, context: TypeEvalContext): PyType? {

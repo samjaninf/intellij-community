@@ -78,10 +78,10 @@ public final class PyiTypeProvider extends PyTypeProviderBase {
           .prepend(PyiUtil.getOverloads(pyFunction, context))
           .map(context::getType)
           .collect(PyTypeUtil.toUnion());
-        return PyTypeUtil.notNullToRef(allSignatures);
+        return PyTypeUtil.getNotNullToRef(allSignatures);
       }
       if (pythonStub instanceof PyTypedElement) {
-        return PyTypeUtil.notNullToRef(context.getType((PyTypedElement)pythonStub));
+        return PyTypeUtil.getNotNullToRef(context.getType((PyTypedElement)pythonStub));
       }
     }
     return null;

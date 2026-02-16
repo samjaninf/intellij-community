@@ -15,6 +15,7 @@ import com.jetbrains.python.psi.PyKeyValueExpression
 import com.jetbrains.python.psi.PyKeywordArgument
 import com.jetbrains.python.psi.PyQualifiedNameOwner
 import com.jetbrains.python.psi.impl.PyBuiltinCache
+import com.jetbrains.python.psi.types.PyTypeUtil.toStream
 import org.jetbrains.annotations.ApiStatus
 import java.util.Objects
 
@@ -170,7 +171,7 @@ class PyTypedDictType(
       result: TypeCheckingResult,
     ): Boolean {
       if (actualExpression != null && isDictExpression(actualExpression, context)) {
-        val types = PyTypeUtil.toStream(expectedType).toList()
+        val types = expectedType.toStream().toList()
         for (subType in types) {
           if (subType is PyTypedDictType) {
             val res = if (types.size <= 1) result else TypeCheckingResult()
@@ -192,7 +193,7 @@ class PyTypedDictType(
 
     private fun strictUnionMatch(expected: PyType?, actual: PyType?, context: TypeEvalContext): Boolean {
       if (!PyUnionType.isStrictSemanticsEnabled()) {
-        return PyTypeUtil.toStream(actual).allMatch { type -> PyTypeChecker.match(expected, type, context) }
+        return actual.toStream().allMatch { type -> PyTypeChecker.match(expected, type, context) }
       }
       return PyTypeChecker.match(expected, actual, context)
     }

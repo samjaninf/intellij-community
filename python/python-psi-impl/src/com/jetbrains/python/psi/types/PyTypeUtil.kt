@@ -13,297 +13,316 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.jetbrains.python.psi.types;
+package com.jetbrains.python.psi.types
 
-import com.intellij.openapi.util.Key;
-import com.intellij.openapi.util.Ref;
-import com.intellij.openapi.util.UserDataHolder;
-import com.intellij.psi.PsiElement;
-import com.intellij.util.ObjectUtils;
-import com.intellij.util.containers.ContainerUtil;
-import com.jetbrains.python.psi.PyClass;
-import com.jetbrains.python.psi.PyPsiFacade;
-import com.jetbrains.python.psi.impl.PyBuiltinCache;
-import one.util.streamex.StreamEx;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnmodifiableView;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-
-import static com.jetbrains.python.psi.types.PyTypeChecker.match;
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.Ref
+import com.intellij.openapi.util.UserDataHolder
+import com.intellij.psi.PsiElement
+import com.jetbrains.python.psi.PyPsiFacade
+import com.jetbrains.python.psi.impl.PyBuiltinCache
+import com.jetbrains.python.psi.types.PyRecursiveTypeVisitor.PyTypeTraverser
+import com.jetbrains.python.psi.types.PyTypeChecker.convertToType
+import com.jetbrains.python.psi.types.PyTypeChecker.findGenericDefinitionType
+import com.jetbrains.python.psi.types.PyTypeChecker.match
+import one.util.streamex.StreamEx
+import org.jetbrains.annotations.ApiStatus
+import org.jetbrains.annotations.Contract
+import org.jetbrains.annotations.UnmodifiableView
+import java.util.Collections
+import java.util.stream.Collector
+import java.util.stream.Collectors
 
 /**
- * Tools and wrappers around {@link PyType} inheritors
- *
+ * Tools and wrappers around [PyType] inheritors
+ * 
  * @author Ilya.Kazakevich
  */
 @ApiStatus.Internal
-public final class PyTypeUtil {
-  private PyTypeUtil() {
-  }
-
+object PyTypeUtil {
   /**
    * Checks if two types are both assignable to each other, does not check if two types are equal
    */
-  public static boolean isSameType(@Nullable PyType type1, @Nullable PyType type2, @NotNull TypeEvalContext context) {
-    if ((type1 == null || type2 == null) && type1 != type2) return false;
+  fun PyType?.isSameType(type2: PyType?, context: TypeEvalContext): Boolean {
+    if ((this == null || type2 == null) && this !== type2) return false
 
-    return match(type1, type2, context)
-           && match(type2, type1, context);
+    return match(this, type2, context)
+           && match(type2, this, context)
   }
 
   /**
    * Checks if two types have a direct inheritance relationship, meaning one is a
    * subtype or supertype of the other.
-   * <p>
-   * This method handles {@link PyUnionType} by distributing the check across its
+   * 
+   * 
+   * This method handles [PyUnionType] by distributing the check across its
    * members. The types are considered overlapping if the condition holds for any
    * pair of members.
    */
-  public static boolean isOverlappingWith(@Nullable PyType type1, @Nullable PyType type2, @NotNull TypeEvalContext context) {
-    // TODO: collapse this when PyUnionType and PyUnsafeUnionType have a common base
-    if (type1 instanceof PyUnionType unionType1) {
-      return ContainerUtil.exists(unionType1.getMembers(), t -> isOverlappingWith(t, type2, context));
+  fun PyType?.isOverlappingWith(type2: PyType?, context: TypeEvalContext): Boolean {
+    if (this is PyUnionLikeType) {
+      return this.members.any { it.isOverlappingWith(type2, context) }
     }
-    if (type2 instanceof PyUnionType unionType2) {
-      return ContainerUtil.exists(unionType2.getMembers(), t -> isOverlappingWith(type1, t, context));
+    if (type2 is PyUnionLikeType) {
+      return type2.members.any { this.isOverlappingWith(it, context) }
     }
-    if (type1 instanceof PyUnsafeUnionType unionType1) {
-      return ContainerUtil.exists(unionType1.getMembers(), t -> isOverlappingWith(t, type2, context));
-    }
-    if (type2 instanceof PyUnsafeUnionType unionType2) {
-      return ContainerUtil.exists(unionType2.getMembers(), t -> isOverlappingWith(type1, t, context));
-    }
-    return match(type1, type2, context)
-           || match(type2, type1, context);
+    return match(this, type2, context)
+           || match(type2, this, context)
   }
 
   /**
-   * Returns members of certain type from {@link PyClassLikeType}.
+   * Returns members of certain type from [PyClassLikeType].
    */
-  public static @NotNull <T extends PsiElement> List<T> getMembersOfType(final @NotNull PyClassLikeType type,
-                                                                         final @NotNull Class<T> expectedMemberType,
-                                                                         boolean inherited,
-                                                                         final @NotNull TypeEvalContext context) {
+  inline fun <reified T : PsiElement> PyClassLikeType.getMembers(
+    inherited: Boolean,
+    context: TypeEvalContext,
+  ): List<T> = buildList {
+    visitMembers({
+                   if (it is T) {
+                     add(it)
+                   }
+                   true
+                 }, inherited, context)
+  }
 
-    final List<T> result = new ArrayList<>();
-    type.visitMembers(t -> {
-      if (expectedMemberType.isInstance(t)) {
-        @SuppressWarnings("unchecked") // Already checked
-        final T castedElement = (T)t;
-        result.add(castedElement);
-      }
-      return true;
-    }, inherited, context);
-    return result;
+  /**
+   * Returns members of certain type from [PyClassLikeType].
+   */
+  @JvmStatic
+  fun <T : PsiElement> getMembersOfType(
+    type: PyClassLikeType,
+    expectedMemberType: Class<T>,
+    inherited: Boolean,
+    context: TypeEvalContext,
+  ): List<T> = buildList {
+    type.visitMembers({
+                        if (expectedMemberType.isInstance(it)) {
+                          @Suppress("UNCHECKED_CAST") // Already checked
+                          add(it as T)
+                        }
+                        true
+                      }, inherited, context)
   }
 
 
   /**
    * Search for data in dataholder or members of union recursively
-   *
-   * @param type start point
+   * 
+   * @param this@findData start point
    * @param key  key to search
    * @param <T>  result tyoe
    * @return data or null if not found
-   */
-  public static @Nullable <T> T findData(final @NotNull PyType type, final @NotNull Key<T> key) {
-    if (type instanceof UserDataHolder) {
-      return ((UserDataHolder)type).getUserData(key);
+  </T> */
+  @JvmStatic
+  fun <T> PyType.findData(key: Key<T>): T? {
+    if (this is UserDataHolder) {
+      return (this as UserDataHolder).getUserData(key)
     }
-    if (type instanceof PyUnionType unionType) {
-      for (final PyType memberType : unionType.getMembers()) {
+    if (this is PyUnionType) {
+      for (memberType in this.members) {
         if (memberType == null) {
-          continue;
+          continue
         }
-        final T result = findData(memberType, key);
+        val result = memberType.findData(key)
         if (result != null) {
-          return result;
+          return result
         }
       }
     }
-    return null;
+    return null
   }
 
-  public static @Nullable PyTupleType toPositionalContainerType(@NotNull PsiElement anchor, @Nullable PyType elementType) {
-    if (elementType instanceof PyUnpackedTupleTypeImpl unpackedTupleType) {
-      return unpackedTupleType.asTupleType(anchor);
+  @JvmStatic
+  fun PsiElement.toPositionalContainerType(elementType: PyType?): PyTupleType? {
+    if (elementType is PyUnpackedTupleTypeImpl) {
+      return elementType.asTupleType(this)
     }
-    else if (elementType instanceof PyTypeVarTupleType) {
-      return PyTupleType.create(anchor, Collections.singletonList(elementType));
+    else if (elementType is PyTypeVarTupleType) {
+      return PyTupleType.create(this, listOf(elementType))
     }
-    return PyTupleType.createHomogeneous(anchor, elementType);
+    return PyTupleType.createHomogeneous(this, elementType)
   }
 
-  public static @Nullable PyCollectionType toKeywordContainerType(@NotNull PsiElement anchor, @Nullable PyType valueType) {
-    final PyBuiltinCache builtinCache = PyBuiltinCache.getInstance(anchor);
+  @JvmStatic
+  fun PsiElement.toKeywordContainerType(valueType: PyType?): PyCollectionType? {
+    val builtinCache = PyBuiltinCache.getInstance(this)
 
-    return Optional
-      .ofNullable(builtinCache.getDictType())
-      .map(PyClassType::getPyClass)
-      .map(dictClass -> new PyCollectionTypeImpl(dictClass, false, Arrays.asList(builtinCache.getStrType(), valueType)))
-      .orElse(null);
+    return builtinCache.dictType?.pyClass?.let {
+      PyCollectionTypeImpl(it, false, listOf(builtinCache.strType, valueType))
+    }
   }
 
   /**
    * Given a type creates a stream of all its members if it's a union type or of only the type itself otherwise.
-   * <p>
+   *
+   *
    * It allows to process types received as the result of multiresolve uniformly with the others.
    */
-  public static @NotNull StreamEx<PyType> toStream(@Nullable PyType type) {
-    if (type instanceof PyUnionType unionType) {
-      return StreamEx.of(unionType.getMembers());
-    }
-    if (type instanceof PyUnsafeUnionType weakUnionType) {
-      return StreamEx.of(weakUnionType.getMembers());
-    }
-    if (type instanceof PyIntersectionType intersectionType) {
-      return StreamEx.of(intersectionType.getMembers());
-    }
-    return StreamEx.of(type);
+  @JvmStatic
+  fun PyType?.toStream(): StreamEx<PyType?> =
+    if (this is PyCompoundType)
+      StreamEx.of(this.members)
+    else
+      StreamEx.of(this)
+
+  @JvmStatic
+  val PyType?.notNullToRef: Ref<PyType>?
+    @Contract("null -> null; !null -> !null")
+    get() = if (this == null) null else Ref(this)
+
+  /**
+   * Returns a collector that combines a stream of `Ref<PyType>` back into a single `Ref<PyType>`
+   * using [PyUnionType.union].
+   * 
+   * @see .toUnion
+   */
+  @JvmStatic
+  fun toUnionFromRef(): Collector<Ref<PyType?>?, *, Ref<PyType?>?> {
+    return toUnionFromRef { type1, type2 -> PyUnionType.union(type1, type2) }
   }
 
-  @Contract("null -> null; !null -> !null")
-  public static @Nullable Ref<PyType> notNullToRef(@Nullable PyType type) {
-    return type == null ? null : Ref.create(type);
+  fun toUnsafeUnionFromRef(): Collector<Ref<PyType?>?, *, Ref<PyType?>?> {
+    return toUnionFromRef { _, types ->
+      PyUnsafeUnionType.unsafeUnion(types)
+    }
+  }
+
+  @JvmStatic
+  fun toUnionFromRef(streamSource: PyType?): Collector<Ref<PyType?>?, *, Ref<PyType?>?> {
+    return if (streamSource is PyUnsafeUnionType)
+      toUnionFromRef { _, types ->
+        PyUnsafeUnionType.unsafeUnion(types)
+      }
+    else {
+      toUnionFromRef { type1, type2 -> PyUnionType.union(type1, type2) }
+    }
+  }
+
+  private fun toUnionFromRef(unionReduction: (PyType?, PyType?) -> PyType?): Collector<Ref<PyType?>?, *, Ref<PyType?>?> {
+    return Collectors.reducing(null) { accType, hintType ->
+      when {
+        hintType == null -> accType
+        accType == null -> hintType
+        else -> Ref(unionReduction(accType.get(), hintType.get()))
+      }
+    }
   }
 
   /**
-   * Returns a collector that combines a stream of {@code Ref<PyType>} back into a single {@code Ref<PyType>}
-   * using {@link PyUnionType#union(PyType, PyType)}.
-   *
-   * @see #toUnion()
+   * Returns a collector that combines a stream of types back into a single `PyType`
+   * using [PyUnionType.union].
+   * 
+   * 
+   * Note that it's different from using `foldLeft(PyUnionType::union)` because the latter returns `Optional<PyType>`,
+   * and it doesn't support `null` values throwing `NullPointerException` if the final result of
+   * [PyUnionType.union] was `null`.
+   * 
+   * 
+   * This method doesn't distinguish between an empty stream and a stream containing only `null` returning `null` for both cases.
+   * 
+   * @see .toUnionFromRef
    */
-  public static @NotNull Collector<Ref<PyType>, ?, Ref<PyType>> toUnionFromRef() {
-    return toUnionFromRef(PyUnionType::union);
-  }
-
-  public static @NotNull Collector<Ref<PyType>, ?, Ref<PyType>> toUnsafeUnionFromRef() {
-    return toUnionFromRef(PyUnsafeUnionType::unsafeUnion);
-  }
-
-  public static @NotNull Collector<Ref<PyType>, ?, Ref<PyType>> toUnionFromRef(@Nullable PyType streamSource) {
-    return toUnionFromRef(streamSource instanceof PyUnsafeUnionType ? PyUnsafeUnionType::unsafeUnion : PyUnionType::union);
-  }
-
-  private static @NotNull Collector<Ref<PyType>, ?, Ref<PyType>> toUnionFromRef(@NotNull BinaryOperator<PyType> unionReduction) {
-    return Collectors.reducing(null, (accType, hintType) -> {
-      if (hintType == null) {
-        return accType;
-      }
-      else if (accType == null) {
-        return hintType;
-      }
-      else {
-        return Ref.create(unionReduction.apply(accType.get(), hintType.get()));
-      }
-    });
-  }
-
-  /**
-   * Returns a collector that combines a stream of types back into a single {@code PyType}
-   * using {@link PyUnionType#union(java.util.Collection)}.
-   * <p>
-   * Note that it's different from using {@code foldLeft(PyUnionType::union)} because the latter returns {@code Optional<PyType>},
-   * and it doesn't support {@code null} values throwing {@code NullPointerException} if the final result of
-   * {@link PyUnionType#union(java.util.Collection)} was {@code null}.
-   * <p>
-   * This method doesn't distinguish between an empty stream and a stream containing only {@code null} returning {@code null} for both cases.
-   *
-   * @see #toUnionFromRef()
-   */
-  public static @NotNull Collector<@Nullable PyType, ?, @Nullable PyType> toUnion() {
-    return Collectors.collectingAndThen(Collectors.toList(), PyUnionType::union);
+  @JvmStatic
+  fun toUnion(): Collector<PyType?, *, PyType?> {
+    return Collectors.collectingAndThen(
+      Collectors.toList()
+    ) { members -> PyUnionType.union(members) }
   }
 
   @ApiStatus.Experimental
-  public static @NotNull Collector<@Nullable PyType, ?, @Nullable PyType> toUnsafeUnion() {
-    return Collectors.collectingAndThen(Collectors.toList(), PyUnsafeUnionType::unsafeUnion);
+  fun toUnsafeUnion(): Collector<PyType?, *, PyType?> {
+    return Collectors.collectingAndThen(
+      Collectors.toList()
+    ) { PyUnsafeUnionType.unsafeUnion() }
   }
 
   @ApiStatus.Experimental
-  public static @NotNull Collector<@Nullable PyType, ?, @Nullable PyType> toIntersection() {
-    return Collectors.collectingAndThen(Collectors.toList(), PyIntersectionType::intersection);
+  fun toIntersection(): Collector<PyType?, *, PyType?> {
+    return Collectors.collectingAndThen(
+      Collectors.toList()
+    ) { PyIntersectionType.intersection() }
   }
 
-  public static @NotNull Collector<@Nullable PyType, ?, @Nullable PyType> toUnion(@Nullable PyType streamSource) {
-    return toUnion(streamSource instanceof PyUnsafeUnionType ? PyUnsafeUnionType::unsafeUnion : PyUnionType::union);
+  @JvmStatic
+  fun toUnion(streamSource: PyType?): Collector<PyType?, *, PyType?> {
+    return if (streamSource is PyUnsafeUnionType)
+      toUnion { PyUnsafeUnionType.unsafeUnion() }
+    else toUnion { members ->
+      PyUnionType.union(members)
+    }
   }
 
-  private static @NotNull Collector<@Nullable PyType, ?, @Nullable PyType> toUnion(@NotNull Function<List<@Nullable PyType>, @Nullable PyType> unionFactory) {
-    return Collectors.collectingAndThen(Collectors.toList(), unionFactory);
+  val PyType?.components: List<PyType?>
+    @ApiStatus.Experimental
+    get() = if (this is PyCompoundType) members.toList() else listOf(this)
+
+  val PyType?.componentSequence: Sequence<PyType?>
+    @ApiStatus.Experimental
+    get() = if (this is PyCompoundType) members.asSequence() else sequenceOf(this)
+
+  private fun toUnion(unionFactory: (List<PyType?>) -> PyType?): Collector<PyType?, *, PyType?> {
+    return Collectors.collectingAndThen(Collectors.toList(), unionFactory)
   }
 
-  public static boolean isDict(@Nullable PyType type) {
-    return type instanceof PyCollectionType && "dict".equals(type.getName());
+  @JvmStatic
+  fun PyType?.isDict(): Boolean {
+    return this is PyCollectionType && "dict" == this.name
   }
 
+  @JvmStatic
   @ApiStatus.Internal
-  public static @Nullable PyType getEffectiveBound(@NotNull PyTypeVarType typeVarType) {
-    return typeVarType.getConstraints().isEmpty() ? typeVarType.getBound() : PyUnionType.union(typeVarType.getConstraints());
+  fun PyTypeVarType.getEffectiveBound(): PyType? {
+    return if (this.constraints.isEmpty()) this.bound else PyUnionType.union(this.constraints)
   }
 
+  @JvmStatic
   @ApiStatus.Internal
-  public static @Nullable PyType convertToType(@Nullable PyType type,
-                                               @NotNull String superTypeName,
-                                               @NotNull PsiElement anchor,
-                                               @NotNull TypeEvalContext context) {
-    PyClass superClass = PyPsiFacade.getInstance(anchor.getProject()).createClassByQName(superTypeName, anchor);
-    if (superClass == null) return null;
-    PyClassType superClassType = ObjectUtils.notNull(PyTypeChecker.findGenericDefinitionType(superClass, context),
-                                                     new PyClassTypeImpl(superClass, false));
-    return PyTypeChecker.convertToType(type, superClassType, context);
+  fun PyType?.convertToType(
+    superTypeName: String,
+    anchor: PsiElement,
+    context: TypeEvalContext,
+  ): PyType? {
+    val superClass = PyPsiFacade.getInstance(anchor.project).createClassByQName(superTypeName, anchor) ?: return null
+    val superClassType = findGenericDefinitionType(superClass, context) ?: PyClassTypeImpl(superClass, false)
+    return convertToType(this, superClassType, context)
   }
 
-  public static boolean inheritsAny(@NotNull PyType type, @NotNull TypeEvalContext context) {
-    return type instanceof PyClassLikeType classLikeType && classLikeType.getAncestorTypes(context).contains(null);
+  @JvmStatic
+  fun PyType.inheritsAny(context: TypeEvalContext): Boolean {
+    return this is PyClassLikeType && this.getAncestorTypes(context).contains(null)
   }
 
   /**
-   * Collects a set of types that participate in the textual type hint representation of {@code type}.
+   * Collects a set of types that participate in the textual type hint representation of `type`.
    * The returned set preserves a stable DFS order and is unmodifiable.
    */
-  public static @NotNull @UnmodifiableView Set<PyType> collectTypeComponentsFromType(@Nullable PyType type,
-                                                                                     @NotNull TypeEvalContext context) {
-    Set<PyType> result = new LinkedHashSet<>();
+  @JvmStatic
+  fun PyType?.collectTypeComponents(
+    context: TypeEvalContext,
+  ): @UnmodifiableView Set<PyType?> {
+    val result: MutableSet<PyType?> = LinkedHashSet()
 
-    PyRecursiveTypeVisitor.traverse(type, context, new PyRecursiveTypeVisitor.PyTypeTraverser() {
-      @Override
-      public @NotNull PyRecursiveTypeVisitor.Traversal visitPyType(@NotNull PyType pyType) {
-        result.add(pyType);
-        return super.visitPyType(pyType);
+    PyRecursiveTypeVisitor.traverse(this, context, object : PyTypeTraverser() {
+      override fun visitPyType(pyType: PyType): PyRecursiveTypeVisitor.Traversal {
+        result.add(pyType)
+        return super.visitPyType(pyType)
       }
 
-      @Override
-      public PyRecursiveTypeVisitor.@NotNull Traversal visitPyLiteralType(@NotNull PyLiteralType literalType) {
-        PyClassLikeType literalClassType = literalType.getPyClass().getType(context);
+      override fun visitPyLiteralType(literalType: PyLiteralType): PyRecursiveTypeVisitor.Traversal {
+        val literalClassType = literalType.pyClass.getType(context)
         if (literalClassType != null) {
           // Adds eg. signal.Handler when the given type was Literal[Handlers.SIG_DFL]
-          result.add(literalClassType);
+          result.add(literalClassType)
         }
-        return super.visitPyLiteralType(literalType);
+        return super.visitPyLiteralType(literalType)
       }
 
-      @Override
-      public PyRecursiveTypeVisitor.@NotNull Traversal visitUnknownType() {
-        result.add(null); // add Any type
-        return super.visitUnknownType();
+      override fun visitUnknownType(): PyRecursiveTypeVisitor.Traversal {
+        result.add(null) // add Any type
+        return super.visitUnknownType()
       }
-    });
+    })
 
-    return Collections.unmodifiableSet(result);
+    return Collections.unmodifiableSet(result)
   }
 }

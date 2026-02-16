@@ -45,6 +45,8 @@ import com.jetbrains.python.psi.types.PyLiteralStringType.Companion.match
 import com.jetbrains.python.psi.types.PyLiteralType.Companion.match
 import com.jetbrains.python.psi.types.PyRecursiveTypeVisitor.PyTypeTraverser
 import com.jetbrains.python.psi.types.PyTypeChecker.match
+import com.jetbrains.python.psi.types.PyTypeUtil.getEffectiveBound
+import com.jetbrains.python.psi.types.PyTypeUtil.toStream
 import com.jetbrains.python.pyi.PyiFile
 import com.jetbrains.python.sdk.legacy.PythonSdkUtil
 import org.jetbrains.annotations.ApiStatus
@@ -359,7 +361,7 @@ object PyTypeChecker {
       context.mySubstitutions.putTypeVar(expected, Ref(type), KeyImpl)
     }
     else {
-      val effectiveBound = PyTypeUtil.getEffectiveBound(expected)
+      val effectiveBound = expected.getEffectiveBound()
       if (effectiveBound != null) {
         context.mySubstitutions.putTypeVar(expected, Ref(PyUnionType.createWeakType(effectiveBound)), KeyImpl)
       }
@@ -380,7 +382,7 @@ object PyTypeChecker {
   }
 
   private fun toClass(type: PyType?): PyType? {
-    return PyTypeUtil.toStream(type)
+    return type.toStream()
       .map<PyType?> { t: PyType? -> if (t is PyInstantiableType<*>) t.toClass() else t }
       .collect(PyTypeUtil.toUnion(type))
   }
@@ -809,7 +811,7 @@ object PyTypeChecker {
     if (expected.isHomogeneous && !actual.isHomogeneous) {
       val expectedElementType = expected.iteratedItemType
       return Optional.of(
-        PyTypeUtil.toStream(actual.iteratedItemType)
+        actual.iteratedItemType.toStream()
           .allMatch { type: PyType? -> match(expectedElementType, type, context).orElse(true)!! }
       )
     }
@@ -1414,7 +1416,7 @@ object PyTypeChecker {
         // A.a_method # type: Callable[[A], A]
         // B wasn't considered as the receiver type in the first place, instead of filtering it out during substitution
         // (see PyTypingTest.testMatchSelfUnionType)
-        return PyTypeUtil.toStream(qualifierType)
+        return qualifierType.toStream()
           .map<PyType?> { qType: PyType? ->
             if (qType is PyInstantiableType<*>) {
               return@map if (selfScopeClassType.isDefinition) qType.toClass() else qType.toInstance()
@@ -1610,7 +1612,7 @@ object PyTypeChecker {
     val param = paramWrapper.parameter
     val function: PyFunction = ScopeUtil.getScopeOwner(param) as PyFunction
     if (function.modifier == PyAstFunction.Modifier.CLASSMETHOD) {
-      actualType = PyTypeUtil.toStream(actualType)
+      actualType = actualType.toStream()
         .select(PyClassLikeType::class.java)
         .map { obj: PyClassLikeType? -> obj!!.toClass() }
         .select(PyType::class.java)
@@ -1618,7 +1620,7 @@ object PyTypeChecker {
         .orElse(actualType)
     }
     else if (PyUtil.isInitMethod(function)) {
-      actualType = PyTypeUtil.toStream(actualType)
+      actualType = actualType.toStream()
         .select(PyInstantiableType::class.java)
         .map { obj -> obj!!.toInstance() }
         .select(PyType::class.java)
@@ -1633,7 +1635,7 @@ object PyTypeChecker {
       // In a union receiver type, leave only members that actually have this function
       // TODO how does it work with qualified calls, e.g. SomeClass.method(receiver, arg1, arg2)
       // TODO how does it work with @classmethods?
-      actualType = PyTypeUtil.toStream(actualType)
+      actualType = actualType.toStream()
         .filter { type: PyType? -> match(superType, type, context) }
         .collect(PyTypeUtil.toUnion(actualType))
     }
@@ -1722,7 +1724,7 @@ object PyTypeChecker {
       else {
         substitutions.qualifierType = receiverType
       }
-      PyTypeUtil.toStream(receiverType)
+      receiverType.toStream()
         .select(PyClassType::class.java)
         .map { type: PyClassType? -> collectTypeSubstitutions(type!!, context) }
         .forEach { newSubstitutions ->
@@ -1787,7 +1789,7 @@ object PyTypeChecker {
         if (type.isDefinition) {
           true
         }
-        else isCallable(PyTypeUtil.getEffectiveBound(type))
+        else isCallable(type.getEffectiveBound())
       }
       else -> false
     }

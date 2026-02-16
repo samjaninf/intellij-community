@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.jetbrains.python.psi.resolve.PyResolveUtil.resolveQualifiedNameInScope;
-import static com.jetbrains.python.psi.types.PyTypeUtil.notNullToRef;
+import static com.jetbrains.python.psi.types.PyTypeUtil.getNotNullToRef;
 
 /**
  * Infer type for reference of decorated {@link PyDecoratable} objects.
@@ -127,7 +127,7 @@ public final class PyDecoratedFunctionTypeProvider extends PyTypeProviderBase {
     }
 
     // TODO Don't ignore explicit return type Any on one of the decorators
-    return notNullToRef(currentType);
+    return getNotNullToRef(currentType);
   }
 
   private static @Nullable PyCallableType getDecoratorType(@NotNull PyDecorator decorator,

@@ -122,6 +122,9 @@ import com.jetbrains.python.psi.types.PyTypeParameterMapping
 import com.jetbrains.python.psi.types.PyTypeParameterType
 import com.jetbrains.python.psi.types.PyTypeParser
 import com.jetbrains.python.psi.types.PyTypeUtil
+import com.jetbrains.python.psi.types.PyTypeUtil.convertToType
+import com.jetbrains.python.psi.types.PyTypeUtil.toKeywordContainerType
+import com.jetbrains.python.psi.types.PyTypeUtil.toPositionalContainerType
 import com.jetbrains.python.psi.types.PyTypeVarTupleType
 import com.jetbrains.python.psi.types.PyTypeVarTupleTypeImpl
 import com.jetbrains.python.psi.types.PyTypeVarType
@@ -200,10 +203,10 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
     }
     val type = Ref.deref<PyType?>(getType(typeHint, context))
     if (param.isPositionalContainer && type !is PyParamSpecType) {
-      return Ref(PyTypeUtil.toPositionalContainerType(param, type))
+      return Ref(param.toPositionalContainerType(type))
     }
     if (param.isKeywordContainer && type !is PyParamSpecType) {
-      return Ref(PyTypeUtil.toKeywordContainerType(param, type))
+      return Ref(param.toKeywordContainerType(type))
     }
     if (PyNames.NONE == param.defaultValueText) {
       return Ref(PyUnionType.union(type, getInstance(param).noneType))
@@ -401,10 +404,10 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
               val type = getTypeFromTypeHint(current, context)
               if (type != null) {
                 if (current.isPositionalContainer) {
-                  return Ref.create(PyTypeUtil.toPositionalContainerType(current, type.get()))
+                  return Ref.create(current.toPositionalContainerType(type.get()))
                 }
                 else if (current.isKeywordContainer) {
-                  return Ref.create(PyTypeUtil.toKeywordContainerType(current, type.get()))
+                  return Ref.create(current.toKeywordContainerType(type.get()))
                 }
                 return type
               }
@@ -529,12 +532,12 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
         if (type.isProtocol(context)) {
           var yieldType: PyType?
 
-          val syncUpcast = PyTypeUtil.convertToType(type, "typing.Iterable", type.pyClass, context)
+          val syncUpcast = type.convertToType("typing.Iterable", type.pyClass, context)
           if (syncUpcast is PyCollectionType) {
             yieldType = syncUpcast.iteratedItemType
             return GeneratorTypeDescriptor(yieldType, null, null, false)
           }
-          val asyncUpcast = PyTypeUtil.convertToType(type, "typing.AsyncIterable", type.pyClass, context)
+          val asyncUpcast = type.convertToType("typing.AsyncIterable", type.pyClass, context)
           if (asyncUpcast is PyCollectionType) {
             yieldType = asyncUpcast.iteratedItemType
             return GeneratorTypeDescriptor(yieldType, null, null, true)

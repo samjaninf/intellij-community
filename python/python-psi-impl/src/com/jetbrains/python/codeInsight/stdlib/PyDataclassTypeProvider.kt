@@ -46,7 +46,8 @@ import com.jetbrains.python.psi.types.PyDescriptorTypeUtil
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeMember
 import com.jetbrains.python.psi.types.PyTypeProviderBase
-import com.jetbrains.python.psi.types.PyTypeUtil
+import com.jetbrains.python.psi.types.PyTypeUtil.notNullToRef
+import com.jetbrains.python.psi.types.PyTypeUtil.toStream
 import com.jetbrains.python.psi.types.PyUnionType
 import com.jetbrains.python.psi.types.TypeEvalContext
 import one.util.streamex.StreamEx
@@ -71,7 +72,7 @@ class PyDataclassTypeProvider : PyTypeProviderBase() {
       else -> null
     }
 
-    return PyTypeUtil.notNullToRef(result)
+    return result.notNullToRef
   }
 
   override fun getParameterType(param: PyNamedParameter, func: PyFunction, context: TypeEvalContext): Ref<PyType>? {
@@ -93,7 +94,7 @@ class PyDataclassTypeProvider : PyTypeProviderBase() {
   }
 
   override fun prepareCalleeTypeForCall(type: PyType?, call: PyCallExpression, context: TypeEvalContext): Ref<PyCallableType?>? {
-    for (t in PyTypeUtil.toStream(type)) {
+    for (t in type.toStream()) {
       if (t !is PyClassType) {
         continue
       }

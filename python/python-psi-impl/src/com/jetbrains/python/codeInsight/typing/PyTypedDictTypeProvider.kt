@@ -33,7 +33,7 @@ import com.jetbrains.python.psi.types.PyClassType
 import com.jetbrains.python.psi.types.PyCollectionTypeImpl
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeProviderBase
-import com.jetbrains.python.psi.types.PyTypeUtil
+import com.jetbrains.python.psi.types.PyTypeUtil.notNullToRef
 import com.jetbrains.python.psi.types.PyTypedDictType
 import com.jetbrains.python.psi.types.PyTypedDictType.Companion.TYPED_DICT_TOTAL_PARAMETER
 import com.jetbrains.python.psi.types.PyUnionType
@@ -53,7 +53,7 @@ class PyTypedDictTypeProvider : PyTypeProviderBase() {
       is PyTargetExpression -> getTypedDictTypeForTarget(referenceTarget, context)
       else -> null
     }
-    return PyTypeUtil.notNullToRef(type)
+    return type.notNullToRef
   }
 
   override fun prepareCalleeTypeForCall(type: PyType?, call: PyCallExpression, context: TypeEvalContext): Ref<PyCallableType?>? {

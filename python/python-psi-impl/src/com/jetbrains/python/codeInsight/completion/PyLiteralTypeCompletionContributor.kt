@@ -20,7 +20,7 @@ import com.jetbrains.python.psi.StringLiteralExpression
 import com.jetbrains.python.psi.types.PyExpectedTypeJudgement
 import com.jetbrains.python.psi.types.PyLiteralType
 import com.jetbrains.python.psi.types.PyType
-import com.jetbrains.python.psi.types.PyTypeUtil
+import com.jetbrains.python.psi.types.PyTypeUtil.toStream
 import com.jetbrains.python.psi.types.TypeEvalContext
 
 /**
@@ -64,7 +64,7 @@ private class PyLiteralTypeCompletionProvider : CompletionProvider<CompletionPar
       PsiElement::getText
 
     possibleTypes.asSequence()
-      .flatMap { PyTypeUtil.toStream(it) }
+      .flatMap { it.toStream() }
       .filterIsInstance<PyLiteralType>()
       .map { it.expression }
       .filterIsInstance<PyStringLiteralExpression>()

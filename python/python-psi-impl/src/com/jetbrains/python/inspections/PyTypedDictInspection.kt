@@ -44,7 +44,7 @@ import com.jetbrains.python.psi.types.PyCollectionType
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeChecker
 import com.jetbrains.python.psi.types.PyTypeParameterMapping
-import com.jetbrains.python.psi.types.PyTypeUtil
+import com.jetbrains.python.psi.types.PyTypeUtil.isSameType
 import com.jetbrains.python.psi.types.PyTypeVarType
 import com.jetbrains.python.psi.types.PyTypedDictType
 import com.jetbrains.python.psi.types.PyTypedDictType.Companion.TYPED_DICT_TOTAL_PARAMETER
@@ -445,7 +445,7 @@ class PyTypedDictInspection : PyInspection() {
         PyTypeChecker.match(second.type, first.type, myTypeEvalContext)
       }
       else {
-        PyTypeUtil.isSameType(first.type, second.type, myTypeEvalContext)
+        first.type.isSameType(second.type, myTypeEvalContext)
       }
     }
 
@@ -530,7 +530,7 @@ class PyTypedDictInspection : PyInspection() {
               if (typeVar is PyTypeVarType) {
                 when (typeVar.variance) {
                   PyTypeVarType.Variance.INVARIANT -> {
-                    if (!PyTypeUtil.isSameType(types.first, types.second, myTypeEvalContext)) {
+                    if (!types.first.isSameType(types.second, myTypeEvalContext)) {
                       return false
                     }
                   }

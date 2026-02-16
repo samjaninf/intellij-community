@@ -75,13 +75,12 @@ class PyTypeInlayHintsProvider : InlayHintsProvider {
       val typeEvalContext = resolveContext.typeEvalContext
       val function = element.parent as? PyFunction ?: return
       if (element == function.nameIdentifier && function.annotationValue == null && function.typeCommentAnnotation == null) {
-        val type = typeEvalContext.getReturnType(function)
-        val inlayType = if (function.isAsync) {
-          (type as? PyCollectionType)?.elementTypes[2]
+        val type = when (val type = typeEvalContext.getReturnType(function)) {
+          is Any? if function.isAsync -> (type as? PyCollectionType)?.elementTypes[2]
+          else -> type
         }
-        else type
 
-        val typeHint = PythonDocumentationProvider.getTypeHint(inlayType, typeEvalContext)
+        val typeHint = PythonDocumentationProvider.getTypeHint(type, typeEvalContext)
         sink.addPresentation(position = InlineInlayPosition(function.parameterList.textRange.endOffset, true),
                              hintFormat = returnTypeHintFormat) {
           text("-> ")
