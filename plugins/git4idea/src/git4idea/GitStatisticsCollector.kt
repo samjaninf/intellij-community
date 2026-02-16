@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package git4idea
 
 import com.google.common.collect.HashMultiset
@@ -36,7 +36,6 @@ import git4idea.commands.GitCommand
 import git4idea.commands.GitLineHandler
 import git4idea.config.GitConfigUtil
 import git4idea.config.GitExecutableManager
-import git4idea.config.GitIncomingRemoteCheckStrategy
 import git4idea.config.GitSaveChangesPolicy
 import git4idea.config.GitVcsApplicationSettings
 import git4idea.config.GitVcsSettings
@@ -234,10 +233,7 @@ internal class GitStatisticsCollector : ProjectUsagesCollector() {
   private val SAVE_POLICY_VALUE = EventFields.Enum("value", GitSaveChangesPolicy::class.java) { it.name.lowercase() }
   private val SAVE_POLICY = GROUP.registerVarargEvent("save.policy", SAVE_POLICY_VALUE)
 
-  private val INCOMING_COMMITS_CHECK_STRATEGY =
-    GROUP.registerVarargEvent("incoming_commits_check_strategy",
-                              "Non-default value for incoming commits check strategy",
-                              REMOTE_CHECK_STRATEGY)
+  private val INCOMING_COMMITS_CHECK_STRATEGY = GROUP.registerVarargEvent("incoming_commits_check_strategy", REMOTE_CHECK_STRATEGY)
 
   private val PUSH_AUTO_UPDATE = GROUP.registerVarargEvent("push.autoupdate", EventFields.Enabled)
 

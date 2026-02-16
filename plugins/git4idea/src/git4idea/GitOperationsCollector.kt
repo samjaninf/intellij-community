@@ -316,12 +316,7 @@ internal object GitOperationsCollector : CounterUsagesCollector() {
 
   internal val REMOTE_CHECK_STRATEGY = EventFields.Enum<GitIncomingRemoteCheckStrategy>("remoteCheckStrategy")
   private val REMOTE_INFO_SUCCESS = EventFields.Boolean("success")
-  private val REMOTE_INFO_REQUEST_EVENT = GROUP.registerVarargEvent(
-    "remote.info.request",
-    "Remote state requested in background",
-    REMOTE_CHECK_STRATEGY,
-    REMOTE_INFO_SUCCESS,
-  )
+  private val REMOTE_INFO_REQUEST_EVENT = GROUP.registerVarargEvent("remote.info.request", REMOTE_CHECK_STRATEGY, REMOTE_INFO_SUCCESS)
 
   @JvmStatic
   fun logRemoteInfoRequest(project: Project, strategy: GitIncomingRemoteCheckStrategy, success: Boolean) {
