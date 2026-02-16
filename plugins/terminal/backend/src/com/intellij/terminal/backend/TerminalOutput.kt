@@ -114,7 +114,7 @@ internal fun createTerminalOutputFlow(
         ensureActive = { ensureActive(); ensureEmulationActive(services.terminalStarter) }
       )
 
-      delay(10)
+      delay(20)
     }
   }
 
