@@ -7,13 +7,14 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.platform.debugger.impl.shared.proxy.XBreakpointProxy;
 import com.intellij.xdebugger.XDebuggerBundle;
+import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.SwingUtilities;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 
-import static com.intellij.xdebugger.impl.XDebuggerUtilImpl.performDebuggerAction;
+import static com.intellij.platform.debugger.impl.shared.DebuggerAsyncActionUtilsKt.performDebuggerAction;
 
 class RemoveBreakpointGutterIconAction extends DumbAwareAction {
   private final XBreakpointProxy myBreakpoint;
@@ -27,12 +28,13 @@ class RemoveBreakpointGutterIconAction extends DumbAwareAction {
 
   @Override
   public void actionPerformed(final @NotNull AnActionEvent e) {
-    performDebuggerAction(e, () -> {
+    performDebuggerAction(e.getProject(), e.getDataContext(), () -> {
       InputEvent event = e.getInputEvent();
       // for mouse events check that no modifiers applied
       if (!(event instanceof MouseEvent) || event.getModifiersEx() == 0 || SwingUtilities.isMiddleMouseButton((MouseEvent)event)) {
         XBreakpointUIUtil.removeBreakpointWithConfirmation(myBreakpoint);
       }
+      return Unit.INSTANCE;
     });
   }
 }

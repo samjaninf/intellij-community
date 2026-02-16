@@ -80,6 +80,20 @@ c:com.intellij.xdebugger.impl.actions.ViewBreakpointsAction
 - actionPerformed(com.intellij.openapi.actionSystem.AnActionEvent):V
 - getActionUpdateThread():com.intellij.openapi.actionSystem.ActionUpdateThread
 - update(com.intellij.openapi.actionSystem.AnActionEvent):V
+com.intellij.xdebugger.impl.breakpoints.XBreakpointTypeWithDocumentDelegation
+- a:getDocumentForHighlighting(com.intellij.openapi.editor.Document):com.intellij.openapi.editor.Document
+c:com.intellij.xdebugger.impl.breakpoints.XExpressionState
+- myCustomInfo:java.lang.String
+- myDisabled:Z
+- myExpression:java.lang.String
+- myLanguage:java.lang.String
+- myMode:com.intellij.xdebugger.evaluation.EvaluationMode
+- myOldExpression:java.lang.String
+- <init>():V
+- <init>(com.intellij.xdebugger.XExpression):V
+- <init>(Z,com.intellij.xdebugger.XExpression):V
+- <init>(Z,java.lang.String,java.lang.String,java.lang.String,com.intellij.xdebugger.evaluation.EvaluationMode):V
+- toXExpression():com.intellij.xdebugger.XExpression
 c:com.intellij.xdebugger.impl.evaluate.CodeFragmentInputComponent
 - com.intellij.xdebugger.impl.evaluate.EvaluationInputComponent
 - <init>(com.intellij.openapi.project.Project,com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider,com.intellij.xdebugger.XSourcePosition,com.intellij.xdebugger.XExpression,java.lang.String,com.intellij.openapi.Disposable):V

@@ -11,6 +11,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.NlsSafe
 import com.intellij.platform.debugger.impl.rpc.FrameNotificationRequest
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
+import com.intellij.platform.debugger.impl.ui.XDebuggerEntityConverter
 import com.intellij.platform.rpc.topics.ProjectRemoteTopic
 import com.intellij.platform.rpc.topics.sendToClient
 import com.intellij.ui.awt.AnchoredPoint
@@ -19,9 +20,7 @@ import com.intellij.util.ui.EDT
 import com.intellij.util.ui.UIUtil
 import com.intellij.xdebugger.SplitDebuggerMode
 import com.intellij.xdebugger.XDebugSession
-import com.intellij.xdebugger.impl.XDebugSessionImpl
-import com.intellij.xdebugger.impl.XDebuggerManagerImpl
-import com.intellij.xdebugger.impl.proxy.asProxy
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil
 import com.intellij.xdebugger.impl.ui.XDebugSessionTab
 import org.jetbrains.annotations.ApiStatus
 import javax.swing.plaf.basic.BasicArrowButton
@@ -32,12 +31,12 @@ object FrameNotificationUtils {
 
   @JvmStatic
   fun showNotification(project: Project, session: XDebugSession?, @NlsSafe content: String) {
+    val proxy = session?.let { XDebuggerEntityConverter.asProxy(it) }
     if (SplitDebuggerMode.isSplitDebugger()) {
-      val sessionId = (session as? XDebugSessionImpl)?.id
-      FRAME_NOTIFICATION_REMOTE_TOPIC.sendToClient(project, FrameNotificationRequest(sessionId, content))
+      FRAME_NOTIFICATION_REMOTE_TOPIC.sendToClient(project, FrameNotificationRequest(proxy?.id, content))
     }
     else {
-      showNotificationImpl(project, session?.asProxy(), content)
+      showNotificationImpl(project, proxy, content)
     }
   }
 
@@ -67,7 +66,7 @@ object FrameNotificationUtils {
     }
 
     // Fallback to the whole toolwindow notification
-    XDebuggerManagerImpl.getNotificationGroup()
+    DebuggerUIUtil.getNotificationGroup()
       .createNotification(content, messageType)
       .notify(project)
   }

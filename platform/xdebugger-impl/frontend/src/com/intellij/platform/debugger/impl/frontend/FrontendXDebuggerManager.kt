@@ -26,8 +26,6 @@ import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import com.intellij.util.asDisposable
 import com.intellij.xdebugger.SplitDebuggerMode
-import com.intellij.xdebugger.XDebuggerManager
-import com.intellij.xdebugger.impl.XDebuggerManagerImpl
 import com.intellij.xdebugger.impl.XDebuggerManagerProxyListener
 import fleet.rpc.client.durable
 import kotlinx.coroutines.CoroutineScope
@@ -64,9 +62,6 @@ class FrontendXDebuggerManager(private val project: Project, private val cs: Cor
 
   val breakpointsManager: FrontendXBreakpointManager = FrontendXBreakpointManager(project, cs)
   internal val sessions get() = sessionsFlow.value
-
-  // TODO Better to have our own watches manager, but then we will need to serialize it
-  internal val watchesManager = (XDebuggerManager.getInstance(project) as XDebuggerManagerImpl).watchesManager
 
   init {
     cs.launch {

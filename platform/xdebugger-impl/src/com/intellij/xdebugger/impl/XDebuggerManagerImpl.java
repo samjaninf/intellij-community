@@ -104,7 +104,6 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   private final Project myProject;
   private final CoroutineScope myCoroutineScope;
   private final XBreakpointManagerImpl myBreakpointManager;
-  private final XDebuggerWatchesManager myWatchesManager;
   private final Map<ProcessHandler, XDebugSessionImpl> mySessions = Collections.synchronizedMap(new LinkedHashMap<>());
   private final MutableStateFlow<@Nullable XDebugSessionImpl> myActiveSession = createMutableStateFlow(null);
 
@@ -124,7 +123,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
     SimpleMessageBusConnection messageBusConnection = project.getMessageBus().connect(coroutineScope);
 
     myBreakpointManager = new XBreakpointManagerImpl(project, this, messageBusConnection, coroutineScope);
-    myWatchesManager = new XDebuggerWatchesManagerImpl(project, coroutineScope);
+    XDebuggerWatchesManagerImpl.getInstance(project);
 
     if (!SplitDebuggerMode.isSplitDebugger() || AppMode.isRemoteDevHost()) {
       startContentSelectionListening(messageBusConnection);
@@ -199,7 +198,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   }
 
   public XDebuggerWatchesManager getWatchesManager() {
-    return myWatchesManager;
+    return XDebuggerWatchesManagerImpl.getInstance(myProject);
   }
 
   public @NotNull XDebuggerPinToTopManager getPinToTopManager() {
@@ -409,7 +408,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   public XDebuggerState getState() {
     XDebuggerState state = myState;
     myBreakpointManager.saveState(state.getBreakpointManagerState());
-    ((XDebuggerWatchesManagerImpl)myWatchesManager).saveState(state.getWatchesManagerState());
+    ((XDebuggerWatchesManagerImpl)getWatchesManager()).saveState(state.getWatchesManagerState());
     getPinToTopManager().saveState(state.getPinToTopManagerState());
     return state;
   }
@@ -418,7 +417,7 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
   public void loadState(@NotNull XDebuggerState state) {
     myState = state;
     myBreakpointManager.loadState(state.getBreakpointManagerState());
-    ((XDebuggerWatchesManagerImpl)myWatchesManager).loadState(state.getWatchesManagerState());
+    ((XDebuggerWatchesManagerImpl)getWatchesManager()).loadState(state.getWatchesManagerState());
     getPinToTopManager().loadState(state.getPinToTopManagerState());
   }
 

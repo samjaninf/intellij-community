@@ -1,8 +1,9 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.xdebugger.impl;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ApiStatus.Internal
+@Service(Service.Level.PROJECT)
 public final class XDebuggerWatchesManagerImpl implements XDebuggerWatchesManager {
   /**
    * Maps configuration name to a list of watches.
@@ -59,7 +61,7 @@ public final class XDebuggerWatchesManagerImpl implements XDebuggerWatchesManage
   private final MergingUpdateQueue myInlinesUpdateQueue;
   private final Project myProject;
 
-  public XDebuggerWatchesManagerImpl(@NotNull Project project, @NotNull CoroutineScope coroutineScope) {
+  private XDebuggerWatchesManagerImpl(@NotNull Project project, @NotNull CoroutineScope coroutineScope) {
     myProject = project;
     EditorEventMulticaster editorEventMulticaster = EditorFactory.getInstance().getEventMulticaster();
     editorEventMulticaster.addDocumentListener(new MyDocumentListener(), project);
@@ -70,6 +72,10 @@ public final class XDebuggerWatchesManagerImpl implements XDebuggerWatchesManage
       }
     });
     myInlinesUpdateQueue = MergingUpdateQueue.Companion.edtMergingUpdateQueue("XInlineWatches", 300, coroutineScope);
+  }
+
+  public static XDebuggerWatchesManagerImpl getInstance(@NotNull Project project) {
+    return project.getService(XDebuggerWatchesManagerImpl.class);
   }
 
   @Override

@@ -28,7 +28,7 @@ import com.intellij.xdebugger.breakpoints.SuspendPolicy
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider
 import com.intellij.xdebugger.impl.breakpoints.BreakpointGutterIconRenderer
 import com.intellij.xdebugger.impl.breakpoints.CustomizedBreakpointPresentation
-import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase.calculateIcon
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointUIUtil
 import com.intellij.xdebugger.impl.rpc.sourcePosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -206,7 +206,7 @@ internal open class FrontendXBreakpointProxy(
 
   override fun getIcon(): Icon {
     // TODO: do we need to cache icon like it is done in XBreakpointBase
-    return calculateIcon(this)
+    return XBreakpointUIUtil.calculateIcon(this)
   }
 
   override fun isEnabled(): Boolean = currentState.enabled
