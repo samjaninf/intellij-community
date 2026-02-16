@@ -103,6 +103,7 @@ import com.intellij.util.EventDispatcher;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.concurrency.EdtScheduler;
 import com.intellij.util.concurrency.Semaphore;
+import com.intellij.util.containers.CollectionFactory;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.DisposableWrapperList;
 import com.intellij.util.lang.JavaVersion;
@@ -213,7 +214,8 @@ public abstract class DebugProcessImpl extends UserDataHolderBase implements Deb
 
   private final List<ProcessListener> myProcessListeners = ContainerUtil.createLockFreeCopyOnWriteList();
   private final StringBuilder myTextBeforeStart = new StringBuilder();
-  protected @Nullable Method myIsUnderBreakpointCheckFn;
+
+  protected Map<VirtualMachineProxyImpl, Method> myIsUnderBreakpointCheckFnMap = CollectionFactory.createWeakMap();
 
   protected enum State {INITIAL, ATTACHED, DETACHING, DETACHED}
 
@@ -3098,7 +3100,7 @@ public abstract class DebugProcessImpl extends UserDataHolderBase implements Deb
 
   @ApiStatus.Internal
   public void setIsUnderBreakpointCheckFn(@NotNull Method isUnderBreakpointCheckFn) {
-    this.myIsUnderBreakpointCheckFn = isUnderBreakpointCheckFn;
+    myIsUnderBreakpointCheckFnMap.put(VirtualMachineProxyImpl.getCurrent(), isUnderBreakpointCheckFn);
   }
 
   @ApiStatus.Internal

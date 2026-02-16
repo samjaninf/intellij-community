@@ -62,6 +62,7 @@ import com.sun.jdi.ClassType;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.InternalException;
 import com.sun.jdi.Location;
+import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VMDisconnectedException;
@@ -692,13 +693,14 @@ public class DebugProcessEvents extends DebugProcessImpl {
 
         final LocatableEventRequestor requestor = (LocatableEventRequestor)RequestManagerImpl.findRequestor(event.request());
 
-        if (myIsUnderBreakpointCheckFn != null && shouldCheckForSkipBreakpoint(event)) {
+        Method isUnderBreakpointCheckFn = myIsUnderBreakpointCheckFnMap.get(suspendContext.getVirtualMachineProxy());
+        if (isUnderBreakpointCheckFn != null && shouldCheckForSkipBreakpoint(event)) {
           EvaluationContextImpl evaluationContext = new EvaluationContextImpl(suspendContext, null);
           try {
             Value value = invokeMethod(
               evaluationContext,
-              (ClassType)myIsUnderBreakpointCheckFn.declaringType(),
-              myIsUnderBreakpointCheckFn,
+              (ClassType)isUnderBreakpointCheckFn.declaringType(),
+              isUnderBreakpointCheckFn,
               Collections.emptyList()
             );
             if (value instanceof BooleanValue booleanValue) {
