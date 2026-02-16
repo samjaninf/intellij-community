@@ -1572,8 +1572,7 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
         return type.withScopeOwner(getTypeParameterScope(type.name, typeHint, context)).withDeclarationElement(targetExpr)
       }
       if (type is PyTypeVarTupleTypeImpl) {
-        return type.withScopeOwner(getTypeParameterScope(type.name, typeHint, context))
-          .withDeclarationElement(targetExpr)
+        return type.withScopeOwner(getTypeParameterScope(type.name, typeHint, context)).withDeclarationElement(targetExpr)
       }
       return type
     }
@@ -2160,7 +2159,10 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
                 val boundExpression = element.getKeywordArgument("bound")
                 val bound = if (boundExpression == null) null else Ref.deref(getType(boundExpression, context))
                 val variance: PyTypeVarType.Variance = getTypeVarVarianceFromDeclaration(element)
-                return PyTypeVarTypeImpl(name, constraints, bound, defaultType, variance)
+                val assignStmt = element.getParent() as? PyAssignmentStatement
+                val mappingPair = assignStmt?.targetsToValuesMapping?.firstOrNull { pair -> pair.second == element }
+                val declarationElement = mappingPair?.first as? PyQualifiedNameOwner
+                return PyTypeVarTypeImpl(name, constraints, bound, defaultType, variance).withDeclarationElement(declarationElement)
               }
 
               PyAstTypeParameter.Kind.ParamSpec -> {
@@ -2176,6 +2178,7 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
       return null
     }
 
+    @Suppress("KotlinConstantConditions") // caused by systematical if conditions
     private fun getTypeVarVarianceFromDeclaration(assignedCall: PyCallExpression): PyTypeVarType.Variance {
       val covariant = PyEvaluator.evaluateAsBooleanNoResolve(assignedCall.getKeywordArgument("covariant"), false)
       val contravariant = PyEvaluator.evaluateAsBooleanNoResolve(assignedCall.getKeywordArgument("contravariant"), false)
@@ -2186,6 +2189,10 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
       }
       else if (contravariant && !covariant) {
         return PyTypeVarType.Variance.CONTRAVARIANT
+      }
+      else if (contravariant && covariant) {
+        // Note that Python does not officially support bivariance. Change this to invariant if necessary.
+        return PyTypeVarType.Variance.BIVARIANT
       }
       else if (inferVariance) {
         return PyTypeVarType.Variance.INFER_VARIANCE
@@ -2268,7 +2275,8 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
             else if (boundExpression != null) {
               boundType = Ref.deref<PyType?>(getTypePreventingRecursion(boundExpression, context))
             }
-            return PyTypeVarTypeImpl(name, constraints, boundType, defaultType, PyTypeVarType.Variance.INFER_VARIANCE)
+            val variance = if (scopeOwner is PyFunction) PyTypeVarType.Variance.INVARIANT else PyTypeVarType.Variance.INFER_VARIANCE
+            return PyTypeVarTypeImpl(name, constraints, boundType, defaultType, variance)
               .withScopeOwner(scopeOwner)
               .withDeclarationElement(declarationElement)
           }

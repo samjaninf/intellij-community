@@ -45,6 +45,7 @@ private val inspections
     PyTypedDictInspection(),
     PyTypeCheckerInspection(),
     PyTypeHintsInspection(),
+    PyVarianceInspection(),
     PyUnresolvedReferencesInspection(),
     PyTypeAliasRedeclarationInspection(),
   )

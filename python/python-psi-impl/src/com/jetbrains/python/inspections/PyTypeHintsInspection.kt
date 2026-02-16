@@ -104,7 +104,6 @@ import com.jetbrains.python.psi.types.PyTypeParameterType
 import com.jetbrains.python.psi.types.PyTypeParser
 import com.jetbrains.python.psi.types.PyTypeVarTupleType
 import com.jetbrains.python.psi.types.PyTypeVarType
-import com.jetbrains.python.psi.types.PyTypeVarType.Variance
 import com.jetbrains.python.psi.types.PyTypedDictType
 import com.jetbrains.python.psi.types.PyTypingNewType
 import com.jetbrains.python.psi.types.PyUnpackedTupleType
@@ -455,14 +454,15 @@ class PyTypeHintsInspection : PyInspection() {
           val parameterType = parameter.getType(myTypeEvalContext)
           if (!PyTypeChecker.match(parameterType, returnType.narrowedType, myTypeEvalContext)) {
             registerProblem(node.nameIdentifier, PyPsiBundle.message("INSP.type.hints.typeIs.does.not.match",
-                                                                     PythonDocumentationProvider.getTypeName(returnType.narrowedType, myTypeEvalContext),
-                                                                     PythonDocumentationProvider.getTypeName(parameterType, myTypeEvalContext)))
+                                                                     PythonDocumentationProvider.getTypeName(returnType.narrowedType,
+                                                                                                             myTypeEvalContext),
+                                                                     PythonDocumentationProvider.getTypeName(parameterType,
+                                                                                                             myTypeEvalContext)))
           }
         }
       }
 
       checkTypeCommentAndParameters(node)
-      checkTypeVarsInFunctionAnnotations(node)
       reportTypeParametersUsedByOuterScope(node)
       checkInitSelfParameterAnnotation(node)
     }
@@ -631,8 +631,12 @@ class PyTypeHintsInspection : PyInspection() {
 
       val defaultType = typeRef.get()
       when (defaultType) {
-        is PyParamSpecType -> registerProblem(defaultExpression, PyPsiBundle.message("INSP.type.hints.cannot.be.used.in.default.type.of.type.var", "ParamSpec"))
-        is PyTypeVarTupleType -> registerProblem(defaultExpression, PyPsiBundle.message("INSP.type.hints.cannot.be.used.in.default.type.of.type.var", "TypeVarTuple"))
+        is PyParamSpecType -> registerProblem(defaultExpression,
+                                              PyPsiBundle.message("INSP.type.hints.cannot.be.used.in.default.type.of.type.var",
+                                                                  "ParamSpec"))
+        is PyTypeVarTupleType -> registerProblem(defaultExpression,
+                                                 PyPsiBundle.message("INSP.type.hints.cannot.be.used.in.default.type.of.type.var",
+                                                                     "TypeVarTuple"))
         else -> validateTypeVarDefaultType(typeVarType, defaultType, defaultExpression)
       }
     }
@@ -660,11 +664,13 @@ class PyTypeHintsInspection : PyInspection() {
       if (defaultExpression is PyReferenceExpression || defaultExpression is PyStringLiteralExpression) {
         val defaultType = Ref.deref(PyTypingTypeProvider.getType(defaultExpression, myTypeEvalContext))
         if (defaultType !is PyParamSpecType) {
-          registerProblem(defaultExpression, PyPsiBundle.message("INSP.type.hints.default.type.of.param.spec.must.be.param.spec.or.list.of.types"))
+          registerProblem(defaultExpression,
+                          PyPsiBundle.message("INSP.type.hints.default.type.of.param.spec.must.be.param.spec.or.list.of.types"))
         }
         return
       }
-      registerProblem(defaultExpression, PyPsiBundle.message("INSP.type.hints.default.type.of.param.spec.must.be.param.spec.or.list.of.types"))
+      registerProblem(defaultExpression,
+                      PyPsiBundle.message("INSP.type.hints.default.type.of.param.spec.must.be.param.spec.or.list.of.types"))
     }
 
     private fun checkNameIsTheSameAsTarget(
@@ -1037,8 +1043,9 @@ class PyTypeHintsInspection : PyInspection() {
         // Old generics syntax
         val typeParamsUsedByOuterScopes = getTypeParametersUsedByOuterScope(typeParameterListOwner)
         if (typeParamsUsedByOuterScopes.isNotEmpty()) {
-          registerProblem(typeParameterListOwner.nameIdentifier, PyPsiBundle.message("INSP.type.hints.some.type.variables.are.already.in.use.by.outer.scope",
-                                                                                     typeParamsUsedByOuterScopes.joinToString(", ")))
+          registerProblem(typeParameterListOwner.nameIdentifier,
+                          PyPsiBundle.message("INSP.type.hints.some.type.variables.are.already.in.use.by.outer.scope",
+                                              typeParamsUsedByOuterScopes.joinToString(", ")))
         }
       }
     }
@@ -1232,7 +1239,9 @@ class PyTypeHintsInspection : PyInspection() {
       val isExplicitTypeAlias = PyTypingTypeProvider.isExplicitTypeAlias(declaration, myTypeEvalContext)
       val generics = collectTypeParametersFromTypeAlias(assignedValue, assignedValueType, isExplicitTypeAlias)
       if (generics.isEmpty) {
-        registerProblem(node.indexExpression, PyPsiBundle.message("INSP.type.hints.generic.type.alias.is.not.generic.or.already.parameterized"), ProblemHighlightType.WARNING)
+        registerProblem(node.indexExpression,
+                        PyPsiBundle.message("INSP.type.hints.generic.type.alias.is.not.generic.or.already.parameterized"),
+                        ProblemHighlightType.WARNING)
         return
       }
       val typeArguments = checkGenericTypeArguments(node)
@@ -1244,10 +1253,15 @@ class PyTypeHintsInspection : PyInspection() {
     }
 
     private fun checkTypeAliasStatementParameterization(node: PySubscriptionExpression, declaration: PyTypeAliasStatement) {
-      val generics = declaration.typeParameterList?.typeParameters?.mapNotNull { PyTypingTypeProvider.getTypeParameterTypeFromTypeParameter(it, myTypeEvalContext) }
+      val generics = declaration.typeParameterList?.typeParameters?.mapNotNull {
+        PyTypingTypeProvider.getTypeParameterTypeFromTypeParameter(it,
+                                                                   myTypeEvalContext)
+      }
                      ?: emptyList()
       if (generics.isEmpty()) {
-        registerProblem(node.indexExpression, PyPsiBundle.message("INSP.type.hints.generic.type.alias.is.not.generic.or.already.parameterized"), ProblemHighlightType.WARNING)
+        registerProblem(node.indexExpression,
+                        PyPsiBundle.message("INSP.type.hints.generic.type.alias.is.not.generic.or.already.parameterized"),
+                        ProblemHighlightType.WARNING)
         return
       }
       val typeArguments = checkGenericTypeArguments(node)
@@ -1257,7 +1271,11 @@ class PyTypeHintsInspection : PyInspection() {
       }
     }
 
-    private fun collectTypeParametersFromTypeAlias(assignedValue: PyExpression, assignedValueType: PyType, isExplicitTypeAlias: Boolean): PyTypeChecker.Generics {
+    private fun collectTypeParametersFromTypeAlias(
+      assignedValue: PyExpression,
+      assignedValueType: PyType,
+      isExplicitTypeAlias: Boolean,
+    ): PyTypeChecker.Generics {
       if (isExplicitTypeAlias || !(assignedValue is PyReferenceExpression && assignedValueType is PyClassType)) {
         return assignedValueType.collectGenerics(myTypeEvalContext)
       }
@@ -1596,29 +1614,6 @@ class PyTypeHintsInspection : PyInspection() {
 
           registerProblem(node.typeComment, PyPsiBundle.message("INSP.type.hints.type.self.not.supertype.its.class",
                                                                 commentSelfTypeDescription, actualSelfTypeDescription))
-        }
-      }
-    }
-
-    private fun checkTypeVarsInFunctionAnnotations(function: PyFunction) {
-      if (PyUtil.isInitOrNewMethod(function)) return
-      val parameterList = function.parameterList
-      val parameters = parameterList.parameters
-      parameters
-        .filterIsInstance<PyNamedParameter>()
-        .mapNotNull { parameter -> parameter.annotation?.value }
-        .forEach { annotationValue ->
-          val type = Ref.deref(PyTypingTypeProvider.getType(annotationValue, myTypeEvalContext))
-          if (type is PyTypeVarType && type.variance == Variance.COVARIANT) {
-            registerProblem(annotationValue, PyPsiBundle.message("INSP.type.hints.cannot.use.covariant.in.function.param"))
-          }
-        }
-
-      val returnAnnotation = function.annotation?.value
-      if (returnAnnotation != null) {
-        val type = Ref.deref(PyTypingTypeProvider.getType(returnAnnotation, myTypeEvalContext))
-        if (type is PyTypeVarType && type.variance == Variance.CONTRAVARIANT) {
-          registerProblem(returnAnnotation, PyPsiBundle.message("INSP.type.hints.cannot.use.contravariant.in.return.type"))
         }
       }
     }

@@ -71,6 +71,8 @@
               optionId="python.type.inlays.reveal_type"/>
       <option bundle="messages.PyPsiBundle" descriptionKey="INLAY.function.return" enabledByDefault="false" nameKey="INLAY.function.return"
               optionId="python.type.inlays.function.return"/>
+      <option bundle="messages.PyPsiBundle" descriptionKey="INLAY.variance.description" enabledByDefault="true" nameKey="INLAY.variance"
+              optionId="python.type.inlays.variance"/>
     </codeInsight.declarativeInlayProvider>
 
     <codeInsight.declarativeInlayProvider group="TYPES_GROUP"

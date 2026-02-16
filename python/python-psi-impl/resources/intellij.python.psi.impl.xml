@@ -283,7 +283,7 @@
                      bundle="messages.PyPsiBundle" key="INSP.NAME.suspicious.boolean.condition" groupKey="INSP.GROUP.python"
                      enabledByDefault="true" level="WARNING"
                      implementationClass="com.jetbrains.python.inspections.PySuspiciousBooleanConditionInspection"/>
-
+    <localInspection language="Python" shortName="PyVarianceInspection" suppressId="PyVariance" bundle="messages.PyPsiBundle" key="INSP.NAME.variance.checker" groupKey="INSP.GROUP.python" enabledByDefault="true" level="WARNING" implementationClass="com.jetbrains.python.inspections.PyVarianceInspection"/>
     <intentionAction>
       <language>Python</language>
       <className>com.jetbrains.python.codeInsight.intentions.PyConvertMethodToPropertyIntention</className>
