@@ -546,6 +546,11 @@ public class NullableStuffInspectionTest extends LightJavaCodeInsightFixtureTest
   public void testDefaultNotNullTypeParameterOverrides() {
     doTest();
   }
+  
+  public void testNotNullTypeParameterMethodArgument() {
+    myInspection.REPORT_NOTNULL_PARAMETERS_OVERRIDES_NOT_ANNOTATED = true;
+    doTest();
+  }
 
   public void testCallIncompatibilitiesWithGeneric() {
     myInspection.REPORT_NOT_NULL_TO_NULLABLE_CONFLICTS_IN_ASSIGNMENTS = true;
