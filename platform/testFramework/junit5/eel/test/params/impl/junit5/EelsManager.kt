@@ -115,10 +115,10 @@ internal class EelsManager private constructor(private val eelHolders: List<EelH
 @TestOnly
 private suspend fun <T : Annotation> EelHolderImpl<T>.startIjentProvider(
   scope: CoroutineScope,
-): Started<*> {
+): Started {
   val provider = this.eelTestProvider
   when (val r = provider.start(scope, annotation)) {
-    is Started<*> -> {
+    is Started -> {
       return r
     }
     is Skipped -> {
