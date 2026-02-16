@@ -38,6 +38,11 @@ open class CoroutineInfoData(
 
     var job: String? = null
 
+    var jobId: Long? = null
+
+    var parentJobId: Long? = null
+
+    @Deprecated("Do not use parentJob String as an id to group coroutines, use parentJobId instead.")
     var parentJob: String? = null
 
     // NOTE: dispatchers may have a custom String representation, see IDEA-371498
