@@ -94,7 +94,7 @@ abstract class AbstractEntityCodeGenTest : CodeGenerationTestBase() {
     doTest()
   }
 
-  fun testCompatibilityInvoke() {
+  open fun testCompatibilityInvoke() {
     doTest()
   }
 
