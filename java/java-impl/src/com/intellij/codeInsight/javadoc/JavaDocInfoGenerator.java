@@ -124,6 +124,7 @@ import com.intellij.psi.PsiWhiteSpace;
 import com.intellij.psi.PsiWildcardType;
 import com.intellij.psi.SyntaxTraverser;
 import com.intellij.psi.impl.JavaConstantExpressionEvaluator;
+import com.intellij.psi.impl.source.javadoc.PsiDocFormatString;
 import com.intellij.psi.impl.source.javadoc.PsiDocMethodOrFieldRef;
 import com.intellij.psi.impl.source.javadoc.PsiSnippetDocTagImpl;
 import com.intellij.psi.impl.source.tree.ElementType;
@@ -2429,6 +2430,7 @@ public class JavaDocInfoGenerator {
 
   private void generateValueValue(PsiInlineDocTag tag, StringBuilder buffer, PsiElement element) {
     String text = getRefText(tag.getDataElements());
+    PsiDocFormatString formatString = PsiTreeUtil.findChildOfType(element, PsiDocFormatString.class);
     PsiField valueField = null;
     if (text.isEmpty()) {
       if (myElement instanceof PsiField) valueField = (PsiField)myElement;
@@ -2453,11 +2455,16 @@ public class JavaDocInfoGenerator {
     if (valueField != null) {
       PsiExpression initializer = valueField.getInitializer();
       value = DumbService.isDumb(myProject) ? null : JavaConstantExpressionEvaluator.computeConstantExpression(initializer, false);
+      if (formatString != null) {
+        value = String.format(formatString.getText(), value);
+      }
+      else if (value instanceof String) {
+        value = '"' + value.toString() + '"';
+      }
     }
 
     if (value != null) {
       String valueText = StringUtil.escapeXmlEntities(value.toString());
-      if (value instanceof String) valueText = '"' + valueText + '"';
       if (valueField.equals(myElement)) {
         buffer.append(valueText); // don't generate link to itself
       }

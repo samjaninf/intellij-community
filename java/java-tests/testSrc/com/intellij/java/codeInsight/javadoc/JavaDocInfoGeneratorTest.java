@@ -92,6 +92,7 @@ public class JavaDocInfoGeneratorTest extends JavaCodeInsightTestCase {
   public void testFieldValue() { doTestField(); }
   public void testValueInMethod() { doTestMethod(); }
   public void testValueInMethodNoHash() { doTestMethod(); }
+  public void testValueWithFormat() { doTestMethod(); }
   public void testEscapingStringValue() { doTestMethod(); }
   public void testIdeadev2326() { doTestMethod(); }
   public void testMethodTypeParameter() { doTestMethod(); }
