@@ -200,7 +200,7 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     toolbarActions.add(new SortThreadsAction());
     toolbarActions.add(new ExportToTextFileToolbarAction(createDumpToFileExporter(project, myThreadDump)));
     toolbarActions.add(new MergeStacktracesAction());
-    toolbarActions.add(new ShowHierarchyAction());
+    toolbarActions.add(new ShowDumpItemGroups());
     toolbarActions.add(new ShowOnlyPlatformThreads());
 
     ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ThreadDump", toolbarActions, false);
@@ -282,14 +282,8 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
 
         for (DumpItem threadState : filteredThreadStates) {
           if (threadState.isContainer()) continue;
-          if (showOnlyPlatformThreads) {
-            // todo define if an item corresponds to a platform thread
-            if (!Objects.equals(threadState.getIconToolTip(), JavaFrontbackBundle.message("dump.item.java.thread.icon.tooltip.virtual"))) {
-              treeRoot.add(new DefaultMutableTreeNode(threadState));
-            }
-          } else {
-            treeRoot.add(new DefaultMutableTreeNode(threadState));
-          }
+          if (showOnlyPlatformThreads && threadState.getCanBeHidden()) continue;
+          treeRoot.add(new DefaultMutableTreeNode(threadState));
         }
       }
     }
@@ -490,8 +484,8 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     }
   }
 
-  private final class ShowHierarchyAction extends ToggleAction implements DumbAware {
-    private ShowHierarchyAction() {
+  private final class ShowDumpItemGroups extends ToggleAction implements DumbAware {
+    private ShowDumpItemGroups() {
       super(JavaFrontbackBundle.lazyMessage("action.text.group.dump.items"), JavaFrontbackBundle.lazyMessage(
         "action.description.group.dump.items"), AllIcons.Hierarchy.Subtypes);
     }

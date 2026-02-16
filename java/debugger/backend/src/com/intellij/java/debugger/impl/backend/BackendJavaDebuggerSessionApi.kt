@@ -221,6 +221,7 @@ private fun dumpItemDtos(allDumpItems: List<DumpItem>, maxItems: Int): ThreadDum
                           isContainer = it.isContainer,
                           id = it.id,
                           parentId = it.parentId,
+                          canBeHidden = it.canBeHidden
     )
   }
 

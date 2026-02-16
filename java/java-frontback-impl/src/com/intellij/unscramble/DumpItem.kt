@@ -53,6 +53,11 @@ interface DumpItem {
    */
   val isContainer: Boolean
 
+  /**
+   * May be used in the UI to hide some items from the dump.
+   */
+  val canBeHidden: Boolean
+
   companion object {
     @JvmField
     val SLEEPING_ATTRIBUTES: SimpleTextAttributes = SimpleTextAttributes.GRAY_ATTRIBUTES
@@ -162,6 +167,9 @@ private class JavaThreadDumpItem(private val threadState: ThreadState) : Mergeab
 
   override val parentId: Long?
     get() = threadState.threadContainerUniqueId
+
+  override val canBeHidden: Boolean
+    get() = threadState.isVirtual
 
   override val stateDesc: String
     get() {
@@ -296,6 +304,9 @@ private class JavaVirtualThreadContainerItem(private val containerName: String, 
   override val isContainer: Boolean
     get() = true
 
+  override val canBeHidden: Boolean
+    get() = true
+
   override val stateDesc: @NlsSafe String
     get() = "" // todo we can add threadsCount to the state
 
@@ -362,8 +373,13 @@ class InfoDumpItem(private val title: @Nls String, private val details: @NlsSafe
     get() = emptySet()
   override val isContainer: Boolean
     get() = false
+
+  override val canBeHidden: Boolean
+    get() = false
+
   override val id: Long
     get() = this.hashCode().toLong()
+
   override val parentId: Long?
     get() = null
 }

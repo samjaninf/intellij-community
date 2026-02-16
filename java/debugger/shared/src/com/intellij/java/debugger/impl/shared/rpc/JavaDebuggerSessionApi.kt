@@ -88,6 +88,7 @@ data class JavaThreadDumpItemDto(
   val attributesIndex: Byte,
   val isDeadLocked: Boolean,
   val isContainer: Boolean,
+  val canBeHidden: Boolean,
   val id: Long,
   val parentId: Long?,
 )
