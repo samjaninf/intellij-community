@@ -41,7 +41,6 @@ import kotlin.contracts.contract
  * as using a regular [com.intellij.psi.util.CachedValue] would be overkill; i.e., it would be more expensive to check if a CachedValue
  * is up to date than to compute the value.
  */
-@ApiStatus.Experimental
 object StubBuildCachedValuesManager {
 
   private val myStubBuildId = ThreadLocal<Long?>()
