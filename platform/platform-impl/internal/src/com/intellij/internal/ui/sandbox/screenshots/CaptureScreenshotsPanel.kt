@@ -46,7 +46,7 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
   private lateinit var textField:Cell<TextFieldWithBrowseButton>
 
   override fun createContentForScreenshot(disposable: Disposable): JComponent {
-    return panel { disposable
+    return panel {
       row { text("Instructions:") }
       row { text("1. Checkout <a href='https://github.com/JetBrains/intellij-sdk-docs.git'>https://github.com/JetBrains/intellij-sdk-docs.git</a>") }
       row { text("2. Provide the path to the repository root below") }
@@ -58,7 +58,7 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
           .align(AlignX.FILL)
       }
       row {
-        button("Capture screenshots") {
+        button("Capture Screenshots") {
           captureScreenshots()
         }.align(AlignX.CENTER)
       }
@@ -98,45 +98,6 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
         SwingUtilities.invokeLater(onDoneRunnable)
       }
     }
-  }
-
-  private fun cropProportionally(image: BufferedImage, targetSize: Dimension): BufferedImage {
-    val sourceWidth = image.width
-    val sourceHeight = image.height
-    val targetWidth = targetSize.width
-    val targetHeight = targetSize.height
-    
-    // Calculate the aspect ratios
-    val sourceAspect = sourceWidth.toDouble() / sourceHeight
-    val targetAspect = targetWidth.toDouble() / targetHeight
-    
-    val cropWidth: Int
-    val cropHeight: Int
-    val cropX: Int
-    val cropY: Int
-    
-    if (sourceAspect > targetAspect) {
-      // Source is wider than target - crop from sides
-      cropHeight = sourceHeight
-      cropWidth = (sourceHeight * targetAspect).toInt()
-      cropX = (sourceWidth - cropWidth) / 2
-      cropY = 0
-    } else {
-      // Source is taller than target - crop from top/bottom
-      cropWidth = sourceWidth
-      cropHeight = (sourceWidth / targetAspect).toInt()
-      cropX = 0
-      cropY = (sourceHeight - cropHeight) / 2
-    }
-    
-    // Create the cropped and scaled image
-    val croppedImage = image.getSubimage(cropX, cropY, cropWidth, cropHeight)
-    val scaledImage = ImageUtil.createImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB)
-    val g = scaledImage.createGraphics()
-    g.drawImage(croppedImage, 0, 0, targetWidth, targetHeight, null)
-    g.dispose()
-    
-    return scaledImage
   }
 
   private fun makeScreenshot(
