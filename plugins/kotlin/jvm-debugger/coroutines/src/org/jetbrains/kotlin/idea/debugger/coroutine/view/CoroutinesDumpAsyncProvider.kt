@@ -44,8 +44,11 @@ class CoroutinesDumpAsyncProvider : ThreadDumpItemsProviderFactory() {
             return (
               if (!enabled) emptyList()
               else {
-                val coroutinesCache = CoroutineDebugProbesProxy(suspendContext!!).dumpCoroutines()
-                if (coroutinesCache.isOk()) coroutinesCache.cache.map { CoroutineDumpItem(it) } else emptyList()
+                val coroutinesCache = CoroutineDebugProbesProxy(suspendContext!!).dumpCoroutinesWithHierarchy()
+                if (coroutinesCache.isOk()) coroutinesCache.cache.map { info ->
+                    if (info.parentJobId == null) info.parentJobId = CoroutineRootDumpItem.id
+                    CoroutineDumpItem(info)
+                } + CoroutineRootDumpItem else emptyList()
               })
               .also {
                 DebuggerStatistics.logCoroutineDump(context.project, it.size)
@@ -54,14 +57,13 @@ class CoroutinesDumpAsyncProvider : ThreadDumpItemsProviderFactory() {
     }
 }
 
-private class CoroutineDumpItem(info: CoroutineInfoData) : MergeableDumpItem {
+private class CoroutineDumpItem(private val info: CoroutineInfoData) : MergeableDumpItem {
 
     override val name: String = info.name + ":" + info.id
 
-    override val id: Long = info.hashCode().toLong() // todo
+    override val id: Long get() = info.jobId ?: info.hashCode().toLong()
 
-    override val parentId: Long?
-        get() = null // todo
+    override val parentId: Long? get() = info.parentJobId
 
     override val stateDesc: String = " (${info.state.name.lowercase()})"
 
@@ -113,6 +115,8 @@ private class CoroutineDumpItem(info: CoroutineInfoData) : MergeableDumpItem {
     override val isContainer: Boolean
         get() = false
 
+    override val canBeHidden: Boolean get() = true
+
     override val mergeableToken: MergeableToken get() = CoroutinesMergeableToken()
 
     private inner class CoroutinesMergeableToken : MergeableToken {
@@ -137,5 +141,44 @@ private class CoroutineDumpItem(info: CoroutineInfoData) : MergeableDumpItem {
                 comparableStackTrace
             )
         }
+    }
+}
+
+private object CoroutineRootDumpItem : MergeableDumpItem {
+
+    override val name: String = "Dumped Coroutines"
+
+    override val id: Long = Long.MIN_VALUE // todo: this item does not actually exist in the dump, and it's index is artificial
+
+    override val parentId: Long? = null
+
+    override val stateDesc: String = ""
+
+    override val iconToolTip: String
+        get() = KotlinDebuggerCoroutinesBundle.message("dump.item.dumped.coroutines.tooltip")
+
+    override val stackTrace: String = ""
+
+    override val interestLevel: Int = 100 // for now kept on top
+
+    override val isDeadLocked: Boolean
+        get() = false
+
+    override val awaitingDumpItems: Set<DumpItem>
+        get() = emptySet()
+
+    override val icon: Icon =
+        IconsCache.getIconWithVirtualOverlay(AllIcons.Debugger.ThreadGroup)
+
+    override val attributes: SimpleTextAttributes = SimpleTextAttributes.REGULAR_ATTRIBUTES
+
+    override val isContainer: Boolean get() = true
+
+    override val canBeHidden: Boolean get() = true
+
+    override val mergeableToken: MergeableToken get() = object : MergeableToken {
+        override val item get() = this@CoroutineRootDumpItem
+        override fun equals(other: Any?) = other is MergeableToken && item == other.item
+        override fun hashCode() = item.hashCode()
     }
 }
