@@ -65,7 +65,7 @@ internal open class IdePluginModuleWebBasedBuilder : WebStarterModuleBuilder() {
 
   override fun getBuilderId(): String = "ide-plugin-web-starter"
   override fun getWeight(): Int = JVM_WEIGHT + 1000
-  override fun getDefaultServerUrl(): String = "https://plugins.jetbrains.com/new"
+  override fun getDefaultServerUrl(): String = "https://plugins.jetbrains.com/generator"
   override fun getNodeIcon(): Icon = AllIcons.Nodes.Plugin
   override fun getPresentableName(): String = message("module.builder.title")
   override fun getDescription(): String = message("module.description")
