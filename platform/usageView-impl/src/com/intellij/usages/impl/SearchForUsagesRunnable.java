@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.usages.impl;
 
 import com.intellij.diagnostic.PerformanceWatcher;
@@ -405,7 +405,7 @@ final class SearchForUsagesRunnable implements Runnable {
         UsageViewEx usageView = getUsageView(originalIndicator, startSearchStamp);
 
         TooManyUsagesStatus tooManyUsagesStatus= TooManyUsagesStatus.getFrom(originalIndicator);
-        if (usageCount > UsageLimitUtil.USAGES_LIMIT && tooManyUsagesStatus.switchTooManyUsagesStatus()) {
+        if (usageCount > UsageLimitUtil.getSearchResultLimit() && tooManyUsagesStatus.switchTooManyUsagesStatus()) {
           myTooManyUsages.set(true);
 
           PsiElement element = getPsiElement(mySearchFor);
@@ -420,7 +420,7 @@ final class SearchForUsagesRunnable implements Runnable {
                                                                     : TooManyUsagesUserAction.Continued,
                                                                     elementClass, scopeText, language);
           UsageViewManagerImpl.showTooManyUsagesWarningLater(myProject, tooManyUsagesStatus, originalIndicator, usageView,
-            () -> UsageViewBundle.message("find.excessive.usage.count.prompt"), onUserClicked);
+                                                             null, onUserClicked);
 
           UsageViewStatisticsCollector.logTooManyDialog(myProject, myUsageViewRef.get(), TooManyUsagesUserAction.Shown,
                                                         elementClass, scopeText, language);

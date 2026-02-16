@@ -1737,6 +1737,7 @@
     <advancedSetting id="ide.remember.last.search.scope" default="false" groupKey="group.advanced.settings.search.scopes"/>
     <advancedSetting id="ide.similar.usages.clustering.enable" default="true" groupKey="group.advanced.settings.find"/>
     <advancedSetting id="ide.usages.page.size" default="100" groupKey="group.advanced.settings.find"/>
+    <advancedSetting id="ide.find.result.count.warning.limit" default="1000" groupKey="group.advanced.settings.find"/>
     <advancedSetting id="editor.tab.painting" enumClass="com.intellij.openapi.editor.impl.TabCharacterPaintMode" default="HORIZONTAL_LINE"
                      groupKey="group.advanced.settings.editor"/>
     <advancedSetting id="editor.distraction.free.margin" default="-1" groupKey="group.advanced.settings.editor"/>
