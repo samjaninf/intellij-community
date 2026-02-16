@@ -560,13 +560,13 @@ class ProcessOutputControllerService(
     private fun ensureProcessTreeScroll() {
         coroutineScope.launch(Dispatchers.EDT) {
             combine(
-                snapshotFlow { processTreeUiState.selectableLazyListState.canScrollBackward },
+                snapshotFlow { processTreeUiState.selectableLazyListState.firstVisibleItemIndex },
                 shouldScrollToTop,
-            ) { canScrollBackwards, processes -> canScrollBackwards to processes }
+            ) { firstVisibleIndex, processes -> (firstVisibleIndex > 0) to processes }
                 .collect { (canScrollBackwards, shouldScrollToTopValue) ->
                     if (canScrollBackwards && shouldScrollToTopValue) {
                         shouldScrollToTop.value = false
-                        processTreeUiState.selectableLazyListState.lazyListState.scrollToItem(0)
+                        processTreeUiState.selectableLazyListState.scrollToItem(0)
                     }
                 }
         }
