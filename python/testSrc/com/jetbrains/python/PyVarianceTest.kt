@@ -129,6 +129,16 @@ internal class PyVarianceTest : PyTestCase() {
       """)
   }
 
+  @TestFor(issues = ["PY-79248"])
+  fun `test Superfluous variance on constrained type variable`() {
+    doTestByText("""
+      from typing import TypeVar
+      
+      T1 = TypeVar('T1', int, str, <warning descr="Superfluous variance since the given constraints have no subtype relation">covariant=True</warning>)
+      T2 = TypeVar('T2', object, str, covariant=True)  # expect no error
+      """)
+  }
+
   @TestFor(issues = ["PY-80167"])
   fun `test Warn about contravariant TypeVars used in function return type`() {
     doTestByText("""

@@ -1,11 +1,14 @@
 package com.jetbrains.python.inspections
 
 import com.intellij.codeInspection.LocalInspectionToolSession
+import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiElementVisitor
 import com.jetbrains.python.PyPsiBundle
 import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider
 import com.jetbrains.python.psi.PyAnnotation
+import com.jetbrains.python.psi.PyAssignmentStatement
+import com.jetbrains.python.psi.PyCallExpression
 import com.jetbrains.python.psi.PyClass
 import com.jetbrains.python.psi.PyElementVisitor
 import com.jetbrains.python.psi.PyExpression
@@ -13,8 +16,10 @@ import com.jetbrains.python.psi.PyFunction
 import com.jetbrains.python.psi.PyNamedParameter
 import com.jetbrains.python.psi.PyReferenceExpression
 import com.jetbrains.python.psi.PyTargetExpression
+import com.jetbrains.python.psi.impl.resolveCalleeClass
 import com.jetbrains.python.psi.types.PyExpectedVarianceJudgment
 import com.jetbrains.python.psi.types.PyInferredVarianceJudgment
+import com.jetbrains.python.psi.types.PyTypeChecker
 import com.jetbrains.python.psi.types.PyTypeVarType
 import com.jetbrains.python.psi.types.PyTypeVarType.Variance
 import com.jetbrains.python.psi.types.PyTypeVarType.Variance.BIVARIANT
@@ -39,6 +44,31 @@ class PyVarianceInspection : PyInspection() {
     val context: TypeEvalContext,
   ) : PyInspectionVisitor(holder, context) {
 
+    // Inspection: "Obsolete variance for constrained TypeVar"
+    override fun visitPyAssignmentStatement(node: PyAssignmentStatement) {
+      super.visitPyAssignmentStatement(node)
+      val typeVarCall = node.assignedValue as? PyCallExpression ?: return
+      val callee = typeVarCall.resolveCalleeClass() ?: return
+      if (PyTypingTypeProvider.TYPE_VAR != callee.qualifiedName) return
+      val typeVarType = PyTypingTypeProvider.getType(typeVarCall, context)?.get() as? PyTypeVarType ?: return
+      if (typeVarType.constraints.size < 2) return
+      if (typeVarType.constraints.size > 7) return // escape hatch wrt. performance
+      if (typeVarType.variance != COVARIANT && typeVarType.variance != CONTRAVARIANT) return
+      val argList = typeVarCall.argumentList ?: return
+      val varianceArg = argList.arguments.firstOrNull { arg -> arg.name == "covariant" || arg.name == "contravariant" } ?: return
+      // now check that at least two constraints have a subtype relation
+      for (idx1 in 0 until typeVarType.constraints.size) {
+        for (idx2 in idx1 + 1 until typeVarType.constraints.size) {
+          val c1 = typeVarType.constraints[idx1]
+          val c2 = typeVarType.constraints[idx2]
+          if (PyTypeChecker.match(c1, c2, context)) return
+          if (PyTypeChecker.match(c2, c1, context)) return
+        }
+      }
+      // no two constraints have a subtype relation
+      val msg = PyPsiBundle.message("INSP.variance.checker.superfluous")
+      holder!!.registerProblem(varianceArg, msg, ProblemHighlightType.LIKE_UNUSED_SYMBOL)
+    }
 
     // Below for inspection: "Incompatible variance"
 
