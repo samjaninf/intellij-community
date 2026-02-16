@@ -47,6 +47,7 @@ jvm_library(
     "//platform/util/jdom",
     "@lib//:kotlinc-kotlin-scripting-compiler-impl",
     "@lib//:kotlinc-kotlin-scripting-common",
+    "//plugins/kotlin/base/scripting/scripting.scratch.definition",
   ]
 )
 ### auto-generated section `build intellij.kotlin.jvm` end

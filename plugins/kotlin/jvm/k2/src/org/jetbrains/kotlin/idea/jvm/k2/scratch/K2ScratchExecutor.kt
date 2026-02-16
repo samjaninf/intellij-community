@@ -23,8 +23,8 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.kotlin.idea.base.plugin.artifacts.KotlinArtifacts
 import org.jetbrains.kotlin.idea.base.psi.getLineNumber
 import org.jetbrains.kotlin.idea.compiler.configuration.KotlinPluginLayout
-import org.jetbrains.kotlin.idea.core.script.k2.definitions.KOTLIN_SCRATCH_EXPLAIN_FILE
-import org.jetbrains.kotlin.idea.core.script.k2.definitions.KotlinScratchScript
+import org.jetbrains.kotlin.idea.core.script.scratch.definition.KOTLIN_SCRATCH_EXPLAIN_FILE
+import org.jetbrains.kotlin.idea.core.script.scratch.definition.KotlinScratchScript
 import org.jetbrains.kotlin.idea.jvm.shared.KotlinJvmBundle
 import org.jetbrains.kotlin.idea.jvm.shared.scratch.ScratchExecutor
 import org.jetbrains.kotlin.idea.jvm.shared.scratch.output.ExplainInfo

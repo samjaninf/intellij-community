@@ -43,6 +43,7 @@ abstract class KotlinPluginBuilder(val kind : KotlinPluginKind = System.getPrope
       "kotlin.base.scripting.k1",
       "intellij.kotlin.base.scripting",
       "intellij.kotlin.base.scripting.shared",
+      "intellij.kotlin.base.scripting.scratch.definition",
       "intellij.kotlin.base.analysis.platform",
       "intellij.kotlin.base.analysis",
       "intellij.kotlin.base.codeInsight",
