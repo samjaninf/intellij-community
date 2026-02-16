@@ -1,7 +1,6 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.kotlin.tools.projectWizard.wizard
 
-import com.intellij.application.options.CodeStyle
 import com.intellij.ide.projectWizard.NewProjectWizardConstants.BuildSystem.MAVEN
 import com.intellij.ide.projectWizard.NewProjectWizardConstants.Language.JAVA
 import com.intellij.ide.projectWizard.NewProjectWizardConstants.Language.KOTLIN
@@ -15,48 +14,29 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.util.registry.withValue
 import com.intellij.platform.testFramework.assertion.moduleAssertion.ModuleAssertions.assertModules
-import com.intellij.testFramework.common.runAll
 import com.intellij.testFramework.useProject
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.idea.maven.wizards.MavenJavaNewProjectWizardData.Companion.javaMavenData
-import org.jetbrains.idea.maven.wizards.MavenNewProjectWizardTestCase
 import org.jetbrains.idea.maven.wizards.sdk
 import org.jetbrains.kotlin.idea.base.test.TestRoot
-import org.jetbrains.kotlin.idea.framework.KotlinSdkType
 import org.jetbrains.kotlin.idea.test.TestMetadataUtil
 import org.jetbrains.kotlin.tools.projectWizard.BuildSystemKotlinNewProjectWizardData.Companion.kotlinBuildSystemData
 import org.jetbrains.kotlin.tools.projectWizard.maven.MavenKotlinNewProjectWizardData.Companion.kotlinMavenData
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.decapitalizeAsciiOnly
 import org.junit.Assert
-import org.junit.Rule
 import org.junit.Test
 import org.junit.jupiter.api.Assertions
-import org.junit.rules.TestName
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import java.io.File
 
 @TestRoot("project-wizard/tests")
 @RunWith(JUnit4::class)
-class MavenNewKotlinModuleTest : MavenNewProjectWizardTestCase(), NewKotlinProjectTestUtils {
+class MavenKotlinNewModuleWizardTest : MavenKotlinNewProjectWizardTestCase() {
     override val testDirectory: String
-        get() = "testData/mavenNewProjectWizard"
+        get() = "testData/mavenNewModuleWizard"
     private val newModuleName = "module"
-    private val testRoot: File? = TestMetadataUtil.getTestRoot(MavenNewKotlinModuleTest::class.java)
-
-    @JvmField
-    @Rule
-    var testName = TestName()
-
-    override fun runInDispatchThread() = false
-
-    override fun tearDown() {
-        runAll(
-            { CodeStyle.getDefaultSettings().clearCodeStyleSettings() },
-            { KotlinSdkType.removeKotlinSdkInTests() },
-            { super.tearDown() })
-    }
+    override val testRoot: File? = TestMetadataUtil.getTestRoot(MavenKotlinNewModuleWizardTest::class.java)
 
     @Test
     fun `test when module is created then its pom is unignored`() = runBlocking {
@@ -251,25 +231,6 @@ class MavenNewKotlinModuleTest : MavenNewProjectWizardTestCase(), NewKotlinProje
         }
     }
 
-    private fun createKotlinProjectFromTemplate(
-        groupId: String = "org.testcase",
-        version: String = "1.0.0",
-        addSampleCode: Boolean = false,
-    ): Project {
-        return createProjectFromTemplate(KOTLIN) {
-            it.baseData!!.name = "project"
-            it.kotlinBuildSystemData!!.buildSystem = MAVEN
-            it.kotlinMavenData!!.sdk = mySdk
-            it.kotlinMavenData!!.parentData = null
-
-            it.kotlinMavenData!!.groupId = groupId
-            it.kotlinMavenData!!.artifactId = "project"
-            it.kotlinMavenData!!.version = version
-
-            it.kotlinMavenData!!.addSampleCode = addSampleCode
-        }
-    }
-
     private fun createKotlinModuleFromTemplate(
         project: Project,
         groupId: String = "org.testcase",
@@ -297,68 +258,5 @@ class MavenNewKotlinModuleTest : MavenNewProjectWizardTestCase(), NewKotlinProje
                 mavenProjectsManager.findProject(projectModule)
             }
         }
-    }
-
-    override fun postprocessOutputFile(relativePath: String, fileContents: String): String {
-        val fileContentWithSubstitutedCompilerSourceAndTarget = substituteCompilerSourceAndTargetLevels(fileContents)
-        val fileContentWithSubstitutedKotlinVersion = substituteKotlinVersion(fileContentWithSubstitutedCompilerSourceAndTarget)
-        return substituteArtifactsVersions(fileContentWithSubstitutedKotlinVersion)
-    }
-
-    override fun getTestFolderName(): String {
-        return testName.methodName.takeWhile { it != '(' }.removePrefix("test").decapitalizeAsciiOnly()
-    }
-
-    override fun substituteArtifactsVersions(str: String): String {
-        var result = str
-
-        result = substituteVersionForArtifact(result, "maven-surefire-plugin", needMoreSpaces = true)
-        result = substituteVersionForArtifact(result, "maven-failsafe-plugin", needMoreSpaces = true)
-        result = substituteVersionForArtifact(result, "junit-jupiter")
-        result = substituteVersionForArtifact(result, "exec-maven-plugin", needMoreSpaces = true)
-
-        return result
-    }
-
-    private fun substituteVersionForArtifact(fileContents: String, artifactId: String, needMoreSpaces: Boolean = false): String {
-        val regex =
-            Regex("<artifactId>$artifactId</artifactId>\n( )*<version>(([a-zA-Z]|(\\.)|(\\d)|-)+)</version>")
-        var result = fileContents
-        if (result.contains(regex)) {
-            val additionalSpaces = if (needMoreSpaces) {
-                "    "
-            } else {
-                ""
-            }
-            result = result.replace(
-                regex, "<artifactId>$artifactId</artifactId>\n" +
-                        "$additionalSpaces            <version>VERSION</version>"
-            )
-        }
-        return result
-    }
-
-    private fun substituteKotlinVersion(fileContents: String): String {
-        val kotlinVersionRegex = Regex("<kotlin.version>\\d\\.\\d\\.(\\d)+</kotlin.version>")
-        var result = fileContents
-        if (result.contains(kotlinVersionRegex)) {
-            result = result.replace(
-                kotlinVersionRegex, "<kotlin.version>VERSION</kotlin.version>"
-            )
-        }
-        return result
-    }
-
-    private fun substituteCompilerSourceAndTargetLevels(fileContents: String): String {
-        val compilerSourceRegex = Regex("<maven.compiler.source>(\\d\\d)</maven.compiler.source>")
-        val compilerTargetRegex = Regex("<maven.compiler.target>(\\d\\d)</maven.compiler.target>")
-        var result = fileContents
-        if (result.contains(compilerSourceRegex)) {
-            result = result.replace(compilerSourceRegex, "<maven.compiler.source>VERSION</maven.compiler.source>")
-        }
-        if (result.contains(compilerTargetRegex)) {
-            result = result.replace(compilerTargetRegex, "<maven.compiler.target>VERSION</maven.compiler.target>")
-        }
-        return result
     }
 }

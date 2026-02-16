@@ -1,35 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/${MODEL_VERSION}"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/${MODEL_VERSION} http://maven.apache.org/xsd/maven-${MODEL_VERSION}.xsd">
-    <modelVersion>${MODEL_VERSION}</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-#if (${HAS_PARENT})
-    <parent>
-        <groupId>${PARENT_GROUP_ID}</groupId>
-        <artifactId>${PARENT_ARTIFACT_ID}</artifactId>
-        <version>${PARENT_VERSION}</version>
-#if (${HAS_RELATIVE_PATH})
-        <relativePath>${PARENT_RELATIVE_PATH}</relativePath>
-#end
-    </parent>
-
-#end
-    <groupId>${GROUP_ID}</groupId>
-    <artifactId>${ARTIFACT_ID}</artifactId>
-    <version>${VERSION}</version>
+    <groupId>org.testcase</groupId>
+    <artifactId>project</artifactId>
+    <version>1.0.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
-        <kotlin.version>${KOTLIN_PLUGIN_WIZARD_VERSION}</kotlin.version>
+        <kotlin.version>2.3.10</kotlin.version>
     </properties>
 
     <repositories>
         <repository>
-            <id>${MAVEN_CENTRAL_REPOSITORY_ID}</id>
-            <url>${MAVEN_CENTRAL_REPOSITORY_URL}</url>
+            <id>mavenCentral</id>
+            <url>https://repo1.maven.org/maven2/</url>
         </repository>
     </repositories>
 
@@ -40,12 +29,7 @@
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-                #if (${INHERIT_MAVEN_KOTLIN_PLUGIN_VERSION} == false)
-                <version>$${kotlin.version}</version>
-                #end
-                #if (${EXTENSIONS_SUPPORT} == true)
-                <extensions>true</extensions>
-                #end
+                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -65,22 +49,16 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                #if (${INHERIT_MAVEN_SUREFIRE_PLUGIN_VERSION} == false)
-                <version>${MAVEN_SUREFIRE_PLUGIN_VERSION}</version>
-                #end
+                <version>2.22.2</version>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                #if (${INHERIT_MAVEN_FAILSAFE_PLUGIN_VERSION} == false)
-                <version>${MAVEN_FAILSAFE_PLUGIN_VERSION}</version>
-                #end
+                <version>2.22.2</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                #if (${INHERIT_CODEHAUS_MOJO_EXEC_PLUGIN_VERSION} == false)
-                <version>${MAVEN_CODEHAUS_MOJO_EXEC_PLUGIN_VERSION}</version>
-                #end
+                <version>1.6.0</version>
                 <configuration>
                     <mainClass>MainKt</mainClass>
                 </configuration>
@@ -92,19 +70,19 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit5</artifactId>
-            <version>$${kotlin.version}</version>
+            <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${JUNIT_JUPITER_VERSION}</version>
+            <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
-            <version>$${kotlin.version}</version>
+            <version>${kotlin.version}</version>
         </dependency>
     </dependencies>
 
