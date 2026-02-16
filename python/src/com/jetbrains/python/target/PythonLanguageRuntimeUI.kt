@@ -81,7 +81,7 @@ class PythonLanguageRuntimeUI(
     dialogPanel.launchOnShow(
       debugName = "PythonLanguageRuntimeUI launchOnShow",
       context = TraceContext(
-        title = message("tracecontext.add.remote.python.sdk.dialog", targetEnvironmentConfiguration.getTargetType().displayName),
+        title = message("trace.context.add.remote.python.sdk.dialog", targetEnvironmentConfiguration.getTargetType().displayName),
         parentTraceContext = null
       )
     ) {

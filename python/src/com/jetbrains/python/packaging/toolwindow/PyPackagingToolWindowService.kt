@@ -234,7 +234,7 @@ class PyPackagingToolWindowService(val project: Project, val serviceScope: Corou
     val context = sdkContext ?: return
     val managerUI = context.managerUI
 
-    withContext(TraceContext(message("tracecontext.packaging.tool.window.install"))) {
+    withContext(TraceContext(message("trace.context.packaging.tool.window.install"))) {
       PythonPackagesToolwindowStatisticsCollector.installPackageEvent.log(project)
       managerUI.installPackagesRequestBackground(installRequest, options)?.let {
         handleActionCompleted(
@@ -248,7 +248,7 @@ class PyPackagingToolWindowService(val project: Project, val serviceScope: Corou
 
   suspend fun installPackage(pkg: PythonPackage, options: List<String> = emptyList()) {
     val context = sdkContext ?: return
-    withContext(TraceContext(message("tracecontext.packaging.tool.window.install"))) {
+    withContext(TraceContext(message("trace.context.packaging.tool.window.install"))) {
       val installRequest = context.manager.findPackageSpecification(pkg.name, pkg.version)?.toInstallRequest() ?: return@withContext
       PythonPackagesToolwindowStatisticsCollector.installPackageEvent.log(project)
       context.managerUI.installPackagesRequestBackground(installRequest, options)?.let {
@@ -265,7 +265,7 @@ class PyPackagingToolWindowService(val project: Project, val serviceScope: Corou
     val context = sdkContext ?: return
     val managerUI = context.managerUI
 
-    withContext(TraceContext(message("tracecontext.packaging.tool.window.delete"))) {
+    withContext(TraceContext(message("trace.context.packaging.tool.window.delete"))) {
       PythonPackagesToolwindowStatisticsCollector.uninstallPackageEvent.log(project)
       managerUI.uninstallPackagesBackground(selectedPackages.map { it.instance.name }) ?: return@withContext
       handleActionCompleted(

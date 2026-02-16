@@ -64,7 +64,7 @@ class PyPackagingToolWindowPanel(private val project: Project) : SimpleToolWindo
   private val moduleController = PyPackagesSdkController(project)
   private val descriptionController = PyPackageInfoPanel(project)
   private val packagingScope = PyPackageCoroutine.getScope(project)
-    .childScope("Packaging tool window", TraceContext(message("tracecontext.packaging.tool.window"), null)).also {
+    .childScope("Packaging tool window", TraceContext(message("trace.context.packaging.tool.window"), null)).also {
       Disposer.register(this, it.asDisposable())
     }
 

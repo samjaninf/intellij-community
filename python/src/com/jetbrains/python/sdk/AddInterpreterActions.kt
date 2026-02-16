@@ -32,6 +32,7 @@ import com.intellij.psi.util.ParameterizedCachedValue
 import com.intellij.python.pyproject.model.api.ModuleCreateInfo
 import com.intellij.python.pyproject.model.api.getModuleInfo
 import com.jetbrains.python.PyBundle
+import com.jetbrains.python.TraceContext
 import com.jetbrains.python.run.PythonInterpreterTargetEnvironmentFactory
 import com.jetbrains.python.run.allowCreationTargetOfThisType
 import com.jetbrains.python.sdk.ModuleOrProject.ModuleAndProject
@@ -48,6 +49,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.Nls
 import java.util.function.Consumer
@@ -201,7 +203,9 @@ private class ToolDetectionService(project: Project, val coroutineScope: Corouti
 
   private fun detectBestToolAsync(module: Module): CachedValueProvider.Result<Deferred<CreateSdkInfoWithTool?>> {
     val result = coroutineScope.async {
-      detectBestToolForModule(module)
+      withContext(TraceContext(PyBundle.message("trace.context.python.tool.detection.service.detect.tools.for.module", module.name))) {
+        detectBestToolForModule(module)
+      }
     }
     result.invokeOnCompletion { getOrCreateModificationTracker(module).incModificationCount() }
     return CachedValueProvider.Result.create(result, getOrCreateModificationTracker(module))
