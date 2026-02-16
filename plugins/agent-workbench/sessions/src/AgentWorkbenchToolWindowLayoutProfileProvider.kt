@@ -25,7 +25,7 @@ internal class AgentWorkbenchToolWindowLayoutProfileProvider : ToolWindowLayoutP
     val baseLayout = ToolWindowDefaultLayoutManager.getInstance().getLayoutCopy()
     val infos = baseLayout.getInfos()
       .asSequence()
-      .filter { (id, _) -> id != ToolWindowId.PROJECT_VIEW }
+      .filterNot { (id, _) -> id == ToolWindowId.PROJECT_VIEW || id == ToolWindowId.STRUCTURE_VIEW }
       .associateTo(LinkedHashMap()) { (id, info) -> id to info.copy() }
 
     val sessionsInfo = infos.get(AGENT_SESSIONS_TOOL_WINDOW_ID) ?: WindowInfoImpl()
@@ -42,6 +42,23 @@ internal class AgentWorkbenchToolWindowLayoutProfileProvider : ToolWindowLayoutP
     sessionsInfo.isShowStripeButton = true
     sessionsInfo.weight = 0.25f
     infos.put(AGENT_SESSIONS_TOOL_WINDOW_ID, sessionsInfo)
+
+    val nextOrderOnBottom = infos.values.asSequence()
+      .filter { it.toolWindowPaneId == paneId && it.anchor == ToolWindowAnchor.BOTTOM && it.order >= 0 }
+      .maxOfOrNull { it.order + 1 } ?: 0
+    val terminalInfo = infos.get(TERMINAL_TOOL_WINDOW_ID) ?: WindowInfoImpl()
+    val needsBottomPlacement = terminalInfo.toolWindowPaneId != paneId ||
+                               terminalInfo.anchor != ToolWindowAnchor.BOTTOM ||
+                               terminalInfo.order < 0
+    terminalInfo.id = TERMINAL_TOOL_WINDOW_ID
+    terminalInfo.toolWindowPaneId = paneId
+    terminalInfo.anchor = ToolWindowAnchor.BOTTOM
+    if (needsBottomPlacement) {
+      terminalInfo.order = nextOrderOnBottom
+    }
+    terminalInfo.isVisible = false
+    terminalInfo.isShowStripeButton = true
+    infos.put(TERMINAL_TOOL_WINDOW_ID, terminalInfo)
 
     return DesktopLayout(infos, baseLayout.unifiedWeights.copy())
   }

@@ -3,9 +3,9 @@ package com.intellij.agent.workbench.sessions
 
 import com.intellij.openapi.components.SerializablePersistentStateComponent
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.SettingsCategory
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.StoragePathMacros
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,7 +107,7 @@ internal class InMemorySessionsTreeUiState : SessionsTreeUiState {
 }
 
 @Service(Service.Level.APP)
-@State(name = "CodexSessionsTreeUiState", storages = [Storage("other.xml")], category = SettingsCategory.TOOLS)
+@State(name = "CodexSessionsTreeUiState", storages = [Storage(StoragePathMacros.CACHE_FILE)])
 internal class AgentSessionsTreeUiStateService
   : SerializablePersistentStateComponent<AgentSessionsTreeUiStateService.SessionsTreeUiStateState>(SessionsTreeUiStateState()),
     SessionsTreeUiState {

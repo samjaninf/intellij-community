@@ -2,7 +2,6 @@
 package com.intellij.agent.workbench.sessions
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.ToolWindowId
 import com.intellij.openapi.wm.ex.ProjectFrameCapabilitiesProvider
 import com.intellij.openapi.wm.ex.ProjectFrameCapability
 import com.intellij.openapi.wm.ex.ProjectFrameUiPolicy
@@ -41,6 +40,5 @@ private val AGENT_WORKBENCH_FRAME_CAPABILITIES = EnumSet.of(
 
 private val AGENT_WORKBENCH_FRAME_UI_POLICY = ProjectFrameUiPolicy(
   startupToolWindowIdToActivate = AGENT_SESSIONS_TOOL_WINDOW_ID,
-  toolWindowIdsToHideOnStartup = setOf(ToolWindowId.PROJECT_VIEW),
   toolWindowLayoutProfileId = AGENT_WORKBENCH_DEDICATED_LAYOUT_PROFILE_ID,
 )
