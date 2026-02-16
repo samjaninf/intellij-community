@@ -13485,6 +13485,11 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/backingFieldTypeIsASubtype.kt");
             }
 
+            @TestMetadata("backingPropertyIsVar.kt")
+            public void testBackingPropertyIsVar() throws Exception {
+                runTest("testData/inspectionsLocal/convertToExplicitBackingFields/backingPropertyIsVar.kt");
+            }
+
             @TestMetadata("commentsInsideBrackets.kt")
             public void testCommentsInsideBrackets() throws Exception {
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/commentsInsideBrackets.kt");
