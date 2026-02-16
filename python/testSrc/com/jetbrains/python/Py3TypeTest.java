@@ -4570,6 +4570,15 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
+  // PY-86928
+  public void testProperlyImportedQualifiedNameFromNamespacePackageInTypeHint() {
+    doMultiFileTest("MyClass", """
+      from lib import f
+      
+      expr = f()
+      """);
+  }
+
   // PY-81684
   public void testFunctionAlwaysRaisesReturnsNever() {
     // The function actually returns NoReturn, but its get converted to Never upon assignment to expr
