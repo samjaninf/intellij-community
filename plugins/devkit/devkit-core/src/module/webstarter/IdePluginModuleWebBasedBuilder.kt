@@ -23,6 +23,9 @@ import com.intellij.ide.starters.shared.LibraryLinkType
 import com.intellij.ide.starters.shared.StarterLanguage
 import com.intellij.ide.starters.shared.StarterProjectType
 import com.intellij.ide.starters.shared.hyperLink
+import com.intellij.internal.statistic.eventLog.fus.MachineIdManager
+import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleType
@@ -160,7 +163,14 @@ internal open class IdePluginModuleWebBasedBuilder : WebStarterModuleBuilder() {
     val userAgent = getUserAgent()
     return HttpRequests
       .post(url.toExternalForm(), HttpRequests.JSON_CONTENT_TYPE)
-      .tuner { it.setRequestProperty("Client-Name", userAgent) }
+      .tuner {
+        it.setRequestProperty("Client-Name", userAgent)
+        it.setRequestProperty("X-Product-Name", ApplicationNamesInfo.getInstance().fullProductName)
+        it.setRequestProperty("X-Product-Version", ApplicationInfo.getInstance().fullVersion)
+        MachineIdManager.getAnonymizedMachineId("ij-plugin-generator")?.let { userId ->
+          it.setRequestProperty("X-User-ID", userId)
+        }
+      }
       .userAgent(userAgent)
       .connectTimeout(10000)
       .isReadResponseOnError(true)
