@@ -5,6 +5,7 @@ import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.openapi.util.TextRange
+import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.components.*
@@ -34,7 +35,8 @@ import org.jetbrains.kotlin.types.Variance
 //  K1 implementation of the analysis API.
 //  Once it is fixed, it should be used for both K1 and K2.
 //  See: KT-65376
-class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
+@ApiStatus.Internal
+open class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
     override val conversions: List<QualifiedFunctionCallConversion> = listOf(
         UselessFilterConversion(topLevelCallableId("kotlin.collections", "filterNotNull")),
         UselessFilterConversion(topLevelCallableId("kotlin.sequences", "filterNotNull")),
@@ -51,7 +53,7 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         UselessMapNotNullConversion(topLevelCallableId("kotlin.sequences", "mapIndexedNotNullTo"), replacementName = "mapIndexedTo")
     )
 
-    private inner class UselessFilterConversion(
+    protected inner class UselessFilterConversion(
         override val targetCallableId: CallableId,
     ): QualifiedFunctionCallConversion {
         context(_: KaSession)
@@ -78,6 +80,7 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
             }
 
             val fix = if (resolvedCall.symbol.returnType.isList() && !receiverType.isList()) {
+                // TODO: This fix only works for cases when `toList()` function is available; make that logic explicit so it's safe to reuse
                 ReplaceSelectorOfQualifiedExpressionFix("toList()")
             } else {
                 RemoveUselessCallFix()
@@ -96,7 +99,7 @@ class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         }
     }
 
-    private inner class UselessMapNotNullConversion(
+    protected inner class UselessMapNotNullConversion(
         override val targetCallableId: CallableId,
         val replacementCallableId: CallableId,
     ): QualifiedFunctionCallConversion {
