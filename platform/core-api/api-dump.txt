@@ -1747,6 +1747,8 @@ com.intellij.psi.util.PsiModificationTracker
 com.intellij.psi.util.PsiModificationTracker$Listener
 - a:modificationCountChanged():V
 Fc:com.intellij.psi.util.PsiTreeUtil
+f:com.intellij.psi.util.PsiTreeUtilKt
+- sf:getChildrenSequence(com.intellij.psi.PsiElement):kotlin.sequences.Sequence
 c:com.intellij.testFramework.LightVirtualFile
 - s:builder():com.intellij.testFramework.LightVirtualFile$Builder
 f:com.intellij.testFramework.LightVirtualFile$Builder
