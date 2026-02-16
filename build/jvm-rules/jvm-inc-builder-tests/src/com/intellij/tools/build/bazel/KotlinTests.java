@@ -373,13 +373,10 @@ public class KotlinTests extends BazelIncBuildTest {
     performTest("kotlin/pureKotlin/localClassChanged").assertSuccessful();
   }
 
-  /*
-  //todo: handle scenario: remove outdated class references from kotlin_module explicitly, if kotlinc cannot be started due to empty source set
   @Test
   public void testMoveClass() throws Exception {
     performTest(2, "kotlin/pureKotlin/moveClass").assertSuccessful();
   }
-  */
 
   @Test
   public void testMoveFileWithChangingPackage() throws Exception {
@@ -426,18 +423,10 @@ public class KotlinTests extends BazelIncBuildTest {
     performTest("kotlin/pureKotlin/packageFileChangedPackage").assertSuccessful();
   }
 
-  // todo: investigate scenario:
-  // 1. the only change on disk is the removal of some "a.kt" file with top-level declarations
-  // 2. => corresponding AKt.class is removed from the output
-  // 3. Since there are no sources to compile, compiler will not be run
-  // 4. => the kotlin_module file in the output is not updated and might contain references to AKt
-  // 5. All successive compilations know nothing about deleted AKt => the corresponding entry in the kotlin_module may stuck forever.
-  /*
   @Test
   public void testPackageFileChangedThenOtherRemoved() throws Exception {
     performTest(2, "kotlin/pureKotlin/packageFileChangedThenOtherRemoved").assertSuccessful();
   }
-  */
 
   @Test
   public void testPackageFileRemoved() throws Exception {
@@ -464,14 +453,10 @@ public class KotlinTests extends BazelIncBuildTest {
     performTest("kotlin/pureKotlin/packagePrivateOnlyChanged").assertSuccessful();
   }
 
-  /*
-  // todo: handle scenario: remove outdated class references from kotlin_module explicitly, if kotlinc cannot be started due to empty source set
-
   @Test
   public void testPackageRecreated() throws Exception {
     performTest(2, "kotlin/pureKotlin/packageRecreated").assertSuccessful();
   }
-  */
 
   @Test
   public void testPackageRecreatedAfterRenaming() throws Exception {
@@ -618,13 +603,10 @@ public class KotlinTests extends BazelIncBuildTest {
     performTest("kotlin/pureKotlin/removeTopLevelTypeAlias").assertSuccessful();
   }
 
-  /*
-  // todo: handle scenario: remove outdated class references from kotlin_module explicitly, if kotlinc cannot be started due to empty source set
   @Test
   public void testRemoveUnusedFile() throws Exception {
     performTest("kotlin/pureKotlin/removeUnusedFile").assertSuccessful();
   }
-  */
 
   @Test
   public void testRenameClass() throws Exception {

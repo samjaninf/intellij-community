@@ -172,7 +172,7 @@ public class BuildContextImpl implements BuildContext {
     }
 
     myBuilderOptions = BuilderOptions.create(buildJavaOptions(flags), buildKotlinOptions(flags, map(myLibraries.getElements(), myPathMapper::toPath)));
-    myBuildProcessLogger = VMFlags.isBuildProcessLoggerEnabled()? new BuildProcessLoggerImpl(baseDir) : BuildProcessLogger.EMPTY;
+    myBuildProcessLogger = VMFlags.isBuildProcessLoggerEnabled()? new BatchBuildProcessLogger(new BuildProcessLoggerImpl(baseDir)) : BuildProcessLogger.EMPTY;
   }
 
   private static @NotNull List<String> buildKotlinOptions(Map<CLFlags, List<String>> flags, @NotNull Iterable<@NotNull Path> classpath) {
