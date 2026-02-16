@@ -29,18 +29,19 @@ import org.jetbrains.annotations.ApiStatus
  * Method tries to return those roots as [com.intellij.openapi.vfs.newvfs.CacheAvoidingVirtualFile]s, so tree-traversal starting
  * from them won't trash VFS cache with useless entries
  * @see WorkspaceFileKind.CONTENT_NON_INDEXABLE
+ * @see WorkspaceFileKind.EXTERNAL_NON_INDEXABLE
  * @see WorkspaceFileIndexEx.isIndexable
  */
 @ApiStatus.Internal
 @RequiresBackgroundThread
 @RequiresReadLock
-fun WorkspaceFileIndexEx.contentNonIndexableRoots(): Set<VirtualFile> {
+fun WorkspaceFileIndexEx.nonIndexableRoots(): Set<VirtualFile> {
   val roots = mutableSetOf<VirtualFile>()
   visitFileSets { fileSet, _ ->
     val root = fileSet.root
-    if (fileSet.kind == WorkspaceFileKind.CONTENT_NON_INDEXABLE) {
+    if (!fileSet.kind.isIndexable) {
       //Wrap the root in cache-avoiding, so file-tree hierarchy walking starting from this root will not trash VFS cache with
-      // new entries -- it makes perfect sense for CONTENT_NON_INDEXABLE because such file-sets are rarely accessed.
+      // new entries -- it makes perfect sense for non-indexable because such file-sets are rarely accessed.
       roots.add(NewVirtualFile.asCacheAvoiding(root))
     }
   }
@@ -50,7 +51,7 @@ fun WorkspaceFileIndexEx.contentNonIndexableRoots(): Set<VirtualFile> {
 internal fun iterateNonIndexableFilesImpl(project: Project, inputFilter: VirtualFileFilter?, processor: ContentIterator): Boolean {
   val workspaceFileIndex = WorkspaceFileIndexEx.getInstance(project)
   val roots: Set<VirtualFile> =
-    ReadAction.nonBlocking<Set<VirtualFile>> { workspaceFileIndex.contentNonIndexableRoots() }.executeSynchronously()
+    ReadAction.nonBlocking<Set<VirtualFile>> { workspaceFileIndex.nonIndexableRoots() }.executeSynchronously()
   return workspaceFileIndex.iterateNonIndexableFilesImpl(roots, inputFilter ?: VirtualFileFilter.ALL, processor)
 }
 
@@ -122,7 +123,7 @@ interface FilesDeque {
     @RequiresReadLock
     @RequiresBackgroundThread
     fun nonIndexableDequeue(project: Project): FilesDeque {
-      return NonIndexableFilesDequeImpl(project, WorkspaceFileIndexEx.getInstance(project).contentNonIndexableRoots())
+      return NonIndexableFilesDequeImpl(project, WorkspaceFileIndexEx.getInstance(project).nonIndexableRoots())
     }
   }
 }
