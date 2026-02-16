@@ -36,9 +36,9 @@ single_version_override(
 bazel_dep(name = "rules_kotlin", version = "2.2.2")
 archive_override(
     module_name = "rules_kotlin",
-    sha256 = "1600acb76079b1356553a6dc2685f9304666d07383830c25efe3491763732e25",
-    strip_prefix = "rules_kotlin-7da67b3a776d7785a5ece293ca771df7bc907965",
-    url = "https://github.com/JetBrains/rules_kotlin/archive/7da67b3a776d7785a5ece293ca771df7bc907965.zip",
+    sha256 = "45a8f73fd663df02dfd2925cf7be02a03b075dd14f8b473dd454feeaa28e54d0",
+    strip_prefix = "rules_kotlin-30e89b8f9a246952e14eb6f56c2265a46bf4dc54",
+    url = "https://github.com/JetBrains/rules_kotlin/archive/30e89b8f9a246952e14eb6f56c2265a46bf4dc54.zip",
 )
 bazel_dep(name = "rules_pkg", version = "1.2.0")
 bazel_dep(name = "rules_python", version = "1.7.0")
