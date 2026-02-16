@@ -1878,19 +1878,6 @@ f:com.intellij.codeInsight.completion.FilePathCompletionContributor$FilePathLook
 - renderElement(com.intellij.codeInsight.lookup.LookupElementPresentation):V
 com.intellij.codeInsight.completion.FileReferenceWithExtendedCompletion
 - a:bindToExtendedElement(com.intellij.psi.PsiElement):V
-a:com.intellij.codeInsight.completion.actions.BaseCodeCompletionAction
-- com.intellij.openapi.project.DumbAwareAction
-- com.intellij.codeInsight.hint.HintManagerImpl$ActionToIgnore
-- p:<init>():V
-- createHandler(com.intellij.codeInsight.completion.CompletionType,Z,Z,Z):com.intellij.codeInsight.completion.CodeCompletionHandlerBase
-- getActionUpdateThread():com.intellij.openapi.actionSystem.ActionUpdateThread
-- p:invokeCompletion(com.intellij.openapi.actionSystem.AnActionEvent,com.intellij.codeInsight.completion.CompletionType,I):V
-- update(com.intellij.openapi.actionSystem.AnActionEvent):V
-c:com.intellij.codeInsight.completion.actions.CodeCompletionAction
-- com.intellij.codeInsight.completion.actions.BaseCodeCompletionAction
-- com.intellij.ide.lightEdit.LightEditCompatible
-- <init>():V
-- actionPerformed(com.intellij.openapi.actionSystem.AnActionEvent):V
 f:com.intellij.codeInsight.completion.addingPolicy.PassDirectlyPolicy
 - <init>():V
 - addAllElements(com.intellij.codeInsight.completion.CompletionResultSet,java.lang.Iterable):V
