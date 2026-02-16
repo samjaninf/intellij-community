@@ -508,10 +508,10 @@
 
     <group id="Vcs.ToolbarWidget.CreateRepository" searchable="false">
       <group id="Vcs.ToolbarWidget.ShareProject" popup="true" searchable="false">
-        <reference ref="Start.Use.Vcs"/>
       </group>
       <reference ref="Git.Init"/>
       <separator/>
+      <reference ref="Start.Use.Vcs"/>
     </group>
 
     <action id="main.toolbar.git.MergeRebase" class="git4idea.ui.toolbar.GitMergeRebaseWidget">
