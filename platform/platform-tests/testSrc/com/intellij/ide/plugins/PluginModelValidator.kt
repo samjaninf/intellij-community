@@ -49,19 +49,8 @@ data class PluginValidationOptions(
   val skipServicesOverridesCheck: Boolean = false,
   val reportDependsTagInPluginXmlWithPackageAttribute: Boolean = true,
   val referencedPluginIdsOfExternalPlugins: Set<String> = emptySet(),
-  val prefixesOfPathsIncludedFromLibrariesViaXiInclude: List<String> = emptyList(),
 
-  /**
-   * By default, files included via xi:include patterns are searched in 'META-INF', 'idea' and the root directory.
-   * This property allows specifying custom patterns of directories where such files are searched.
-   */
-  val additionalPatternsOfDirectoriesContainingIncludedXmlFiles: List<String> = emptyList(),
-
-  /**
-   * Describes different core plugins (with ID `com.intellij`) located in the project sources. 
-   * All of them are checked, but only the first one is used when checking dependencies from other plugins.  
-   */
-  val corePluginDescriptions: List<CorePluginDescription> = COMMUNITY_CORE_PLUGINS,
+  val pluginModelBuilderOptions: SimplifiedPluginModelBuilderOptions = SimplifiedPluginModelBuilderOptions(),
 
   /**
    * Set of modules containing `plugin.xml` files which should be ignored because they correspond to smaller editions of plugins,
@@ -69,11 +58,6 @@ data class PluginValidationOptions(
    * It's better to avoid such configurations, and include all optional parts as content modules in a single `plugin.xml`. 
    */
   val mainModulesOfAlternativePluginVariants: Set<String> = emptySet(),
-
-  /**
-   * Set of modules where a descriptor file named after the module is placed in META-INF directory, not in the resource root.
-   */
-  val modulesWithIncorrectlyPlacedModuleDescriptor: Set<String> = emptySet(),
 
   /**
    * Mapping from a plugin ID to the list of its content modules which don't have a dedicated JPS module and registered using deprecated
@@ -85,8 +69,6 @@ data class PluginValidationOptions(
    * Set of implementation classes of existing application-level and project-level components which shouldn't be reported as errors. 
    */
   val componentImplementationClassesToIgnore: Set<String> = emptySet(),
-
-  val pluginVariantsWithDynamicIncludes: List<PluginVariantWithDynamicIncludes> = emptyList(),
 
   /**
    * Names of service interfaces that are overridden by plugins which sources are located outside the current project, and therefore need
@@ -107,14 +89,7 @@ fun validatePluginModel(
   project: JpsProject, projectHomePath: Path,
   validationOptions: PluginValidationOptions = PluginValidationOptions(),
 ): PluginValidationResult {
-  val builder = SimplifiedPluginModelBuilder(project, SimplifiedPluginModelBuilderOptions(
-    prefixesOfPathsIncludedFromLibrariesViaXiInclude = validationOptions.prefixesOfPathsIncludedFromLibrariesViaXiInclude,
-    additionalPatternsOfDirectoriesContainingIncludedXmlFiles = validationOptions.additionalPatternsOfDirectoriesContainingIncludedXmlFiles,
-    corePluginDescriptions = validationOptions.corePluginDescriptions,
-    mainModulesOfAlternativePluginVariants = validationOptions.mainModulesOfAlternativePluginVariants,
-    modulesWithIncorrectlyPlacedModuleDescriptor = validationOptions.modulesWithIncorrectlyPlacedModuleDescriptor,
-    pluginVariantsWithDynamicIncludes = validationOptions.pluginVariantsWithDynamicIncludes,
-  ))
+  val builder = SimplifiedPluginModelBuilder(project, validationOptions.pluginModelBuilderOptions)
   return PluginModelValidator(builder.buildSimplifiedPluginModel(),
                               projectHomePath = projectHomePath,
                               validationOptions = validationOptions).validate()
@@ -810,7 +785,7 @@ internal class PluginModelValidator(
   }
 }
 
-internal data class ModuleInfo(
+data class ModuleInfo(
   @JvmField val pluginId: String?,
   @JvmField val name: String?,
   @JvmField val sourceModule: JpsModule,
@@ -829,7 +804,7 @@ internal data class ModuleInfo(
     get() = pluginId != null
 }
 
-internal data class Reference(@JvmField val name: String, @JvmField val isPlugin: Boolean, @JvmField val moduleInfo: ModuleInfo?)
+data class Reference(@JvmField val name: String, @JvmField val isPlugin: Boolean, @JvmField val moduleInfo: ModuleInfo?)
 
 private fun writeModuleInfo(writer: JsonGenerator, item: ModuleInfo, projectHomePath: Path) {
   writer.obj {

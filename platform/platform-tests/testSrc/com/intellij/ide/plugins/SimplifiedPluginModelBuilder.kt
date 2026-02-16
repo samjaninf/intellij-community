@@ -44,7 +44,7 @@ data class SimplifiedPluginModelBuilderOptions(
   val pluginVariantsWithDynamicIncludes: List<PluginVariantWithDynamicIncludes> = emptyList(),
 )
 
-internal sealed interface DescriptorFileInfo {
+sealed interface DescriptorFileInfo {
   val sourceModule: JpsModule
   val descriptorFile: Path
   val descriptor: RawPluginDescriptor
@@ -64,13 +64,13 @@ internal data class PluginDescriptorFileInfo(
   val inTests: Boolean,
 ) : DescriptorFileInfo
 
-internal data class SimplifiedPluginModelBuilderError(
+data class SimplifiedPluginModelBuilderError(
   val message: String,
   val sourceModule: JpsModule,
   val params: Map<String, Any?> = mapOf(),
 )
 
-internal data class SimplifiedPluginModel(
+data class SimplifiedPluginModel(
   val descriptorFileInfos: List<DescriptorFileInfo>,
   val moduleNameToInfo: HashMap<String, ModuleInfo>,
   val allMainModulesOfPlugins: ArrayList<ModuleInfo>,
@@ -79,7 +79,7 @@ internal data class SimplifiedPluginModel(
   val errors: List<SimplifiedPluginModelBuilderError>,
 )
 
-internal class SimplifiedPluginModelBuilder(
+class SimplifiedPluginModelBuilder(
   private val project: JpsProject,
   private val builderOptions: SimplifiedPluginModelBuilderOptions,
 ) {
@@ -112,11 +112,11 @@ internal class SimplifiedPluginModelBuilder(
     }
   }
 
-  fun reportError(message: String, sourceModule: JpsModule, params: Map<String, Any?> = mapOf()) {
+  private fun reportError(message: String, sourceModule: JpsModule, params: Map<String, Any?> = mapOf()) {
     errors.add(SimplifiedPluginModelBuilderError(message, sourceModule, params))
   }
 
-  internal fun buildSimplifiedPluginModel(): SimplifiedPluginModel {
+  fun buildSimplifiedPluginModel(): SimplifiedPluginModel {
     // 1. collect plugin and module file info set
     val descriptorFileInfos = project.modules.flatMap { module ->
       try {
