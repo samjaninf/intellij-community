@@ -665,6 +665,7 @@ com.intellij.openapi.ui.popup.ListPopupStep
 - a:getSeparatorAbove(java.lang.Object):com.intellij.openapi.ui.popup.ListSeparator
 - a:getTextFor(java.lang.Object):java.lang.String
 - a:getValues():java.util.List
+- isClosableOnExecute(java.lang.Object):Z
 - isFinal(java.lang.Object):Z
 - a:isSelectable(java.lang.Object):Z
 - removeListener(com.intellij.openapi.ui.popup.ListPopupStep$ListPopupModelListener):V
