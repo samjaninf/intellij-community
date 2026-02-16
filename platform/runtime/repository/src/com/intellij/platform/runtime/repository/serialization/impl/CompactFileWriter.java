@@ -84,4 +84,15 @@ public final class CompactFileWriter {
       }
     }
   }
+
+  /**
+   * @deprecated use {@link #saveToFile(Collection, String, int, Path)} instead; {@code mainPluginModuleId} isn't supported anymore
+   */
+  @Deprecated(forRemoval = true)
+  public static void saveToFile(@NotNull Collection<RawRuntimeModuleDescriptor> originalDescriptors,
+                                @Nullable String bootstrapModuleName, @Nullable String mainPluginModuleId,
+                                int generatorVersion,
+                                @NotNull Path outputFile) throws IOException {
+    saveToFile(originalDescriptors, bootstrapModuleName, generatorVersion, outputFile);
+  }
 }
