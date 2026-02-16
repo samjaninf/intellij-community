@@ -623,11 +623,13 @@ public class PsiViewerDialog extends DialogWrapper implements UiDataProvider {
     };
     search1.setupListeners();
     myFileTypeComboBox.addActionListener(__ -> {
-      updateDialectsCombo(null);
-      updateExtensionsCombo();
-      rebuildPsiAndUpdateEditor();
+      WriteIntentReadAction.run(() -> {
+        updateDialectsCombo(null);
+        updateExtensionsCombo();
+        rebuildPsiAndUpdateEditor();
+      });
     });
-    myDialectComboBox.addActionListener(__ -> rebuildPsiAndUpdateEditor());
+    myDialectComboBox.addActionListener(__ -> WriteIntentReadAction.run(() -> rebuildPsiAndUpdateEditor()));
     ComboboxSpeedSearch search = new ComboboxSpeedSearch(myDialectComboBox, null) {
       @Override
       protected String getElementText(Object element) {
@@ -644,7 +646,7 @@ public class PsiViewerDialog extends DialogWrapper implements UiDataProvider {
     myDialectComboBox.addFocusListener(new AutoExpandFocusListener(myDialectComboBox));
     myExtensionComboBox.setRenderer(SimpleListCellRenderer.create("", value -> "." + value)); //NON-NLS
     myExtensionComboBox.addFocusListener(new AutoExpandFocusListener(myExtensionComboBox));
-    myExtensionComboBox.addActionListener(__ -> rebuildPsiAndUpdateEditor());
+    myExtensionComboBox.addActionListener(__ -> WriteIntentReadAction.run(() -> rebuildPsiAndUpdateEditor()));
 
     myShowWhiteSpacesBox.addActionListener(__ -> {
       myTreeStructure.setShowWhiteSpaces(myShowWhiteSpacesBox.isSelected());
@@ -1149,34 +1151,36 @@ public class PsiViewerDialog extends DialogWrapper implements UiDataProvider {
 
     @Override
     public void valueChanged(@NotNull ListSelectionEvent e) {
-      clearSelection();
-      updateDialectsCombo(null);
-      updateExtensionsCombo();
-      int ind = myRefs.getSelectedIndex();
-      PsiElement element = getPsiElement();
-      if (ind > -1 && element != null) {
-        PsiReference[] references = element.getReferences();
-        if (ind < references.length) {
-          TextRange textRange = references[ind].getRangeInElement();
-          TextRange range = InjectedLanguageManager.getInstance(myProject).injectedToHost(element, element.getTextRange());
-          int start = range.getStartOffset();
-          PsiElement rootPsiElement = myTreeStructure.getRootPsiElement();
-          if (rootPsiElement != null) {
-            int baseOffset = rootPsiElement.getTextRange().getStartOffset();
-            start -= baseOffset;
-          }
+      WriteIntentReadAction.run(() -> {
+        clearSelection();
+        updateDialectsCombo(null);
+        updateExtensionsCombo();
+        int ind = myRefs.getSelectedIndex();
+        PsiElement element = getPsiElement();
+        if (ind > -1 && element != null) {
+          PsiReference[] references = element.getReferences();
+          if (ind < references.length) {
+            TextRange textRange = references[ind].getRangeInElement();
+            TextRange range = InjectedLanguageManager.getInstance(myProject).injectedToHost(element, element.getTextRange());
+            int start = range.getStartOffset();
+            PsiElement rootPsiElement = myTreeStructure.getRootPsiElement();
+            if (rootPsiElement != null) {
+              int baseOffset = rootPsiElement.getTextRange().getStartOffset();
+              start -= baseOffset;
+            }
 
-          start += textRange.getStartOffset();
-          int end = start + textRange.getLength();
-          //todo[kb] probably move highlight color to the editor color scheme?
-          TextAttributes highlightReferenceTextRange = new TextAttributes(null, null,
-                                                                          JBColor.namedColor("PsiViewer.referenceHighlightColor", 0xA8C023),
-                                                                          EffectType.BOLD_DOTTED_LINE, Font.PLAIN);
-          myListenerHighlighter = myEditor.getMarkupModel()
-            .addRangeHighlighter(start, end, HighlighterLayer.LAST,
-                                 highlightReferenceTextRange, HighlighterTargetArea.EXACT_RANGE);
+            start += textRange.getStartOffset();
+            int end = start + textRange.getLength();
+            //todo[kb] probably move highlight color to the editor color scheme?
+            TextAttributes highlightReferenceTextRange = new TextAttributes(null, null,
+                                                                            JBColor.namedColor("PsiViewer.referenceHighlightColor", 0xA8C023),
+                                                                            EffectType.BOLD_DOTTED_LINE, Font.PLAIN);
+            myListenerHighlighter = myEditor.getMarkupModel()
+              .addRangeHighlighter(start, end, HighlighterLayer.LAST,
+                                   highlightReferenceTextRange, HighlighterTargetArea.EXACT_RANGE);
+          }
         }
-      }
+      });
     }
 
     public void clearSelection() {
