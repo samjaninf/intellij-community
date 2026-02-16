@@ -215,11 +215,11 @@ public final class TestDaemonCodeAnalyzerImpl {
         if (DaemonCodeAnalyzerImpl.LOG.isDebugEnabled()) {
           DaemonCodeAnalyzerImpl.LOG.debug("doRunPasses() thrown " + ExceptionUtil.getThrowableText(unwrapped));
         }
-        if (unwrapped instanceof ProcessCanceledException) {
+        if (unwrapped instanceof ProcessCanceledException unwrappedPCE) {
           Throwable savedException = ((DaemonProgressIndicator)progress).getCancellationTrace();
           if (savedException != null) {
             if (DaemonProgressIndicator.CANCEL_WAS_CALLED_REASON.equals(savedException.getMessage())) {
-              throw (ProcessCanceledException)unwrapped;
+              throw unwrappedPCE;
             }
             unwrapped = savedException;
           }

@@ -621,7 +621,7 @@ public class HighlightInfo implements Segment {
     OffsetStore store = offsetStore;
     RangeHighlighterEx highlighter = store.highlighter();
     if (highlighter != null) {
-      s += "; text='" + StringUtil.first(getText(), 40, true) + "'; highlighter: (" + highlighter.getStartOffset()+","+highlighter.getEndOffset()+")";
+      s += "; text='" + StringUtil.first(getText(), 40, true) + "'; highlighter: " + highlighter.debugOffsets();
       if (!highlighter.isValid()) {
         s+= " (invalid)";
       }
@@ -1097,7 +1097,7 @@ public class HighlightInfo implements Segment {
     public String toString() {
       String name = getAction().getFamilyName();
       return "IntentionActionDescriptor: '" + name + "' (" + ReportingClassSubstitutor.getClassToReport(getAction()) + ")"
-        + (myFixRange == null || myFixRange.getStartOffset() == myFixRange.getEndOffset() ? "" : "; fixRange: ("+myFixRange.getStartOffset()+", "+ myFixRange.getEndOffset()+": "+myFixRange.getClass()+")");
+        + (myFixRange == null || myFixRange.getStartOffset() == myFixRange.getEndOffset() ? "" : "; fixRange: "+TextRange.create(myFixRange)+": "+myFixRange.getClass()+")");
     }
 
     public @Nullable Icon getIcon() {
@@ -1263,9 +1263,7 @@ public class HighlightInfo implements Segment {
     OffsetStore store = offsetStore;
     RangeHighlighterEx highlighter = store.highlighter();
     if (highlighter == null || !highlighter.isValid()) return false;
-    int startOffset = highlighter.getStartOffset();
-    int endOffset = highlighter.getEndOffset();
-    if (startOffset <= offset && offset <= endOffset) {
+    if (highlighter.containsInclusive(offset)) {
       return true;
     }
     if (!includeFixRange) return false;

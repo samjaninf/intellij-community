@@ -68,10 +68,8 @@ final class PersistentRangeHighlighterImpl extends RangeHighlighterImpl {
   @Override
   public @NonNls String toString() {
     return "PersistentRangeHighlighter" +
-           (isGreedyToLeft() ? "[" : "(") +
-           (isValid() ? "valid" : "invalid") + "," +
-           (getTargetArea() == HighlighterTargetArea.LINES_IN_RANGE ? "whole-line" : "exact") + "," +
-           getStartOffset() + "," + getEndOffset() +
-           (isGreedyToRight() ? "]" : ")");
+           (isValid() ? "" : "(invalid)") +
+           debugOffsets() +
+           (getTargetArea() == HighlighterTargetArea.LINES_IN_RANGE ? "(whole-line)" : "");
   }
 }

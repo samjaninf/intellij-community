@@ -208,7 +208,7 @@ public sealed class GeneralHighlightingPass extends ProgressableTextEditorHighli
         impl.runWithInvalidPsiRecycler(getHighlightingSession(), HighlightInfoUpdaterImpl.WhatTool.ANNOTATOR_OR_VISITOR, recyclerConsumer);
       }
       else {
-        ManagedHighlighterRecycler.runWithRecycler(getHighlightingSession(), recyclerConsumer);
+        ManagedHighlighterRecycler.runWithRecycler(getHighlightingSession(), "GHP", recyclerConsumer);
       }
     });
     if (LOG.isTraceEnabled()) {

@@ -38,7 +38,6 @@ import com.intellij.openapi.application.ex.ApplicationManagerEx;
 import com.intellij.openapi.application.impl.LaterInvocator;
 import com.intellij.openapi.command.CommandEvent;
 import com.intellij.openapi.command.CommandListener;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
@@ -119,7 +118,6 @@ import java.util.Objects;
  * listen for any daemon-related activities and restart the daemon if needed
  */
 public final class DaemonListeners implements Disposable {
-  private static final Logger LOG = Logger.getInstance(DaemonListeners.class);
   private final Project myProject;
   private final DaemonCodeAnalyzerImpl myDaemonCodeAnalyzer;
   private final PsiChangeHandler myPsiChangeHandler;
@@ -225,8 +223,8 @@ public final class DaemonListeners implements Disposable {
         boolean showing = ComponentUtil.isShowing(editor.getContentComponent(), true);
         boolean worthBothering = worthBothering(document, editorProject);
         if (!showing || !worthBothering) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Not worth bothering about editor created for: " + editor.getVirtualFile() + " because editor isShowing(): " +
+          if (DaemonCodeAnalyzerImpl.LOG.isDebugEnabled()) {
+            DaemonCodeAnalyzerImpl.LOG.debug("Not worth bothering about editor created for: " + editor.getVirtualFile() + " because editor isShowing(): " +
                       showing + "; project is open and file is mine: " + worthBothering);
           }
           return;
