@@ -80,11 +80,11 @@ internal open class IdePluginModuleWebBasedBuilder : WebStarterModuleBuilder() {
   private fun parsePacks(packs: ArrayNode): WebStarterServerOptions {
     val categories = mutableMapOf<String, PackCategory>()
     for (pack in packs) {
-      val info = pack["manifest"] as? ObjectNode ?: continue
-      val properties = info["properties"] as? ArrayNode
+      if (pack !is ObjectNode) continue
+      val properties = pack["properties"] as? ArrayNode
       if (isHiddenInWizard(properties)) continue
-      val category = parseAndGetOrCreateCategory(info, categories) ?: continue
-      category.extensions.add(createDependency(info))
+      val category = parseAndGetOrCreateCategory(pack, categories) ?: continue
+      category.extensions.add(createDependency(pack))
     }
     categories.values.forEach { it.extensions.sortBy(WebStarterDependency::title) }
     return WebStarterServerOptions(emptyList(), sortCategoriesByOrder(categories))
