@@ -8,7 +8,13 @@ import com.intellij.openapi.util.TextRange
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
-import org.jetbrains.kotlin.analysis.api.components.*
+import org.jetbrains.kotlin.analysis.api.components.expressionType
+import org.jetbrains.kotlin.analysis.api.components.fullyExpandedType
+import org.jetbrains.kotlin.analysis.api.components.isClassType
+import org.jetbrains.kotlin.analysis.api.components.isNullable
+import org.jetbrains.kotlin.analysis.api.components.isSubtypeOf
+import org.jetbrains.kotlin.analysis.api.components.resolveToCall
+import org.jetbrains.kotlin.analysis.api.components.targetSymbol
 import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.analysis.api.symbols.typeParameters
@@ -55,7 +61,7 @@ open class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
 
     protected inner class UselessFilterConversion(
         override val targetCallableId: CallableId,
-    ): QualifiedFunctionCallConversion {
+    ) : QualifiedFunctionCallConversion {
         context(_: KaSession)
         override fun createProblemDescriptor(
             manager: InspectionManager,
@@ -102,7 +108,7 @@ open class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
     protected inner class UselessMapNotNullConversion(
         override val targetCallableId: CallableId,
         val replacementCallableId: CallableId,
-    ): QualifiedFunctionCallConversion {
+    ) : QualifiedFunctionCallConversion {
 
         /**
          * Assumes that [replacementName] is a "sibling" of [targetCallableId].
@@ -110,7 +116,7 @@ open class UselessCallOnCollectionInspection : AbstractUselessCallInspection() {
         constructor(
             targetCallableId: CallableId,
             replacementName: String,
-        ): this(
+        ) : this(
             targetCallableId,
             replacementCallableId = targetCallableId.copy(Name.identifier(replacementName))
         )
