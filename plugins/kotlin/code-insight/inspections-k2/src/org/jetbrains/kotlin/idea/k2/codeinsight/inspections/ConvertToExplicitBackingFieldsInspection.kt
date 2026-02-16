@@ -75,47 +75,26 @@ internal class ConvertToExplicitBackingFieldsInspection :
         override fun applyFix(project: Project, element: KtProperty, updater: ModPsiUpdater) {
             val psiFactory = KtPsiFactory(element.project)
 
-            val propertyNameText = element.nameIdentifier?.text ?: return
             val backingPropertyContext = context.backingProperty.element ?: return
-            val backingPropertyName = backingPropertyContext.name ?: return
-            val backingPropertyType = backingPropertyContext.typeReference?.text
-
-            val referencesToReplace = element.containingKtFile.collectDescendantsOfType<KtNameReferenceExpression>()
-                .filter { ref ->
-                    ref.getReferencedName() == backingPropertyName && ref.mainReference.resolve() == backingPropertyContext
-                }
-                .map { updater.getWritable(it) }
-
             val backingProperty = updater.getWritable(backingPropertyContext)
-            val initializer = backingProperty.initializer?.let { getElementWithoutInnerComments(it, StringBuilder()) }
 
-            referencesToReplace.map { writableRef ->
-                writableRef.replace(psiFactory.createExpression("this.$propertyNameText")) as KtExpression
-            }.let {
-                shortenReferences(it, shortenOptions = ShortenOptionsForIde.ALL_ENABLED)
-            }
+            replaceReferences(element, backingPropertyContext, psiFactory, updater)
 
             val getter = element.getter ?: return
             val accessorsCommentSaver = CommentSaver(getter)
+
             getter.delete()
             if (element.lastLeaf() is PsiWhiteSpace) element.lastLeaf().delete()
             accessorsCommentSaver.restore(element)
 
-            val newPropertyText = buildString {
-                append(element.text)
-                append("\nfield")
-                backingPropertyType?.let {
-                    append(": ")
-                    append(backingPropertyType)
-                }
-                initializer?.let {
-                    append(" = ")
-                    append(it)
-                }
-            }
+            val propertyWithExplicitBackingField: KtProperty = createNewPropertyWithBackingField(
+                elementText = element.text,
+                backingProperty = backingProperty,
+                backingPropertyType = backingPropertyContext.typeReference?.text,
+                psiFactory = psiFactory
+            )
 
-            val newProperty = psiFactory.createProperty(newPropertyText)
-            val replacedProperty = element.replace(newProperty)
+            val replacedProperty = element.replace(propertyWithExplicitBackingField)
             replacedProperty.reformat(canChangeWhiteSpacesOnly = true)
 
             backingProperty.parent.deleteChildRange(
@@ -184,6 +163,58 @@ internal class ConvertToExplicitBackingFieldsInspection :
     private fun resolveToProperty(expression: KtNameReferenceExpression): KtProperty? {
         val symbol = expression.mainReference.resolveToSymbol() as? KaPropertySymbol ?: return null
         return symbol.psi as? KtProperty
+    }
+
+    private fun replaceReferences(
+        element: KtProperty,
+        backingPropertyContext: KtProperty,
+        psiFactory: KtPsiFactory,
+        updater: ModPsiUpdater
+    ) {
+        val propertyNameText = element.nameIdentifier?.text ?: return
+        val backingPropertyName = backingPropertyContext.name ?: return
+        val className = backingPropertyContext.containingClass()?.name
+
+        val fullQualifiedPropertyName = buildString {
+            append("this")
+            append(className?.let { "@$it." } ?: ".")
+            append(propertyNameText)
+        }
+
+        element.containingKtFile.collectDescendantsOfType<KtNameReferenceExpression>()
+            .filter { ref ->
+                ref.getReferencedName() == backingPropertyName && ref.mainReference.resolve() == backingPropertyContext
+            }
+            .map { updater.getWritable(it) }
+            .map { writableRef ->
+                writableRef.replace(psiFactory.createExpression(fullQualifiedPropertyName)) as KtExpression
+            }.let {
+                shortenReferences(it, shortenOptions = ShortenOptionsForIde.ALL_ENABLED)
+            }
+    }
+
+    private fun createNewPropertyWithBackingField(
+        elementText: String,
+        backingProperty: KtProperty,
+        backingPropertyType: String?,
+        psiFactory: KtPsiFactory
+    ): KtProperty {
+        val initializer = backingProperty.initializer?.let { getElementWithoutInnerComments(it, StringBuilder()) }
+
+        val newPropertyText = buildString {
+            append(elementText)
+            append("\nfield")
+            backingPropertyType?.let {
+                append(": ")
+                append(backingPropertyType)
+            }
+            initializer?.let {
+                append(" = ")
+                append(it)
+            }
+        }
+
+        return psiFactory.createProperty(newPropertyText)
     }
 
     private fun getElementWithoutInnerComments(property: PsiElement, builder: StringBuilder): String {
