@@ -127,7 +127,7 @@ abstract class PythonPackageManager(val project: Project, val sdk: Sdk) : Dispos
   }
 
   @ApiStatus.Internal
-  suspend fun uninstallPackage(vararg packages: String): PyResult<List<PythonPackage>> {
+  suspend fun uninstallPackage(vararg packages: String, workspaceMember: PyWorkspaceMember? = null): PyResult<List<PythonPackage>> {
     if (sdk.isReadOnly) {
       return PyResult.localizedError(sdk.readOnlyErrorMessage)
     }
@@ -138,7 +138,7 @@ abstract class PythonPackageManager(val project: Project, val sdk: Sdk) : Dispos
     waitForInit()
 
     val normalizedPackagesNames = packages.map { PyPackageName.normalizePackageName(it) }
-    uninstallPackageCommand(*normalizedPackagesNames.toTypedArray()).getOr { return it }
+    uninstallPackageCommand(*normalizedPackagesNames.toTypedArray(), workspaceMember = workspaceMember).getOr { return it }
     return reloadPackages()
   }
 
@@ -235,7 +235,7 @@ abstract class PythonPackageManager(val project: Project, val sdk: Sdk) : Dispos
 
   @ApiStatus.Internal
   @CheckReturnValue
-  protected abstract suspend fun uninstallPackageCommand(vararg pythonPackages: String): PyResult<Unit>
+  protected abstract suspend fun uninstallPackageCommand(vararg pythonPackages: String, workspaceMember: PyWorkspaceMember? = null): PyResult<Unit>
 
   @ApiStatus.Internal
   protected abstract suspend fun loadPackagesCommand(): PyResult<List<PythonPackage>>
@@ -371,3 +371,7 @@ internal fun resolvePyProjectToml(workingDirectory: Path): VirtualFile? {
     }
   }
 }
+
+@ApiStatus.Internal
+@JvmInline
+value class PyWorkspaceMember(val name: String)

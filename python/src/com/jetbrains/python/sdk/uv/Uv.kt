@@ -5,6 +5,7 @@ import com.jetbrains.python.errorProcessing.PyResult
 import com.jetbrains.python.packaging.PyPackageName
 import com.jetbrains.python.packaging.common.PythonOutdatedPackage
 import com.jetbrains.python.packaging.common.PythonPackage
+import com.jetbrains.python.packaging.management.PyWorkspaceMember
 import com.jetbrains.python.packaging.management.PythonPackageInstallRequest
 import io.github.z4kn4fein.semver.Version
 import org.jetbrains.annotations.ApiStatus
@@ -26,7 +27,7 @@ interface UvLowLevel {
   * Manage project dependencies by adding/removing them to the project along side installation
   */
   suspend fun addDependency(pyPackages: PythonPackageInstallRequest, options: List<String>): PyResult<Unit>
-  suspend fun removeDependencies(pyPackages: Array<out String>): PyResult<Unit>
+  suspend fun removeDependencies(pyPackages: Array<out String>, workspaceMember: PyWorkspaceMember? = null): PyResult<Unit>
 
   /**
    * Managing environment packages directly w/o depending or changing the project
@@ -39,6 +40,8 @@ interface UvLowLevel {
   suspend fun listTopLevelPackages(): PyResult<List<PythonPackage>>
   suspend fun listPackageRequirements(name: PythonPackage): PyResult<List<PyPackageName>>
   suspend fun listPackageRequirementsTree(name: PythonPackage): PyResult<String>
+  suspend fun listProjectStructureTree(): PyResult<String>
+  suspend fun listAllPackagesTree(): PyResult<String>
 
   suspend fun isProjectSynced(inexact: Boolean): PyResult<Boolean>
   suspend fun isScriptSynced(inexact: Boolean, scriptPath: Path): PyResult<ScriptSyncCheckResult>

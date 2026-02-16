@@ -13,6 +13,7 @@ import com.jetbrains.python.packaging.PyRequirement
 import com.jetbrains.python.packaging.common.PythonOutdatedPackage
 import com.jetbrains.python.packaging.common.PythonPackage
 import com.jetbrains.python.packaging.common.PythonRepositoryPackageSpecification
+import com.jetbrains.python.packaging.management.PyWorkspaceMember
 import com.jetbrains.python.packaging.management.PythonPackageInstallRequest
 import com.jetbrains.python.packaging.management.PythonPackageManager
 import com.jetbrains.python.packaging.management.PythonPackageManager.Companion.PackageManagerErrorMessage
@@ -65,16 +66,24 @@ internal class UvPackageManager(project: Project, sdk: Sdk, uvLowLevelDeferred: 
     return result
   }
 
-  override suspend fun uninstallPackageCommand(vararg pythonPackages: String): PyResult<Unit> {
+  override suspend fun uninstallPackageCommand(vararg pythonPackages: String, workspaceMember: PyWorkspaceMember?): PyResult<Unit> {
     return withUv { uv ->
       if (pythonPackages.isEmpty()) return@withUv PyResult.success(Unit)
+
+      if (workspaceMember != null) {
+        val packageNames = pythonPackages.map { PyPackageName.from(it) }
+        uninstallDeclaredPackages(uv, packageNames, workspaceMember).getOr { return@withUv it }
+        uv.lock().getOr { return@withUv it }
+        uv.sync().getOr { return@withUv it }
+        return@withUv PyResult.success(Unit)
+      }
 
       val (standalonePackages, declaredPackages) = categorizePackages(uv, pythonPackages).getOr {
         return@withUv it
       }
 
       uninstallStandalonePackages(uv, standalonePackages).getOr { return@withUv it }
-      uninstallDeclaredPackages(uv, declaredPackages).getOr { return@withUv it }
+      uninstallDeclaredPackages(uv, declaredPackages, null).getOr { return@withUv it }
 
       PyResult.success(Unit)
     }
@@ -114,9 +123,9 @@ internal class UvPackageManager(project: Project, sdk: Sdk, uvLowLevelDeferred: 
   /**
    * Removes declared dependencies using UV package manager.
    */
-  private suspend fun uninstallDeclaredPackages(uv: UvLowLevel, packages: List<PyPackageName>): PyResult<Unit> {
+  private suspend fun uninstallDeclaredPackages(uv: UvLowLevel, packages: List<PyPackageName>, workspaceMember: PyWorkspaceMember?): PyResult<Unit> {
     return if (packages.isNotEmpty()) {
-      uv.removeDependencies(packages.map { it.name }.toTypedArray())
+      uv.removeDependencies(packages.map { it.name }.toTypedArray(), workspaceMember)
     }
     else {
       PyResult.success(Unit)

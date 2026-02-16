@@ -16,6 +16,7 @@ import com.jetbrains.python.packaging.common.PythonOutdatedPackage
 import com.jetbrains.python.packaging.common.PythonPackage
 import com.jetbrains.python.packaging.common.PythonRepositoryPackageSpecification
 import com.jetbrains.python.packaging.common.toPythonPackages
+import com.jetbrains.python.packaging.management.PyWorkspaceMember
 import com.jetbrains.python.packaging.conda.environmentYml.CondaEnvironmentYmlSdkUtils
 import com.jetbrains.python.packaging.conda.environmentYml.format.CondaEnvironmentYmlParser
 import com.jetbrains.python.packaging.conda.environmentYml.format.EnvironmentYmlModifier
@@ -104,7 +105,7 @@ class CondaPackageManager(project: Project, sdk: Sdk) : PythonPackageManager(pro
       manager.updatePackageCommand(*specs.toTypedArray())
     }
 
-  override suspend fun uninstallPackageCommand(vararg pythonPackages: String): PyResult<Unit> {
+  override suspend fun uninstallPackageCommand(vararg pythonPackages: String, workspaceMember: PyWorkspaceMember?): PyResult<Unit> {
     val installedPackagesForRemove = installedPackages.mapNotNull {
       it.takeIf { it.name in pythonPackages }
     }
@@ -112,12 +113,12 @@ class CondaPackageManager(project: Project, sdk: Sdk) : PythonPackageManager(pro
     val pipPackages = installedPackagesForRemove - condaPackages
 
     if (condaPackages.isNotEmpty()) {
-      condaPackageEngine.uninstallPackageCommand(*condaPackages.map { it.name }.toTypedArray()).getOr {
+      condaPackageEngine.uninstallPackageCommand(*condaPackages.map { it.name }.toTypedArray(), workspaceMember = workspaceMember).getOr {
         return it
       }
     }
     if (pipPackages.isNotEmpty()) {
-      pipPackageEngine.uninstallPackageCommand(*pipPackages.map { it.name }.toTypedArray()).getOr {
+      pipPackageEngine.uninstallPackageCommand(*pipPackages.map { it.name }.toTypedArray(), workspaceMember = workspaceMember).getOr {
         return it
       }
     }

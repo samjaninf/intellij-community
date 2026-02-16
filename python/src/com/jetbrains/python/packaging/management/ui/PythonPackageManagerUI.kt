@@ -9,6 +9,7 @@ import com.jetbrains.python.errorProcessing.PyResult
 import com.jetbrains.python.packaging.PyRequirement
 import com.jetbrains.python.packaging.common.PythonPackage
 import com.jetbrains.python.packaging.common.PythonRepositoryPackageSpecification
+import com.jetbrains.python.packaging.management.PyWorkspaceMember
 import com.jetbrains.python.packaging.management.PythonPackageInstallRequest
 import com.jetbrains.python.packaging.management.PythonPackageManager
 import com.jetbrains.python.packaging.pyRequirement
@@ -125,6 +126,7 @@ class PythonPackageManagerUI(val manager: PythonPackageManager, val sink: ErrorS
    */
   suspend fun uninstallPackagesBackground(
     packages: List<String>,
+    workspaceMember: PyWorkspaceMember? = null,
   ): List<PythonPackage>? {
     val progressTitle = if (packages.size > 1) {
       PyBundle.message("python.packaging.uninstall.packages")
@@ -135,7 +137,7 @@ class PythonPackageManagerUI(val manager: PythonPackageManager, val sink: ErrorS
 
     return executeCommand(progressTitle
     ) {
-      manager.uninstallPackage(*packages.toTypedArray())
+      manager.uninstallPackage(*packages.toTypedArray(), workspaceMember = workspaceMember)
     }
   }
 

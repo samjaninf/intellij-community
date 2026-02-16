@@ -15,6 +15,7 @@ import com.jetbrains.python.onFailure
 import com.jetbrains.python.packaging.PyPackageName
 import com.jetbrains.python.packaging.common.PythonOutdatedPackage
 import com.jetbrains.python.packaging.common.PythonPackage
+import com.jetbrains.python.packaging.management.PyWorkspaceMember
 import com.jetbrains.python.packaging.management.PythonPackageInstallRequest
 import com.jetbrains.python.sdk.uv.ScriptSyncCheckResult
 import com.jetbrains.python.sdk.uv.UvCli
@@ -174,6 +175,20 @@ private class UvLowLevelImpl(val cwd: Path, private val uvCli: UvCli) : UvLowLev
     return PyExecResult.success(out)
   }
 
+  override suspend fun listProjectStructureTree(): PyResult<String> {
+    val out = uvCli.runUv(cwd, "tree", "--locked")
+      .getOr { return it }
+
+    return PyExecResult.success(out)
+  }
+
+  override suspend fun listAllPackagesTree(): PyResult<String> {
+    val out = uvCli.runUv(cwd, "pip", "tree")
+      .getOr { return it }
+
+    return PyExecResult.success(out)
+  }
+
   override suspend fun installPackage(name: PythonPackageInstallRequest, options: List<String>): PyResult<Unit> {
     uvCli.runUv(cwd, "pip", "install", *name.formatPackageName(), *options.toTypedArray())
       .getOr { return it }
@@ -196,8 +211,15 @@ private class UvLowLevelImpl(val cwd: Path, private val uvCli: UvCli) : UvLowLev
     return PyExecResult.success(Unit)
   }
 
-  override suspend fun removeDependencies(pyPackages: Array<out String>): PyResult<Unit> {
-    uvCli.runUv(cwd, "remove", *pyPackages)
+  override suspend fun removeDependencies(pyPackages: Array<out String>, workspaceMember: PyWorkspaceMember?): PyResult<Unit> {
+    val args = mutableListOf("remove")
+    if (workspaceMember != null) {
+      args.add("--package")
+      args.add(workspaceMember.name)
+    }
+    args.addAll(pyPackages)
+
+    uvCli.runUv(cwd, *args.toTypedArray())
       .getOr { return it }
 
     return PyExecResult.success(Unit)
@@ -280,7 +302,7 @@ private class UvLowLevelImpl(val cwd: Path, private val uvCli: UvCli) : UvLowLev
   }
 
   override suspend fun sync(): PyResult<String> {
-    return uvCli.runUv(cwd, "sync")
+    return uvCli.runUv(cwd, "sync", "--all-packages", "--inexact")
   }
 
   override suspend fun lock(): PyResult<String> {

@@ -11,6 +11,7 @@ import com.jetbrains.python.packaging.PyRequirement
 import com.jetbrains.python.packaging.common.PythonOutdatedPackage
 import com.jetbrains.python.packaging.common.PythonPackage
 import com.jetbrains.python.packaging.common.PythonRepositoryPackageSpecification
+import com.jetbrains.python.packaging.management.PyWorkspaceMember
 import com.jetbrains.python.packaging.management.PythonPackageInstallRequest
 import com.jetbrains.python.packaging.management.PythonPackageManager
 import com.jetbrains.python.packaging.management.PythonRepositoryManager
@@ -44,7 +45,6 @@ class PoetryPackageManager(project: Project, sdk: Sdk) : PythonPackageManager(pr
     return reloadPackages().mapSuccess { }
   }
 
-
   override suspend fun installPackageCommand(installRequest: PythonPackageInstallRequest, options: List<String>): PyResult<Unit> =
     when (installRequest) {
       is PythonPackageInstallRequest.ByRepositoryPythonPackageSpecifications ->
@@ -63,7 +63,7 @@ class PoetryPackageManager(project: Project, sdk: Sdk) : PythonPackageManager(pr
     return addPackages(specifications.map { it.copy(requirement = pyRequirement(it.name, null)) }, emptyList())
   }
 
-  override suspend fun uninstallPackageCommand(vararg pythonPackages: String): PyResult<Unit> {
+  override suspend fun uninstallPackageCommand(vararg pythonPackages: String, workspaceMember: PyWorkspaceMember?): PyResult<Unit> {
     if (pythonPackages.isEmpty()) return PyResult.success(Unit)
 
     val (standalonePackages, declaredPackages) = categorizePackages(pythonPackages).getOr {

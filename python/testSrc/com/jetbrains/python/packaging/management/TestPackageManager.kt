@@ -65,7 +65,7 @@ class TestPythonPackageManager(project: Project, sdk: Sdk) : PythonPackageManage
     return PyResult.success(Unit)
   }
 
-  override suspend fun uninstallPackageCommand(vararg pythonPackages: String): PyResult<Unit> {
+  override suspend fun uninstallPackageCommand(vararg pythonPackages: String, workspaceMember: PyWorkspaceMember?): PyResult<Unit> {
     pythonPackages.forEach { pyPackage ->
       val packageToRemove = findPackageByName(pyPackage)
                             ?: return PyResult.localizedError(PACKAGE_UNINSTALL_FAILURE_MESSAGE)
@@ -122,7 +122,7 @@ class TestPythonPackageManager(project: Project, sdk: Sdk) : PythonPackageManage
       val pyFile = PsiManager.getInstance(project).findFile(file) as? PyFile ?: return@readAction null
       SetupPyHelpers.parseSetupPy(pyFile)
     } ?: return null
-    return PyResult.success(requirements.mapNotNull { requirement -> requirement.toPythonPackage() })
+    return PyResult.success(requirements.map { requirement -> requirement.toPythonPackage() })
   }
 
   private suspend fun extractFromEnvironmentYml(file: VirtualFile): PyResult<List<PythonPackage>>? {
