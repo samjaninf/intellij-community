@@ -1,0 +1,16 @@
+<html>
+<body>
+Reports redundant <code>filter…</code> calls on already filtered <code>Flow</code>s from <code>kotlinx.coroutines</code> library.
+<p>Several functions from the <code>kotlinx.coroutines</code> library such as <code>filterNotNull()</code> or <code>filterIsInstance</code>
+    have sense only when they are called on receivers that have types distinct from the resulting one. Otherwise,
+    such calls can be omitted as the result will be the same.</p>
+<p><b>Remove redundant call</b> quick-fix can be used to amend the code automatically.</p>
+<p>Example:</p>
+<pre><code>
+  fun test(flow: Flow&lt;String&gt;) {
+      val x = flow.filterNotNull() // quick-fix simplifies to 'flow'
+      val y = flow.filterIsInstance&lt;String&gt;() // quick-fix simplifies to 'flow'
+  }
+</code></pre>
+</body>
+</html>

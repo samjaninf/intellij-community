@@ -4717,6 +4717,50 @@ public abstract class LocalInspectionTestGenerated extends AbstractK1LocalInspec
                 runTest("testData/inspectionsLocal/coroutines/unusedFlow/whenUsed.kt");
             }
         }
+
+        @RunWith(JUnit3RunnerWithInners.class)
+        @TestMetadata("testData/inspectionsLocal/coroutines/uselessCallOnFlow")
+        public static class UselessCallOnFlow extends AbstractK1LocalInspectionTest {
+            @java.lang.Override
+            @org.jetbrains.annotations.NotNull
+            public final KotlinPluginMode getPluginMode() {
+                return KotlinPluginMode.K1;
+            }
+
+            private void runTest(String testDataFilePath) throws Exception {
+                KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
+            }
+
+            @TestMetadata("FilterIsExactInstance.kt")
+            public void testFilterIsExactInstance() throws Exception {
+                runTest("testData/inspectionsLocal/coroutines/uselessCallOnFlow/FilterIsExactInstance.kt");
+            }
+
+            @TestMetadata("FilterIsExactInstanceFake.kt")
+            public void testFilterIsExactInstanceFake() throws Exception {
+                runTest("testData/inspectionsLocal/coroutines/uselessCallOnFlow/FilterIsExactInstanceFake.kt");
+            }
+
+            @TestMetadata("FilterNotNull.kt")
+            public void testFilterNotNull() throws Exception {
+                runTest("testData/inspectionsLocal/coroutines/uselessCallOnFlow/FilterNotNull.kt");
+            }
+
+            @TestMetadata("FilterNotNullFake.kt")
+            public void testFilterNotNullFake() throws Exception {
+                runTest("testData/inspectionsLocal/coroutines/uselessCallOnFlow/FilterNotNullFake.kt");
+            }
+
+            @TestMetadata("MapNotNullWithLambda.kt")
+            public void testMapNotNullWithLambda() throws Exception {
+                runTest("testData/inspectionsLocal/coroutines/uselessCallOnFlow/MapNotNullWithLambda.kt");
+            }
+
+            @TestMetadata("MapNotNullWithLambdaFake.kt")
+            public void testMapNotNullWithLambdaFake() throws Exception {
+                runTest("testData/inspectionsLocal/coroutines/uselessCallOnFlow/MapNotNullWithLambdaFake.kt");
+            }
+        }
     }
 
     @RunWith(JUnit3RunnerWithInners.class)

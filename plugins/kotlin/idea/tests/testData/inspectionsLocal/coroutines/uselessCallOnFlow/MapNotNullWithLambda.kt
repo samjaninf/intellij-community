@@ -3,7 +3,6 @@
 package test
 
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 
-val x = flowOf("1").map { it.toInt() }
+val x = flowOf("1").<caret>mapNotNull { it.toInt() }
