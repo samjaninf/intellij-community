@@ -34,7 +34,16 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.threadDumpParser.ThreadState;
-import com.intellij.ui.*;
+import com.intellij.ui.ColoredTreeCellRenderer;
+import com.intellij.ui.DocumentAdapter;
+import com.intellij.ui.EditorNotificationPanel;
+import com.intellij.ui.LightColors;
+import com.intellij.ui.ScrollPaneFactory;
+import com.intellij.ui.SearchTextField;
+import com.intellij.ui.SideBorder;
+import com.intellij.ui.SimpleTextAttributes;
+import com.intellij.ui.SpeedSearchComparator;
+import com.intellij.ui.TreeSpeedSearch;
 import com.intellij.ui.treeStructure.Tree;
 import com.intellij.util.PlatformIcons;
 import com.intellij.util.ui.UIUtil;
@@ -43,21 +52,25 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
-import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.ListSelectionModel;
+import javax.swing.JTree;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.*;
-import java.awt.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Jeka
@@ -187,6 +200,8 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     toolbarActions.add(new SortThreadsAction());
     toolbarActions.add(new ExportToTextFileToolbarAction(createDumpToFileExporter(project, myThreadDump)));
     toolbarActions.add(new MergeStacktracesAction());
+    toolbarActions.add(new ShowHierarchyAction());
+    toolbarActions.add(new ShowOnlyPlatformThreads());
 
     ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ThreadDump", toolbarActions, false);
     toolbar.setTargetComponent(consoleView.getComponent());
@@ -219,25 +234,63 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     int selectedIndex = 0;
     int index = 0;
     ArrayList<DumpItem> filteredThreadStates = new ArrayList<>();
-    boolean useMerged = UISettings.getInstance().getState().getMergeEqualStackTraces();
+    var uiSettings = UISettings.getInstance().getState();
+    boolean useMerged = uiSettings.getMergeEqualStackTraces();
+    boolean showVirtualThreadContainers = uiSettings.getShowVirtualThreadContainers();
+    boolean showOnlyPlatformThreads = uiSettings.getShowOnlyPlatformThreads();
     List<DumpItem> threadStates = useMerged ? myMergedThreadDump : myThreadDump;
-    for (DumpItem state : threadStates) {
-      if (StringUtil.containsIgnoreCase(state.getStackTrace(), text) || StringUtil.containsIgnoreCase(state.getName(), text)) {
-        filteredThreadStates.add(state);
-        if (selection == state) {
-          selectedIndex = index;
-        }
-        index++;
-      }
-    }
+
     // Add all of them in a single call, otherwise it works too slow recalculating UI layout.
     var model = (DefaultTreeModel)myThreadTree.getModel();
-    var root = ((DefaultMutableTreeNode)model.getRoot());
-    if (root != null) {
-      root.removeAllChildren();
+    var treeRoot = ((DefaultMutableTreeNode)model.getRoot());
 
-      for (DumpItem threadState : filteredThreadStates) {
-        root.add(new DefaultMutableTreeNode(threadState));
+    if (treeRoot != null) {
+      treeRoot.removeAllChildren();
+
+      if (showVirtualThreadContainers && !showOnlyPlatformThreads) {
+        // Build map from parent item name to the list of it's child items
+        var rootItems = new ArrayList<DumpItem>();
+        var parentItemToChildren = new HashMap<Long, List<DumpItem>>();
+        for (var item : threadStates) {
+          var parentId = item.getParentId();
+          if (parentId != null) {
+            parentItemToChildren.computeIfAbsent(parentId, k -> new ArrayList<>()).add(item);
+          } else {
+            rootItems.add(item);
+          }
+        }
+
+        // Build thread dump tree
+        for (var rootItem : rootItems) {
+          var rootNode = new DefaultMutableTreeNode(rootItem);
+          treeRoot.add(rootNode);
+          if (!parentItemToChildren.isEmpty()) {
+            buildDumpItemsTree(rootNode, parentItemToChildren);
+          }
+        }
+      } else {
+        // Show flat dump
+        for (DumpItem state : threadStates) {
+          if (StringUtil.containsIgnoreCase(state.getStackTrace(), text) || StringUtil.containsIgnoreCase(state.getName(), text)) {
+            filteredThreadStates.add(state);
+            if (selection == state) {
+              selectedIndex = index;
+            }
+            index++;
+          }
+        }
+
+        for (DumpItem threadState : filteredThreadStates) {
+          if (threadState.isContainer()) continue;
+          if (showOnlyPlatformThreads) {
+            // todo define if an item corresponds to a platform thread
+            if (!Objects.equals(threadState.getIconToolTip(), JavaFrontbackBundle.message("dump.item.java.thread.icon.tooltip.virtual"))) {
+              treeRoot.add(new DefaultMutableTreeNode(threadState));
+            }
+          } else {
+            treeRoot.add(new DefaultMutableTreeNode(threadState));
+          }
+        }
       }
     }
     model.reload();
@@ -250,11 +303,25 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     else {
       myNotificationPanel.setVisible(false);
     }
-    if (root != null && root.getChildCount() > 0) {
+    if (treeRoot != null && treeRoot.getChildCount() > 0) {
       myThreadTree.setSelectionRow(selectedIndex);
     }
     myThreadTree.revalidate();
     myThreadTree.repaint();
+  }
+
+  private static void buildDumpItemsTree(DefaultMutableTreeNode currentNode, HashMap<Long, List<DumpItem>> parentToChildrenMap) {
+    var currentDumpItem = (DumpItem)currentNode.getUserObject();
+    var childItems = parentToChildrenMap.get(currentDumpItem.getId());
+    if (childItems == null) {
+      if (currentDumpItem.isContainer()) currentNode.removeFromParent(); // do not add empty containers to the tree
+      return;
+    }
+    for (var item : childItems) {
+      var childNode = new DefaultMutableTreeNode(item);
+      currentNode.add(childNode);
+      buildDumpItemsTree(childNode, parentToChildrenMap);
+    }
   }
 
   private static void highlightOccurrences(String filter, Project project, Editor editor) {
@@ -419,6 +486,52 @@ public final class ThreadDumpPanel extends JPanel implements NoStackTraceFolding
     @Override
     public void setSelected(@NotNull AnActionEvent e, boolean state) {
       UISettings.getInstance().getState().setMergeEqualStackTraces(state);
+      updateThreadsTree();
+    }
+  }
+
+  private final class ShowHierarchyAction extends ToggleAction implements DumbAware {
+    private ShowHierarchyAction() {
+      super(JavaFrontbackBundle.lazyMessage("action.text.group.dump.items"), JavaFrontbackBundle.lazyMessage(
+        "action.description.group.dump.items"), AllIcons.Hierarchy.Subtypes);
+    }
+
+    @Override
+    public boolean isSelected(@NotNull AnActionEvent e) {
+      return UISettings.getInstance().getState().getShowVirtualThreadContainers();
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+      return ActionUpdateThread.EDT;
+    }
+
+    @Override
+    public void setSelected(@NotNull AnActionEvent e, boolean state) {
+      UISettings.getInstance().getState().setShowVirtualThreadContainers(state);
+      updateThreadsTree();
+    }
+  }
+
+  private final class ShowOnlyPlatformThreads extends ToggleAction implements DumbAware {
+    private ShowOnlyPlatformThreads() {
+      super(JavaFrontbackBundle.lazyMessage("action.text.show.only.platform.threads"), JavaFrontbackBundle.lazyMessage(
+        "action.description.show.only.platform.threads"), AllIcons.Debugger.Threads);
+    }
+
+    @Override
+    public boolean isSelected(@NotNull AnActionEvent e) {
+      return UISettings.getInstance().getState().getShowOnlyPlatformThreads();
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+      return ActionUpdateThread.EDT;
+    }
+
+    @Override
+    public void setSelected(@NotNull AnActionEvent e, boolean state) {
+      UISettings.getInstance().getState().setShowOnlyPlatformThreads(state);
       updateThreadsTree();
     }
   }
