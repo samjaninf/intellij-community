@@ -4244,5 +4244,16 @@ public class Py3TypeCheckerInspectionTest extends PyInspectionTestCase {
                        kwargs = args
                    """);
   }
+
+  // PY-65497
+  public void testPropertyCall() {
+    doTestByText("""
+                   class Foo:
+                       def _get_serial_number(self) -> str:
+                           return "42"
+                   
+                       serial_number = property(_get_serial_number)
+                   """);
+  }
 }
 
