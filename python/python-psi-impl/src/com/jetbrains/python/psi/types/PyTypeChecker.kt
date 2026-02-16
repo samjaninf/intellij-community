@@ -16,8 +16,8 @@ import com.jetbrains.python.codeInsight.dataflow.scope.ScopeUtil
 import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider
 import com.jetbrains.python.codeInsight.typing.inspectProtocolSubclass
 import com.jetbrains.python.codeInsight.typing.isProtocol
-import com.jetbrains.python.isPrivate
-import com.jetbrains.python.isProtected
+import com.jetbrains.python.PyNames.isPrivate
+import com.jetbrains.python.PyNames.isProtected
 import com.jetbrains.python.psi.AccessDirection
 import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.psi.PyClass

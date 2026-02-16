@@ -1,6 +1,6 @@
 package com.jetbrains.python.psi.types
 
-import com.jetbrains.python.isPrivate
+import com.jetbrains.python.PyNames.isPrivate
 import org.jetbrains.annotations.ApiStatus
 import java.util.ArrayDeque
 

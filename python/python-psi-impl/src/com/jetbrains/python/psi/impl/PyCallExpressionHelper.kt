@@ -15,7 +15,7 @@ import com.jetbrains.python.PythonRuntimeService
 import com.jetbrains.python.ast.PyAstFunction
 import com.jetbrains.python.codeInsight.dataflow.scope.ScopeUtil
 import com.jetbrains.python.codeInsight.typing.PyTypingTypeProvider
-import com.jetbrains.python.isPrivate
+import com.jetbrains.python.PyNames.isPrivate
 import com.jetbrains.python.psi.AccessDirection
 import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.psi.PyArgumentList
