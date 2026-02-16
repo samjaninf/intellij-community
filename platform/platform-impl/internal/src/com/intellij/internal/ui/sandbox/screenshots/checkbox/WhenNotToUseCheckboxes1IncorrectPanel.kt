@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.internal.ui.sandbox.tests.screenshots.checkbox
+package com.intellij.internal.ui.sandbox.screenshots.checkbox
 
 import com.intellij.internal.ui.sandbox.UISandboxScreenshotPanel
 import com.intellij.openapi.Disposable
@@ -9,15 +9,17 @@ import javax.swing.JComponent
 /**
  * @author Konstantin Bulenkov
  */
-internal class WhenNotToUseCheckboxes1CorrectPanel : UISandboxScreenshotPanel() {
-  override val title: String = "Correct"
+internal class WhenNotToUseCheckboxes1IncorrectPanel : UISandboxScreenshotPanel() {
+  override val title: String = "Incorrect"
+  override val screenshotSize = null
+  override val sreenshotRelativePath = null
 
   override fun createContentForScreenshot(disposable: Disposable): JComponent {
     return panel {
       buttonsGroup("Send usage statistics to JetBrains s.r.o.:") {
-        row { radioButton("Daily").apply { component.isSelected = true } }
-        row { radioButton("Weekly") }
-        row { radioButton("Monthly") }
+        row { checkBox("Daily").apply { component.isSelected = true } }
+        row { checkBox("Weekly") }
+        row { checkBox("Monthly") }
       }
     }
   }

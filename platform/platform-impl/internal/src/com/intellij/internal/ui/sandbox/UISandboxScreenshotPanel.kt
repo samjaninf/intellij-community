@@ -6,6 +6,7 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.panel
 import java.awt.Color
+import java.awt.Dimension
 import javax.swing.JComponent
 
 /**
@@ -26,4 +27,9 @@ internal abstract class UISandboxScreenshotPanel: UISandboxPanel {
   }
 
   abstract fun createContentForScreenshot(disposable: Disposable): JComponent
+
+  abstract val screenshotSize: Dimension?
+  abstract val sreenshotRelativePath: String?
+  
+  infix fun Int.x(h: Int): Dimension = Dimension(this, h)
 }

@@ -47,6 +47,16 @@ import com.intellij.internal.ui.sandbox.dsl.listCellRenderer.LcrSeparatorPanel
 import com.intellij.internal.ui.sandbox.dsl.validation.CrossValidationPanel
 import com.intellij.internal.ui.sandbox.dsl.validation.ValidationPanel
 import com.intellij.internal.ui.sandbox.dsl.validation.ValidationRefactoringPanel
+import com.intellij.internal.ui.sandbox.screenshots.CaptureScreenshotsPanel
+import com.intellij.internal.ui.sandbox.screenshots.button.ButtonTypesPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.CheckboxTypesPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.LabelOnTheRightIncorrectPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.OneSelectedCheckboxPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.WhenNotToUseCheckboxes1CorrectPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.WhenNotToUseCheckboxes1IncorrectPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.WhenNotToUseCheckboxes2CorrectPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.WhenNotToUseCheckboxes2IncorrectPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.WhenToUseCheckboxesPanel
 import com.intellij.internal.ui.sandbox.tests.accessibility.AccessibilityFailedInspectionsPanel
 import com.intellij.internal.ui.sandbox.tests.components.JBTextAreaTestPanel
 import com.intellij.internal.ui.sandbox.tests.components.JEditorPaneCopyableTestPanel
@@ -54,17 +64,9 @@ import com.intellij.internal.ui.sandbox.tests.dsl.CommentRightTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.ContextHelpTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrListTestPanel
 import com.intellij.internal.ui.sandbox.tests.dsl.listCellRenderer.LcrPerformanceTestPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.button.ButtonTypesPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.CheckboxTypesPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.LabelOnTheRightIncorrectPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.OneSelectedCheckboxPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1CorrectPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes1IncorrectPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes2CorrectPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenNotToUseCheckboxes2IncorrectPanel
-import com.intellij.internal.ui.sandbox.tests.screenshots.checkbox.WhenToUseCheckboxesPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.OnePixelSplitter
@@ -185,6 +187,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
   ))
 
   private fun createScreenshotsNode(): Group = Group("For Screenshots", children = listOf(
+    CaptureScreenshotsPanel(),
     Group("Buttons", children = listOf(
       ButtonTypesPanel()
     )),
@@ -192,7 +195,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
       CheckboxTypesPanel(),
       WhenToUseCheckboxesPanel(),
 
-      Group("When to use", children = listOf(
+      Group("When not to use", children = listOf(
         Group("Example 1", children = listOf(
           WhenNotToUseCheckboxes1IncorrectPanel(),
           WhenNotToUseCheckboxes1CorrectPanel(),
@@ -245,7 +248,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
                                                          Invoker.forEventDispatchThread(myDisposable),
                                                          myDisposable)
 
-  private val tree = SimpleTree().apply {
+  val tree = SimpleTree().apply {
     selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
     isRootVisible = false
     setCellRenderer(SandboxTreeRenderer())
@@ -300,8 +303,9 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     }
 
   private var selectedNode: SandboxTreeNodeBase? = null
+  internal lateinit var rightPanel: DialogPanel
 
-  private lateinit var placeholder: Placeholder
+  internal lateinit var placeholder: Placeholder
 
   private val breadcrumbs = object : Breadcrumbs() {
     override fun getFontStyle(crumb: Crumb): Int {
@@ -349,7 +353,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
       }.resizableRow()
     }
 
-    val rightPanel = panel {
+    rightPanel = panel {
       panel {
         row {
           cell(breadcrumbs)
@@ -380,7 +384,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     return result
   }
 
-  private fun selectItem(path: List<String>) {
+  fun selectItem(path: List<String>) {
     var currentNode = treeModel.root
     for (item in path) {
       val children = treeModel.getChildren(currentNode)
@@ -486,7 +490,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
 
 private data class Group(val title: String, val children: List<Any>)
 
-private sealed class SandboxTreeNodeBase(parent: SimpleNode?) : SimpleNode(parent) {
+internal sealed class SandboxTreeNodeBase(parent: SimpleNode?) : SimpleNode(parent) {
 
   abstract val title: String
 
@@ -531,7 +535,7 @@ private class SandboxTreeGroup(parent: SimpleNode?, disposable: Disposable, over
   }
 }
 
-private class SandboxTreeLeaf(parent: SimpleNode?, disposable: Disposable, val sandboxPanel: UISandboxPanel) :
+internal class SandboxTreeLeaf(parent: SimpleNode?, disposable: Disposable, val sandboxPanel: UISandboxPanel) :
   SandboxTreeNodeBase(parent) {
 
   override val title: String = sandboxPanel.title
