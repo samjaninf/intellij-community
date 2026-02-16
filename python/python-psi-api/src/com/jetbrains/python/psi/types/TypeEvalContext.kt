@@ -24,8 +24,8 @@ import com.jetbrains.python.psi.PyInstantTypeProvider
 import com.jetbrains.python.psi.PyTypedElement
 import com.jetbrains.python.psi.resolve.PyResolveContext
 import com.jetbrains.python.psi.resolve.RatedResolveResult
-import com.jetbrains.python.psi.types.external.ExternalPyTypeResolver
-import com.jetbrains.python.psi.types.external.ExternalPyTypeResolverProvider.Companion.createTypeResolver
+import com.jetbrains.python.psi.types.engine.PyTypeEngine
+import com.jetbrains.python.psi.types.engine.PyTypeEngineProvider.Companion.createTypeResolver
 import com.jetbrains.python.pyi.PyiLanguageDialect
 import org.jetbrains.annotations.ApiStatus
 import java.util.concurrent.ConcurrentMap
@@ -52,7 +52,7 @@ sealed class TypeEvalContext(
 
   private val myProcessingContext = ThreadLocal.withInitial { ProcessingContext() }
 
-  private var externalTypeResolver: ExternalPyTypeResolver? = null
+  private var typeEngine: PyTypeEngine? = null
   protected val myEvaluated: MutableMap<PyTypedElement?, PyType?> = getConcurrentMapForCaching()
   protected val myEvaluatedReturn: MutableMap<PyCallable?, PyType?> = getConcurrentMapForCaching()
   protected val contextTypeCache: ConcurrentMap<Pair<PyExpression?, Any?>, PyType> = getConcurrentMapForCaching()
@@ -63,7 +63,7 @@ sealed class TypeEvalContext(
 
   init {
     if (constraints.myOrigin != null) {
-      externalTypeResolver = createTypeResolver(constraints.myOrigin.project)
+      typeEngine = createTypeResolver(constraints.myOrigin.project)
     }
   }
 
@@ -196,8 +196,8 @@ sealed class TypeEvalContext(
 
     return RecursionManager.doPreventingRecursion(element to this, false) {
       val type: PyType?
-      if (externalTypeResolver != null && externalTypeResolver!!.isSupportedForResolve(element)) {
-        type = Ref.deref(externalTypeResolver!!.resolveType(element, this is LibraryTypeEvalContext))
+      if (typeEngine != null && typeEngine!!.isSupportedForResolve(element)) {
+        type = Ref.deref(typeEngine!!.resolveType(element, this is LibraryTypeEvalContext))
       }
       else {
         type = element.getType(this, KeyImpl)
@@ -244,7 +244,7 @@ sealed class TypeEvalContext(
   val origin: PsiFile? = constraints.myOrigin
 
   val usesExternalTypeProvider: Boolean
-    get() = externalTypeResolver != null
+    get() = typeEngine != null
 
   @ApiStatus.Internal
   fun getContextTypeCache(): MutableMap<Pair<PyExpression?, Any?>, PyType?> {
