@@ -14,10 +14,12 @@ import com.intellij.util.io.zip.JBZipEntry
 import com.intellij.util.io.zip.JBZipFile
 import com.intellij.util.system.OS
 import java.io.IOException
+import java.io.UncheckedIOException
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.FileStore
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
@@ -276,19 +278,30 @@ object FileSystem {
 
   fun Path.getFileOrDirectoryPresentableSize(): String {
     // explicitly call readAttributes() to reduce the number of system calls
-    val attributes = readAttributes<BasicFileAttributes>()
+    val attributes = try {
+      readAttributes<BasicFileAttributes>()
+    }
+    catch (_: NoSuchFileException) {
+      return "N/A"
+    }
     val size: Long = if (attributes.isRegularFile) {
       attributes.size()
     }
     else {
-      Files.walk(this).use { pathStream ->
-        pathStream.mapToLong { p: Path ->
-          val attributes = p.readAttributes<BasicFileAttributes>()
-          if (attributes.isRegularFile) {
-            attributes.size()
-          }
-          else 0
-        }.sum()
+      try {
+        Files.walk(this).use { pathStream ->
+          pathStream.mapToLong { p: Path ->
+            val attributes = p.readAttributes<BasicFileAttributes>()
+            if (attributes.isRegularFile) {
+              attributes.size()
+            }
+            else 0
+          }.sum()
+        }
+      }
+      catch (_: UncheckedIOException) {
+        // Files may be deleted by concurrent processes (e.g., IDE indexer) during the walk
+        return "N/A"
       }
     }
     return size.formatSize()
@@ -297,16 +310,22 @@ object FileSystem {
   fun Path.getDirectoryTreePresentableSizes(depth: Int = 1): String {
     val thisPath = this
     return buildString {
-      Files.walk(thisPath, depth).use { dirStream ->
-        dirStream.forEach { child ->
-          if (child == thisPath) {
-            appendLine("Total size: ${thisPath.getFileOrDirectoryPresentableSize()}")
-          }
-          else {
-            val indent = "  ".repeat(thisPath.relativize(child).nameCount)
-            appendLine("$indent${thisPath.relativize(child)}: " + child.getFileOrDirectoryPresentableSize())
+      try {
+        Files.walk(thisPath, depth).use { dirStream ->
+          dirStream.forEach { child ->
+            if (child == thisPath) {
+              appendLine("Total size: ${thisPath.getFileOrDirectoryPresentableSize()}")
+            }
+            else {
+              val indent = "  ".repeat(thisPath.relativize(child).nameCount)
+              appendLine("$indent${thisPath.relativize(child)}: " + child.getFileOrDirectoryPresentableSize())
+            }
           }
         }
+      }
+      catch (_: UncheckedIOException) {
+        // Files may be deleted by concurrent processes (e.g., IDE indexer) during the walk
+        appendLine("(some entries skipped due to concurrent file changes)")
       }
     }
   }
