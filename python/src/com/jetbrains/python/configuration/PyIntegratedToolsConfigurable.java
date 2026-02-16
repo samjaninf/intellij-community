@@ -8,7 +8,6 @@ import com.intellij.facet.impl.ui.FacetErrorPanel;
 import com.intellij.facet.ui.FacetConfigurationQuickFix;
 import com.intellij.facet.ui.FacetEditorValidator;
 import com.intellij.facet.ui.ValidationResult;
-import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.fileTypes.PlainTextFileType;
@@ -22,21 +21,17 @@ import com.intellij.openapi.projectRoots.SdkAdditionalData;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.ui.DialogPanel;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
-import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.python.community.impl.pipenv.PathKt;
 import com.intellij.ui.CollectionComboBoxModel;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
-import com.intellij.ui.components.JBTextField;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import com.intellij.util.FileContentUtil;
 import com.intellij.util.FileContentUtilCore;
-import com.intellij.util.ObjectUtils;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.ui.JBUI;
 import com.jetbrains.python.PyBundle;
@@ -50,7 +45,6 @@ import com.jetbrains.python.packaging.PyRequirementsKt;
 import com.jetbrains.python.packaging.requirementsTxt.PythonRequirementTxtSdkUtils;
 import com.jetbrains.python.sdk.PythonSdkAdditionalData;
 import com.jetbrains.python.sdk.legacy.PythonSdkUtil;
-import com.jetbrains.python.sdk.pipenv.PipenvCommandExecutorKt;
 import com.jetbrains.python.testing.PyAbstractTestFactory;
 import com.jetbrains.python.testing.settings.PyTestRunConfigurationRenderer;
 import com.jetbrains.python.testing.settings.PyTestRunConfigurationsModel;
@@ -96,8 +90,6 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
   private final JCheckBox renderExternal;
   private final JPanel myPackagingPanel;
   private final JPanel myTestsPanel;
-  private final TextFieldWithBrowseButton myPipEnvPathField;
-  private final JPanel myPipEnvPanel;
   private final @NotNull Collection<@NotNull DialogPanel> myCustomizePanels = PyIntegratedToolsTestPanelCustomizer.Companion.createPanels();
 
 
@@ -117,19 +109,19 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
       // >>> IMPORTANT!! <<<
       // DO NOT EDIT OR ADD ANY CODE HERE!
       myMainPanel = new JPanel();
-      myMainPanel.setLayout(new GridLayoutManager(9, 1, new Insets(0, 0, 0, 0), -1, -1));
+      myMainPanel.setLayout(new GridLayoutManager(8, 1, new Insets(0, 0, 0, 0), -1, -1));
       final Spacer spacer1 = new Spacer();
-      myMainPanel.add(spacer1, new GridConstraints(8, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1,
+      myMainPanel.add(spacer1, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1,
                                                    GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
       myErrorPanel = new JPanel();
       myErrorPanel.setLayout(new BorderLayout(0, 0));
-      myMainPanel.add(myErrorPanel, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+      myMainPanel.add(myErrorPanel, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
                                                         GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
                                                         GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null,
                                                         null, null, 0, false));
       myDocStringsPanel = new JPanel();
       myDocStringsPanel.setLayout(new GridLayoutManager(3, 2, new Insets(0, 0, 0, 0), -1, -1));
-      myMainPanel.add(myDocStringsPanel, new GridConstraints(3, 0, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+      myMainPanel.add(myDocStringsPanel, new GridConstraints(2, 0, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
                                                              GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
                                                              GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
                                                              null, null, null, 0, false));
@@ -159,7 +151,7 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
                                                                 GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
       myRestPanel = new JPanel();
       myRestPanel.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
-      myMainPanel.add(myRestPanel, new GridConstraints(5, 0, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+      myMainPanel.add(myRestPanel, new GridConstraints(4, 0, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
                                                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
                                                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null,
                                                        null, null, 0, false));
@@ -198,7 +190,7 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
                                                false));
       myTestsPanel = new JPanel();
       myTestsPanel.setLayout(new BorderLayout(0, 0));
-      myMainPanel.add(myTestsPanel, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+      myMainPanel.add(myTestsPanel, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
                                                         GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
                                                         GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null,
                                                         null, null, 0, false));
@@ -207,22 +199,6 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
       myTestsPanel.add(label1, BorderLayout.WEST);
       myTestRunnerComboBox = new JComboBox();
       myTestsPanel.add(myTestRunnerComboBox, BorderLayout.CENTER);
-      myPipEnvPanel = new JPanel();
-      myPipEnvPanel.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-      myMainPanel.add(myPipEnvPanel, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
-                                                         GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                                                         GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null,
-                                                         null, null, 0, false));
-      final JBLabel jBLabel4 = new JBLabel();
-      this.$$$loadLabelText$$$(jBLabel4,
-                               this.$$$getMessageFromBundle$$$("messages/PyBundle", "form.integrated.tools.path.to.pipenv.executable"));
-      myPipEnvPanel.add(jBLabel4, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-                                                      GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null,
-                                                      0, false));
-      myPipEnvPathField = new TextFieldWithBrowseButton();
-      myPipEnvPanel.add(myPipEnvPathField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
-                                                               GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null,
-                                                               null, null, 0, false));
       jBLabel1.setLabelFor(myDocstringFormatComboBox);
       jBLabel2.setLabelFor(myDocstringFormatComboBox);
     }
@@ -243,13 +219,10 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
       .withTitle(PyBundle.message("configurable.choose.path.to.the.package.requirements.file")));
     myRequirementsPathField.setText(getRequirementsPath());
 
-    myPipEnvPathField.addBrowseFolderListener(null, FileChooserDescriptorFactory.createSingleFileDescriptor());
-
     myDocStringsPanel.setBorder(IdeBorderFactory.createTitledBorder(PyBundle.message("integrated.tools.configurable.docstrings")));
     myRestPanel.setBorder(IdeBorderFactory.createTitledBorder(PyBundle.message("integrated.tools.configurable.restructuredtext")));
     myPackagingPanel.setBorder(IdeBorderFactory.createTitledBorder(PyBundle.message("integrated.tools.configurable.packaging")));
     myTestsPanel.setBorder(IdeBorderFactory.createTitledBorder(PyBundle.message("integrated.tools.configurable.testing")));
-    myPipEnvPanel.setBorder(IdeBorderFactory.createTitledBorder(PyBundle.message("integrated.tools.configurable.pipenv")));
   }
 
   private static Method $$$cachedGetBundleMethod$$$ = null;
@@ -462,10 +435,6 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
     if (!getRequirementsPath().equals(myRequirementsPathField.getText())) {
       return true;
     }
-    if (!myPipEnvPathField.getText()
-      .equals(StringUtil.notNullize(PathKt.getPipenvPath(PropertiesComponent.getInstance())))) {
-      return true;
-    }
     return ContainerUtil.exists(myCustomizePanels, panel -> panel.isModified());
   }
 
@@ -497,7 +466,6 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
     setRequirementsPath(myRequirementsPathField.getText());
 
     DaemonCodeAnalyzer.getInstance(myProject).restart(this);
-    PathKt.setPipenvPath(PropertiesComponent.getInstance(), StringUtil.nullize(myPipEnvPathField.getText()));
 
     for (@NotNull DialogPanel panel : myCustomizePanels) {
       panel.apply();
@@ -530,20 +498,6 @@ public class PyIntegratedToolsConfigurable implements SearchableConfigurable {
     analyzeDoctest.setSelected(myDocumentationSettings.isAnalyzeDoctest());
     renderExternal.setSelected(myDocumentationSettings.isRenderExternalDocumentation());
     myRequirementsPathField.setText(getRequirementsPath());
-    // TODO: Move pipenv settings into a separate configurable
-    final JBTextField pipEnvText = ObjectUtils.tryCast(myPipEnvPathField.getTextField(), JBTextField.class);
-    if (pipEnvText != null) {
-      final String savedPath = PathKt.getPipenvPath(PropertiesComponent.getInstance());
-      if (savedPath != null) {
-        pipEnvText.setText(savedPath);
-      }
-      else {
-        final Path executable = PipenvCommandExecutorKt.detectPipEnvExecutableOrNull();
-        if (executable != null) {
-          pipEnvText.getEmptyText().setText(PyBundle.message("configurable.pipenv.auto.detected", executable.toString()));
-        }
-      }
-    }
 
     for (@NotNull DialogPanel panel : myCustomizePanels) {
       panel.reset();

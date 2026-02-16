@@ -12,7 +12,6 @@ import com.jetbrains.python.errorProcessing.PyResult
 import com.jetbrains.python.sdk.ToolCommandExecutor
 import com.jetbrains.python.sdk.add.v2.PathHolder
 import com.jetbrains.python.sdk.createSdk
-import com.jetbrains.python.sdk.detectToolExecutableOrNull
 import com.jetbrains.python.sdk.runTool
 import com.jetbrains.python.venvReader.VirtualEnvReader
 import kotlinx.coroutines.Dispatchers
@@ -32,11 +31,6 @@ suspend fun runPipEnv(dirPath: Path?, vararg args: String): PyResult<String> = P
 @Internal
 suspend fun <T> runPipEnv(dirPath: Path?, vararg args: String, transformer: ProcessOutputTransformer<T>): PyResult<T> =
   PIPENV_TOOL.runTool(dirPath = dirPath, args = args, transformer = transformer)
-
-
-@Internal
-@JvmOverloads
-internal fun detectPipEnvExecutableOrNull(eel: EelApi = localEel): Path? = PIPENV_TOOL.detectToolExecutableOrNull(eel)
 
 /**
  * Returns the configured pipenv executable or detects it automatically.
