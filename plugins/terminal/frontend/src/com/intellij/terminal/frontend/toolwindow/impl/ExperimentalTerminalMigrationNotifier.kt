@@ -14,9 +14,13 @@ import com.intellij.terminal.frontend.toolwindow.TerminalTabsManagerListener
 import com.intellij.terminal.frontend.view.TerminalView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -26,6 +30,9 @@ import org.jetbrains.plugins.terminal.TerminalBundle
 import org.jetbrains.plugins.terminal.view.shellIntegration.TerminalCommandExecutionListener
 import org.jetbrains.plugins.terminal.view.shellIntegration.TerminalCommandFinishedEvent
 import org.jetbrains.plugins.terminal.view.shellIntegration.TerminalShellIntegration
+import java.awt.AWTEvent
+import java.awt.Toolkit
+import java.awt.event.AWTEventListener
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
 
@@ -69,13 +76,29 @@ internal class ExperimentalTerminalMigrationNotifier(private val project: Projec
   }
 
   private suspend fun awaitUserIdleAndReturned() {
-    val tracker = IdleTracker.getInstance()
-    // Wait for user idle 5 seconds
-    tracker.events
-      .debounce(5.seconds)
-      .first()
-    // Wait for the first action after user idle (but drop one replayed event)
-    tracker.events.drop(1).first()
+    withContext(Dispatchers.UI) {
+      // Wait for user idle 5 seconds
+      getUserActivityFlow()
+        .debounce(5.seconds)
+        .first()
+      // Wait for the first action after user idle (but drop one replayed event)
+      getUserActivityFlow().drop(1).first()
+    }
+  }
+
+  private fun getUserActivityFlow(): Flow<Unit> {
+    val mouseMovementFlow = channelFlow {
+      val listener = AWTEventListener {
+        trySend(Unit)
+      }
+      Toolkit.getDefaultToolkit().addAWTEventListener(listener, AWTEvent.MOUSE_MOTION_EVENT_MASK or AWTEvent.MOUSE_WHEEL_EVENT_MASK)
+
+      awaitClose {
+        Toolkit.getDefaultToolkit().removeAWTEventListener(listener)
+      }
+    }
+
+    return merge(IdleTracker.getInstance().events, mouseMovementFlow)
   }
 
   fun showEngineChangeNotification(project: Project) {
