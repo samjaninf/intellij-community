@@ -74,6 +74,7 @@ import org.jetbrains.plugins.terminal.session.TerminalGridSize
 import org.jetbrains.plugins.terminal.session.TerminalStartupOptions
 import org.jetbrains.plugins.terminal.session.impl.TerminalHyperlinkId
 import org.jetbrains.plugins.terminal.session.impl.TerminalSession
+import org.jetbrains.plugins.terminal.util.getNow
 import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalCursorOffsetChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOffset
@@ -600,6 +601,11 @@ class TerminalViewImpl(
       )
     )
     editor.putUserData(TerminalCommandCompletionServices.KEY, services)
+  }
+
+  override fun toString(): String {
+    val commandText = startupOptionsDeferred.getNow()?.let { "${it.shellCommand}" }
+    return "TerminalViewImpl(state=${sessionState.value}, command=$commandText, cwd=${getCurrentDirectory()})"
   }
 
   private inner class TerminalPanel(initialContent: Editor) : BorderLayoutPanel(), UiDataProvider, TerminalPanelMarker {
