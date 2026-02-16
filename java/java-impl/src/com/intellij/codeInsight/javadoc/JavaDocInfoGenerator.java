@@ -2531,6 +2531,11 @@ public class JavaDocInfoGenerator {
     element.accept(new PsiRecursiveElementWalkingVisitor() {
       @Override
       public void visitElement(@NotNull PsiElement element) {
+        if (element instanceof PsiInlineDocTag inlineDocTag) {
+          generateValue(buffer, new PsiElement[] {inlineDocTag}, ourEmptyElementsProvider);
+          return;
+        }
+
         super.visitElement(element);
         if (element instanceof PsiWhiteSpace ||
             element instanceof PsiJavaToken ||
