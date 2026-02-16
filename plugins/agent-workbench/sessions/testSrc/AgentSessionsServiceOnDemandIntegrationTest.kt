@@ -216,7 +216,7 @@ class AgentSessionsServiceOnDemandIntegrationTest {
             PROJECT_PATH,
             "Project A",
             worktrees = listOf(
-              AgentSessionsService.WorktreeEntry(
+              WorktreeEntry(
                 path = WORKTREE_PATH,
                 name = "project-feature",
                 branch = "feature",
