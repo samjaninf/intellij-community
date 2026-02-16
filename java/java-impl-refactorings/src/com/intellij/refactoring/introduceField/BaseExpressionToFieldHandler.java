@@ -792,7 +792,7 @@ public abstract class BaseExpressionToFieldHandler extends IntroduceHandlerBase 
         if (includeInitializer) {
           // It's important that we append field before adding the initializer to make sure that the replacement takes into account the
           // context of the file
-          if (myField.getInitializer() == null) throw new IllegalStateException("Field initializer cannot be null");
+          LOG.assertTrue(myField.getInitializer() != null);
           myField.getInitializer().replace(initializer);
         }
         if (!mySettings.isIntroduceEnumConstant()) {
