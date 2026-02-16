@@ -47,6 +47,8 @@
                     interface="com.intellij.xdebugger.impl.actions.handlers.XDebuggerCustomEvaluateHandler" dynamic="true"/>
     <extensionPoint qualifiedName="com.intellij.xdebugger.customMuteBreakpointHandler"
                     interface="com.intellij.xdebugger.impl.actions.handlers.XDebuggerCustomMuteBreakpointHandler" dynamic="true"/>
+    <extensionPoint name="xdebugger.customQuickEvaluateActionProvider"
+                    interface="com.intellij.platform.debugger.impl.ui.actions.CustomQuickEvaluateActionProvider" dynamic="true"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
@@ -99,6 +101,8 @@
     <xdebugger.textValueVisualizer implementation="com.intellij.xdebugger.impl.ui.visualizedtext.common.UrlEncodedTextVisualizer"/>
 
     <gutterMarkPreprocessor implementation="com.intellij.xdebugger.impl.breakpoints.BreakpointGutterIconMerge"/>
+
+    <projectService serviceImplementation="com.intellij.platform.debugger.impl.ui.evaluate.quick.common.ValueLookupManager"/>
   </extensions>
 
   <actions resource-bundle="messages.XDebuggerUiBundle">

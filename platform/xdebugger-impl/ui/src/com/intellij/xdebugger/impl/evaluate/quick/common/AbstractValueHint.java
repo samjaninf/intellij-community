@@ -34,6 +34,7 @@ import com.intellij.openapi.ui.popup.LightweightWindowEvent;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.platform.debugger.impl.ui.evaluate.quick.common.ValueLookupManager;
 import com.intellij.ui.AppUIUtil;
 import com.intellij.ui.ClickListener;
 import com.intellij.ui.HintHint;
@@ -54,7 +55,6 @@ import com.intellij.xdebugger.frame.XFullValueEvaluator;
 import com.intellij.xdebugger.frame.XValue;
 import com.intellij.xdebugger.frame.presentation.XValuePresentation;
 import com.intellij.xdebugger.impl.actions.XDebuggerActions;
-import com.intellij.xdebugger.impl.evaluate.ValueLookupManagerController;
 import com.intellij.xdebugger.impl.evaluate.quick.XDebuggerTreeCreator;
 import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import com.intellij.xdebugger.impl.ui.ExecutionPointHighlighter;
@@ -93,7 +93,7 @@ public abstract class AbstractValueHint {
     @Override
     public void keyReleased(KeyEvent e) {
       if (!isAltMask(e.getModifiers())) {
-        ValueLookupManagerController.getInstance(myProject).hideHint();
+        ValueLookupManager.getInstance(myProject).hideHint();
       }
     }
   };

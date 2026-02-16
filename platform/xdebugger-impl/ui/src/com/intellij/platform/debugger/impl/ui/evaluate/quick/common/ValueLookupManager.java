@@ -1,5 +1,5 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.platform.debugger.impl.frontend.evaluate.quick.common;
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+package com.intellij.platform.debugger.impl.ui.evaluate.quick.common;
 
 /*
  * Class ValueLookupManager
@@ -17,7 +17,6 @@ import com.intellij.openapi.editor.event.EditorMouseMotionListener;
 import com.intellij.openapi.project.IndexNotReadyException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.registry.Registry;
-import com.intellij.platform.debugger.impl.frontend.evaluate.quick.XQuickEvaluateHandler;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.util.Alarm;
 import com.intellij.util.ui.UIUtil;
@@ -25,6 +24,7 @@ import com.intellij.xdebugger.impl.evaluate.quick.common.AbstractValueHint;
 import com.intellij.xdebugger.impl.evaluate.quick.common.QuickEvaluateHandler;
 import com.intellij.xdebugger.impl.evaluate.quick.common.ValueHintType;
 import com.intellij.xdebugger.impl.settings.DataViewsConfigurableUi;
+import com.intellij.xdebugger.impl.ui.DebuggerUIUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,8 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.Point;
 import java.awt.Rectangle;
 
-import static com.intellij.platform.debugger.impl.frontend.actions.CustomQuickEvaluateActionProviderKt.getEnabledCustomQuickEvaluateActionHandler;
-import static com.intellij.xdebugger.impl.evaluate.ValueLookupManagerController.DISABLE_VALUE_LOOKUP;
+import static com.intellij.platform.debugger.impl.ui.actions.CustomQuickEvaluateActionProviderKt.getEnabledCustomQuickEvaluateActionHandler;
 
 @ApiStatus.Internal
 public class ValueLookupManager implements EditorMouseMotionListener, EditorMouseListener {
@@ -41,7 +40,7 @@ public class ValueLookupManager implements EditorMouseMotionListener, EditorMous
   private final Alarm myAlarm;
   private HintRequest myHintRequest = null;
   private AbstractValueHint myCurrentHint = null;
-  private final @NotNull QuickEvaluateHandler myXQuickEvaluateHandler = new XQuickEvaluateHandler();
+  private QuickEvaluateHandler myXQuickEvaluateHandler;
   private boolean myListening;
 
   public ValueLookupManager(@NotNull Project project) {
@@ -49,8 +48,9 @@ public class ValueLookupManager implements EditorMouseMotionListener, EditorMous
     myAlarm = new Alarm(project);
   }
 
-  public void startListening() {
+  public void startListening(QuickEvaluateHandler handler) {
     if (!myListening) {
+      myXQuickEvaluateHandler = handler;
       myListening = true;
       EditorFactory.getInstance().getEventMulticaster().addEditorMouseMotionListener(this, myProject);
       EditorFactory.getInstance().getEventMulticaster().addEditorMouseListener(this, myProject);
@@ -83,7 +83,7 @@ public class ValueLookupManager implements EditorMouseMotionListener, EditorMous
 
     ValueHintType type = AbstractValueHint.getHintType(e);
     if (e.getArea() != EditorMouseEventArea.EDITING_AREA ||
-        DISABLE_VALUE_LOOKUP.get(editor) == Boolean.TRUE ||
+        DebuggerUIUtil.DISABLE_VALUE_LOOKUP.get(editor) == Boolean.TRUE ||
         type == null) {
       cancelAll();
       return;
@@ -150,14 +150,7 @@ public class ValueLookupManager implements EditorMouseMotionListener, EditorMous
 
   public void hideHint() {
     if (myCurrentHint != null) {
-      if (myCurrentHint instanceof RemoteValueHint) {
-        // if ValueLookupManager requests hideHint, then it should be closed on backend as well
-        // otherwise the hint may continue living on backend itself
-        ((RemoteValueHint)myCurrentHint).hideHint(true);
-      }
-      else {
-        myCurrentHint.hideHint();
-      }
+      myCurrentHint.hideHint();
       myCurrentHint = null;
     }
   }

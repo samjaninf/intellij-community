@@ -9,8 +9,6 @@
     <module name="intellij.platform.rpc.topics"/>
   </dependencies>
   <extensionPoints>
-    <extensionPoint name="xdebugger.customQuickEvaluateActionProvider"
-                    interface="com.intellij.platform.debugger.impl.frontend.actions.CustomQuickEvaluateActionProvider" dynamic="true"/>
     <extensionPoint name="xdebugger.imageEditorUIProvider"
                     interface="com.intellij.platform.debugger.impl.frontend.frame.ImageEditorUIProvider" dynamic="true"/>
   </extensionPoints>
@@ -24,8 +22,6 @@
     <action id="XDebugger.Split.Enable" class="com.intellij.platform.debugger.impl.frontend.EnabledSplitDebuggerAction" internal="true"/>
   </actions>
   <extensions defaultExtensionNs="com.intellij">
-    <projectService serviceImplementation="com.intellij.platform.debugger.impl.frontend.evaluate.quick.common.ValueLookupManager"/>
-    <platform.rpc.projectRemoteTopicListener implementation="com.intellij.platform.debugger.impl.frontend.evaluate.quick.common.ValueLookupManagerEventsListener"/>
     <editorFloatingToolbarProvider implementation="com.intellij.platform.debugger.impl.frontend.hotswap.HotSwapFloatingToolbarProvider"/>
     <postStartupActivity implementation="com.intellij.platform.debugger.impl.frontend.FrontendXDebuggerInitializationProjectActivity"/>
     <xdebugger.managerProxy implementation="com.intellij.platform.debugger.impl.frontend.FrontendXDebugManagerProxy" order="first"/>

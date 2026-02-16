@@ -190,11 +190,10 @@ a:com.intellij.xdebugger.impl.evaluate.quick.common.QuickEvaluateHandler
 - isEnabled(com.intellij.openapi.project.Project,com.intellij.openapi.actionSystem.AnActionEvent):Z
 f:com.intellij.xdebugger.impl.evaluate.quick.common.QuickEvaluateHandler$CancellableHint
 - java.lang.Record
-- <init>(org.jetbrains.concurrency.Promise,kotlinx.coroutines.Deferred):V
+- <init>(org.jetbrains.concurrency.Promise):V
 - f:equals(java.lang.Object):Z
 - f:hashCode():I
 - hintPromise():org.jetbrains.concurrency.Promise
-- infoDeferred():kotlinx.coroutines.Deferred
 - s:resolved(com.intellij.xdebugger.impl.evaluate.quick.common.AbstractValueHint):com.intellij.xdebugger.impl.evaluate.quick.common.QuickEvaluateHandler$CancellableHint
 - tryCancel():V
 f:com.intellij.xdebugger.impl.frame.StackInfo

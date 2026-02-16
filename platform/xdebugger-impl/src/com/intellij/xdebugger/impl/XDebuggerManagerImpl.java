@@ -68,7 +68,6 @@ import com.intellij.xdebugger.XDebuggerManager;
 import com.intellij.xdebugger.XSessionStartedResult;
 import com.intellij.xdebugger.impl.actions.XDebuggerActions;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
-import com.intellij.xdebugger.impl.evaluate.ValueLookupManagerController;
 import com.intellij.xdebugger.impl.pinned.items.XDebuggerPinToTopManager;
 import com.intellij.xdebugger.impl.settings.ShowBreakpointsOverLineNumbersAction;
 import com.intellij.xdebugger.impl.settings.XDebuggerSettingManagerImpl;
@@ -350,11 +349,6 @@ public final class XDebuggerManagerImpl extends XDebuggerManager implements Pers
 
   private void onActiveSessionChanged(@Nullable XDebugSession previousSession, @Nullable XDebugSession currentSession) {
     myBreakpointManager.getLineBreakpointManager().queueAllBreakpointsUpdate();
-    if (!DapMode.isDap()) {
-      ApplicationManager.getApplication().invokeLater(() -> {
-        ValueLookupManagerController.getInstance(myProject).hideHint();
-      }, myProject.getDisposed());
-    }
     if (!myProject.isDisposed()) {
       myProject.getMessageBus().syncPublisher(TOPIC).currentSessionChanged(previousSession, currentSession);
       if (currentSession != null && previousSession != null) {

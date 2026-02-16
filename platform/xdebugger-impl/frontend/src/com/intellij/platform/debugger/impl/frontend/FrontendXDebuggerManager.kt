@@ -12,7 +12,7 @@ import com.intellij.openapi.wm.ToolWindowId
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.platform.debugger.impl.frontend.editor.BreakpointPromoterEditorListener
-import com.intellij.platform.debugger.impl.frontend.evaluate.quick.common.ValueLookupManager
+import com.intellij.platform.debugger.impl.frontend.evaluate.quick.XQuickEvaluateHandler
 import com.intellij.platform.debugger.impl.frontend.frame.ImageEditorUIUtil
 import com.intellij.platform.debugger.impl.rpc.XDebugSessionDto
 import com.intellij.platform.debugger.impl.rpc.XDebugSessionId
@@ -21,6 +21,7 @@ import com.intellij.platform.debugger.impl.rpc.XDebuggerManagerSessionEvent
 import com.intellij.platform.debugger.impl.rpc.XDebuggerValueLookupHintsRemoteApi
 import com.intellij.platform.debugger.impl.rpc.XFrontendDebuggerCapabilities
 import com.intellij.platform.debugger.impl.shared.proxy.XDebugSessionProxy
+import com.intellij.platform.debugger.impl.ui.evaluate.quick.common.ValueLookupManager
 import com.intellij.platform.project.projectId
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
@@ -36,7 +37,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
@@ -74,8 +74,12 @@ class FrontendXDebuggerManager(private val project: Project, private val cs: Cor
 
       launch(Dispatchers.EDT) {
         // await listening started on the backend
-        XDebuggerValueLookupHintsRemoteApi.getInstance().getValueLookupListeningFlow(project.projectId()).filter { it }.first()
-        ValueLookupManager.getInstance(project).startListening()
+        XDebuggerValueLookupHintsRemoteApi.getInstance().getValueLookupListeningFlow(project.projectId()).first { it }
+        val lookupManager = ValueLookupManager.getInstance(project)
+        lookupManager.startListening(XQuickEvaluateHandler())
+        currentSessionFlow.collectLatest {
+          lookupManager.hideHint()
+        }
       }
     }
     if (SplitDebuggerMode.isSplitDebugger()) {
