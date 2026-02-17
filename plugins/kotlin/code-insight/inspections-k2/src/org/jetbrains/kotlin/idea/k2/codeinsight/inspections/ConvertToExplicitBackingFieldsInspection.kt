@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.idea.util.CommentSaver
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtReturnExpression
+import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.propertyVisitor
 import org.jetbrains.kotlin.psi.psiUtil.allChildren
@@ -148,7 +150,7 @@ internal class ConvertToExplicitBackingFieldsInspection :
                 val returnExpr = body.statements.singleOrNull() as? KtReturnExpression
                 returnExpr?.returnedExpression as? KtNameReferenceExpression
             }
-
+            is KtDotQualifiedExpression if body.receiverExpression is KtThisExpression -> body.selectorExpression as? KtNameReferenceExpression
             else -> null
         }
         val returnedProperty = returnedExpr?.let { resolveToProperty(it) } ?: return null

@@ -13575,6 +13575,11 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/thisForNestedScopes.kt");
             }
 
+            @TestMetadata("thisInGetters.kt")
+            public void testThisInGetters() throws Exception {
+                runTest("testData/inspectionsLocal/convertToExplicitBackingFields/thisInGetters.kt");
+            }
+
             @TestMetadata("twoGetters.kt")
             public void testTwoGetters() throws Exception {
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/twoGetters.kt");
