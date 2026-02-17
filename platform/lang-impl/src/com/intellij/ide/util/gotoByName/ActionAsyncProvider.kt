@@ -26,6 +26,7 @@ import com.intellij.openapi.diagnostic.debug
 import com.intellij.openapi.diagnostic.getOrLogException
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.checkCanceled
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.platform.util.coroutines.forEachConcurrent
 import com.intellij.platform.util.coroutines.mapConcurrent
@@ -93,14 +94,43 @@ class ActionAsyncProvider(private val model: GotoActionModel) {
     pattern: String,
     consumer: suspend (MatchedValue) -> Boolean,
   ) {
-    if (pattern.isEmpty()) return
+    filterElements(scope, presentationProvider, pattern, 1, consumer)
+  }
+
+  fun filterElements(
+    scope: CoroutineScope,
+    presentationProvider: suspend (AnAction) -> Presentation,
+    pattern: String,
+    retryCount: Int,
+    consumer: suspend (MatchedValue) -> Boolean,
+  ) {
+    if (pattern.isEmpty() || retryCount < 0) return
 
     LOG.debug { "Start actions searching ($pattern)" }
 
     val actionIds = (actionManager as ActionManagerImpl).actionIds
 
     scope.launch {
-      runFilterJobs(presentationProvider, pattern, consumer, actionIds)
+      try {
+        runFilterJobs(presentationProvider, pattern, consumer, actionIds)
+      }
+      catch (throwable: Throwable) {
+        if (throwable is CancellationException && Registry.`is`("search.everywhere.actions.retry.on.exception", false)) {
+          try {
+            checkCanceled()
+          }
+          catch (@Suppress("IncorrectCancellationExceptionHandling") _: CancellationException) {
+            throw throwable
+          }
+          LOG.warn(RuntimeException("Improper cancellation propagation", throwable))
+
+          LOG.debug { "Will restart actions searching ($pattern)" }
+          filterElements(scope, presentationProvider, pattern, retryCount - 1, consumer)
+        }
+        else {
+          throw throwable
+        }
+      }
     }
   }
 
