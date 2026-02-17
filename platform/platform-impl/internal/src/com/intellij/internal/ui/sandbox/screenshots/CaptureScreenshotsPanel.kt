@@ -1,6 +1,7 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.internal.ui.sandbox.screenshots
 
+import com.intellij.ide.ui.LafManager
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.internal.ui.sandbox.SandboxTreeLeaf
 import com.intellij.internal.ui.sandbox.UISandboxDialog
@@ -28,10 +29,15 @@ import java.nio.file.Paths
 import javax.imageio.ImageIO
 import javax.swing.JComponent
 import javax.swing.SwingUtilities
+import javax.swing.tree.DefaultMutableTreeNode
 
 /**
  * @author Konstantin Bulenkov
  */
+
+//UX Designers don't place screenshots exactly at the center, but a bit higher than the middle horizontal line
+private const val MAGIC_VERTICAL_OFFSET = 7
+
 internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
   override val title = "Capture screenshots"
   override val screenshotSize = null
@@ -69,11 +75,38 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
     val activeWindow = KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow
     if (activeWindow is DialogWrapperDialog) {
       val sandboxDialog = activeWindow.dialogWrapper as UISandboxDialog
-      val tree = sandboxDialog.tree
-      val parent = tree.selectedNode?.parent
-      val nodes = mutableListOf<SimpleNode>()
+      val lafManager = LafManager.getInstance()
+      val lightLaf = lafManager.defaultLightLaf
+      val darkLaf = lafManager.defaultDarkLaf
+      lafManager.setCurrentLookAndFeel(lightLaf!!, false)
+      lafManager.updateUI()
+      lafManager.repaintUI()
+      SwingUtilities.invokeLater {
+        captureScreenshots(sandboxDialog) {
+          lafManager.setCurrentLookAndFeel(darkLaf!!, false)
+          lafManager.updateUI()
+          SwingUtilities.invokeLater {
+            captureScreenshots(sandboxDialog) {
+              //TODO restore user LAF
+            }
+          }
+        }
+      }
+    }
+  }
+  private fun captureScreenshots(sandboxDialog: UISandboxDialog ,onDone: Runnable) {
+    val tree = sandboxDialog.tree
+    var parent: SimpleNode? = null
+    val nodes = mutableListOf<SimpleNode>()
+    val root = tree.model.root as DefaultMutableTreeNode
 
-      traverseTree(root = parent!!,
+    root.children().iterator().forEach {
+      if (it.toString() == "For Screenshots") {
+        parent = (it as DefaultMutableTreeNode).userObject as SimpleNode
+        return@forEach
+      }
+    }
+    traverseTree(root = parent!!,
                    getChildren = { node -> node.children },
                    onVisit = { node, _ -> if (node.children.isEmpty()) nodes.add(node) else tree.expandPath(tree.getPathFor(node)) })
       val iterator = nodes.iterator()
@@ -81,13 +114,14 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
         val onDoneRunnable = object : Runnable {
           override fun run() {
             if (!iterator.hasNext()) {
+              onDone.run()
               return
             }
             val next = iterator.next()
-            val panel:UISandboxPanel = ((next as FilteringTreeStructure.FilteringNode).delegate as SandboxTreeLeaf).sandboxPanel
+            val panel: UISandboxPanel = ((next as FilteringTreeStructure.FilteringNode).delegate as SandboxTreeLeaf).sandboxPanel
             val screenshotPath = if (panel is UISandboxScreenshotPanel && panel.sreenshotRelativePath != null)
-                                   Paths.get(pathToSDKDocsProject, panel.sreenshotRelativePath)
-                                 else null
+              Paths.get(pathToSDKDocsProject, panel.sreenshotRelativePath)
+            else null
 
             val screenshotSize = if (panel is UISandboxScreenshotPanel) panel.screenshotSize else null
             SwingUtilities.invokeLater {
@@ -97,7 +131,6 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
         }
         SwingUtilities.invokeLater(onDoneRunnable)
       }
-    }
   }
 
   private fun makeScreenshot(
@@ -118,7 +151,7 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
           component.printAll(graphics)
           graphics.dispose()
           val subimage = screenshot.getSubimage((screenshot.width - screenshotSize.width) / 2,
-                                                (screenshot.height - screenshotSize.height) / 2 - 10,
+                                                (screenshot.height - screenshotSize.height) / 2 - MAGIC_VERTICAL_OFFSET,
                                                 screenshotSize.width,
                                                 screenshotSize.height)
           val result = ImageUtil.createRoundedImage(subimage, 28.0)
