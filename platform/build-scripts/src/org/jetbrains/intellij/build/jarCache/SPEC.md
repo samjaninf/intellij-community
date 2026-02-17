@@ -102,16 +102,28 @@ If touch fails:
 - cleanup treats entry as fresh for bounded grace period
 - after grace expires, normal stale logic applies
 
+Cleanup also enforces a per-target version cap:
+
+- target identity is the `<target>` suffix in `<key>__<target>`
+- `<target>` is the sanitized/truncated target file name stored in entry stem
+- keep at most 3 entries per target by metadata `mtime` (most recently used first)
+- entries with active metadata-touch failure grace are treated as freshest for cap ranking
+- overflow entries are deleted during cleanup even when not stale by age
+
 ## Cleanup Algorithm
 
-Cleanup runs at most once per `cleanupEveryDuration`.
+Cleanup runs at most once per configured cleanup interval.
+
+- default interval: `defaultCleanupEveryDuration` (1 day)
+- dev mode uses 1 hour interval
 
 Per run:
 
 1. drain bounded in-memory candidate queue
-2. reserve scan capacity for cursor-based shard traversal
-3. inspect candidates and delete malformed-key garbage immediately
-4. for valid keys, execute stale logic under in-process per-key-slot lock
+2. reserve scan capacity for cursor-based shard traversal and keep scanning while candidate budget remains
+3. compute per-target overflow from current candidate set (keep newest 3 per target)
+4. inspect candidates and delete malformed-key garbage immediately
+5. for valid keys, delete overflow entries or execute stale logic under in-process per-key-slot lock
 
 Stale logic:
 
@@ -122,18 +134,13 @@ Stale logic:
 
 ## Scan Coverage Guarantee
 
-Shard scan budget per run is:
-
-```
-min(shardCount, max(64, ceil(shardCount / 10)))
-```
-
-Cursor in `.cleanup.scan.cursor` advances each run. With stable shard set and continued cleanup runs,
-every shard is revisited within a finite number of runs.
+Cursor in `.cleanup.scan.cursor` advances each run. Cleanup traversal continues until candidate batch cap is reached
+or all currently known shards are exhausted. With stable shard set and continued cleanup runs, every shard is revisited
+within a finite number of runs.
 
 ## Non-Guarantees
 
 - No cross-process exactly-once producer guarantee.
 - No persistence for touch-failure grace across process restarts.
 - If different producers generate different bytes for the same key, final payload is last-writer-wins.
-
+- Per-target version cap is cleanup-time and candidate-driven, so temporary over-retention is possible between runs.

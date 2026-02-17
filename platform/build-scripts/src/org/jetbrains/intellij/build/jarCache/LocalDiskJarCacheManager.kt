@@ -24,6 +24,7 @@ class LocalDiskJarCacheManager(
   private val productionClassOutDir: Path,
   private val maxAccessTimeAge: Duration = 3.days,
   metadataTouchInterval: Duration = metadataTouchMinInterval,
+  private val cleanupInterval: Duration = defaultCleanupEveryDuration,
 ) : JarCacheManager {
   private val versionedCacheDir = cacheDir.resolve("v$CACHE_VERSION")
   private val entriesDir = versionedCacheDir.resolve(entriesDirName)
@@ -48,10 +49,11 @@ class LocalDiskJarCacheManager(
     cleanupLocalDiskJarCache(
       entriesDir = entriesDir,
       lastCleanupMarkerFile = lastCleanupMarkerFile,
+      cleanupInterval = cleanupInterval,
       maxAccessTimeAge = maxAccessTimeAge,
       cleanupCandidateIndex = cleanupCandidateIndex,
       metadataTouchTracker = metadataTouchTracker,
-      withCacheEntryLock = { lockSlot, task -> withCacheEntryLock(lockSlot, task) },
+      withCacheEntryLock = { lockHash, task -> withCacheEntryLock(lockHash, task) },
     )
   }
 
@@ -75,7 +77,6 @@ class LocalDiskJarCacheManager(
     val hashValue128 = hash.get()
     val leastSignificantBits = hashValue128.leastSignificantBits
     val key = "${longToString(leastSignificantBits)}-${longToString(hashValue128.mostSignificantBits)}"
-    val lockSlot = getLockSlot(leastSignificantBits)
     val paths = getCacheEntryPaths(entriesDir = entriesDir, key = key, targetFileName = targetFileName)
 
     val optimisticCacheResult = tryUseCacheEntry(
@@ -96,7 +97,7 @@ class LocalDiskJarCacheManager(
       return optimisticCacheResult
     }
 
-    return withCacheEntryLock(lockSlot = lockSlot) {
+    return withCacheEntryLock(lockHash = leastSignificantBits) {
       tryUseCacheEntry(
         key = key,
         paths = paths,
@@ -123,7 +124,7 @@ class LocalDiskJarCacheManager(
     }
   }
 
-  private suspend fun <T> withCacheEntryLock(lockSlot: Long, task: suspend () -> T): T {
-    return keyLocks.getLockByHash(lockSlot).withLock { task() }
+  private suspend fun <T> withCacheEntryLock(lockHash: Long, task: suspend () -> T): T {
+    return keyLocks.getLockByHash(lockHash).withLock { task() }
   }
 }

@@ -285,6 +285,47 @@ internal class LocalDiskJarCacheCleanupTest {
   }
 
   @Test
+  fun `cleanup honors custom one-hour interval between runs`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(
+        cacheDir = cacheDir,
+        maxAccessTimeAge = 1.days,
+        cleanupInterval = 1.hours,
+      )
+      val builder = TestSourceBuilder(produceCalls = AtomicInteger(), useCacheAsTargetFile = true)
+      val sources = createSources()
+
+      manager.computeIfAbsent(
+        sources = sources,
+        targetFile = tempDir.resolve("out/first.jar"),
+        nativeFiles = null,
+        span = Span.getInvalid(),
+        producer = builder,
+      )
+
+      val versionDir = findVersionDir(cacheDir)
+      val cleanupMarkerFile = versionDir.resolve(".last.cleanup.marker")
+      val entryPaths = findSingleEntryPaths(cacheDir)
+      Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(System.currentTimeMillis() - 10.days.inWholeMilliseconds))
+
+      manager.cleanup()
+      assertThat(entryPaths.markFile).exists()
+
+      Files.setLastModifiedTime(cleanupMarkerFile, FileTime.fromMillis(System.currentTimeMillis() - 30.minutes.inWholeMilliseconds))
+      manager.cleanup()
+      assertThat(entryPaths.payloadFile).exists()
+      assertThat(entryPaths.markFile).exists()
+
+      Files.setLastModifiedTime(cleanupMarkerFile, FileTime.fromMillis(System.currentTimeMillis() - 2.hours.inWholeMilliseconds))
+      manager.cleanup()
+      assertThat(entryPaths.payloadFile).doesNotExist()
+      assertThat(entryPaths.metadataFile).doesNotExist()
+      assertThat(entryPaths.markFile).doesNotExist()
+    }
+  }
+
+  @Test
   fun `cleanup keeps stale entry when metadata touch recently failed`() {
     runBlocking {
       val cacheDir = tempDir.resolve("cache")
@@ -367,6 +408,254 @@ internal class LocalDiskJarCacheCleanupTest {
 
       assertThat(Files.exists(entryPaths.payloadFile)).isTrue()
       assertThat(Files.exists(markFile)).isFalse()
+    }
+  }
+
+  @Test
+  fun `cleanup keeps only three newest entries per target even when all entries are fresh`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val shardDir = versionDir.resolve("entries").resolve("aa")
+      Files.createDirectories(shardDir)
+
+      val metadataTimeByStem = mutableMapOf<String, Long>()
+      val baseMetadataTime = System.currentTimeMillis() - 10_000
+      repeat(5) { index ->
+        val entryStem = createEntryStemInShard(index = index, targetFileName = "first.jar")
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 0)
+        val metadataTime = baseMetadataTime + index
+        val entryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
+        Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(metadataTime))
+        metadataTimeByStem[entryStem] = metadataTime
+      }
+
+      manager.cleanup()
+
+      val remainingEntries = listEntryPaths(cacheDir)
+        .filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+      val expectedStems = metadataTimeByStem.entries
+        .sortedByDescending { it.value }
+        .take(3)
+        .map { it.key }
+        .toSet()
+
+      assertThat(remainingEntries).hasSize(3)
+      assertThat(remainingEntries.map { it.entryStem }.toSet()).isEqualTo(expectedStems)
+    }
+  }
+
+  @Test
+  fun `cleanup does not prune entries when target has at most three versions`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val shardDir = versionDir.resolve("entries").resolve("aa")
+      Files.createDirectories(shardDir)
+
+      val createdStems = mutableSetOf<String>()
+      repeat(3) { index ->
+        val entryStem = createEntryStemInShard(index = index, targetFileName = "first.jar")
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 0)
+        createdStems.add(entryStem)
+      }
+
+      manager.cleanup()
+
+      val remainingStems = listEntryPaths(cacheDir)
+        .filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+        .map { it.entryStem }
+        .toSet()
+      assertThat(remainingStems).isEqualTo(createdStems)
+    }
+  }
+
+  @Test
+  fun `cleanup applies version cap independently per target name`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val shardDir = versionDir.resolve("entries").resolve("aa")
+      Files.createDirectories(shardDir)
+
+      val secondTargetStems = mutableSetOf<String>()
+      repeat(5) { index ->
+        writeEntry(
+          shardDir = shardDir,
+          entryStem = createEntryStemInShard(index = index, targetFileName = "first.jar"),
+          metadataAgeDays = 0,
+        )
+      }
+      repeat(2) { index ->
+        val entryStem = createEntryStemInShard(index = 100 + index, targetFileName = "second.jar")
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 0)
+        secondTargetStems.add(entryStem)
+      }
+
+      manager.cleanup()
+
+      val remainingEntries = listEntryPaths(cacheDir)
+      val firstTargetEntries = remainingEntries.filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+      val secondTargetEntries = remainingEntries.filter { it.entryStem.endsWith("${entryNameSeparatorForTests}second.jar") }
+
+      assertThat(firstTargetEntries).hasSize(3)
+      assertThat(secondTargetEntries.map { it.entryStem }.toSet()).isEqualTo(secondTargetStems)
+    }
+  }
+
+  @Test
+  fun `cleanup deletes overflow versions before stale mark pass`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val shardDir = versionDir.resolve("entries").resolve("aa")
+      Files.createDirectories(shardDir)
+
+      val metadataTimeByStem = mutableMapOf<String, Long>()
+      val baseMetadataTime = System.currentTimeMillis() - 10.days.inWholeMilliseconds
+      repeat(4) { index ->
+        val entryStem = createEntryStemInShard(index = index, targetFileName = "first.jar")
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 10)
+        val metadataTime = baseMetadataTime + index
+        val entryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
+        Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(metadataTime))
+        metadataTimeByStem[entryStem] = metadataTime
+      }
+
+      val oldestEntryStem = metadataTimeByStem.minBy { it.value }.key
+      val oldestEntryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = oldestEntryStem)
+
+      manager.cleanup()
+
+      val remainingEntries = listEntryPaths(cacheDir)
+        .filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+      assertThat(remainingEntries).hasSize(3)
+      assertThat(oldestEntryPaths.payloadFile).doesNotExist()
+      assertThat(oldestEntryPaths.metadataFile).doesNotExist()
+      for (entry in remainingEntries) {
+        assertThat(entry.markFile).exists()
+      }
+    }
+  }
+
+  @Test
+  fun `cleanup applies per-target cap across different shard directories`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val entriesDir = versionDir.resolve("entries")
+      val shardAA = entriesDir.resolve("aa")
+      val shardBB = entriesDir.resolve("bb")
+      Files.createDirectories(shardAA)
+      Files.createDirectories(shardBB)
+
+      val metadataTimeByStem = mutableMapOf<String, Long>()
+      val baseMetadataTime = System.currentTimeMillis() - 10_000
+      val stemsByShard = listOf(
+        shardAA to createEntryStemInShard(index = 10, targetFileName = "first.jar", lsbPrefix = "aa"),
+        shardAA to createEntryStemInShard(index = 11, targetFileName = "first.jar", lsbPrefix = "aa"),
+        shardBB to createEntryStemInShard(index = 12, targetFileName = "first.jar", lsbPrefix = "bb"),
+        shardBB to createEntryStemInShard(index = 13, targetFileName = "first.jar", lsbPrefix = "bb"),
+      )
+      for ((index, shardAndStem) in stemsByShard.withIndex()) {
+        val shardDir = shardAndStem.first
+        val entryStem = shardAndStem.second
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 0)
+        val metadataTime = baseMetadataTime + index
+        val entryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
+        Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(metadataTime))
+        metadataTimeByStem[entryStem] = metadataTime
+      }
+
+      manager.cleanup()
+
+      val remainingEntries = listEntryPaths(cacheDir)
+        .filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+      val expectedStems = metadataTimeByStem.entries
+        .sortedByDescending { it.value }
+        .take(3)
+        .map { it.key }
+        .toSet()
+
+      assertThat(remainingEntries).hasSize(3)
+      assertThat(remainingEntries.map { it.entryStem }.toSet()).isEqualTo(expectedStems)
+    }
+  }
+
+  @Test
+  fun `cleanup treats missing metadata as oldest for overflow pruning`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val shardDir = versionDir.resolve("entries").resolve("aa")
+      Files.createDirectories(shardDir)
+
+      val metadataTimeByStem = mutableMapOf<String, Long>()
+      val baseMetadataTime = System.currentTimeMillis() - 10_000
+      repeat(4) { index ->
+        val entryStem = createEntryStemInShard(index = index, targetFileName = "first.jar")
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 0)
+        val metadataTime = baseMetadataTime + index
+        val entryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
+        Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(metadataTime))
+        metadataTimeByStem[entryStem] = metadataTime
+      }
+
+      val oldestEntryStem = metadataTimeByStem.minBy { it.value }.key
+      val oldestEntryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = oldestEntryStem)
+      Files.delete(oldestEntryPaths.metadataFile)
+
+      manager.cleanup()
+
+      val remainingEntries = listEntryPaths(cacheDir)
+        .filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+      assertThat(remainingEntries).hasSize(3)
+      assertThat(oldestEntryPaths.payloadFile).doesNotExist()
+      assertThat(oldestEntryPaths.metadataFile).doesNotExist()
+    }
+  }
+
+  @Test
+  fun `cleanup keeps recently used entry when metadata touch failure grace is active during overflow pruning`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val shardDir = versionDir.resolve("entries").resolve("aa")
+      Files.createDirectories(shardDir)
+
+      val metadataTimeByStem = mutableMapOf<String, Long>()
+      val baseMetadataTime = System.currentTimeMillis() - 10_000
+      repeat(4) { index ->
+        val entryStem = createEntryStemInShard(index = index, targetFileName = "first.jar")
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 0)
+        val metadataTime = baseMetadataTime + index
+        val entryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
+        Files.setLastModifiedTime(entryPaths.metadataFile, FileTime.fromMillis(metadataTime))
+        metadataTimeByStem[entryStem] = metadataTime
+      }
+
+      val oldestEntryStem = metadataTimeByStem.minBy { it.value }.key
+      val oldestEntryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = oldestEntryStem)
+      registerTouchFailure(
+        manager = manager,
+        entryStem = oldestEntryStem,
+        attemptedTouchTime = System.currentTimeMillis(),
+      )
+
+      manager.cleanup()
+
+      val remainingEntries = listEntryPaths(cacheDir)
+        .filter { it.entryStem.endsWith("${entryNameSeparatorForTests}first.jar") }
+      assertThat(remainingEntries).hasSize(3)
+      assertThat(oldestEntryPaths.payloadFile).exists()
+      assertThat(oldestEntryPaths.metadataFile).exists()
     }
   }
 
@@ -480,7 +769,10 @@ internal class LocalDiskJarCacheCleanupTest {
       repeat(700) { shardIndex ->
         val shardDir = entriesDir.resolve(shardIndex.toString().padStart(3, '0'))
         Files.createDirectories(shardDir)
-        val entryStem = createEntryStemInShard(index = 100_000 + shardIndex)
+        val entryStem = createEntryStemInShard(
+          index = 100_000 + shardIndex,
+          targetFileName = "target-$shardIndex.jar",
+        )
         writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 10)
         if (shardIndex == targetShardIndex) {
           targetEntryPaths = buildEntryPathsFromStem(shardDir = shardDir, entryStem = entryStem)
@@ -491,6 +783,35 @@ internal class LocalDiskJarCacheCleanupTest {
 
       assertThat(targetEntryPaths).isNotNull
       assertThat(targetEntryPaths!!.markFile).exists()
+    }
+  }
+
+  @Test
+  fun `cleanup scans all shards when queue is sparse and candidate batch is not full`() {
+    runBlocking {
+      val cacheDir = tempDir.resolve("cache")
+      val manager = createManager(cacheDir = cacheDir, maxAccessTimeAge = 1.days)
+      val versionDir = findVersionDir(cacheDir)
+      val entriesDir = versionDir.resolve("entries")
+
+      val shardCount = 700
+      repeat(shardCount) { shardIndex ->
+        val shardDir = entriesDir.resolve(shardIndex.toString().padStart(3, '0'))
+        Files.createDirectories(shardDir)
+        val entryStem = createEntryStemInShard(
+          index = 200_000 + shardIndex,
+          targetFileName = "target-$shardIndex.jar",
+        )
+        writeEntry(shardDir = shardDir, entryStem = entryStem, metadataAgeDays = 10)
+      }
+
+      manager.cleanup()
+
+      val entries = listEntryPaths(cacheDir)
+      assertThat(entries).hasSize(shardCount)
+      for (entry in entries) {
+        assertThat(entry.markFile).exists()
+      }
     }
   }
 
@@ -575,12 +896,14 @@ internal class LocalDiskJarCacheCleanupTest {
     cacheDir: Path,
     maxAccessTimeAge: Duration,
     metadataTouchInterval: Duration = 15.minutes,
+    cleanupInterval: Duration = 1.days,
   ): LocalDiskJarCacheManager {
     return LocalDiskJarCacheManager(
       cacheDir = cacheDir,
       productionClassOutDir = tempDir.resolve("classes/production"),
       maxAccessTimeAge = maxAccessTimeAge,
       metadataTouchInterval = metadataTouchInterval,
+      cleanupInterval = cleanupInterval,
     )
   }
 
@@ -661,10 +984,14 @@ internal class LocalDiskJarCacheCleanupTest {
     )
   }
 
-  private fun createEntryStemInShard(index: Int): String {
-    val lsb = "aa" + index.toString(Character.MAX_RADIX).padStart(6, '0')
+  private fun createEntryStemInShard(
+    index: Int,
+    targetFileName: String = "first.jar",
+    lsbPrefix: String = "aa",
+  ): String {
+    val lsb = lsbPrefix + index.toString(Character.MAX_RADIX).padStart(6, '0')
     val msb = "m" + index.toString(Character.MAX_RADIX).padStart(6, '0')
-    return "$lsb-$msb${entryNameSeparatorForTests}first.jar"
+    return "$lsb-$msb$entryNameSeparatorForTests$targetFileName"
   }
 
   private fun registerQueuedCandidates(manager: LocalDiskJarCacheManager, seed: Int) {

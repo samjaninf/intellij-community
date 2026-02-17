@@ -15,10 +15,10 @@ import kotlin.time.Duration
 
 private const val cleanupCandidateQueueMaxSize = 200_000
 private const val cleanupCandidateBatchLimit = 50_000
-private const val cleanupMinShardScanBudget = 64
-private const val cleanupAdaptiveShardScanDivisor = 10
 private const val cleanupReservedScanCandidates = cleanupCandidateBatchLimit / 10
 private const val cleanupScanCursorSeparator = '|'
+private const val maxVersionsPerTarget = 3
+private const val recentTouchFailurePriorityAccessTime = Long.MAX_VALUE
 
 internal data class CleanupCandidate(
   @JvmField val entryStem: String,
@@ -36,6 +36,12 @@ private data class CleanupScanCursor(
 private data class EntryStemBatch(
   @JvmField val entryStems: List<String>,
   @JvmField val exhausted: Boolean,
+)
+
+private data class TargetRetentionCandidate(
+  @JvmField val cleanupCandidate: CleanupCandidate,
+  @JvmField val entryStem: String,
+  @JvmField val metadataAccessTime: Long,
 )
 
 internal class CleanupCandidateIndex(
@@ -95,6 +101,7 @@ internal class CleanupCandidateIndex(
 internal suspend fun cleanupLocalDiskJarCache(
   entriesDir: Path,
   lastCleanupMarkerFile: Path,
+  cleanupInterval: Duration,
   maxAccessTimeAge: Duration,
   cleanupCandidateIndex: CleanupCandidateIndex,
   metadataTouchTracker: MetadataTouchTracker,
@@ -102,7 +109,7 @@ internal suspend fun cleanupLocalDiskJarCache(
 ) {
   withContext(Dispatchers.IO) {
     try {
-      if (!isTimeForCleanup(lastCleanupMarkerFile = lastCleanupMarkerFile)) {
+      if (!isTimeForCleanup(lastCleanupMarkerFile = lastCleanupMarkerFile, cleanupInterval = cleanupInterval)) {
         return@withContext
       }
 
@@ -173,7 +180,7 @@ internal fun purgeLegacyCacheIfRequired(
   }
 }
 
-private fun isTimeForCleanup(lastCleanupMarkerFile: Path): Boolean {
+private fun isTimeForCleanup(lastCleanupMarkerFile: Path, cleanupInterval: Duration): Boolean {
   if (Files.notExists(lastCleanupMarkerFile)) {
     return true
   }
@@ -188,7 +195,7 @@ private fun isTimeForCleanup(lastCleanupMarkerFile: Path): Boolean {
     return true
   }
 
-  return lastCleanupTime < (System.currentTimeMillis() - cleanupEveryDuration.inWholeMilliseconds)
+  return lastCleanupTime < (System.currentTimeMillis() - cleanupInterval.inWholeMilliseconds)
 }
 
 private suspend fun cleanupEntries(
@@ -207,6 +214,12 @@ private suspend fun cleanupEntries(
       scanCursorFile = scanCursorFile,
       cleanupCandidateIndex = cleanupCandidateIndex,
     )
+    val overflowCandidates = collectOverflowCandidatesByTarget(
+      entriesDir = entriesDir,
+      candidates = candidates,
+      currentTime = currentTime,
+      metadataTouchTracker = metadataTouchTracker,
+    )
     for (candidate in candidates) {
       val entryStem = candidate.entryStem
       val key = getCacheKeyFromEntryStem(entryStem)
@@ -218,21 +231,27 @@ private suspend fun cleanupEntries(
         continue
       }
 
-      // Cleanup sees only persisted entry names. Recover lock slot from stored key prefix
-      // ("<lsb>-<msb>") to match computeIfAbsent slot selection.
-      val lockSlot = parseLockSlotFromKey(key)
-      if (lockSlot == null) {
+      // Cleanup sees only persisted entry names. Recover the lsb from stored key prefix
+      // ("<lsb>-<msb>") and feed it into StripedMutex.getLockByHash.
+      val lockHash = parseLeastSignificantBitsFromKey(key)
+      if (lockHash == null) {
         // Entries with malformed key prefix are unreachable by computeIfAbsent, so remove
         // them directly instead of keeping garbage forever.
         deleteEntryFiles(paths)
         continue
       }
 
-      if (!shouldInspectEntryUnderLock(paths = paths, staleThreshold = staleThreshold)) {
+      val isOverflowCandidate = overflowCandidates.contains(candidate.dedupKey)
+      if (!isOverflowCandidate && !shouldInspectEntryUnderLock(paths = paths, staleThreshold = staleThreshold)) {
         continue
       }
 
-      withCacheEntryLock(lockSlot) {
+      withCacheEntryLock(lockHash) {
+        if (isOverflowCandidate) {
+          deleteEntryFiles(paths)
+          return@withCacheEntryLock
+        }
+
         cleanupEntry(
           paths = paths,
           staleThreshold = staleThreshold,
@@ -244,13 +263,76 @@ private suspend fun cleanupEntries(
   }
 }
 
+private fun collectOverflowCandidatesByTarget(
+  entriesDir: Path,
+  candidates: List<CleanupCandidate>,
+  currentTime: Long,
+  metadataTouchTracker: MetadataTouchTracker,
+): Set<String> {
+  if (candidates.isEmpty()) {
+    return emptySet()
+  }
+
+  val byTargetName = HashMap<String, MutableList<TargetRetentionCandidate>>()
+  for (candidate in candidates) {
+    val entryStem = candidate.entryStem
+    val targetFileName = getTargetNameFromEntryStem(entryStem) ?: continue
+    val metadataAccessTime = if (metadataTouchTracker.hasRecentTouchFailure(entryStem, currentTime)) {
+      // Honor touch-failure grace: treat entry as freshest while grace is active.
+      recentTouchFailurePriorityAccessTime
+    }
+    else {
+      val metadataFile = entriesDir.resolve(candidate.shardDirName).resolve(entryStem + metadataFileSuffix)
+      readMetadataAccessTimeOrOldest(metadataFile)
+    }
+    byTargetName.computeIfAbsent(targetFileName) { mutableListOf() }
+      .add(
+        TargetRetentionCandidate(
+          cleanupCandidate = candidate,
+          entryStem = entryStem,
+          metadataAccessTime = metadataAccessTime,
+        ),
+      )
+  }
+
+  val overflow = HashSet<String>()
+  for (targetCandidates in byTargetName.values) {
+    if (targetCandidates.size <= maxVersionsPerTarget) {
+      continue
+    }
+
+    targetCandidates.sortWith(
+      compareByDescending<TargetRetentionCandidate> { it.metadataAccessTime }
+        .thenByDescending { it.entryStem }
+        .thenByDescending { it.cleanupCandidate.shardDirName },
+    )
+    for (index in maxVersionsPerTarget until targetCandidates.size) {
+      overflow.add(targetCandidates[index].cleanupCandidate.dedupKey)
+    }
+  }
+  return overflow
+}
+
+private fun readMetadataAccessTimeOrOldest(metadataFile: Path): Long {
+  return try {
+    Files.getLastModifiedTime(metadataFile).toMillis()
+  }
+  catch (_: NoSuchFileException) {
+    Long.MIN_VALUE
+  }
+  catch (_: IOException) {
+    Long.MIN_VALUE
+  }
+}
+
 private fun collectCandidatesForCleanup(
   entriesDir: Path,
   scanCursorFile: Path,
   cleanupCandidateIndex: CleanupCandidateIndex,
 ): List<CleanupCandidate> {
   // See README.md: "Cleanup Candidate Queue Plus Reserved Scan".
-  // Always reserve scan capacity so cold/misplaced entries are eventually discovered.
+  // Always reserve scan capacity so cold/misplaced entries are eventually discovered,
+  // then continue scanning until this cleanup run reaches the batch cap or exhausts shards.
   val reservedScanCount = cleanupReservedScanCandidates.coerceIn(1, cleanupCandidateBatchLimit)
   val queueDrainLimit = (cleanupCandidateBatchLimit - reservedScanCount).coerceAtLeast(0)
   val result = LinkedHashMap<String, CleanupCandidate>(cleanupCandidateBatchLimit)
@@ -287,13 +369,12 @@ private fun collectEntryStemsFromShardWindow(
   }
 
   val scanCursor = readCleanupScanCursor(scanCursorFile = scanCursorFile, shardDirs = shardDirs)
-  val scanShardBudget = computeCleanupShardScanBudget(shardCount = shardDirs.size)
   val startIndex = shardDirs.indexOfFirst { it.fileName.toString() == scanCursor.shardDirName }.let { if (it >= 0) it else 0 }
   val result = LinkedHashMap<String, CleanupCandidate>(maxEntries)
   var index = startIndex
   var scannedShards = 0
   var nextCursor: CleanupScanCursor? = null
-  while (scannedShards < scanShardBudget && scannedShards < shardDirs.size && result.size < maxEntries) {
+  while (scannedShards < shardDirs.size && result.size < maxEntries) {
     val shardDir = shardDirs[index]
     val remaining = maxEntries - result.size
     val shardDirName = shardDir.fileName.toString()
@@ -321,15 +402,6 @@ private fun collectEntryStemsFromShardWindow(
   }
   writeCleanupScanCursor(scanCursorFile = scanCursorFile, cursor = nextCursor)
   return result.values.toList()
-}
-
-private fun computeCleanupShardScanBudget(shardCount: Int): Int {
-  if (shardCount <= 0) {
-    return 0
-  }
-
-  val adaptiveBudget = (shardCount + cleanupAdaptiveShardScanDivisor - 1) / cleanupAdaptiveShardScanDivisor
-  return minOf(shardCount, maxOf(cleanupMinShardScanBudget, adaptiveBudget))
 }
 
 private fun listShardDirectories(entriesDir: Path): List<Path> {

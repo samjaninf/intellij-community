@@ -133,8 +133,17 @@ Metadata file modification time is treated as last access timestamp for retentio
 ### Cleanup Candidate Queue Plus Reserved Scan
 
 - Cleanup consumes a bounded in-memory candidate queue for hot entries.
-- Every cleanup run also reserves scan capacity for shard-window traversal (`.cleanup.scan.cursor`) so cold or misplaced entries are still discovered.
-- Shard scan budget is adaptive (`max(64, ceil(10% of shard count))`) and still capped by current shard count.
+- Every cleanup run also reserves scan capacity for cursor-based shard traversal (`.cleanup.scan.cursor`) so cold or misplaced entries are still discovered.
+- When queue contribution is sparse, cleanup continues cursor traversal until the candidate batch cap is reached or all currently known shards are exhausted.
+
+### Per-Target Version Cap
+
+- Cleanup keeps at most 3 entries per target file name (`<key>__<target-name>`).
+- Target identity comes from the sanitized/truncated target suffix stored in entry stem.
+- Recency is metadata `mtime` (most recently used first).
+- Entries with active metadata-touch failure grace are treated as freshest for cap ranking.
+- Entries beyond top 3 for the same target are deleted even if they are not stale by `maxAccessTimeAge`.
+- Enforcement is cleanup-time and best-effort, so the cap is eventually consistent.
 
 ### Metadata Safety Limits
 
@@ -151,16 +160,22 @@ Metadata file modification time is treated as last access timestamp for retentio
 
 ## Cleanup Algorithm
 
-Cleanup runs at most once per day (`.last.cleanup.marker`):
+Cleanup runs at most once per configured interval (`.last.cleanup.marker`):
+
+- default interval: 1 day
+- dev mode (`IdeBuilder`): 1 hour
 
 1. Drain a bounded queue of recently touched entry stems.
-2. Always reserve a slice of each run for bounded shard-window scan (`.cleanup.scan.cursor`).
-3. Delete malformed-key candidates as invalid entry garbage.
-4. Lock each well-formed candidate key.
-5. If metadata is missing, delete sibling entry files.
-6. If stale and not marked, create `.mark`.
-7. If stale and already marked, delete sibling entry files.
-8. If fresh, remove mark file.
+2. Always reserve a slice of each run for cursor-based shard scan (`.cleanup.scan.cursor`) and continue scanning while candidate budget remains.
+3. For each target file name, keep only the 3 most recently used entries from the current candidate set.
+4. Delete malformed-key candidates as invalid entry garbage.
+5. Lock each well-formed candidate key.
+6. If selected as version-overflow, delete sibling entry files.
+7. Otherwise apply stale logic:
+8. If metadata is missing, delete sibling entry files.
+9. If stale and not marked, create `.mark`.
+10. If stale and already marked, delete sibling entry files.
+11. If fresh, remove mark file.
 
 This is a two-pass stale deletion to avoid removing entries that become active again.
 
@@ -178,6 +193,45 @@ At startup, once per epoch marker (`.legacy-format-purged.<version>`):
 `CACHE_VERSION` (`LocalDiskJarCacheManager.kt`) defines cache namespace.
 
 Bump it when build-script semantics that affect jar contents change.
+
+## Diagnostics
+
+Use the jar-cache analyzer CLI for retention pressure and integrity diagnostics:
+
+```bash
+bun community/tools/jar-cache-analyze.mjs --cache-dir out/dev-run/jar-cache
+```
+
+By default, every run also writes a dashboard-style Markdown report to `jar-cache-report.md` in the cache root directory.
+The saved markdown uses proper markdown tables for rendering in GitHub/editor preview.
+
+Useful flags:
+
+- `--top <n>`: adjust top-N tables/charts (targets, shards, largest entries)
+- `--bins <n>`: adjust metadata-age histogram bins
+- `--anomaly-top <n>`: cap anomaly and outlier tables
+- `--pareto-threshold <pct>`: reclaimable-bytes coverage target for Pareto analysis
+- `--heatmap-bins <n>`: source-count heatmap buckets
+- `--score-weights <json>`: tune cache efficiency score weights (`overflow`, `reclaim`, `integrity`, `concentration`)
+- `--md-file <path>`: write Markdown report to a custom path
+- `--no-md-file`: disable default Markdown report file write
+- `--json`: print machine-readable report to stdout
+- `--json-file <path>`: write JSON report to file
+- `--strict-meta`: fail fast on malformed `.meta` files
+
+The report includes:
+
+- executive summary KPI table and top-offender dashboard
+- cache overview and marker health (`.last.cleanup.marker`, `.cleanup.scan.cursor`)
+- ASCII charts for entry health, metadata age profile, and shard skew
+- per-target version-cap overflow and estimated reclaimable payload bytes
+- ranked target tables by both version count and reclaimable payload bytes
+- anomaly detection for high churn/reclaim/payload/source-count outliers
+- Pareto reclaim analysis (how many targets explain most reclaimable bytes)
+- weighted cache efficiency score with component breakdown
+- source-count heatmap, correlation, and top source-count outliers
+- metadata decode integrity and top corruption reasons
+- top largest payload entries
 
 ## Running Tests
 

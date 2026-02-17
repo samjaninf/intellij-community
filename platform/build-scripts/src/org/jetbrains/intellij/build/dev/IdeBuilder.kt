@@ -72,6 +72,7 @@ import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.moveTo
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 data class BuildRequest(
   @JvmField val platformPrefix: String,
@@ -496,6 +497,7 @@ private suspend fun createBuildContext(
       productionClassOutDir = classOutDir.resolve("production"),
       maxAccessTimeAge = buildOptionsTemplate?.jarCacheMaxAccessAge
                          ?: (System.getProperty(BuildOptions.JAR_CACHE_MAX_ACCESS_AGE_DAYS_PROPERTY)?.toLong()?.days ?: 3.days),
+      cleanupInterval = 1.hours,
     )
     launch(Dispatchers.IO + CoroutineName("cleanup jar cache")) {
       jarCacheManager.cleanup()
