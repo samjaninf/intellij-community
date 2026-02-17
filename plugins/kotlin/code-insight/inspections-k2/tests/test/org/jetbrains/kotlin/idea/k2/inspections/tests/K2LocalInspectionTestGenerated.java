@@ -13519,6 +13519,11 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
                 KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
             }
 
+            @TestMetadata("abstractClassOverride.kt")
+            public void testAbstractClassOverride() throws Exception {
+                runTest("testData/inspectionsLocal/convertToExplicitBackingFields/abstractClassOverride.kt");
+            }
+
             @TestMetadata("backTicksAsName.kt")
             public void testBackTicksAsName() throws Exception {
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/backTicksAsName.kt");
@@ -13532,6 +13537,11 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
             @TestMetadata("backingPropertyIsVar.kt")
             public void testBackingPropertyIsVar() throws Exception {
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/backingPropertyIsVar.kt");
+            }
+
+            @TestMetadata("backingPropertyWithGetter.kt")
+            public void testBackingPropertyWithGetter() throws Exception {
+                runTest("testData/inspectionsLocal/convertToExplicitBackingFields/backingPropertyWithGetter.kt");
             }
 
             @TestMetadata("commentsInsideBrackets.kt")
@@ -13567,6 +13577,16 @@ public abstract class K2LocalInspectionTestGenerated extends AbstractK2LocalInsp
             @TestMetadata("interface.kt")
             public void testInterface() throws Exception {
                 runTest("testData/inspectionsLocal/convertToExplicitBackingFields/interface.kt");
+            }
+
+            @TestMetadata("kdocFromBackingField.kt")
+            public void testKdocFromBackingField() throws Exception {
+                runTest("testData/inspectionsLocal/convertToExplicitBackingFields/kdocFromBackingField.kt");
+            }
+
+            @TestMetadata("mutableBackingField.kt")
+            public void testMutableBackingField() throws Exception {
+                runTest("testData/inspectionsLocal/convertToExplicitBackingFields/mutableBackingField.kt");
             }
 
             @TestMetadata("nonPrivateBackingField.kt")
