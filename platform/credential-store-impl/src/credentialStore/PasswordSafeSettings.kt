@@ -77,7 +77,10 @@ class PasswordSafeSettings : PersistentStateComponentWithModificationTracker<Pas
       LOG.error("Provider ${state.provider} from loaded credential store config is not supported in this environment")
     }
 
-    this.state.copySimpleProperties(state)
+    with(this.state) {
+      isRememberPasswordByDefault = state.isRememberPasswordByDefault
+      pgpKeyId = state.pgpKeyId
+    }
 
     providerType = state.provider
     keepassDb = state.keepassDb
@@ -102,9 +105,4 @@ class PasswordSafeOptions : BaseState() {
   // Simple properties that don't have special accessors in PasswordSafeSettings
   var isRememberPasswordByDefault: Boolean by property(true)
   var pgpKeyId: String? by string()
-
-  fun copySimpleProperties(other: PasswordSafeOptions) {
-    isRememberPasswordByDefault = other.isRememberPasswordByDefault
-    pgpKeyId = other.pgpKeyId
-  }
 }
