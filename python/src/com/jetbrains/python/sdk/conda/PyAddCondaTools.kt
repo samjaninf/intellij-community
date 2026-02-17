@@ -77,11 +77,15 @@ suspend fun PyCondaCommand.createCondaSdkFromExistingEnv(
 ): Sdk {
   val condaEnv = PyCondaEnv(condaIdentity, fullCondaPathOnTarget)
   val flavorAndData = PyFlavorAndData(PyCondaFlavorData(condaEnv), CondaEnvSdkFlavor)
+  val interpreterPath = getCondaPythonBinaryPath(project, condaEnv, targetConfig).onFailure {
+    ShowingMessageErrorSync.emit(it, project)
+  }.getOrThrow()
 
   val (additionalData, customSdkSuggestedName) = when (targetConfig) {
     null -> PythonSdkAdditionalData(flavorAndData) to condaIdentity.userReadableName
     else -> {
       val data = PyTargetAwareAdditionalData(flavorAndData, targetConfig)
+      data.interpreterPath = interpreterPath
       val name = PythonInterpreterTargetEnvironmentFactory.findDefaultSdkName(project, data, condaIdentity.userReadableName)
       data to name
     }
@@ -95,9 +99,7 @@ suspend fun PyCondaCommand.createCondaSdkFromExistingEnv(
   sdkModificator.sdkAdditionalData = additionalData
   // homePath is not required by conda, but used by lots of tools all over the code and required by CondaPathFix
   // Because homePath is not set yet, CondaPathFix does not work
-  sdkModificator.homePath = getCondaPythonBinaryPath(project, condaEnv, targetConfig).onFailure {
-    ShowingMessageErrorSync.emit(it, project)
-  }.getOrThrow()
+  sdkModificator.homePath = interpreterPath
   edtWriteAction {
     sdkModificator.commitChanges()
   }
