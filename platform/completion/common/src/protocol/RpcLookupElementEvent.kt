@@ -2,6 +2,7 @@
 package com.intellij.platform.completion.common.protocol
 
 import com.intellij.codeInsight.lookup.LookupFocusDegree
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.platform.project.ProjectId
 import kotlinx.serialization.Serializable
 
@@ -55,5 +56,18 @@ sealed interface RpcLookupElementEvent {
 data class RpcSelectedItem(val value: RpcCompletionItemId? = null) {
   override fun toString(): String = buildToString("RpcSelectedItem") {
     fieldWithNullDefault("value", value)
+  }
+}
+
+fun Logger.logLookupElementEvent(event: RpcLookupElementEvent) {
+  if (isTraceEnabled) {
+    trace(event.toString())
+  }
+  else if (isDebugEnabled) {
+    when (event) {
+      is RpcLookupElementEvent.Cancel -> debug("Lookup cancelled by client")
+      is RpcLookupElementEvent.ItemSelected -> debug("Lookup item selected")
+      is RpcLookupElementEvent.LookupStateChanged -> debug("Lookup state changed: ${event.selectedItemId} ${event.focusDegree} ${event.sortedItemIds?.size}")
+    }
   }
 }
