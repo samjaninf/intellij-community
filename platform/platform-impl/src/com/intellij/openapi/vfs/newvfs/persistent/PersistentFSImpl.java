@@ -1248,8 +1248,14 @@ public final class PersistentFSImpl extends PersistentFS implements Disposable {
 
   @Override
   public void moveFile(Object requestor, @NotNull VirtualFile file, @NotNull VirtualFile newParent) throws IOException {
+    long modCount = newParent.getModificationCount();
     fileSystemOf(file).moveFile(requestor, file, newParent);
-    processEvent(new VFileMoveEvent(requestor, file, newParent));
+    try {
+      processEvent(new VFileMoveEvent(requestor, file, newParent));
+    }
+    catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("newParent.modCount(Before): " + modCount, e);
+    }
   }
 
   private void processEvent(@NotNull VFileEvent event) {
