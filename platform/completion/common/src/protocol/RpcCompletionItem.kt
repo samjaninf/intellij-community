@@ -47,6 +47,8 @@ data class RpcCompletionItem(
     fieldWithDefault("isDirectInsertion", isDirectInsertion, false)
     fieldWithDefault("isWorthShowingInAutoPopup", isWorthShowingInAutoPopup, false)
     fieldWithDefault("hasModCommand", hasModCommand, false)
+    fieldWithDefault("isTopPriorityItem", isTopPriorityItem, false)
+    fieldWithDefault("isNeverAutoselectTopPriorityItem", isNeverAutoselectTopPriorityItem, false)
   }
 }
 
