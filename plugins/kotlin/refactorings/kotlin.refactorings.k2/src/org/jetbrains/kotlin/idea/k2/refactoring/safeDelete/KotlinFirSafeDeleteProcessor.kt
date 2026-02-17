@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaImplicitReceiverValue
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaSimpleFunctionCall
 import org.jetbrains.kotlin.analysis.api.resolution.successfulCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
@@ -61,6 +62,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtContextParameterList
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFunction
@@ -108,8 +110,13 @@ class KotlinFirSafeDeleteProcessor : SafeDeleteProcessorDelegateBase() {
                         //named argument would be deleted with argument
                         return@Processor true
                     }
-                    val importDirective = e.getNonStrictParentOfType<KtImportDirective>()
-                    result.add(SafeDeleteReferenceSimpleDeleteUsageInfo(importDirective ?: e, expected, importDirective != null))
+                    val usageInfo = if (element is KtParameter && isPassThroughParameter(e, element)) {
+                        SafeDeleteReferenceSimpleDeleteUsageInfo(e, expected, true)
+                    } else {
+                        val importDirective = e.getNonStrictParentOfType<KtImportDirective>()
+                        SafeDeleteReferenceSimpleDeleteUsageInfo(importDirective ?: e, expected, importDirective != null)
+                    }
+                    result.add(usageInfo)
                 }
                 return@Processor true
             })
@@ -272,6 +279,29 @@ class KotlinFirSafeDeleteProcessor : SafeDeleteProcessorDelegateBase() {
                 ?.createUsageInfoForParameter(it, result, element, parameterIndexAsJavaCall, element.isVarArg)
             return@Processor true
         })
+    }
+
+    private fun isPassThroughParameter(
+        refElement: PsiElement,
+        parameter: KtParameter
+    ): Boolean {
+        val function = parameter.ownerFunction ?: return false
+
+        val callExpr = refElement.getNonStrictParentOfType<KtCallExpression>() ?: return false
+        val calleeExpression = callExpr.calleeExpression
+        if (calleeExpression?.text != function.name) return false
+
+        analyze(callExpr) {
+            val resolvedCall =
+                callExpr.resolveToCall()?.successfulCallOrNull<KaFunctionCall<*>>() ?: return false
+
+            if (resolvedCall.symbol != function.symbol) {
+                return false
+            }
+
+            val variableSignature = resolvedCall.valueArgumentMapping[refElement]
+            return variableSignature?.symbol == parameter.symbol
+        }
     }
 
     private fun shouldAllowPropagationToExpected(parameter: KtParameter): Boolean {
