@@ -133,7 +133,7 @@ public abstract class MavenProjectsManager extends MavenSimpleProjectComponent
 
   @Override
   public @NotNull MavenProjectsManagerState getState() {
-    if (isInitialized()) {
+    if (isInitialized() && projectsTreeInitialized.get()) {
       applyTreeToState();
     }
     return myState;
