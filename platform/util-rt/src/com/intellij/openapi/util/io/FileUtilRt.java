@@ -892,8 +892,9 @@ public final class FileUtilRt {
   }
 
   private static void doDelete(@NotNull Path path) throws IOException {
-    //Issues with file removal usually happen on Windows, *nix-type OSes usually don't need >1 attempt:
-    int attemptsCount = SystemInfoRt.isWindows ? MAX_FILE_IO_ATTEMPTS : 1;
+    // Issues with file removal usually happen on Windows
+    // On mac os, .DS_Store files can sporadically appear, so we have to deal with that too.
+    int attemptsCount = SystemInfoRt.isWindows || SystemInfoRt.isMac ? MAX_FILE_IO_ATTEMPTS : 1;
     IOException previousException = null;
     for (int attemptsLeft = attemptsCount - 1; attemptsLeft >= 0; attemptsLeft--) {
       try {
