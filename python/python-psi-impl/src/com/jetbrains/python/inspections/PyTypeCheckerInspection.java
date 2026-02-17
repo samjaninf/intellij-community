@@ -64,6 +64,7 @@ import com.jetbrains.python.psi.types.PySelfType;
 import com.jetbrains.python.psi.types.PyTupleType;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.PyTypeChecker;
+import com.jetbrains.python.psi.types.PyTypeInferenceCspFactory;
 import com.jetbrains.python.psi.types.PyTypeParameterType;
 import com.jetbrains.python.psi.types.PyTypedDictType;
 import com.jetbrains.python.psi.types.PyUnionType;
@@ -538,7 +539,7 @@ public class PyTypeCheckerInspection extends PyInspection {
       final List<UnfilledParameterFromParamSpec> unfilledParameterFromParamSpecs = new ArrayList<>();
 
       final var receiver = callSite.getReceiver(callableType.getCallable());
-      final var substitutions = PyTypeChecker.unifyReceiver(receiver, myTypeEvalContext);
+      final var substitutions = PyTypeInferenceCspFactory.unifyReceiver(mapping, myTypeEvalContext);
 
       // When a constructor call resolves to `__init__` method,
       // match the class being constructed against the type of `self` parameter.

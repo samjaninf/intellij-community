@@ -1026,7 +1026,7 @@ object PyTypeChecker {
    *
    * <pre>`T1@Base -> int T2@Base -> Sub@T3 Sub@T3 -> str `</pre>
    */
-  private fun collectTypeSubstitutions(classType: PyClassType, context: TypeEvalContext): GenericSubstitutions {
+  fun collectTypeSubstitutions(classType: PyClassType, context: TypeEvalContext): GenericSubstitutions {
     val result = GenericSubstitutions()
     // Collect substitutions from ancestor classes. In the example above these are: T1@Base -> int and T2@Base -> Sub@T3
     for (provider in PyTypeProvider.EP_NAME.extensionList) {
@@ -1075,8 +1075,13 @@ object PyTypeChecker {
             }
           }
           else -> {
+            var elementTypes = classType.elementTypes
+            if (classType is PyTupleType && !classType.isHomogeneous) {
+              val unionTypes = classType.elementTypes.flatMap { et -> if (et is PyUnpackedTupleType) et.elementTypes else listOf(et) }
+              elementTypes = listOf(PyUnionType.union(unionTypes))
+            }
             mapTypeParametersToSubstitutions(
-              result, definitionTypeParameters, classType.elementTypes,
+              result, definitionTypeParameters, elementTypes,
               PyTypeParameterMapping.Option.MAP_UNMATCHED_EXPECTED_TYPES_TO_ANY
             )
           }
@@ -2007,6 +2012,29 @@ object PyTypeChecker {
           is PyParamSpecType -> if (value is PyCallableParameterVariadicType) myParamSpecs[key] = value
         }
       }
+    }
+
+    constructor(typeVars: Map<PyTypeVarType, Ref<PyType?>?>, typeVarTuples: Map<PyTypeVarTupleType, PyPositionalVariadicType?>, paramSpecs: Map<PyParamSpecType, PyCallableParameterVariadicType?>, qualifierType: PyType?) : this() {
+      this.myTypeVars.putAll(typeVars)
+      this.myTypeVarTuples.putAll(typeVarTuples)
+      this.myParamSpecs.putAll(paramSpecs)
+      this.qualifierType = qualifierType
+    }
+
+    fun addToCopy(typeVars: Map<PyTypeVarType, Ref<PyType?>?>?, typeVarTuples: Map<PyTypeVarTupleType, PyPositionalVariadicType>?, paramSpecs: Map<PyParamSpecType, PyCallableParameterVariadicType>?) : GenericSubstitutions {
+      val newTypeVars = LinkedHashMap(this.typeVars);
+      if (typeVars != null) {
+        newTypeVars.putAll(typeVars);
+      }
+      val newTypeVarTuples = LinkedHashMap(this.typeVarTuples);
+      if (typeVarTuples != null) {
+        newTypeVarTuples.putAll(typeVarTuples);
+      }
+      val newParamSpecs = LinkedHashMap(this.paramSpecs);
+      if (paramSpecs != null) {
+        newParamSpecs.putAll(paramSpecs);
+      }
+      return GenericSubstitutions(newTypeVars, newTypeVarTuples, newParamSpecs, qualifierType);
     }
 
     @ApiStatus.Internal

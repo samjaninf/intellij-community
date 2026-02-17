@@ -6,6 +6,7 @@ import com.intellij.util.ArrayUtilRt;
 import com.intellij.util.ProcessingContext;
 import com.intellij.util.containers.ContainerUtil;
 import com.jetbrains.python.psi.AccessDirection;
+import com.jetbrains.python.psi.PyCallExpression;
 import com.jetbrains.python.psi.PyCallSiteExpression;
 import com.jetbrains.python.psi.PyCallable;
 import com.jetbrains.python.psi.PyExpression;
@@ -74,7 +75,7 @@ public class PyCallableTypeImpl implements PyCallableType {
     final var fullMapping = PyCallExpressionHelper.mapArguments(callSite, this, context);
     final var actualParameters = fullMapping.getMappedParameters();
     final var allParameters = ContainerUtil.notNullize(getParameters(context));
-    final var receiver = callSite.getReceiver(this.myCallable);
+    final var receiver = callSite.getReceiver(myCallable);
     return analyzeCallType(myReturnType, actualParameters, allParameters, receiver, callSite, context);
   }
 

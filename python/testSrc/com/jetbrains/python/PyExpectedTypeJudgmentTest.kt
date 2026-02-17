@@ -189,6 +189,16 @@ class PyExpectedTypeJudgmentTest : PyTestCase() {
       """)
   }
 
+  fun testExpressionInsideLambdaAsArgumentTypedAsUnion() {
+    doTest("expr", "int", """
+      from typing import Callable
+      
+      def f(fn: str|Callable[[int], object]):
+          ...
+      f(lambda expr: {})
+      """)
+  }
+
   fun testExpressionAsReturnValue() {
     doTest("expr", "str", """
       from typing import Iterable

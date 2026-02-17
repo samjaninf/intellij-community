@@ -159,6 +159,21 @@ public class Py3TypeTest extends PyTestCase {
       expr = d.pop("abc", None)""");
   }
 
+  // PY-83704
+  public void testPopFromDictWithDefaultNoneValue2() {
+    doTest("int | None", """
+      d: dict[str, int] = {"abc": 0, "1": 1}
+      expr = d.pop("abc", None)""");
+  }
+
+  // PY-83704
+  public void testPopFromDictWithDefaultNoneValue3() {
+    doTest("Any", """
+      from typing import Any
+      d: dict[str, Any] = {"abc": "s", "1": 1}
+      expr = d.pop("abc", None)""");
+  }
+
   // PY-83351
   public void testWhileStatementNarrowing() {
     doTest("int",
@@ -1084,7 +1099,7 @@ public class Py3TypeTest extends PyTestCase {
 
   // PY-20757
   public void testMinElseNone() {
-    doTest("Any | None",
+    doTest("SupportsDunderLT[Any] | SupportsDunderGT[Any] | None",
            """
              def get_value(v):
                  if v:
@@ -3721,7 +3736,7 @@ public class Py3TypeTest extends PyTestCase {
   public void testTypeCheckingMultiFile() {
     myFixture.addFileToProject("mod.py", """
       import typing
-
+      
       if not not typing.TYPE_CHECKING:
           v: int = -1
       else:
@@ -4562,11 +4577,11 @@ public class Py3TypeTest extends PyTestCase {
   public void testFunctionAlwaysRaisesReturnsNever() {
     // The function actually returns NoReturn, but its get converted to Never upon assignment to expr
     doTest("Never", """
-      def f():
-          raise Exception()
-    
-      expr = f()
-    """);
+        def f():
+            raise Exception()
+      
+        expr = f()
+      """);
   }
 
   // PY-85078
@@ -4738,7 +4753,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaParameterUsesAssignmentContext() {
     doTest("int", """
       from typing import Callable
@@ -4747,7 +4762,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaParameterUsesAssignmentContextSplitDefinition() {
     doTest("int", """
       from typing import Callable
@@ -4757,7 +4772,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaParameterUsesAssignmentContextSplitDefinitionClass() {
     doTest("int", """
       from typing import Callable
@@ -4769,7 +4784,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaParameterUsesParameterContext() {
     doTest("int", """
       from typing import Callable
@@ -4780,7 +4795,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaParameterUsesReturnContext() {
     doTest("int", """
       from typing import Callable
@@ -4790,7 +4805,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaUsesGenericContext() {
     doTest("int", """
       from typing import Callable
@@ -4801,7 +4816,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaUsesGenericContextReceiver() {
     doTest("int", """
       from typing import Callable
@@ -4813,13 +4828,13 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaParameterDoesntEndlessRecursion() {
     RecursionManager.assertOnRecursionPrevention(myFixture.getTestRootDisposable());
     doTest("Any", "_ = lambda expr: expr");
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaAsNonAnnotatedFunctionReturnValue() {
     RecursionManager.assertOnRecursionPrevention(myFixture.getTestRootDisposable());
     doTest("(x: Any) -> UnsafeUnion[int, Any]", """
@@ -4829,7 +4844,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaAsNonAnnotatedVariableValue() {
     RecursionManager.assertOnRecursionPrevention(myFixture.getTestRootDisposable());
     doTest("(x: Any) -> UnsafeUnion[int, Any]", """
@@ -4838,7 +4853,7 @@ public class Py3TypeTest extends PyTestCase {
       """);
   }
 
-  @TestFor(issues="PY-28130")
+  @TestFor(issues = "PY-28130")
   public void testLambdaAsNonAnnotatedParameterValue() {
     RecursionManager.assertOnRecursionPrevention(myFixture.getTestRootDisposable());
     doTest("Any", """

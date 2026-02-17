@@ -69,10 +69,14 @@ object PyExpectedTypeJudgement {
    * implied supertype `List`, to then retrieve the type of `List`s type parameter.
    */
   @JvmStatic
-  fun getExpectedType(expr: PyExpression, ctx: TypeEvalContext): PyType? {
+  fun getExpectedType(expr: PyExpression, ctxOriginal: TypeEvalContext): PyType? {
     // Traverse the AST upwards to find the root expression (either assignment, function call, return statement)
     // Do this recursively to easily map the result type to the original sub-element.
     // Example: x2: str; x1, (x2, x3) = (42, (expr, "spam")) # expr is the requested sub-element, the whole tuple is the root expression
+
+    // use a context copy to (a) avoid types being cached in the original context, (b) avoid control flow analysis to happen.
+    val ctx = TypeEvalContext.codeInsightFallback(expr.project)
+
     val parent = expr.parent
     when (parent) {
       is PyStarArgument,
@@ -82,7 +86,7 @@ object PyExpectedTypeJudgement {
       }
 
       is PyAssignmentExpression -> {
-        val expectedType = fromWalrus(expr)
+        val expectedType = fromWalrus(expr, ctx)
         if (expectedType != null) return expectedType
         return getExpectedType(parent, ctx)
       }
@@ -168,7 +172,12 @@ object PyExpectedTypeJudgement {
       is PyParameterList -> {
         if (expr.parent.parent is PyLambdaExpression && expr is PyParameter) {
           val indexOfExpr = parent.parameters.indexOf(expr)
-          val typeOfParentLambda = getExpectedType(parent.parent as PyExpression, ctx)
+          var typeOfParentLambda = getExpectedType(parent.parent as PyExpression, ctx)
+
+          if (typeOfParentLambda is PyUnionType) {
+            // match first callable
+            typeOfParentLambda = typeOfParentLambda.members.firstOrNull { it is PyCallableType && it.isCallable }
+          }
           if (typeOfParentLambda is PyCallableType) {
             val parameters = typeOfParentLambda.getParameters(ctx)
             if (parameters != null && indexOfExpr >= 0 && indexOfExpr < parameters.size) {
@@ -190,7 +199,7 @@ object PyExpectedTypeJudgement {
 
     // Compute the expected type from a given root statement/expression
     return fromArgument(expr, ctx)
-           ?: fromAssignment(expr)
+           ?: fromAssignment(expr, ctx)
            ?: fromYield(expr, ctx)
            ?: fromReturn(expr, ctx)
   }
@@ -311,22 +320,20 @@ object PyExpectedTypeJudgement {
     return substitute(paramType, substitutions, ctx)
   }
 
-  private fun fromWalrus(expr: PyExpression): PyType? {
+  private fun fromWalrus(expr: PyExpression, ctx: TypeEvalContext): PyType? {
     val parent = expr.parent as? PyAssignmentExpression ?: return null
     if (parent.assignedValue != expr) return null
     val lhs = parent.target ?: return null
     val rhs = parent.assignedValue ?: return null
-    val avoidControlFlowCtx = TypeEvalContext.codeInsightFallback(null)
-    return fromLhs(lhs, rhs, avoidControlFlowCtx)
+    return fromLhs(lhs, rhs, ctx)
   }
 
-  private fun fromAssignment(expr: PyExpression): PyType? {
+  private fun fromAssignment(expr: PyExpression, ctx: TypeEvalContext): PyType? {
     val parent = expr.parent as? PyAssignmentStatement ?: return null
     if (parent.assignedValue != expr) return null
     val lhs = parent.leftHandSideExpression ?: return null
     val rhs = parent.assignedValue ?: return null
-    val avoidControlFlowCtx = TypeEvalContext.codeInsightFallback(null)
-    return fromLhs(lhs, rhs, avoidControlFlowCtx)
+    return fromLhs(lhs, rhs, ctx)
   }
 
   private fun fromLhs(lhs: PyExpression, rhs: PyExpression?, ctx: TypeEvalContext): PyType? {
