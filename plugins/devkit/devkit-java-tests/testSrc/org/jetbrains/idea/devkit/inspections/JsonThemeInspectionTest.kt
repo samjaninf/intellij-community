@@ -101,4 +101,64 @@ class JsonThemeInspectionTest : BasePlatformTestCase() {
     """.trimIndent())
     myFixture.checkHighlighting()
   }
+
+  fun testNamedColorFromParentTheme() {
+    myFixture.addFileToProject("parent.theme.json", """
+      {
+        "name": "Parent Theme",
+        "colors": {
+          "parent-color": "#000000"
+        }
+      }
+    """.trimIndent())
+
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Child Theme",
+        "parentTheme": "Parent Theme",
+        "ui": {
+          "ActionButton.focusedBorderColor": "parent-color",
+          "ActionButton.separatorColor": "<error descr="Cannot resolve symbol 'unknown-color'">unknown-color</error>"
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
+
+  fun testNamedColorFromThemeProviderId() {
+    myFixture.addFileToProject("META-INF/plugin.xml", """
+      <idea-plugin>
+        <id>test.plugin</id>
+        
+        <extensionPoints>
+          <extensionPoint qualifiedName="com.intellij.themeProvider" interface="com.intellij.ide.ui.LafManagerListener"/>
+        </extensionPoints>
+        
+        <extensions defaultExtensionNs="com.intellij">
+          <themeProvider id="MyCustomId" path="/themes/my_theme.theme.json"/>
+        </extensions>
+      </idea-plugin>
+    """.trimIndent())
+
+    myFixture.addFileToProject("themes/my_theme.theme.json", """
+      {
+        "name": "My Theme Name",
+        "colors": {
+          "provider-color": "#000000"
+        }
+      }
+    """.trimIndent())
+
+    myFixture.configureByText("child.theme.json", """
+      {
+        "name": "Child Theme",
+        "parentTheme": "MyCustomId",
+        "ui": {
+          "ActionButton.focusedBorderColor": "provider-color",
+          "ActionButton.separatorColor": "<error descr="Cannot resolve symbol 'unknown-color'">unknown-color</error>"
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
 }

@@ -3,17 +3,13 @@ package org.jetbrains.idea.devkit.themes;
 
 import com.intellij.json.psi.JsonFile;
 import com.intellij.json.psi.JsonLiteral;
-import com.intellij.json.psi.JsonProperty;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.util.containers.ContainerUtil;
 import com.jetbrains.jsonSchema.impl.JsonSchemaBaseReference;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 final class ThemeJsonNamedColorPsiReference extends JsonSchemaBaseReference<JsonLiteral> {
   private final String myName;
@@ -28,8 +24,11 @@ final class ThemeJsonNamedColorPsiReference extends JsonSchemaBaseReference<Json
     PsiFile containingFile = getElement().getContainingFile();
     if (!(containingFile instanceof JsonFile)) return null;
 
-    List<JsonProperty> namedColors = ThemeJsonUtil.getNamedColors((JsonFile)containingFile);
-    return ContainerUtil.find(namedColors, property -> property.getName().equals(myName));
+    var namedColors = ThemeJsonUtil.getNamedColorsMap((JsonFile)containingFile);
+    var color = namedColors.get(myName);
+    if (color == null) return null;
+
+    return color.declaration().retrieve();
   }
 
   @Override
