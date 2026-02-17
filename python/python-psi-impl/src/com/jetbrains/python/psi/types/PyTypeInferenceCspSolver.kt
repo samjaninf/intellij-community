@@ -519,7 +519,7 @@ private object ConstraintReducer {
           return
         }
       }
-      Variance.INVARIANT -> {
+      Variance.INVARIANT, Variance.BIVARIANT -> {
         if (!sameTypes(left, right, cp.context)) {
           cp.fail()
           return
