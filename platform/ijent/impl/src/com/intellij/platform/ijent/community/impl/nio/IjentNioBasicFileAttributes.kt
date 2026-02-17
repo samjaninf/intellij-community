@@ -76,12 +76,15 @@ internal class IjentNioBasicFileAttributes(private val fileInfo: EelFileInfo) : 
   override fun fileKey(): Any =
     when (fileInfo) {
       is EelPosixFileInfo -> EelUnixFileKey(dev = fileInfo.inodeDev, ino = fileInfo.inodeIno)
-      is EelWindowsFileInfo -> TODO()
+      is EelWindowsFileInfo -> EelWindowsFileKey(fileInfo.volumeSerialNumber, fileInfo.fileIndexHigh, fileInfo.fileIndexLow)
     }
 }
 
 /** Similar to `sun.nio.fs.UnixFileKey` */
 internal data class EelUnixFileKey(val dev: Long, val ino: Long)
+
+/** Similar to `sun.nio.fs.WindowsFileKey` */
+internal data class EelWindowsFileKey(val volumeSerialNumber: Int, val fileIndexHigh: Int, val fileIndexLow: Int)
 
 class IjentNioPosixFileAttributes(
   internal val fileInfo: EelPosixFileInfo,

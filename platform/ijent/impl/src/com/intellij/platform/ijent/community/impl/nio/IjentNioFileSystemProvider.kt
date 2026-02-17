@@ -612,7 +612,7 @@ class IjentNioFileSystemProvider : FileSystemProvider() {
     fsBlocking {
       when (val ijentFs = fs.ijentFs) {
         is IjentFileSystemPosixApi -> ijentFs.createSymbolicLink(eelTarget, link.eelPath).getOrThrowFileSystemException()
-        is IjentFileSystemWindowsApi -> TODO("Symbolic links are not supported on Windows")
+        is IjentFileSystemWindowsApi -> ijentFs.createSymbolicLink(eelTarget, link.eelPath).getOrThrowFileSystemException()
       }
     }
   }
@@ -627,7 +627,7 @@ class IjentNioFileSystemProvider : FileSystemProvider() {
     val os = fs.ijentFs.descriptor.osFamily
     return fsBlocking {
       when (val ijentFs = fs.ijentFs) {
-        is IjentFileSystemPosixApi -> when (val type = ijentFs.stat(absolutePath).justResolve().getOrThrowFileSystemException().type) {
+        is IjentFileSystemPosixApi, is IjentFileSystemWindowsApi -> when (val type = ijentFs.stat(absolutePath).justResolve().getOrThrowFileSystemException().type) {
           is Symlink.Resolved.Absolute -> AbsoluteIjentNioPath(type.result, link.nioFs, null)
           is Symlink.Resolved.Relative -> {
             RelativeIjentNioPath(type.result.split(*os.directorySeparators), link.nioFs)
@@ -635,7 +635,6 @@ class IjentNioFileSystemProvider : FileSystemProvider() {
           is Directory, is Regular, is Other -> throw NotLinkException(link.toString())
           is Symlink.Unresolved -> error("Impossible, the link should be resolved")
         }
-        is IjentFileSystemWindowsApi -> TODO()
       }
     }
   }

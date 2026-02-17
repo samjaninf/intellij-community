@@ -11,6 +11,8 @@ import com.intellij.platform.eel.GeneratedBuilder
 import com.intellij.platform.eel.ReadResult
 import com.intellij.platform.eel.channels.EelDelicateApi
 import com.intellij.platform.eel.fs.EelFileSystemApi.StatError
+import com.intellij.platform.eel.fs.EelFileSystemPosixApi.CreateSymbolicLinkError
+import com.intellij.platform.eel.fs.EelFileSystemPosixApi.SymbolicLinkTarget
 import com.intellij.platform.eel.path.EelPath
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.annotations.ApiStatus
@@ -1188,6 +1190,9 @@ interface EelFileSystemWindowsApi : EelFileSystemApi {
   @CheckReturnValue
   override suspend fun stat(@GeneratedBuilder args: EelFileSystemApi.StatArgs): EelResult<EelWindowsFileInfo, StatError> =
     stat(path = args.path, symlinkPolicy = args.symlinkPolicy)
+
+  @CheckReturnValue
+  suspend fun createSymbolicLink(target: SymbolicLinkTarget, linkPath: EelPath): EelResult<Unit, CreateSymbolicLinkError>
 }
 
 @CheckReturnValue

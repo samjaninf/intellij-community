@@ -11,6 +11,9 @@ data class EelWindowsFileInfoImpl(
   override val creationTime: ZonedDateTime?,
   override val lastModifiedTime: ZonedDateTime?,
   override val lastAccessTime: ZonedDateTime?,
+  override val volumeSerialNumber: Int,
+  override val fileIndexHigh: Int,
+  override val fileIndexLow: Int,
 ) : EelWindowsFileInfo {
   data class Permissions(
     override val isReadOnly: Boolean,
