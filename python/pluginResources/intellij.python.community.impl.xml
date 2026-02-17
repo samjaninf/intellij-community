@@ -261,6 +261,10 @@
     <testFinder implementation="com.jetbrains.python.codeInsight.testIntegration.PyTestFinder"/>
     <testCreator language="Python" implementationClass="com.jetbrains.python.codeInsight.testIntegration.PyTestCreator"/>
 
+    <applicationService serviceInterface="com.jetbrains.python.psi.types.TypeEvalContextFactory"
+                        serviceImplementation="com.jetbrains.python.psi.types.TypeEvalContextFactoryImpl"/>
+
+
     <localInspection language="Python" shortName="PyUnresolvedReferencesInspection" suppressId="PyUnresolvedReferences"
                      bundle="messages.PyPsiBundle" key="INSP.NAME.unresolved.refs" groupKey="INSP.GROUP.python" enabledByDefault="true"
                      level="WARNING"

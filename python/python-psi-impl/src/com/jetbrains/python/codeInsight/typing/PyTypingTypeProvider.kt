@@ -1978,7 +1978,7 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
         val result = Ref<MutableMap<PyTargetExpression?, PyExpression?>>(LinkedHashMap())
         mapTargetsToExpressions(targetsNoParen, typesNoParen, result)
         return if (result.isNull) mutableMapOf()
-        else Collections.unmodifiableMap<PyTargetExpression?, PyExpression?>(
+        else Collections.unmodifiableMap<PyTargetExpression, PyExpression>(
           result.get()
         )
       }
