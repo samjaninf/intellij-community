@@ -40,7 +40,6 @@ import com.intellij.python.processOutput.impl.ui.Colors
 import com.intellij.python.processOutput.impl.ui.Icons
 import com.intellij.python.processOutput.impl.ui.collectReplayAsState
 import com.intellij.python.processOutput.impl.ui.thenIfNotNull
-import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
@@ -73,14 +72,10 @@ internal fun OutputSection(controller: ProcessOutputController) {
 
             FilterActionGroup(
                 tooltipText = message("process.output.viewOptions.tooltip"),
-                items = persistentListOf(
-                    FilterEntry(
-                        item = OutputFilter.ShowTags,
-                        testTag = OutputSectionTestTags.FILTERS_TAGS,
-                    ),
-                ),
-                isSelected = { controller.processOutputUiState.filters.contains(it) },
-                onItemClick = { controller.toggleOutputFilter(it) },
+                state = controller.processOutputUiState.filters,
+                onFilterItemToggled = { filterItem, enabled ->
+                    controller.onOutputFilterItemToggled(filterItem, enabled)
+                },
                 modifier = Modifier.testTag(OutputSectionTestTags.FILTERS_BUTTON),
                 menuModifier = Modifier.testTag(OutputSectionTestTags.FILTERS_MENU),
             )
@@ -110,8 +105,8 @@ internal fun OutputSection(controller: ProcessOutputController) {
                 val isOutputExpandedState =
                     controller.processOutputUiState.isOutputExpanded.collectAsState()
 
-                val isDisplayTags = controller.processOutputUiState.filters.contains(
-                    OutputFilter.ShowTags,
+                val isDisplayTags = controller.processOutputUiState.filters.active.contains(
+                    OutputFilter.Item.SHOW_TAGS,
                 )
 
                 SelectionContainer {

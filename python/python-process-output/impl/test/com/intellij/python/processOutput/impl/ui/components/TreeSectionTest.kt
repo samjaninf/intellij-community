@@ -6,12 +6,14 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isNotEnabled
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onParent
 import androidx.compose.ui.test.performClick
+import com.intellij.python.community.execService.ConcurrentProcessWeight
 import com.intellij.python.processOutput.impl.ProcessOutputTest
 import com.intellij.python.processOutput.impl.TreeFilter
 import com.intellij.python.processOutput.impl.finish
@@ -164,7 +166,7 @@ internal class TreeSectionTest : ProcessOutputTest() {
         }
 
         // turn off display time filter
-        toggleTreeFilter(TreeFilter.ShowTime)
+        toggleTreeFilter(TreeFilter.Item.SHOW_TIME)
 
         // should not display time when the filter is turned off
         repeat(10) {
@@ -293,9 +295,25 @@ internal class TreeSectionTest : ProcessOutputTest() {
             useUnmergedTree = true,
         ).performClick()
 
-        // background should have been called, but not time
-        verify(exactly = 1) { controllerSpy.toggleTreeFilter(TreeFilter.ShowBackgroundProcesses) }
-        verify(exactly = 0) { controllerSpy.toggleTreeFilter(TreeFilter.ShowTime) }
+        // background should have been called, but not time nor process weights
+        verify(exactly = 1) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_BACKGROUND_PROCESSES,
+                true,
+            )
+        }
+        verify(exactly = 0) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_PROCESS_WEIGHT,
+                any(),
+            )
+        }
+        verify(exactly = 0) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_TIME,
+                any(),
+            )
+        }
 
         // clicking on time
         onNodeWithTag(
@@ -303,8 +321,90 @@ internal class TreeSectionTest : ProcessOutputTest() {
             useUnmergedTree = true,
         ).performClick()
 
-        // both filters should have been called
-        verify(exactly = 1) { controllerSpy.toggleTreeFilter(TreeFilter.ShowBackgroundProcesses) }
-        verify(exactly = 1) { controllerSpy.toggleTreeFilter(TreeFilter.ShowTime) }
+        // background and time should have been called, but not process weights
+        verify(exactly = 1) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_BACKGROUND_PROCESSES,
+                true,
+            )
+        }
+        verify(exactly = 0) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_PROCESS_WEIGHT,
+                any(),
+            )
+        }
+        verify(exactly = 1) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_TIME,
+                false,
+            )
+        }
+
+        // clicking on process weights
+        onNodeWithTag(
+            TreeSectionTestTags.FILTERS_PROCESS_WEIGHTS,
+            useUnmergedTree = true,
+        ).performClick()
+
+        // all filters should have been called
+        verify(exactly = 1) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_BACKGROUND_PROCESSES,
+                true,
+            )
+        }
+        verify(exactly = 1) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_PROCESS_WEIGHT,
+                false,
+            )
+        }
+        verify(exactly = 1) {
+            controllerSpy.onTreeFilterItemToggled(
+                TreeFilter.Item.SHOW_TIME,
+                false,
+            )
+        }
     }
+
+    @Test
+    fun `tree process items should display process weights when the filter is enabled`() =
+        processOutputTest {
+            // adding some processes
+            setTree {
+                repeat(3) {
+                    addProcess("light$it", weight = ConcurrentProcessWeight.LIGHT)
+                }
+                repeat(3) {
+                    addProcess("medium$it", weight = ConcurrentProcessWeight.MEDIUM)
+                }
+                repeat(3) {
+                    addProcess("heavy$it", weight = ConcurrentProcessWeight.HEAVY)
+                }
+            }
+
+            // should display medium and heavy icons
+            onAllNodesWithTag(
+                testTag = TreeSectionTestTags.PROCESS_ITEM_WEIGHT_MEDIUM_ICON,
+                useUnmergedTree = true,
+            ).assertCountEquals(3)
+            onAllNodesWithTag(
+                testTag = TreeSectionTestTags.PROCESS_ITEM_WEIGHT_HEAVY_ICON,
+                useUnmergedTree = true,
+            ).assertCountEquals(3)
+
+            // turn off process weight icons
+            toggleTreeFilter(TreeFilter.Item.SHOW_PROCESS_WEIGHT)
+
+            // should not display any weight icons
+            onAllNodesWithTag(
+                testTag = TreeSectionTestTags.PROCESS_ITEM_WEIGHT_MEDIUM_ICON,
+                useUnmergedTree = true,
+            ).assertCountEquals(0)
+            onAllNodesWithTag(
+                testTag = TreeSectionTestTags.PROCESS_ITEM_WEIGHT_HEAVY_ICON,
+                useUnmergedTree = true,
+            ).assertCountEquals(0)
+        }
 }

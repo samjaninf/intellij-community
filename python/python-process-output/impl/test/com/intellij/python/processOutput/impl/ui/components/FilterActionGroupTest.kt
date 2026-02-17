@@ -3,9 +3,6 @@ package com.intellij.python.processOutput.impl.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.mutableStateSetOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
@@ -23,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.intellij.python.processOutput.impl.ProcessOutputTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlinx.collections.immutable.persistentListOf
+import org.jetbrains.annotations.ApiStatus
 
 internal class FilterActionGroupTest : ProcessOutputTest() {
     @Test
@@ -81,116 +78,109 @@ internal class FilterActionGroupTest : ProcessOutputTest() {
     @Test
     fun `view filters buttons call their respective functions`() = processOutputTest {
         val clicks = mutableMapOf(
-            TestFilter.Option1 to 0,
-            TestFilter.Option2 to 0,
+            TestFilter.Item.OPTION_1 to 0,
+            TestFilter.Item.OPTION_2 to 0,
         )
-        scaffold(
-            onItemClick = {
-                clicks[it] = clicks[it]!!.plus(1)
+        val state = scaffold(
+            onFilterItemToggled = { filterItem, _ ->
+                clicks[filterItem] = clicks[filterItem]!!.plus(1)
             },
         )
 
         // clicking the view filters button
         onNodeWithTag(TestTags.BUTTON).performClick()
 
-        // no menu buttons were clicked, no functions were called
-        assertEquals(0, clicks[TestFilter.Option1])
-        assertEquals(0, clicks[TestFilter.Option2])
+        // no menu buttons were clicked, no active filters
+        assertEquals(state.active.size, 0)
 
         // clicking on option1
         onNodeWithText(
-            TestFilter.Option1.title,
+            TestFilter.Item.OPTION_1.title,
             useUnmergedTree = true,
         ).performClick()
 
-        // option1 should have been called, but not option2
-        assertEquals(1, clicks[TestFilter.Option1])
-        assertEquals(0, clicks[TestFilter.Option2])
+        // option1 should be active
+        assertEquals(setOf(TestFilter.Item.OPTION_1), state.active)
+        assertEquals(clicks[TestFilter.Item.OPTION_1], 1)
 
         // clicking on option2
         onNodeWithText(
-            TestFilter.Option2.title,
+            TestFilter.Item.OPTION_2.title,
             useUnmergedTree = true,
         ).performClick()
 
-        // both filters should have been called
-        assertEquals(1, clicks[TestFilter.Option1])
-        assertEquals(1, clicks[TestFilter.Option2])
+        // both filters should be active
+        assertEquals(
+            setOf(TestFilter.Item.OPTION_1, TestFilter.Item.OPTION_2),
+            state.active,
+        )
+        assertEquals(clicks[TestFilter.Item.OPTION_1], 1)
+        assertEquals(clicks[TestFilter.Item.OPTION_2], 1)
     }
 
     @Test
     fun `view filters buttons include checked icon when selected`() = processOutputTest {
-        val selected = mutableStateSetOf<TestFilter>(TestFilter.Option2)
-        scaffold(selectedItems = selected)
+        val state = scaffold(selectedItems = setOf(TestFilter.Item.OPTION_2))
 
         // clicking the view filters button
         onNodeWithTag(TestTags.BUTTON).performClick()
 
         // option1 disabled, option2 enabled
-        onNodeWithText(TestFilter.Option1.title, useUnmergedTree = true)
+        onNodeWithText(TestFilter.Item.OPTION_1.title, useUnmergedTree = true)
             .onSiblings()
             .filter(hasTestTag(FilterActionGroupTestTags.CHECKED_ICON))
             .assertCountEquals(0)
 
-        onNodeWithText(TestFilter.Option2.title, useUnmergedTree = true)
+        onNodeWithText(TestFilter.Item.OPTION_2.title, useUnmergedTree = true)
             .onSiblings()
             .filter(hasTestTag(FilterActionGroupTestTags.CHECKED_ICON))
             .assertCountEquals(1)
 
         // enabling option1, disabling option2
-        selected.remove(TestFilter.Option2)
-        selected.add(TestFilter.Option1)
+        state.active.remove(TestFilter.Item.OPTION_2)
+        state.active.add(TestFilter.Item.OPTION_1)
 
         // option1 enabled, option2 disabled
-        onNodeWithText(TestFilter.Option1.title, useUnmergedTree = true)
+        onNodeWithText(TestFilter.Item.OPTION_1.title, useUnmergedTree = true)
             .onSiblings()
             .filter(hasTestTag(FilterActionGroupTestTags.CHECKED_ICON))
             .assertCountEquals(1)
 
-        onNodeWithText(TestFilter.Option2.title, useUnmergedTree = true)
+        onNodeWithText(TestFilter.Item.OPTION_2.title, useUnmergedTree = true)
             .onSiblings()
             .filter(hasTestTag(FilterActionGroupTestTags.CHECKED_ICON))
             .assertCountEquals(0)
     }
 
     private fun scaffold(
-        selectedItems: SnapshotStateSet<TestFilter> = mutableStateSetOf(),
-        onItemClick: (TestFilter) -> Unit = {},
-    ) {
+        selectedItems: Set<TestFilter.Item> = setOf(),
+        onFilterItemToggled: (TestFilter.Item, Boolean) -> Unit = { _, _ -> },
+    ): FilterActionGroupState<TestFilter, TestFilter.Item> {
+        val state = FilterActionGroupState(TestFilter)
+        state.active.addAll(selectedItems)
         scaffoldTestContent {
-            val selected = remember { selectedItems }
-
             Box(modifier = Modifier.size(256.dp).padding(16.dp)) {
                 FilterActionGroup(
                     tooltipText = DEFAULT_TOOLTIP_TEXT,
-                    items = persistentListOf(
-                        FilterEntry(
-                            item = TestFilter.Option1,
-                            testTag = TestTags.OPTION_1,
-                        ),
-                        FilterEntry(
-                            item = TestFilter.Option2,
-                            testTag = TestTags.OPTION_2,
-                        ),
-                    ),
-                    isSelected = { selected.contains(it) },
-                    onItemClick = onItemClick,
+                    state = state,
+                    onFilterItemToggled = onFilterItemToggled,
                     modifier = Modifier.testTag(TestTags.BUTTON),
                     menuModifier = Modifier.testTag(TestTags.MENU),
                 )
             }
         }
+        return state;
     }
 }
 
-private abstract class TestFilter : FilterItem {
-    object Option1 : TestFilter() {
-        override val title = "option1"
+@ApiStatus.Internal
+private object TestFilter : Filter<TestFilter.Item> {
+    enum class Item(override val title: String, override val testTag: String) : FilterItem {
+        OPTION_1("option1", TestTags.OPTION_1),
+        OPTION_2("option2", TestTags.OPTION_2),
     }
 
-    object Option2 : TestFilter() {
-        override val title = "option2"
-    }
+    override val defaultActive: Set<Item> = setOf()
 }
 
 private object TestTags {

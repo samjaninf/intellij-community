@@ -4,15 +4,15 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.mutableStateSetOf
-import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.intellij.python.community.execService.ConcurrentProcessWeight
 import com.intellij.python.community.execService.impl.LoggedProcess
 import com.intellij.python.community.execService.impl.LoggedProcessExe
 import com.intellij.python.community.execService.impl.LoggedProcessExitInfo
 import com.intellij.python.community.execService.impl.LoggedProcessLine
 import com.intellij.python.community.execService.impl.LoggingLimits
+import com.intellij.python.processOutput.impl.ui.components.FilterActionGroupState
 import com.intellij.python.processOutput.impl.ui.toggle
 import com.jetbrains.python.TraceContext
 import io.mockk.spyk
@@ -36,13 +36,7 @@ import org.junit.Rule
 
 internal abstract class ProcessOutputTest {
     protected val processTree = MutableStateFlow(buildTree<TreeNode> {})
-    protected val processTreeFilters: SnapshotStateSet<TreeFilter> = mutableStateSetOf(
-        TreeFilter.ShowTime,
-    )
 
-    protected val processOutputFilters: SnapshotStateSet<OutputFilter> = mutableStateSetOf(
-        OutputFilter.ShowTags,
-    )
     protected val processOutputInfoExpanded = MutableStateFlow(false)
     protected val processOutputOutputExpanded = MutableStateFlow(true)
 
@@ -50,7 +44,7 @@ internal abstract class ProcessOutputTest {
     protected val testProcessTreeUiState: TreeUiState = run {
         val selectableLazyListState = SelectableLazyListState(LazyListState())
         TreeUiState(
-            filters = processTreeFilters,
+            filters = FilterActionGroupState(TreeFilter),
             searchState = TextFieldState(),
             selectableLazyListState = selectableLazyListState,
             treeState = TreeState(selectableLazyListState),
@@ -58,7 +52,7 @@ internal abstract class ProcessOutputTest {
         )
     }
     protected val testProcessOutputUiState: OutputUiState = OutputUiState(
-        filters = processOutputFilters,
+        filters = FilterActionGroupState(OutputFilter),
         isInfoExpanded = processOutputInfoExpanded,
         isOutputExpanded = processOutputOutputExpanded,
         lazyListState = LazyListState(),
@@ -86,12 +80,12 @@ internal abstract class ProcessOutputTest {
             controllerSpy.selectProcess(process)
         }
 
-        override fun toggleTreeFilter(filter: TreeFilter) {
-            controllerSpy.toggleTreeFilter(filter)
+        override fun onTreeFilterItemToggled(filterItem: TreeFilter.Item, enabled: Boolean) {
+            controllerSpy.onTreeFilterItemToggled(filterItem, enabled)
         }
 
-        override fun toggleOutputFilter(filter: OutputFilter) {
-            controllerSpy.toggleOutputFilter(filter)
+        override fun onOutputFilterItemToggled(filterItem: OutputFilter.Item, enabled: Boolean) {
+            controllerSpy.onOutputFilterItemToggled(filterItem, enabled)
         }
 
         override fun toggleProcessInfo() {
@@ -150,8 +144,8 @@ internal abstract class ProcessOutputTest {
         testProcessTreeUiState.treeState.openNodes(traceContexts.toList())
     }
 
-    fun toggleTreeFilter(filter: TreeFilter) {
-        processTreeFilters.toggle(filter)
+    fun toggleTreeFilter(filterItem: TreeFilter.Item) {
+        testProcessTreeUiState.filters.active.toggle(filterItem)
     }
 
     fun setSelectedProcess(process: LoggedProcess) {
@@ -173,9 +167,10 @@ internal abstract class ProcessOutputTest {
         cwd: String? = null,
         lines: List<LoggedProcessLine> = listOf(),
         exitInfo: LoggedProcessExitInfo? = null,
+        weight: ConcurrentProcessWeight? = null,
     ): LoggedProcess =
         LoggedProcess(
-            weight = null,
+            weight = weight,
             traceContext = traceContext ?: TraceContext("some title"),
             pid = 123,
             startedAt = startedAt,
@@ -214,6 +209,7 @@ internal abstract class ProcessOutputTest {
         traceContext: TraceContext? = null,
         startedAt: Instant = Clock.System.now(),
         cwd: String? = null,
+        weight: ConcurrentProcessWeight? = null,
     ) {
         addProcess(
             process(
@@ -221,6 +217,7 @@ internal abstract class ProcessOutputTest {
                 traceContext = traceContext,
                 startedAt = startedAt,
                 cwd = cwd,
+                weight = weight,
             ),
         )
     }

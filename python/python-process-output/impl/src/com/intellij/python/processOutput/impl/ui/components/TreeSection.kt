@@ -55,7 +55,6 @@ import com.intellij.python.processOutput.impl.ui.processIsBackground
 import com.intellij.python.processOutput.impl.ui.processIsError
 import com.jetbrains.python.NON_INTERACTIVE_ROOT_TRACE_CONTEXT
 import kotlin.time.Instant
-import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.jewel.bridge.icon.fromPlatformIcon
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.lazy.tree.Tree
@@ -100,6 +99,13 @@ private enum class ErrorKind {
     NORMAL,
     CRITICAL,
 }
+
+private data class ProcessWeightViewModel(
+    val iconKey: IconKey,
+    val contentDesc: String,
+    val tooltipMessage: String,
+    val testId: String,
+)
 
 @Composable
 internal fun TreeSection(controller: ProcessOutputController) {
@@ -178,18 +184,10 @@ private fun TreeToolbar(
 
         FilterActionGroup(
             tooltipText = message("process.output.viewOptions.tooltip"),
-            items = persistentListOf(
-                FilterEntry(
-                    item = TreeFilter.ShowTime,
-                    testTag = TreeSectionTestTags.FILTERS_TIME,
-                ),
-                FilterEntry(
-                    item = TreeFilter.ShowBackgroundProcesses,
-                    testTag = TreeSectionTestTags.FILTERS_BACKGROUND,
-                ),
-            ),
-            isSelected = { controller.processTreeUiState.filters.contains(it) },
-            onItemClick = { controller.toggleTreeFilter(it) },
+            state = controller.processTreeUiState.filters,
+            onFilterItemToggled = { filterItem, enabled ->
+                controller.onTreeFilterItemToggled(filterItem, enabled)
+            },
             modifier = Modifier.testTag(TreeSectionTestTags.FILTERS_BUTTON),
             menuModifier = Modifier.testTag(TreeSectionTestTags.FILTERS_MENU),
         )
@@ -268,7 +266,11 @@ private fun TreeContent(controller: ProcessOutputController, tree: Tree<TreeNode
                         ),
                         interactionSource = remember { MutableInteractionSource() },
                     ) {
-                        TreeRow(it.data, filters.contains(TreeFilter.ShowTime))
+                        TreeRow(
+                            it.data,
+                            filters.active.contains(TreeFilter.Item.SHOW_TIME),
+                            filters.active.contains(TreeFilter.Item.SHOW_PROCESS_WEIGHT),
+                        )
                     }
                 }
             }
@@ -286,6 +288,7 @@ private fun TreeContent(controller: ProcessOutputController, tree: Tree<TreeNode
 private fun TreeRow(
     node: TreeNode,
     isTimeDisplayed: Boolean,
+    isProcessWeightDisplayed: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().height(TreeSectionStyling.TREE_ROW_HEIGHT),
@@ -390,11 +393,12 @@ private fun TreeRow(
             }
         }
 
-        when (node) {
-            is TreeNode.Process ->
-                ProcessWeightIcon(node.process.weight)
-            is TreeNode.Context ->
-                {}
+        if (isProcessWeightDisplayed) {
+            when (node) {
+                is TreeNode.Process ->
+                    ProcessWeightIcon(node.process.weight)
+                is TreeNode.Context -> {}
+            }
         }
 
         if (isTimeDisplayed) {
@@ -505,36 +509,34 @@ private fun ProcessIcon(
 fun ProcessWeightIcon(weight: ConcurrentProcessWeight?) {
     when (weight) {
         ConcurrentProcessWeight.MEDIUM, ConcurrentProcessWeight.HEAVY -> {
-            val iconKey: IconKey
-            val contentDesc: String
-            val tooltipMessage: String
-
-            when (weight) {
-                ConcurrentProcessWeight.MEDIUM -> {
-                    iconKey = Icons.Keys.ProcessMedium
-                    contentDesc = message("process.output.icon.description.mediumProcess")
-                    tooltipMessage = message("process.output.tree.weight.medium.tooltip")
-                }
-                ConcurrentProcessWeight.HEAVY -> {
-                    iconKey = Icons.Keys.ProcessHeavy
-                    contentDesc = message("process.output.icon.description.heavyProcess")
-                    tooltipMessage = message("process.output.tree.weight.heavy.tooltip")
-                }
+            val viewModel = when (weight) {
+                ConcurrentProcessWeight.MEDIUM -> ProcessWeightViewModel(
+                    iconKey = Icons.Keys.ProcessMedium,
+                    contentDesc = message("process.output.icon.description.mediumProcess"),
+                    tooltipMessage = message("process.output.tree.weight.medium.tooltip"),
+                    testId = TreeSectionTestTags.PROCESS_ITEM_WEIGHT_MEDIUM_ICON,
+                )
+                ConcurrentProcessWeight.HEAVY -> ProcessWeightViewModel(
+                    iconKey = Icons.Keys.ProcessHeavy,
+                    contentDesc = message("process.output.icon.description.heavyProcess"),
+                    tooltipMessage = message("process.output.tree.weight.heavy.tooltip"),
+                    testId = TreeSectionTestTags.PROCESS_ITEM_WEIGHT_HEAVY_ICON,
+                )
             }
 
             Tooltip(
                 tooltip = {
                     Row {
-                        Text(tooltipMessage)
+                        Text(viewModel.tooltipMessage)
                     }
                 },
             ) {
                 Icon(
-                    key = iconKey,
-                    contentDescription = contentDesc,
-                    modifier = Modifier.padding(
-                        TreeSectionStyling.TREE_ITEM_PROCESS_WEIGHT_PADDING
-                    )
+                    key = viewModel.iconKey,
+                    contentDescription = viewModel.contentDesc,
+                    modifier = Modifier
+                        .padding(TreeSectionStyling.TREE_ITEM_PROCESS_WEIGHT_PADDING)
+                        .testTag(viewModel.testId),
                 )
             }
         }
@@ -548,6 +550,8 @@ internal object TreeSectionTestTags {
     const val PROCESS_ITEM_BACK_ICON = "ProcessOutput.Tree.ProcessItemBackIcon"
     const val PROCESS_ITEM_ERROR_ICON = "ProcessOutput.Tree.ProcessItemErrorIcon"
     const val PROCESS_ITEM_ICON = "ProcessOutput.Tree.ProcessItemIcon"
+    const val PROCESS_ITEM_WEIGHT_MEDIUM_ICON = "ProcessOutput.Tree.Weight.MediumIcon"
+    const val PROCESS_ITEM_WEIGHT_HEAVY_ICON = "ProcessOutput.Tree.Weight.HeavyIcon"
     const val FOLDER_ITEM_ICON = "ProcessOutput.Tree.FolderItemIcon"
     const val EXPAND_ALL_BUTTON = "ProcessOutput.Tree.ExpandAllButton"
     const val COLLAPSE_ALL_BUTTON = "ProcessOutput.Tree.CollapseAllButton"
@@ -555,4 +559,5 @@ internal object TreeSectionTestTags {
     const val FILTERS_MENU = "ProcessOutput.Tree.FiltersMenu"
     const val FILTERS_BACKGROUND = "ProcessOutput.Tree.FiltersBackground"
     const val FILTERS_TIME = "ProcessOutput.Tree.FiltersTime"
+    const val FILTERS_PROCESS_WEIGHTS = "ProcessOutput.Tree.FiltersProcessWeights"
 }

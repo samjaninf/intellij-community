@@ -1,7 +1,7 @@
 package com.intellij.python.processOutput.impl.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +10,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.InputMode
@@ -20,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.intellij.python.processOutput.impl.ProcessOutputBundle.message
 import com.intellij.python.processOutput.impl.ui.Icons
 import com.intellij.python.processOutput.impl.ui.thenIfNotNull
-import kotlinx.collections.immutable.ImmutableList
+import com.intellij.python.processOutput.impl.ui.toggle
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.jewel.foundation.Stroke
 import org.jetbrains.jewel.foundation.modifier.border
@@ -33,16 +35,42 @@ import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.items
 import org.jetbrains.jewel.ui.theme.iconButtonStyle
 
+@ApiStatus.Internal
+class FilterActionGroupState<TFilter, TItem>(treeFilter: TFilter)
+    where TItem : Enum<TItem>,
+          TItem : FilterItem,
+          TFilter : Filter<TItem> {
+    internal val active: SnapshotStateSet<TItem> = mutableStateSetOf()
+
+    init {
+        active.addAll(treeFilter.defaultActive)
+    }
+}
+
+@ApiStatus.Internal
+interface Filter<TItem>
+    where TItem : Enum<TItem>,
+          TItem : FilterItem {
+    val defaultActive: Set<TItem>
+}
+
+@ApiStatus.Internal
+interface FilterItem {
+    val title: String
+    val testTag: String
+}
+
 @Composable
-internal fun <T : FilterItem> FilterActionGroup(
+internal inline fun <TFilter, reified TItem> FilterActionGroup(
     tooltipText: String,
-    items: ImmutableList<FilterEntry<T>>,
-    isSelected: (T) -> Boolean,
-    onItemClick: (T) -> Unit,
+    state: FilterActionGroupState<TFilter, TItem>,
+    crossinline onFilterItemToggled: (filterItem: TItem, enabled: Boolean) -> Unit,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
     menuModifier: Modifier = Modifier,
-) {
+) where TItem : Enum<TItem>,
+        TItem : FilterItem,
+        TFilter : Filter<TItem> {
     var isMenuOpen by remember { mutableStateOf(false) }
 
     Box {
@@ -83,18 +111,21 @@ internal fun <T : FilterItem> FilterActionGroup(
                 modifier = menuModifier.onHover { isHovered = it },
             ) {
                 items(
-                    items = items,
-                    isSelected = { isSelected(it.item) },
-                    onItemClick = { onItemClick(it.item) },
+                    items = enumValues<TItem>().toList(),
+                    isSelected = { state.active.contains(it) },
+                    onItemClick = {
+                        state.active.toggle(it)
+                        onFilterItemToggled(it, state.active.contains(it))
+                    },
                 ) {
                     Row(
                         modifier = Modifier.thenIfNotNull(it.testTag) { tag ->
                             testTag(tag)
                         },
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                        horizontalArrangement = spacedBy(8.dp, Alignment.Start),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (isSelected(it.item)) {
+                        if (state.active.contains(it)) {
                             Icon(
                                 Icons.Keys.Checked,
                                 message("process.output.icon.description.checked"),
@@ -104,23 +135,13 @@ internal fun <T : FilterItem> FilterActionGroup(
                             Spacer(Modifier.width(16.dp))
                         }
 
-                        Text(it.item.title)
+                        Text(it.title)
                     }
                 }
             }
         }
     }
 }
-
-@ApiStatus.Internal
-interface FilterItem {
-    val title: String
-}
-
-internal data class FilterEntry<T : FilterItem>(
-    val item: T,
-    val testTag: String? = null,
-)
 
 internal object FilterActionGroupTestTags {
     const val CHECKED_ICON = "ProcessOutput.FilterActionGroup.CheckedIcon"

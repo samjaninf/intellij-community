@@ -75,8 +75,13 @@ internal class OutputSectionTest : ProcessOutputTest() {
             useUnmergedTree = true,
         ).performClick()
 
-        // tags should have been called
-        verify(exactly = 1) { controllerSpy.toggleOutputFilter(OutputFilter.ShowTags) }
+        // tags should have been called with enabled false
+        verify(exactly = 1) {
+            controllerSpy.onOutputFilterItemToggled(
+                OutputFilter.Item.SHOW_TAGS,
+                false,
+            )
+        }
     }
 
     @Test
@@ -237,7 +242,7 @@ internal class OutputSectionTest : ProcessOutputTest() {
         ).assertCountEquals(3)
 
         // remove show tags filter
-        processOutputFilters.remove(OutputFilter.ShowTags)
+        testProcessOutputUiState.filters.active.remove(OutputFilter.Item.SHOW_TAGS)
 
         // total displayed tags should be 0
         onAllNodesWithTag(

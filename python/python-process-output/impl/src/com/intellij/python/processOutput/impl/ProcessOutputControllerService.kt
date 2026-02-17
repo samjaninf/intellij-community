@@ -3,9 +3,7 @@ package com.intellij.python.processOutput.impl
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
-import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.ui.util.fastMaxOfOrDefault
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
@@ -20,8 +18,11 @@ import com.intellij.python.community.execService.impl.LoggedProcessLine
 import com.intellij.python.processOutput.ProcessBinaryFileName
 import com.intellij.python.processOutput.ProcessIcon
 import com.intellij.python.processOutput.impl.ProcessOutputBundle.message
+import com.intellij.python.processOutput.impl.ui.components.Filter
+import com.intellij.python.processOutput.impl.ui.components.FilterActionGroupState
 import com.intellij.python.processOutput.impl.ui.components.FilterItem
-import com.intellij.python.processOutput.impl.ui.toggle
+import com.intellij.python.processOutput.impl.ui.components.OutputSectionTestTags
+import com.intellij.python.processOutput.impl.ui.components.TreeSectionTestTags
 import com.intellij.util.concurrency.annotations.RequiresEdt
 import com.jetbrains.python.NON_INTERACTIVE_ROOT_TRACE_CONTEXT
 import com.jetbrains.python.TraceContext
@@ -70,8 +71,8 @@ internal interface ProcessOutputController {
     fun collapseAllContexts()
     fun expandAllContexts()
     fun selectProcess(process: LoggedProcess?)
-    fun toggleTreeFilter(filter: TreeFilter)
-    fun toggleOutputFilter(filter: OutputFilter)
+    fun onTreeFilterItemToggled(filterItem: TreeFilter.Item, enabled: Boolean)
+    fun onOutputFilterItemToggled(filterItem: OutputFilter.Item, enabled: Boolean)
     fun toggleProcessInfo()
     fun toggleProcessOutput()
     fun specifyAdditionalInfo(logId: Int, message: @Nls String?, isCritical: Boolean)
@@ -85,7 +86,7 @@ internal interface ProcessOutputController {
 
 @ApiStatus.Internal
 data class TreeUiState(
-    val filters: Set<TreeFilter>,
+    val filters: FilterActionGroupState<TreeFilter, TreeFilter.Item>,
     val searchState: TextFieldState,
     val selectableLazyListState: SelectableLazyListState,
     val treeState: TreeState,
@@ -93,14 +94,23 @@ data class TreeUiState(
 )
 
 @ApiStatus.Internal
-sealed class TreeFilter : FilterItem {
-    object ShowTime : TreeFilter() {
-        override val title: String = message("process.output.filters.tree.time")
+object TreeFilter : Filter<TreeFilter.Item> {
+    enum class Item(override val title: String, override val testTag: String) : FilterItem {
+        SHOW_TIME(
+            title = message("process.output.filters.tree.time"),
+            testTag = TreeSectionTestTags.FILTERS_TIME,
+        ),
+        SHOW_PROCESS_WEIGHT(
+            title = message("process.output.filters.tree.processWeight"),
+            testTag = TreeSectionTestTags.FILTERS_PROCESS_WEIGHTS,
+        ),
+        SHOW_BACKGROUND_PROCESSES(
+            title = message("process.output.filters.tree.backgroundProcesses"),
+            testTag = TreeSectionTestTags.FILTERS_BACKGROUND,
+        ),
     }
 
-    object ShowBackgroundProcesses : TreeFilter() {
-        override val title: String = message("process.output.filters.tree.backgroundProcesses")
-    }
+    override val defaultActive: Set<Item> = setOf(Item.SHOW_TIME, Item.SHOW_PROCESS_WEIGHT)
 }
 
 @ApiStatus.Internal
@@ -116,15 +126,20 @@ sealed interface TreeNode {
 }
 
 @ApiStatus.Internal
-sealed class OutputFilter : FilterItem {
-    object ShowTags : OutputFilter() {
-        override val title: String = message("process.output.filters.output.tags")
+object OutputFilter : Filter<OutputFilter.Item> {
+    enum class Item(override val title: String, override val testTag: String) : FilterItem {
+        SHOW_TAGS(
+            title = message("process.output.filters.output.tags"),
+            testTag = OutputSectionTestTags.FILTERS_TAGS,
+        );
     }
+
+    override val defaultActive: Set<Item> = setOf(Item.SHOW_TAGS)
 }
 
 @ApiStatus.Internal
 data class OutputUiState(
-    val filters: Set<OutputFilter>,
+    val filters: FilterActionGroupState<OutputFilter, OutputFilter.Item>,
     val isInfoExpanded: StateFlow<Boolean>,
     val isOutputExpanded: StateFlow<Boolean>,
     val lazyListState: LazyListState,
@@ -173,13 +188,7 @@ class ProcessOutputControllerService(
     }
 
     private val processTree = MutableStateFlow(buildTree<TreeNode> {})
-    private val processTreeFilters: SnapshotStateSet<TreeFilter> = mutableStateSetOf(
-        TreeFilter.ShowTime,
-    )
 
-    private val processOutputFilters: SnapshotStateSet<OutputFilter> = mutableStateSetOf(
-        OutputFilter.ShowTags,
-    )
     private val processOutputInfoExpanded = MutableStateFlow(false)
     private val processOutputOutputExpanded = MutableStateFlow(true)
 
@@ -187,7 +196,7 @@ class ProcessOutputControllerService(
     override val processTreeUiState: TreeUiState = run {
         val selectableLazyListState = SelectableLazyListState(LazyListState())
         TreeUiState(
-            filters = processTreeFilters,
+            filters = FilterActionGroupState(TreeFilter),
             searchState = TextFieldState(),
             selectableLazyListState = selectableLazyListState,
             treeState = TreeState(selectableLazyListState),
@@ -195,7 +204,7 @@ class ProcessOutputControllerService(
         )
     }
     override val processOutputUiState: OutputUiState = OutputUiState(
-        filters = processOutputFilters,
+        filters = FilterActionGroupState(OutputFilter),
         isInfoExpanded = processOutputInfoExpanded,
         isOutputExpanded = processOutputOutputExpanded,
         lazyListState = LazyListState(),
@@ -237,38 +246,20 @@ class ProcessOutputControllerService(
         ProcessOutputUsageCollector.treeProcessSelected()
     }
 
-    override fun toggleTreeFilter(filter: TreeFilter) {
-        processTreeFilters.toggle(filter)
-
-        when (filter) {
-            TreeFilter.ShowBackgroundProcesses -> {
-                ProcessOutputUsageCollector.treeFilterBackgroundProcessesToggled(
-                    processTreeFilters.contains(
-                        TreeFilter.ShowBackgroundProcesses,
-                    ),
-                )
-
+    override fun onTreeFilterItemToggled(filterItem: TreeFilter.Item, enabled: Boolean) {
+        when (filterItem) {
+            TreeFilter.Item.SHOW_BACKGROUND_PROCESSES ->
                 coroutineScope.launch(Dispatchers.EDT) {
                     processTreeUiState.selectableLazyListState.lazyListState.scrollToItem(0)
                 }
-            }
-
-            TreeFilter.ShowTime ->
-                ProcessOutputUsageCollector.treeFilterTimeToggled(
-                    processTreeFilters.contains(TreeFilter.ShowTime),
-                )
+            TreeFilter.Item.SHOW_TIME, TreeFilter.Item.SHOW_PROCESS_WEIGHT -> {}
         }
+
+        ProcessOutputUsageCollector.treeFilterToggled(filterItem, enabled)
     }
 
-    override fun toggleOutputFilter(filter: OutputFilter) {
-        processOutputFilters.toggle(filter)
-
-        when (filter) {
-            OutputFilter.ShowTags ->
-                ProcessOutputUsageCollector.outputFilterShowTagsToggled(
-                    processOutputFilters.contains(OutputFilter.ShowTags),
-                )
-        }
+    override fun onOutputFilterItemToggled(filterItem: OutputFilter.Item, enabled: Boolean) {
+        ProcessOutputUsageCollector.outputFilterToggled(filterItem, enabled)
     }
 
     override fun toggleProcessInfo() {
@@ -288,7 +279,7 @@ class ProcessOutputControllerService(
     }
 
     override fun copyOutputToClipboard(loggedProcess: LoggedProcess) {
-        val showTags = processOutputUiState.filters.contains(OutputFilter.ShowTags)
+        val showTags = processOutputUiState.filters.active.contains(OutputFilter.Item.SHOW_TAGS)
 
         val stringToCopy = buildString {
             loggedProcess.lines.replayCache.forEach { line ->
@@ -477,7 +468,7 @@ class ProcessOutputControllerService(
             backgroundErrorProcesses,
             loggedProcesses.debounce(100.milliseconds),
             snapshotFlow { processTreeUiState.searchState.text },
-            snapshotFlow { processTreeUiState.filters.toSet() },
+            snapshotFlow { processTreeUiState.filters.active.toSet() },
         )
         { backgroundErrorProcesses, processList, search, filters ->
             val lowercaseSearch = search.toString().trim().lowercase()
@@ -490,10 +481,10 @@ class ProcessOutputControllerService(
                             .contains(lowercaseSearch)
                     }
 
-            if (!filters.contains(TreeFilter.ShowBackgroundProcesses)) {
+            if (!filters.contains(TreeFilter.Item.SHOW_BACKGROUND_PROCESSES)) {
                 filteredProcesses = filteredProcesses.filter {
                     it.traceContext != NON_INTERACTIVE_ROOT_TRACE_CONTEXT
-                            || backgroundErrorProcesses.contains(it.id)
+                        || backgroundErrorProcesses.contains(it.id)
                 }
             }
 
