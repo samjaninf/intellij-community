@@ -90,10 +90,14 @@ import com.intellij.ui.treeStructure.SimpleTree
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 import com.intellij.ui.treeStructure.filtered.FilteringTreeStructure
 import com.intellij.util.Alarm
+import com.intellij.util.IJSwingUtilities
 import com.intellij.util.concurrency.Invoker
 import com.intellij.util.ui.JBDimension
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.tree.TreeUtil
 import java.awt.Font
+import java.awt.Window
 import java.awt.event.KeyEvent
 import java.util.function.Consumer
 import javax.swing.Action
@@ -248,7 +252,14 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
                                                          Invoker.forEventDispatchThread(myDisposable),
                                                          myDisposable)
 
-  val tree = SimpleTree().apply {
+  val tree = object : SimpleTree() {
+
+    override fun updateUI() {
+      super.updateUI()
+
+      updateCachedNodes()
+    }
+  }.apply {
     selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
     isRootVisible = false
     setCellRenderer(SandboxTreeRenderer())
@@ -446,6 +457,20 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
           link(child.title) {
             selectItem(getNodePath(child))
           }.customize(UnscaledGaps(bottom = 4))
+        }
+      }
+    }
+  }
+
+  private fun updateCachedNodes() {
+    TreeUtil.modelTraverser(treeModel).forEach {
+      val sandboxTreeNode = extractSandboxTreeNode(it)
+      (sandboxTreeNode as? SandboxTreeLeaf)?.let { sandboxTreeLeaf ->
+        if (sandboxTreeLeaf.panelCache.isInitialized()) {
+          val panel = sandboxTreeLeaf.panelCache.value
+          if (UIUtil.getParentOfType(Window::class.java, panel) == null) {
+            IJSwingUtilities.updateComponentTreeUI(panel)
+          }
         }
       }
     }
