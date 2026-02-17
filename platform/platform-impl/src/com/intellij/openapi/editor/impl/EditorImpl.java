@@ -427,6 +427,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   private Disposable myHighlighterDisposable = Disposer.newDisposable();
 
   private boolean myKeepSelectionOnMousePress;
+  private boolean myFocusKeepSelectionOnMousePress;
 
   private boolean myUpdateCursor;
   private final EditorScrollingPositionKeeper myScrollingPositionKeeper;
@@ -845,7 +846,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     SwingUtilities.invokeLater(() -> {
       if (isDisposed()) return;
 
-      if (myKeepSelectionOnMousePress && myMousePressedEvent != null) {
+      if (myFocusKeepSelectionOnMousePress && myMousePressedEvent != null) {
         return;
       }
 
@@ -868,6 +869,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   @Override
   public void focusLost(@NotNull FocusEvent e) {
     myIsInFocus = false;
+    myFocusKeepSelectionOnMousePress = false;
     mySelectionModel.reinitSettings();
 
     clearCaretThread();
@@ -4858,6 +4860,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
                                     !isPointAfterSelectionEnd(p) &&
                                     (SwingUtilities.isLeftMouseButton(e) && mySettings.isDndEnabled() ||
                                      SwingUtilities.isRightMouseButton(e));
+      myFocusKeepSelectionOnMousePress = myKeepSelectionOnMousePress;
 
       boolean isNavigation = oldStart == oldEnd && newStart == newEnd && oldStart != newStart;
       if (eventArea == EditorMouseEventArea.LINE_NUMBERS_AREA && e.getClickCount() == 1) {
