@@ -21,6 +21,7 @@ import com.intellij.psi.impl.source.resolve.FileContextUtil
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.QualifiedName
 import com.intellij.psi.util.isAncestor
+import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentsOfType
 import com.jetbrains.python.PyNames
 import com.jetbrains.python.PyPsiBundle
@@ -315,19 +316,16 @@ class PyTypeHintsInspection : PyInspection() {
     }
 
     private fun isGenericTypeArgument(node: PyReferenceExpression): Boolean {
-      var element: PyElement = node
-      var parentElement = element.parent
-      if (parentElement is PyTupleExpression) {
-        element = parentElement
-        parentElement = element.parent
+      val subscription = node.parentOfType<PySubscriptionExpression>() ?: return false
+      val flatIndexExpr = PyPsiUtils.flattenParens(subscription.indexExpression) ?: return false
+
+      when (flatIndexExpr) {
+        is PyTupleExpression -> if (node.parent !== flatIndexExpr) return false
+        else -> if (node !== flatIndexExpr) return false
       }
-      if (parentElement is PySubscriptionExpression && parentElement.indexExpression === element) {
-        val operandType = myTypeEvalContext.getType(parentElement.operand)
-        if (operandType is PyClassType && PyTypingTypeProvider.isGeneric(operandType, myTypeEvalContext)) {
-          return true
-        }
-      }
-      return false
+
+      val operandType = myTypeEvalContext.getType(subscription.operand)
+      return operandType is PyClassType && PyTypingTypeProvider.isGeneric(operandType, myTypeEvalContext)
     }
 
     private fun isInsideTypeParameterDefault(node: PyReferenceExpression): Boolean {
@@ -832,12 +830,8 @@ class PyTypeHintsInspection : PyInspection() {
                     registerParametrizedGenericsProblem(qName, base)
                   }
                   else if (base is PySubscriptionExpression) {
-                    val indexExpr = base.indexExpression
-                    if (indexExpr is PyTupleExpression) {
-                      indexExpr.elements.forEach { tupleElement -> checkInstanceAndClassChecksOn(tupleElement) }
-                    }
-                    else if (indexExpr != null) {
-                      checkInstanceAndClassChecksOn(indexExpr)
+                    base.arguments?.forEach {
+                      argument -> checkInstanceAndClassChecksOn(argument)
                     }
                   }
                 }
@@ -886,7 +880,7 @@ class PyTypeHintsInspection : PyInspection() {
           operand is PyReferenceExpression
           && resolvesToAnyOfQualifiedNames(operand, PyTypingTypeProvider.ANNOTATED, PyTypingTypeProvider.ANNOTATED_EXT)
         ) {
-          val tuple = parent.indexExpression as? PyTupleExpression
+          val tuple = PyPsiUtils.flattenParens(parent.indexExpression) as? PyTupleExpression
           if (tuple != null && tuple.elements.drop(1).any { it.isAncestor(expr) }) return true
           break  // only check the immediate Annotated parent
         }
@@ -1007,9 +1001,8 @@ class PyTypeHintsInspection : PyInspection() {
               it in listOf(genericQName, protocolQName, protocolExtQName)
             }
 
-          val index = superSubscription.indexExpression
-          val parameters = (index as? PyTupleExpression)?.elements ?: arrayOf(index)
-          val superClassTypeVars = parameters
+          val arguments = superSubscription.arguments ?: emptyArray()
+          val superClassTypeVars = arguments
             .asSequence()
             .filterIsInstance<PyReferenceExpression>()
             .flatMap { multiFollowAssignmentsChain(it, this::followNotTypeVar).asSequence() }
@@ -1084,7 +1077,7 @@ class PyTypeHintsInspection : PyInspection() {
 
     private fun checkParameters(node: PySubscriptionExpression) {
       val operand = node.operand as? PyReferenceExpression ?: return
-      val index = node.indexExpression ?: return
+      val index = PyPsiUtils.flattenParens(node.indexExpression) ?: return
 
       val callableQName = QualifiedName.fromDottedString(PyTypingTypeProvider.CALLABLE)
       val literalQName = QualifiedName.fromDottedString(PyTypingTypeProvider.LITERAL)
@@ -1287,8 +1280,7 @@ class PyTypeHintsInspection : PyInspection() {
     }
 
     private fun checkGenericTypeArguments(node: PySubscriptionExpression, isCallable: Boolean = false): List<PyType?>? {
-      val flatIndexExpr = PyPsiUtils.flattenParens(node.indexExpression) ?: return null
-      val arguments = (flatIndexExpr as? PyTupleExpression)?.elements ?: arrayOf(flatIndexExpr)
+      val arguments = node.arguments ?: return null
       val argumentTypes = mutableListOf<PyType?>()
 
       for ((index, argument) in arguments.withIndex()) {
@@ -1314,7 +1306,7 @@ class PyTypeHintsInspection : PyInspection() {
                 else -> PyPsiBundle.message("INSP.type.hints.invalid.type.argument")
               }
               if (message != null) {
-                registerProblem(flatArgument, message, ProblemHighlightType.GENERIC_ERROR)
+                registerProblem(argument, message, ProblemHighlightType.GENERIC_ERROR)
               }
             }
             Ref.deref(typeRef)
@@ -1347,9 +1339,7 @@ class PyTypeHintsInspection : PyInspection() {
 
     private fun checkTupleTypeForm(node: PySubscriptionExpression) {
       if (!node.isBuiltinTupleTypeForm(myTypeEvalContext)) return
-
-      val flatIndexExpr = PyPsiUtils.flattenParens(node.indexExpression)
-      val arguments = (flatIndexExpr as? PyTupleExpression)?.elements ?: arrayOf(flatIndexExpr)
+      val arguments = node.arguments ?: return
 
       for ((index, argument) in arguments.withIndex()) {
         when (val flatArgument = PyPsiUtils.flattenParens(argument)) {
@@ -1379,7 +1369,7 @@ class PyTypeHintsInspection : PyInspection() {
 
     private fun checkOptionalParameter(index: PyExpression) {
       val flatIndexExpr = PyPsiUtils.flattenParens(index)
-      val elements = (flatIndexExpr as? PyTupleExpression)?.elements ?: arrayOf(index)
+      val elements = (flatIndexExpr as? PyTupleExpression)?.elements ?: arrayOf(flatIndexExpr)
       if (elements.size != 1) {
         registerProblem(flatIndexExpr,
                         PyPsiBundle.message("INSP.type.hints.optional.must.have.exactly.one.argument"),
@@ -1388,8 +1378,7 @@ class PyTypeHintsInspection : PyInspection() {
     }
 
     private fun checkTypingGenericParameters(node: PySubscriptionExpression, isProtocol: Boolean) {
-      val indexExpression = node.indexExpression ?: return
-      val typeExpressions = (indexExpression as? PyTupleExpression)?.elements ?: arrayOf(indexExpression)
+      val typeExpressions = node.arguments ?: return
       val typeParams = mutableSetOf<PyTypeParameterType>()
       val typeParamDeclarations = mutableSetOf<PyQualifiedNameOwner>()
       var lastIsDefault = false
@@ -1955,6 +1944,12 @@ class PyTypeHintsInspection : PyInspection() {
     }
   }
 }
+
+private val PySubscriptionExpression.arguments: Array<PyExpression>?
+  get() {
+    val flatIndexExpr = PyPsiUtils.flattenParens(this.indexExpression) ?: return null
+    return (flatIndexExpr as? PyTupleExpression)?.elements ?: arrayOf(flatIndexExpr)
+  }
 
 private fun PySubscriptionExpression.isBuiltinTupleTypeForm(context: TypeEvalContext): Boolean {
   val operandType = context.getType(operand)

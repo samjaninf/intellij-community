@@ -2622,14 +2622,11 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
             if (operandType is PyClassType) {
               if (operandType !is PyTupleType && PyNames.TUPLE == operandType.pyClass.qualifiedName) {
                 if (indexExpr is PyTupleExpression) {
-                  val indexElements = indexExpr.elements.map { PyPsiUtils.flattenParens(it) }
+                  val arguments = indexExpr.elements.map { PyPsiUtils.flattenParens(it) }
 
-                  val lastIsEllipsis =
-                    indexElements.isNotEmpty() && indexElements.last() is PyEllipsisLiteralExpression
-
-                  if (lastIsEllipsis) {
-                    if (indexElements.size != 2) return null
-                    if (indexElements.first() is PyEllipsisLiteralExpression) return null
+                  if (arguments.lastOrNull() is PyEllipsisLiteralExpression) {
+                    if (arguments.size != 2) return null
+                    if (arguments.first() is PyEllipsisLiteralExpression) return null
 
                     val indexType = indexTypes.first()
                     if (indexType is PyPositionalVariadicType) return null
@@ -2637,10 +2634,10 @@ class PyTypingTypeProvider : PyTypeProviderWithCustomContext<Context?>() {
                     return PyTupleType.createHomogeneous(element, indexType)
                   }
                   else {
-                    for (indexElement in indexElements) {
-                      if (indexElement is PyEllipsisLiteralExpression) return null
-                      if (indexElement is PyTupleExpression && indexElement.elements.isEmpty()) {
-                        if (indexElements.size != 1) return null
+                    for (argument in arguments) {
+                      if (argument is PyEllipsisLiteralExpression) return null
+                      if (argument is PyTupleExpression && argument.elements.isEmpty()) {
+                        if (arguments.size != 1) return null
                       }
                     }
                     return PyTupleType.create(element, indexTypes)

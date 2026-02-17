@@ -3299,7 +3299,18 @@ public class PyTypeHintsInspectionTest extends PyInspectionTestCase {
       {"list[((<warning descr=\"Passed type arguments do not match type parameters [_T] of class 'list'\">[int]</warning>))]"},
       {"List[((<error descr=\"Parameters to generic types must be types\">[int]</error>))]"},
 
+      {"C[int]", "C[int]"},
+      {"C[int,]", "C[int]"},
+      {"C[((int))]", "C[int]"},
+      {"C[((int)),]", "C[int]"},
       {"C[((int,))]", "C[int]"},
+      {"C[((((int)),))]", "C[int]"},
+
+      {"C[(((<warning descr=\"Unbound type variable\">TV</warning>)))]"},
+      {"list[((<warning descr=\"Unbound type variable\">TV</warning>))]"},
+      {"Generic[((<warning descr=\"Unbound type variable\">TV</warning>))]"},
+      {"dict[((int)), (((<warning descr=\"Unbound type variable\">TV</warning>)))]"},
+      {"Annotated[((str, dict[str, str]))]"},
     });
   }
 
@@ -3419,7 +3430,9 @@ public class PyTypeHintsInspectionTest extends PyInspectionTestCase {
 
     doTestByText(
       ("""
-         from typing import assert_type, Any, Never, Generic, List, Set, Dict, Tuple, Union, Optional, Callable
+         from typing import assert_type, TypeVar, Generic, Any, Never, List, Set, Dict, Tuple, Union, Optional, Callable, Annotated
+         
+         TV = TypeVar("TV")
          
          class C[T]: ...
          class C2[T1, T2]: ...
