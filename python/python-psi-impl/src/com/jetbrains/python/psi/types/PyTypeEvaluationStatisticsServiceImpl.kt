@@ -6,19 +6,14 @@ import com.intellij.internal.statistic.eventLog.events.EventFields
 import com.intellij.internal.statistic.service.fus.collectors.CounterUsagesCollector
 import org.jetbrains.annotations.ApiStatus
 
-private val GROUP = EventLogGroup("python.type.evaluation", 1)
-private val DURATION = EventFields.DurationMs
-private val JB_TYPE_ENGINE_TIME = GROUP.registerEvent("jb.type.engine.time", DURATION)
-private val HYBRID_TYPE_ENGINE_TIME = GROUP.registerEvent("hybrid.type.engine.time", DURATION)
-
 @ApiStatus.Internal
 class PyTypeEvaluationStatisticsServiceImpl : PyTypeEvaluationStatisticsService {
   override fun logJBTypeEngineTime(durationMs: Long) {
-    JB_TYPE_ENGINE_TIME.log(durationMs)
+    PyTypeEvaluationCollector.logJBTypeEngineTime(durationMs)
   }
 
   override fun logHybridTypeEngineTime(durationMs: Long) {
-    HYBRID_TYPE_ENGINE_TIME.log(durationMs)
+    PyTypeEvaluationCollector.logHybridTypeEngineTime(durationMs)
   }
 }
 
@@ -29,6 +24,19 @@ class PyTypeEvaluationStatisticsServiceImpl : PyTypeEvaluationStatisticsService 
  * to avoid dual registration as both a service and an extension.
  */
 @ApiStatus.Internal
-class PyTypeEvaluationCollector : CounterUsagesCollector() {
+object PyTypeEvaluationCollector : CounterUsagesCollector() {
   override fun getGroup(): EventLogGroup = GROUP
+
+  private val GROUP = EventLogGroup("python.type.evaluation", 1)
+  private val DURATION = EventFields.DurationMs
+  private val JB_TYPE_ENGINE_TIME = GROUP.registerEvent("jb.type.engine.time", DURATION)
+  private val HYBRID_TYPE_ENGINE_TIME = GROUP.registerEvent("hybrid.type.engine.time", DURATION)
+
+  fun logJBTypeEngineTime(durationMs: Long) {
+    JB_TYPE_ENGINE_TIME.log(durationMs)
+  }
+
+  fun logHybridTypeEngineTime(durationMs: Long) {
+    HYBRID_TYPE_ENGINE_TIME.log(durationMs)
+  }
 }
