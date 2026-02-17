@@ -17,7 +17,7 @@ sealed interface RpcLookupElementEvent {
   @Serializable
   data class LookupStateChanged(
     val requestId: RpcCompletionRequestId,
-    val selectedItemId: RpcSelectedItem? = null,
+    val selectedItemId: RpcSelectedItem?,
     val focusDegree: LookupFocusDegree? = null,
     val sortedItemIds: List<RpcCompletionItemId>? = null,
   ) : RpcLookupElementEvent {
