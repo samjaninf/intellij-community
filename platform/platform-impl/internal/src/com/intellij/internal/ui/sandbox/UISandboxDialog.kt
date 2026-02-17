@@ -430,7 +430,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
         }
       }
       is SandboxTreeLeaf -> {
-        val panel = node.panelCache.value
+        val panel = node.createContent()
         panel.prepareContent()
         placeholder.component = if (node.isScrollbarNeeded()) ScrollPaneFactory.createScrollPane(panel, true) else panel
       }
@@ -560,14 +560,12 @@ private class SandboxTreeGroup(parent: SimpleNode?, disposable: Disposable, over
   }
 }
 
-internal class SandboxTreeLeaf(parent: SimpleNode?, disposable: Disposable, val sandboxPanel: UISandboxPanel) :
+internal class SandboxTreeLeaf(parent: SimpleNode?, val disposable: Disposable, val sandboxPanel: UISandboxPanel) :
   SandboxTreeNodeBase(parent) {
 
   override val title: String = sandboxPanel.title
 
-  val panelCache = lazy {
-    sandboxPanel.createContent(disposable)
-  }
+  fun createContent():JComponent = sandboxPanel.createContent(disposable)
 
   fun isScrollbarNeeded(): Boolean {
     return sandboxPanel.isScrollbarNeeded
