@@ -260,7 +260,7 @@ internal fun MutableTWorkspace.generateK2FixTests() {
                 testMethodName = testMethodName,
             )
             model(
-                "$idea/quickfix/createFromUsage/createVariable/property/fieldFromJava",
+                "$idea/quickfix/createFromUsage/createVariable",
                 pattern = pattern,
                 testMethodName = testMethodName,
             )
