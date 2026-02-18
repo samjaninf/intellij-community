@@ -23,6 +23,7 @@ import com.intellij.openapi.editor.SoftWrapModel;
 import com.intellij.openapi.editor.VisualPosition;
 import com.intellij.openapi.editor.colors.impl.FontPreferencesImpl;
 import com.intellij.openapi.editor.event.DocumentEvent;
+import com.intellij.openapi.editor.ex.DocumentEx;
 import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.editor.ex.FoldingListener;
 import com.intellij.openapi.editor.ex.PrioritizedDocumentListener;
@@ -96,6 +97,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
   private final SoftWrapApplianceManager applianceManager;
 
   private final @NotNull EditorImpl editor;
+  private final @NotNull DocumentEx document;
 
   private boolean myUseSoftWraps;
   private int myTabWidth = -1;
@@ -131,6 +133,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
 
   SoftWrapModelImpl(@NotNull EditorImpl editor) {
     this.editor = editor;
+    document = editor.getUiDocument();
     storage = new SoftWrapsStorage();
     myPainter = new CompositeSoftWrapPainter(editor);
     myDataMapper = new CachingSoftWrapDataMapper(editor, storage);
@@ -189,7 +192,6 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
       return false;
     }
     Project project = editor.getProject();
-    Document document = editor.getDocument();
     if (project != null && project.isDisposed()) {
       // TODO: investigate why it happens leading to IJPL-164636
       String isEditorDisposed = editor.isDisposed() ? " (disposed)" : " (not disposed)";
@@ -198,7 +200,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
       );
       return false;
     }
-    if (project != null && PostprocessReformattingAspect.getInstance(project).isDocumentLocked(document)) {
+    if (project != null && PostprocessReformattingAspect.getInstance(project).isDocumentLocked(editor.getDocument())) {
       // Disable checking for files in intermediate states - e.g., for files during refactoring.
       return false;
     }
@@ -312,7 +314,6 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
     if (!isSoftWrappingEnabled() || documentLine < 0) {
       return Collections.emptyList();
     }
-    Document document = editor.getDocument();
     if (documentLine >= document.getLineCount()) {
       return Collections.emptyList();
     }
@@ -338,7 +339,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
       return Collections.emptyList();
     }
     List<SoftWrapImpl> softWraps = storage.getSoftWraps();
-    if (!softWraps.isEmpty() && softWraps.get(softWraps.size() - 1).getStart() >= editor.getDocument().getTextLength()) {
+    if (!softWraps.isEmpty() && softWraps.get(softWraps.size() - 1).getStart() >= document.getTextLength()) {
       LOG.error("Unexpected soft wrap location", new Attachment("editorState.txt", editor.dumpState()));
     }
     return softWraps;
@@ -475,7 +476,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
       return;
     }
 
-    editor.getDocument().replaceString(softWrap.getStart(), softWrap.getEnd(), softWrap.getText());
+    document.replaceString(softWrap.getStart(), softWrap.getEnd(), softWrap.getText());
     caretModel.moveToVisualPosition(visualCaretPosition);
   }
 
@@ -576,7 +577,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
 
   @Override
   public void onUpdated(@NotNull Inlay<?> inlay, int changeFlags) {
-    if (editor.getDocument().isInBulkUpdate() ||
+    if (document.isInBulkUpdate() ||
         inlay.getPlacement() != Inlay.Placement.INLINE && inlay.getPlacement() != Inlay.Placement.AFTER_LINE_END ||
         (changeFlags & InlayModel.ChangeFlags.WIDTH_CHANGED) == 0) {
       return;
@@ -590,7 +591,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
       return;
     }
     if (!myDirty) {
-      if (editor.getDocument().isInEventsHandling()) {
+      if (document.isInEventsHandling()) {
         if (inlay.getPlacement() == Inlay.Placement.AFTER_LINE_END) {
           myAfterLineEndInlayUpdated = true;
         }
@@ -598,7 +599,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
       }
       int offset = inlay.getOffset();
       if (inlay.getPlacement() == Inlay.Placement.AFTER_LINE_END) {
-        offset = DocumentUtil.getLineEndOffset(offset, editor.getDocument());
+        offset = DocumentUtil.getLineEndOffset(offset, document);
       }
       applianceManager.recalculate(Collections.singletonList(new TextRange(offset, offset)));
     }
@@ -679,8 +680,7 @@ public final class SoftWrapModelImpl extends InlayModel.SimpleAdapter
 
   @TestOnly
   void validateState() {
-    Document document = editor.getDocument();
-    if (editor.getDocument().isInBulkUpdate()) return;
+    if (document.isInBulkUpdate()) return;
     FoldingModel foldingModel = editor.getFoldingModel();
     List<? extends SoftWrap> softWraps = getRegisteredSoftWraps();
     int lastSoftWrapOffset = -1;
