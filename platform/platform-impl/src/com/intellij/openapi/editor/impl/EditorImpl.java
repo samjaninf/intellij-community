@@ -5804,6 +5804,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     return myEditorModel;
   }
 
+  @ApiStatus.Internal
   @Override
   public @NotNull DocumentEx getUiDocument() {
     if (myUiDocument != null) {
