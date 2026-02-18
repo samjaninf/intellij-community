@@ -15,7 +15,6 @@
   -->
 <idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="/META-INF/GlobalInspections.xml"/>
-  <xi:include href="/META-INF/JavaAnalysisPlugin.analyzer.xml"/>
 
   <extensions defaultExtensionNs="com.intellij">
     <highlightingPassFactory implementation="com.intellij.codeInsight.daemon.impl.JavaTextBlockIndentPassFactory"/>
