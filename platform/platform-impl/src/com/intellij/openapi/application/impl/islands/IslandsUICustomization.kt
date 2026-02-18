@@ -68,8 +68,10 @@ import com.intellij.ui.WindowRoundedCornersManager
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.mac.WindowTabsComponent
 import com.intellij.ui.paint.LinePainter2D
+import com.intellij.ui.paint.PaintUtil
 import com.intellij.ui.paint.RectanglePainter2D
 import com.intellij.ui.scale.JBUIScale
+import com.intellij.ui.scale.ScaleContext
 import com.intellij.ui.tabs.JBTabPainter
 import com.intellij.ui.tabs.JBTabsPosition
 import com.intellij.ui.tabs.impl.JBEditorTabs
@@ -83,7 +85,6 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.StartupUiUtil
 import com.intellij.util.ui.UIUtil
 import java.awt.AWTEvent
-import java.awt.BasicStroke
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -97,9 +98,7 @@ import java.awt.event.AWTEventListener
 import java.awt.event.HierarchyEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
-import java.awt.geom.Area
 import java.awt.geom.Path2D
-import java.awt.geom.RoundRectangle2D
 import java.util.function.Predicate
 import java.util.function.Supplier
 import javax.swing.JComponent
@@ -919,58 +918,25 @@ internal class IslandsUICustomization : InternalUICustomization() {
     }
   }
 
-  private fun paintIslandArea(component: JComponent, g: Graphics2D) {
-    val width = component.width
-    val height = component.height
-
-    val shape = Area(Rectangle(0, 0, width, height))
-    val cornerRadius = JBUIScale.scale(JBUI.getInt("Island.arc", 10).toFloat())
-    val borderWith = JBUI.scale(JBUI.getInt("Island.borderWidth", 4))
-    val offset = borderWith / 2f
-    val offsetWidth = borderWith + 0.5f
-    val border = Area(RoundRectangle2D.Float(offset, offset,
-                                             width.toFloat() - offsetWidth, height.toFloat() - offsetWidth,
-                                             cornerRadius, cornerRadius))
-
-    shape.subtract(border)
-
-    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-
-    paintIslandBackground(g, shape)
-
-    if (isIslandBorderLineNeeded(component)) {
-      paintIslandBorderLine(g, border)
-    }
-  }
-
-  private fun paintIslandBackground(gg: Graphics2D, shape: Area) {
-    gg.color = getMainBackgroundColor()
-    gg.fill(shape)
-  }
-
   private fun isIslandBorderLineNeeded(component: JComponent): Boolean {
     if (isIslandsGradientEnabled) return true
     val project = ProjectUtil.getProjectForComponent(component)
     return !IdeBackgroundUtil.isEditorBackgroundImageSet(project) // the border looks ugly with a background image
   }
 
-  private fun paintIslandBorderLine(gg: Graphics2D, border: Area) {
-    gg.color = JBColor.namedColor("Island.borderColor", getMainBackgroundColor())
-    gg.stroke = BasicStroke(JBUIScale.scale(1f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    gg.draw(border)
-  }
-
   private fun paintIslandAreaRaw(component: JComponent, g: Graphics2D) {
-    val offset = JBUI.scale(JBUI.getInt("Island.borderWidth", 6) / 2)
+    val ctx = ScaleContext.create(g)
+
+    val offset = PaintUtil.alignIntToInt(JBUI.scale(JBUI.getInt("Island.borderWidth", 6) / 2), ctx, PaintUtil.RoundingMode.CEIL, null)
     val offset2 = offset * 2
     val offsetF = offset.toFloat()
 
-    val width = component.width
-    val height = component.height
+    val width = PaintUtil.alignIntToInt(component.width, ctx, PaintUtil.RoundingMode.CEIL, null)
+    val height = PaintUtil.alignIntToInt(component.height, ctx, PaintUtil.RoundingMode.CEIL, null)
     val widthF = width.toFloat()
     val heightF = height.toFloat()
 
-    val arc = JBUI.getInt("Island.arc", 20)
+    val arc = PaintUtil.alignIntToInt(JBUI.getInt("Island.arc", 20), ctx, PaintUtil.RoundingMode.CEIL, null)
     val arcSizeF = JBUIScale.scale(arc / 2f)
 
     g.color = getMainBackgroundColor()
@@ -1015,7 +981,8 @@ internal class IslandsUICustomization : InternalUICustomization() {
 
     if (isIslandBorderLineNeeded(component)) {
       val arcSize = JBUI.scale(arc)
-      val halfArcSize = JBUI.scale(JBUI.getInt("Island.borderArcLength", 14))
+      val halfArcSize =
+        PaintUtil.alignIntToInt(JBUI.scale(JBUI.getInt("Island.borderArcLength", 14)), ctx, PaintUtil.RoundingMode.CEIL, null)
 
       g.color = JBColor.namedColor("Island.borderColor", getMainBackgroundColor())
 
