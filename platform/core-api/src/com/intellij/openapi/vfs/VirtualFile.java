@@ -324,9 +324,12 @@ public abstract class VirtualFile extends UserDataHolderBase implements Modifica
   public abstract VirtualFile getParent();
 
   /**
-   * Gets the child files. The returned files are guaranteed to be valid, if the method is called in a read action.
+   * Gets the child files.
+   * The returned files are guaranteed to be valid if the method is called in a read action.
    *
-   * @return array of the child files or {@code null} if this file is not a directory
+   * @return array of the child files.
+   *         If the file is not {@link #isDirectory()}, the method could return either {@code null}, or an empty array.
+   *         New implementations should prefer an empty array, but {@code null} is still legit for backward compatibility.
    * @throws InvalidVirtualFileAccessException if this method is called inside read action on an invalid file
    */
   public abstract VirtualFile /*@Nullable*/ [] getChildren();
