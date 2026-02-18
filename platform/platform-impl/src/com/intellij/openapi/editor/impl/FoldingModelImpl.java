@@ -19,6 +19,7 @@ import com.intellij.openapi.editor.InlayModel;
 import com.intellij.openapi.editor.LogicalPosition;
 import com.intellij.openapi.editor.colors.EditorColors;
 import com.intellij.openapi.editor.event.DocumentEvent;
+import com.intellij.openapi.editor.ex.DocumentEx;
 import com.intellij.openapi.editor.ex.FoldingListener;
 import com.intellij.openapi.editor.ex.FoldingModelEx;
 import com.intellij.openapi.editor.ex.PrioritizedDocumentListener;
@@ -70,6 +71,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
   private static final HashingStrategy<FoldRegion> OFFSET_BASED_HASHING_STRATEGY = new FoldRegionHashingStrategy();
 
   private final EditorImpl myEditor;
+  private final DocumentEx myDocument;
   private final RangeMarkerTree<FoldRegionImpl> myRegionTree;
   private final FoldRegionsTree myFoldTree;
   private final MultiMap<FoldingGroup, FoldRegion> myGroups = new MultiMap<>();
@@ -92,7 +94,8 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
 
   FoldingModelImpl(@NotNull EditorImpl editor) {
     myEditor = editor;
-    myRegionTree = new MyMarkerTree(editor.getDocument());
+    myDocument = editor.getUiDocument();
+    myRegionTree = new MyMarkerTree(myDocument);
     myFoldTree = new MyFoldRegionsTree(myRegionTree);
     myScrollingPositionKeeper = new EditorScrollingPositionKeeper(editor);
     Disposer.register(editor.getDisposable(), myScrollingPositionKeeper);
@@ -121,8 +124,8 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
     if (!isFoldingEnabled() ||
         startOffset >= endOffset ||
         neverExpands && group != null ||
-        DocumentUtil.isInsideCharacterPair(myEditor.getDocument(), startOffset) ||
-        DocumentUtil.isInsideCharacterPair(myEditor.getDocument(), endOffset) ||
+        DocumentUtil.isInsideCharacterPair(myDocument, startOffset) ||
+        DocumentUtil.isInsideCharacterPair(myDocument, endOffset) ||
         !myFoldTree.checkIfValidToCreate(startOffset, endOffset, false, null)) {
       return null;
     }
@@ -154,7 +157,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
       LOG.error("Fold regions must be added or removed inside batchFoldProcessing() only.");
       return null;
     }
-    Document document = myEditor.getDocument();
+    Document document = myDocument;
     int maxLineNumber = Math.max(0, document.getLineCount() - 1);
     startLine = Math.max(0, Math.min(maxLineNumber, startLine));
     endLine = Math.max(startLine, Math.min(maxLineNumber, endLine));
@@ -311,7 +314,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
 
   @Override
   public void rebuild() {
-    if (!myEditor.getDocument().isInBulkUpdate()) {
+    if (!myDocument.isInBulkUpdate()) {
       myFoldTree.rebuild();
     }
   }
@@ -376,7 +379,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
   @ApiStatus.Internal
   @Override
   public int getFoldedLinesCountBefore(int offset) {
-    if (!myDocumentChangeProcessed && myEditor.getDocument().isInEventsHandling()) {
+    if (!myDocumentChangeProcessed && myDocument.isInEventsHandling()) {
       // There is a possible case that this method is called on document update before fold regions are recalculated.
       // We return zero in such situations then.
       return 0;
@@ -387,7 +390,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
   @ApiStatus.Internal
   @Override
   public int getTotalNumberOfFoldedLines() {
-    if (!myDocumentChangeProcessed && myEditor.getDocument().isInEventsHandling()) {
+    if (!myDocumentChangeProcessed && myDocument.isInEventsHandling()) {
       // There is a possible case that this method is called on document update before fold regions are recalculated.
       // We return zero in such situations then.
       return 0;
@@ -510,7 +513,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
 
   void dispose() {
     doClearFoldRegions();
-    myRegionTree.dispose(myEditor.getDocument());
+    myRegionTree.dispose(myDocument);
   }
 
   @RequiresEdt
@@ -629,7 +632,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
 
   @TestOnly
   void validateState() {
-    Document document = myEditor.getDocument();
+    Document document = myDocument;
     if (document.isInBulkUpdate()) return;
 
     FoldRegion[] allFoldRegions = getAllFoldRegions();
@@ -786,7 +789,7 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
         if (isOffsetInsideCollapsedRegion(selectionStart) || isOffsetInsideCollapsedRegion(selectionEnd)) {
           caret.removeSelection();
         }
-        else if (caret.hasSelection() && selectionEnd <= myEditor.getDocument().getTextLength()) {
+        else if (caret.hasSelection() && selectionEnd <= myDocument.getTextLength()) {
           caret.setSelection(selectionStart, selectionEnd);
         }
       }
@@ -1021,11 +1024,11 @@ public final class FoldingModelImpl extends InlayModel.SimpleAdapter
   private record SavedCaretPosition(LogicalPosition position, long docStamp) {
 
     SavedCaretPosition(@NotNull Caret caret) {
-      this(caret.getLogicalPosition(), caret.getEditor().getDocument().getModificationStamp());
+      this(caret.getLogicalPosition(), caret.getEditor().getUiDocument().getModificationStamp());
     }
 
     private boolean isUpToDate(@NotNull Editor editor) {
-      return docStamp == editor.getDocument().getModificationStamp();
+      return docStamp == editor.getUiDocument().getModificationStamp();
     }
   }
 
