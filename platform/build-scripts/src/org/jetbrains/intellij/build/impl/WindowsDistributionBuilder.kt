@@ -412,32 +412,42 @@ private suspend fun checkThatExeInstallerAndZipWithJbrAreTheSame(
           Files.deleteIfExists(tempExe.resolve("bin/Uninstall.exe.nsis"))
           Files.deleteIfExists(tempExe.resolve("bin/Uninstall.exe"))
 
-          val extraInZip = ArrayList<String>()
-          val differ = ArrayList<String>()
-          ZipFile.Builder().setSeekableByteChannel(Files.newByteChannel(zipPath)).get().use { zipFile ->
+          val differences = ZipFile.Builder().setSeekableByteChannel(Files.newByteChannel(zipPath)).get().use { zipFile ->
             zipFile.entries.asSequence()
-              .filter { !it.isDirectory }.toList()
+              .filter { !it.isDirectory }
+              .toList()
               .mapConcurrent { entry ->
                 val entryPath = Path.of(entry.name)
                 val fileInExe = tempExe.resolve(entryPath)
-                if (!fileInExe.exists()) {
-                  extraInZip.add(entryPath.toString())
+                if (Files.notExists(fileInExe)) {
+                  entryPath.toString() to true
                 }
                 else {
-                  if (fileInExe.fileSize() != entry.size) {
-                    differ.add(entryPath.toString())
+                  val isDifferent = if (fileInExe.fileSize() != entry.size) {
+                    true
                   }
                   else if (entry.size < 2 * FileUtilRt.MEGABYTE) {
-                    if (!fileInExe.readBytes().contentEquals(zipFile.getInputStream(entry).readAllBytes())) {
-                      differ.add(entryPath.toString())
-                    }
+                    !fileInExe.readBytes().contentEquals(zipFile.getInputStream(entry).readAllBytes())
                   }
-                  else if (!compareStreams(fileInExe.inputStream().buffered(FileUtilRt.MEGABYTE), zipFile.getInputStream(entry).buffered(FileUtilRt.MEGABYTE))) {
-                    differ.add(entryPath.toString())
+                  else {
+                    !compareStreams(fileInExe.inputStream().buffered(FileUtilRt.MEGABYTE), zipFile.getInputStream(entry).buffered(FileUtilRt.MEGABYTE))
                   }
                   NioFiles.deleteRecursively(fileInExe)
+                  if (isDifferent) entryPath.toString() to false else null
                 }
               }
+              .filterNotNull()
+          }
+
+          val extraInZip = ArrayList<String>()
+          val differ = ArrayList<String>()
+          for ((entryPath, isOnlyInZip) in differences) {
+            if (isOnlyInZip) {
+              extraInZip.add(entryPath)
+            }
+            else {
+              differ.add(entryPath)
+            }
           }
 
           val extraInExe = Files.walk(tempExe)
