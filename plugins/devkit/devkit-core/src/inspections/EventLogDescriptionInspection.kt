@@ -78,13 +78,15 @@ private class EventLogDescriptionInspectionVisitor(private val holder: ProblemsH
           ?: return error(recorderArg ?: node, "inspections.event.log.recorder.unknown", "${EVENT_LOG_PROPERTIES_DIR}/${recorder}.properties")
         val groupId = argument.evaluateString()?.takeIf { it.isNotBlank() }
           ?: return warn(argument, "inspections.event.log.group.id.not.evaluable")
-        val description = file.findPropertyByKey(groupId)?.value ?: return errorWithFix(
-          argument,
-          "inspections.event.log.group.description.missing", arrayOf(groupId, file.name),
-          AddEventLogDescriptionQuickFix(file, groupId)
-        )
-        if (description.isBlank())
-          error(argument, "inspections.event.log.group.description.empty", groupId)
+        val description = file.findPropertyByKey(groupId)?.value
+        when {
+          description == null -> errorWithFix(
+            argument,
+            "inspections.event.log.group.description.missing", arrayOf(groupId, file.name),
+            AddEventLogDescriptionQuickFix(file, groupId)
+          )
+          description.isBlank() -> error(argument, "inspections.event.log.group.description.empty", groupId)
+        }
       }
       else {
         val receiver = node.receiver
