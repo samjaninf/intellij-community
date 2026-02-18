@@ -1,4 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -170,31 +170,31 @@ impl DefaultLaunchConfiguration {
         let product_env_var = self.env_var_base_name.to_owned() + "_JDK";
         match self.get_runtime_from_env_var(&product_env_var) {
             Ok(p) => { return Ok(p); }
-            Err(e) => { debug!("Failed: {}", e.to_string()); }
+            Err(e) => { debug!("Failed: {e}"); }
         }
 
         debug!("[2] Looking for runtime in a user configuration file");
         match self.get_runtime_from_user_config() {
             Ok(p) => { return Ok(p) }
-            Err(e) => { debug!("Failed: {}", e.to_string()); }
+            Err(e) => { debug!("Failed: {e}"); }
         }
 
         debug!("[3] Looking for bundled runtime");
         match self.get_bundled_runtime() {
             Ok(p) => { return Ok(p) }
-            Err(e) => { debug!("Failed: {}", e.to_string()); }
+            Err(e) => { debug!("Failed: {e}"); }
         }
 
         debug!("[4] Looking for runtime at JDK_HOME");
         match self.get_runtime_from_env_var("JDK_HOME") {
             Ok(p) => { return Ok(p); }
-            Err(e) => { debug!("Failed: {}", e.to_string()); }
+            Err(e) => { debug!("Failed: {e}"); }
         }
 
         debug!("[5] Looking for runtime at JAVA_HOME");
         match self.get_runtime_from_env_var("JAVA_HOME") {
             Ok(p) => { return Ok(p); }
-            Err(e) => { debug!("Failed: {}", e.to_string()); }
+            Err(e) => { debug!("Failed: {e}"); }
         }
 
         bail!("Runtime not found")
@@ -251,11 +251,11 @@ impl DefaultLaunchConfiguration {
         debug!("[2] Looking for user VM options file");
         let ((user_vm_options, corrupted), vm_options_path) = match self.get_user_vm_options_file() {
             Ok(path) => {
-                debug!("Reading user VM options file: {:?}", path);
+                debug!("Reading user VM options file: {path:?}");
                 (read_vm_options(&path)?, path)
             }
             Err(e) => {
-                debug!("Failed: {}", e.to_string());
+                debug!("Failed: {e}");
                 ((Vec::new(), false), self.vm_options_path.clone())
             }
         };
@@ -287,10 +287,10 @@ impl DefaultLaunchConfiguration {
     /// near the installation (Toolbox-style), or under the OS standard configuration directory.
     fn get_user_vm_options_file(&self) -> Result<PathBuf> {
         let env_var_name = self.env_var_base_name.to_owned() + "_VM_OPTIONS";
-        debug!("Checking ${:?}", env_var_name);
+        debug!("Checking ${env_var_name:?}");
         match get_path_from_env_var(&env_var_name, false) {
             Ok(env_file_path) => { return Ok(env_file_path); }
-            Err(e) => { debug!("Failed: {}", e.to_string()); }
+            Err(e) => { debug!("Failed: {e}"); }
         }
 
         let real_ide_home = if cfg!(target_os = "macos") { self.ide_home.parent().context("Failed to get ide_home parent")? } else { &self.ide_home };
@@ -298,14 +298,14 @@ impl DefaultLaunchConfiguration {
             .context("Failed to get real_ide_home file_name()")?.to_str()
             .context("Failed to get to_str() from real_ide_home file_name()")?;
         let tb_file_path = real_ide_home.parent().context("Failed to get real_ide_home parent()")?.join(tb_file_base.to_string() + ".vmoptions");
-        debug!("Checking {:?}", tb_file_path);
+        debug!("Checking {tb_file_path:?}");
         if tb_file_path.is_file() {
             return Ok(tb_file_path);
         }
 
         let user_file_name = self.vm_options_path.file_name().context("failed to vm_options_path file_name()")?;
         let user_file_path = self.user_config_dir.join(user_file_name);
-        debug!("Checking {:?}", user_file_path);
+        debug!("Checking {user_file_path:?}");
         if user_file_path.is_file() {
             return Ok(user_file_path);
         }
@@ -319,7 +319,7 @@ fn read_vm_options(path: &Path) -> Result<(Vec<String>, bool)> {
 
     let mut vm_options = Vec::with_capacity(50);
     for line in BufReader::new(file).lines() {
-        let line = line.with_context(|| format!("Cannot read: {:?}", path))?.trim().to_string();
+        let line = line.with_context(|| format!("Cannot read: {path:?}"))?.trim().to_string();
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
@@ -336,7 +336,7 @@ fn read_vm_options(path: &Path) -> Result<(Vec<String>, bool)> {
 pub fn read_product_info(product_info_path: &Path) -> Result<ProductInfo> {
     let file = File::open(product_info_path)?;
     let product_info: ProductInfo = serde_json::from_reader(BufReader::new(file))?;
-    debug!("{:?}", product_info);
+    debug!("{product_info:?}");
     Ok(product_info)
 }
 
@@ -422,7 +422,7 @@ fn traverse_parents(mut candidate: PathBuf) -> Result<Option<(PathBuf, PathBuf)>
             Some(parent) => parent.to_path_buf(),
             None => { break; }
         };
-        debug!("Probing for IDE home: {:?}", candidate);
+        debug!("Probing for IDE home: {candidate:?}");
         let product_info_path = candidate.join(PRODUCT_INFO_REL_PATH);
         if product_info_path.is_file() {
             return Ok(Some((candidate, product_info_path)))
