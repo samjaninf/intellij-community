@@ -9,10 +9,12 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.impl.DocumentImpl
 import com.intellij.openapi.util.Key
 import kotlinx.coroutines.CoroutineScope
+import org.jetbrains.annotations.ApiStatus.Internal
 
 
+@Internal
 @Service(Level.APP)
-internal class UiDocumentManager(private val coroutineScope: CoroutineScope) {
+class UiDocumentManager(private val coroutineScope: CoroutineScope) {
 
   fun bindUiDocument(realDocument: Document) {
     if (isLockFreeEnabled() && isLockFreeAllowed(realDocument)) {

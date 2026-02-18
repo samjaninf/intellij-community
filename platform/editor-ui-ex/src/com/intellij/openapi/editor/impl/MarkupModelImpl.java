@@ -3,6 +3,7 @@
 package com.intellij.openapi.editor.impl;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.application.RuntimeFlagsKt;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
@@ -12,6 +13,7 @@ import com.intellij.openapi.editor.ex.MarkupModelEx;
 import com.intellij.openapi.editor.ex.RangeHighlighterEx;
 import com.intellij.openapi.editor.ex.RangeMarkerEx;
 import com.intellij.openapi.editor.impl.event.MarkupModelListener;
+import com.intellij.openapi.editor.impl.uiDocument.UiDocumentManager;
 import com.intellij.openapi.editor.markup.HighlighterTargetArea;
 import com.intellij.openapi.editor.markup.RangeHighlighter;
 import com.intellij.openapi.editor.markup.TextAttributes;
@@ -50,7 +52,7 @@ public class MarkupModelImpl extends UserDataHolderBase implements MarkupModelEx
 
   @ApiStatus.Internal
   protected MarkupModelImpl(@NotNull DocumentEx document) {
-    myDocument = document;
+    myDocument = getLockFreeDocumentIfEnabled(document);
     myHighlighterTree = new RangeHighlighterTree(this);
     myHighlighterTreeForLines = new RangeHighlighterTree(this);
   }
@@ -339,5 +341,15 @@ public class MarkupModelImpl extends UserDataHolderBase implements MarkupModelEx
     int lineStartOffset = startOffset <= 0 ? 0 : startOffset > textLength ? textLength : document.getLineStartOffset(document.getLineNumber(startOffset));
     int lineEndOffset = endOffset <= 0 ? 0 : endOffset >= textLength ? textLength : document.getLineEndOffset(document.getLineNumber(endOffset));
     return new ProperTextRange(lineStartOffset, lineEndOffset);
+  }
+
+  private static @NotNull DocumentEx getLockFreeDocumentIfEnabled(@NotNull DocumentEx realDocument) {
+    if (RuntimeFlagsKt.isEditorLockFreeTypingEnabled()) {
+      DocumentImpl uiDocument = UiDocumentManager.getInstance().getUiDocument(realDocument);
+      if (uiDocument != null) {
+        return uiDocument;
+      }
+    }
+    return realDocument;
   }
 }

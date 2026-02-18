@@ -1,6 +1,7 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.editor.impl.uiDocument
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.backgroundWriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.components.service
@@ -11,7 +12,6 @@ import com.intellij.openapi.editor.ex.PrioritizedDocumentListener
 import com.intellij.openapi.editor.impl.DocumentImpl
 import com.intellij.openapi.project.Project
 import com.intellij.util.DocumentEventUtil
-import com.intellij.util.application
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.concurrency.ThreadingAssertions
 import com.intellij.util.concurrency.TransferredWriteActionService
@@ -81,7 +81,7 @@ internal class UiDocumentSync(
   }
 
   private fun isWriteAccess(): Boolean {
-    return application.isWriteAccessAllowed()
+    return ApplicationManager.getApplication().isWriteAccessAllowed()
   }
 
   private inner class UiToRealSync : Sync() {
@@ -153,7 +153,7 @@ internal class UiDocumentSync(
       startModification(sourceModStamp)
       coroutineScope.launch(DISPATCHER) {
         backgroundWriteAction {
-          application.service<TransferredWriteActionService>().runOnEdtWithTransferredWriteActionAndWait {
+          ApplicationManager.getApplication().service<TransferredWriteActionService>().runOnEdtWithTransferredWriteActionAndWait {
             try {
               CommandProcessor.getInstance().executeCommand(
                 commandProject,
