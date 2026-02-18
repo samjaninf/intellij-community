@@ -5,6 +5,7 @@ import com.intellij.codeInsight.AutoPopupController;
 import com.intellij.codeInsight.CodeInsightSettings;
 import com.intellij.codeInsight.completion.CompletionContributor;
 import com.intellij.codeInsight.completion.CompletionPhase;
+import com.intellij.codeInsight.completion.NewRdCompletionSupport;
 import com.intellij.codeInsight.completion.TypedEvent;
 import com.intellij.codeInsight.highlighting.BraceMatcher;
 import com.intellij.codeInsight.highlighting.BraceMatchingUtil;
@@ -157,6 +158,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
     PsiFile originalFile;
 
     if (project == null || (originalFile = PsiUtilBase.getPsiFileInEditor(originalEditor, project)) == null) {
+      NewRdCompletionSupport.getInstance().noPsiAvailable(originalEditor);
       if (myOriginalHandler != null) {
         myOriginalHandler.execute(originalEditor, charTyped, dataContext);
       }
