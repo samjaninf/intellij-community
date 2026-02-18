@@ -5,14 +5,16 @@ import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandlerBase
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.elementType
+import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.idea.codeinsight.utils.findRelevantLoopForExpression
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtBreakExpression
 import org.jetbrains.kotlin.psi.KtContinueExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLabeledExpression
+import org.jetbrains.kotlin.psi.KtReturnExpression
 
-class GoToBreakContinueHandler : GotoDeclarationHandlerBase() {
+class GoToBreakContinueReturnHandler : GotoDeclarationHandlerBase() {
 
     override fun getGotoDeclarationTarget(element: PsiElement?, editor: Editor?): PsiElement? {
         if (element == null) return null
@@ -28,6 +30,10 @@ class GoToBreakContinueHandler : GotoDeclarationHandlerBase() {
                 findRelevantLoopForExpression(continueExpression)
             }
 
+            KtTokens.RETURN_KEYWORD -> {
+                val returnExpression = element.parent as? KtReturnExpression ?: return null
+                findReturnTarget(returnExpression)
+            }
             else -> null
         }
     }
@@ -46,5 +52,11 @@ class GoToBreakContinueHandler : GotoDeclarationHandlerBase() {
         return nextSibling
             ?: targetStatement.nextSibling
             ?: targetStatement.lastChild
+    }
+
+    private fun findReturnTarget(returnExpression: KtReturnExpression): PsiElement? {
+        return analyze(returnExpression) {
+            returnExpression.targetSymbol?.psi
+        }
     }
 }
