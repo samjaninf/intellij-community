@@ -2,8 +2,10 @@
 package org.jetbrains.idea.devkit.inspections
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.util.ui.ColorIcon
 import org.jetbrains.idea.devkit.themes.UnresolvedThemeJsonNamedColorInspection
 import org.jetbrains.idea.devkit.themes.UnresolvedThemeKeyInspection
+import java.awt.Color
 
 class JsonThemeInspectionTest : BasePlatformTestCase() {
 
@@ -160,5 +162,100 @@ class JsonThemeInspectionTest : BasePlatformTestCase() {
       }
     """.trimIndent())
     myFixture.checkHighlighting()
+  }
+
+  fun testCyclicColorDefinitions() {
+    // they do not break IDE, but no inspection to prevent it yet
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "colors": {
+          "color1": "color2",
+          "color2": "color1"
+        },
+        "ui": {
+          "ActionButton.focusedBorderColor": "color1"
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
+
+  fun testLineMarkersColorHex() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "ui": {
+          "ActionButton.focusedBorderColor": "#FF0000",
+          "ActionButton.separatorColor": "#00FF00AA"
+        }
+      }
+    """.trimIndent())
+
+    val colorIcons = myFixture.findAllGutters()
+      .distinct()
+      .mapNotNull { it.icon as? ColorIcon }
+    assertEquals(2, colorIcons.size)
+  }
+
+  fun testLineMarkersNamedColorResolvable() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "colors": {
+          "my-color": "#FF0000"
+        },
+        "ui": {
+          "ActionButton.focusedBorderColor": "my-color"
+        }
+      }
+    """.trimIndent())
+
+    // findAllGutters() may double-count annotator-based gutters; distinct() deduplicates via GutterIconRenderer.equals()
+    val colorIcons = myFixture.findAllGutters().distinct().mapNotNull { it.icon as? ColorIcon }
+    // "#FF0000" value in colors section + "my-color" reference resolved to #FF0000
+    assertEquals(2, colorIcons.size)
+    assertTrue(colorIcons.all { it.iconColor == Color.RED })
+  }
+
+  fun testLineMarkersNamedColorUnresolvable() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "ui": {
+          "ActionButton.focusedBorderColor": "unknown-color"
+        }
+      }
+    """.trimIndent())
+
+    val colorIconCount = myFixture.findAllGutters().count { it.icon is ColorIcon }
+    assertEquals(0, colorIconCount)
+  }
+
+  fun testLineMarkersNamedColorFromParentTheme() {
+    myFixture.addFileToProject("parent.theme.json", """
+      {
+        "name": "Parent Theme",
+        "colors": {
+          "parent-color": "#0000FF"
+        }
+      }
+    """.trimIndent())
+
+    myFixture.configureByText("child.theme.json", """
+      {
+        "name": "Child Theme",
+        "parentTheme": "Parent Theme",
+        "ui": {
+          "ActionButton.focusedBorderColor": "parent-color"
+        }
+      }
+    """.trimIndent())
+
+    val colorIcons = myFixture.findAllGutters()
+      .distinct()
+      .mapNotNull { it.icon as? ColorIcon }
+    assertEquals(1, colorIcons.size)
+    assertEquals(Color.BLUE, colorIcons[0].iconColor)
   }
 }
