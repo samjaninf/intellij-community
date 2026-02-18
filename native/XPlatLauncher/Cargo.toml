@@ -7,8 +7,8 @@ publish = false
 build = "build.rs"
 
 [features]
-default = ["cef"]
-cef = []
+default = []
+cef = ["dep:curl", "dep:sha1"]
 
 [profile.release]
 strip = "debuginfo"
@@ -42,12 +42,9 @@ native-dialog = "0.7.0"
 
 [build-dependencies]
 anyhow = { version = "1.0.98", features = ["std", "backtrace"] }
-curl = { version = "0.4.47", features = ["static-curl"] }
-sha1 = "0.10.6"
-winresource = "0.1.20"
-# these crates are used in separate build steps; uncomment them from time to time to check for updates
-#cargo-deny = "0.17.0"
-#cargo-about = "0.6.6"
+curl = { version = "0.4.49", features = ["static-curl"], optional = true }
+sha1 = { version = "0.10.6", optional = true }
+winresource = "0.1.30"
 
 [package.metadata.winresource]
 CompanyName = "JetBrains s.r.o."
