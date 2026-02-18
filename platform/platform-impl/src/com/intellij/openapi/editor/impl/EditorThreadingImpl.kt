@@ -6,6 +6,7 @@ import com.intellij.openapi.application.isEditorLockFreeTypingEnabled
 import com.intellij.openapi.editor.EditorThreading
 import com.intellij.openapi.util.ThrowableComputable
 import com.intellij.util.application
+import com.intellij.util.concurrency.ThreadingAssertions
 import com.intellij.util.ui.EDT
 import org.jetbrains.annotations.ApiStatus
 
@@ -51,6 +52,12 @@ class EditorThreadingImpl : EditorThreading {
     }
     else {
       WriteIntentReadAction.run(action)
+    }
+  }
+
+  override fun doAssertWriteAllowed() {
+    if (!(EDT.isCurrentThreadEdt() && isEditorLockFreeTypingEnabled)) {
+      ThreadingAssertions.assertWriteAccess()
     }
   }
 

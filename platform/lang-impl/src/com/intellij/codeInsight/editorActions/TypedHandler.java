@@ -464,14 +464,15 @@ public final class TypedHandler extends TypedActionHandlerBase {
                                         char lparenChar) {
     int offset = editor.getCaretModel().getOffset();
     HighlighterIterator iterator = editor.getHighlighter().createIterator(offset);
-    boolean atEndOfDocument = offset == editor.getDocument().getTextLength();
+    Document document = editor.getUiDocument();
+    boolean atEndOfDocument = offset == document.getTextLength();
 
     if (!atEndOfDocument) iterator.retreat();
     if (iterator.atEnd()) return;
     BraceMatcher braceMatcher = BraceMatchingUtil.getBraceMatcher(fileType, iterator);
     if (iterator.atEnd()) return;
     IElementType braceTokenType = iterator.getTokenType();
-    CharSequence fileText = editor.getDocument().getCharsSequence();
+    CharSequence fileText = document.getCharsSequence();
     if (!braceMatcher.isLBraceToken(iterator, fileText, fileType)) return;
 
     if (!iterator.atEnd()) {
@@ -502,7 +503,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
       if (callDelegates(TypedHandlerDelegate::beforeClosingParenInserted, text.charAt(0), project, editor, file)) {
         return;
       }
-      editor.getDocument().insertString(offset, text);
+      document.insertString(offset, text);
       TabOutScopesTracker.getInstance().registerEmptyScope(editor, offset);
     }
   }
