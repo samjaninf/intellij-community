@@ -12,8 +12,8 @@ import javax.swing.SwingConstants
  */
 internal class LabelOnTheRightIncorrectPanel: UISandboxScreenshotPanel() {
   override val title: String = "Incorrect"
-  override val screenshotSize = null
-  override val sreenshotRelativePath = null
+  override val screenshotSize = 756 x 256
+  override val sreenshotRelativePath = "images/ui/checkbox/checkbox_label_right_incorrect.png"
 
   override fun createContentForScreenshot(disposable: Disposable): JComponent {
     return panel {

@@ -1,6 +1,7 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.internal.ui.sandbox.screenshots
 
+import com.intellij.ide.actions.QuickChangeLookAndFeel
 import com.intellij.ide.ui.LafManager
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.internal.ui.sandbox.SandboxTreeLeaf
@@ -72,6 +73,7 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
   }
 
   private fun captureScreenshots() {
+    val savedTheme = LafManager.getInstance().currentUIThemeLookAndFeel
     val activeWindow = KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow
     if (activeWindow is DialogWrapperDialog) {
       val sandboxDialog = activeWindow.dialogWrapper as UISandboxDialog
@@ -87,7 +89,7 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
           lafManager.updateUI()
           SwingUtilities.invokeLater {
             captureScreenshots(sandboxDialog) {
-              //TODO restore user LAF
+              QuickChangeLookAndFeel.switchLafAndUpdateUI(LafManager.getInstance(), savedTheme, false)
             }
           }
         }
@@ -139,7 +141,7 @@ internal class CaptureScreenshotsPanel: UISandboxScreenshotPanel() {
     source: () -> JComponent,
     screenshotPath: Path?,
     screenshotSize: Dimension?,
-    onDone: Runnable
+    onDone: Runnable,
   ) {
     val path = tree.getPathFor(node)
     TreeUtil.selectPath(tree, path).doWhenDone {

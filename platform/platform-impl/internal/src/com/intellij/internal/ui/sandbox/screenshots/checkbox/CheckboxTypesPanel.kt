@@ -12,8 +12,8 @@ import javax.swing.JComponent
  */
 internal class CheckboxTypesPanel : UISandboxScreenshotPanel() {
   override val title: String = "Checkbox types"
-  override val screenshotSize = null
-  override val sreenshotRelativePath = null
+  override val screenshotSize = 1412 x 256
+  override val sreenshotRelativePath = "images/ui/checkbox/checkbox.png"
 
   override fun createContentForScreenshot(disposable: Disposable): JComponent {
     return panel {

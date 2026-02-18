@@ -50,6 +50,7 @@ import com.intellij.internal.ui.sandbox.dsl.validation.ValidationRefactoringPane
 import com.intellij.internal.ui.sandbox.screenshots.CaptureScreenshotsPanel
 import com.intellij.internal.ui.sandbox.screenshots.button.ButtonTypesPanel
 import com.intellij.internal.ui.sandbox.screenshots.checkbox.CheckboxTypesPanel
+import com.intellij.internal.ui.sandbox.screenshots.checkbox.LabelOnTheRightCorrectPanel
 import com.intellij.internal.ui.sandbox.screenshots.checkbox.LabelOnTheRightIncorrectPanel
 import com.intellij.internal.ui.sandbox.screenshots.checkbox.OneSelectedCheckboxPanel
 import com.intellij.internal.ui.sandbox.screenshots.checkbox.WhenNotToUseCheckboxes1CorrectPanel
@@ -90,14 +91,10 @@ import com.intellij.ui.treeStructure.SimpleTree
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 import com.intellij.ui.treeStructure.filtered.FilteringTreeStructure
 import com.intellij.util.Alarm
-import com.intellij.util.IJSwingUtilities
 import com.intellij.util.concurrency.Invoker
 import com.intellij.util.ui.JBDimension
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
-import com.intellij.util.ui.tree.TreeUtil
 import java.awt.Font
-import java.awt.Window
 import java.awt.event.KeyEvent
 import java.util.function.Consumer
 import javax.swing.Action
@@ -213,7 +210,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
       Group("How to use", children = listOf(
         Group("Label on the right", children = listOf(
           LabelOnTheRightIncorrectPanel(),
-          OneSelectedCheckboxPanel(true, "Use secure connection"),
+          LabelOnTheRightCorrectPanel(),
         )),
         Group("Long labels", children = listOf(
           OneSelectedCheckboxPanel(false, """<html>Insert selected suggestion by pressing<br/>space, dot, or other context-dependent<br/>keys. Suggestions will appear as you type<br/>and can help you complete words and<br/>phrases more quickly</html>"""),
@@ -257,7 +254,7 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     override fun updateUI() {
       super.updateUI()
 
-      updateCachedNodes()
+      //updateCachedNodes()
     }
   }.apply {
     selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
@@ -462,19 +459,19 @@ internal class UISandboxDialog(private val project: Project?) : DialogWrapper(pr
     }
   }
 
-  private fun updateCachedNodes() {
-    TreeUtil.modelTraverser(treeModel).forEach {
-      val sandboxTreeNode = extractSandboxTreeNode(it)
-      (sandboxTreeNode as? SandboxTreeLeaf)?.let { sandboxTreeLeaf ->
-        if (sandboxTreeLeaf.panelCache.isInitialized()) {
-          val panel = sandboxTreeLeaf.panelCache.value
-          if (UIUtil.getParentOfType(Window::class.java, panel) == null) {
-            IJSwingUtilities.updateComponentTreeUI(panel)
-          }
-        }
-      }
-    }
-  }
+  //private fun updateCachedNodes() {
+  //  TreeUtil.modelTraverser(treeModel).forEach {
+  //    val sandboxTreeNode = extractSandboxTreeNode(it)
+  //    (sandboxTreeNode as? SandboxTreeLeaf)?.let { sandboxTreeLeaf ->
+  //      if (sandboxTreeLeaf.panelCache.isInitialized()) {
+  //        val panel = sandboxTreeLeaf.panelCache.value
+  //        if (UIUtil.getParentOfType(Window::class.java, panel) == null) {
+  //          IJSwingUtilities.updateComponentTreeUI(panel)
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
 
   private fun getNodePath(node: SandboxTreeNodeBase?): List<String> {
     val result = mutableListOf<String>()
