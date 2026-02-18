@@ -208,7 +208,7 @@ public class EditorModificationUtilEx {
    */
   @ApiStatus.Experimental
   public static int calcAfterLineEnd(@NotNull Editor editor, int caretOffset, @NotNull LogicalPosition logicalPosition, @NotNull VisualPosition visualPosition) {
-    Document document = editor.getDocument();
+    Document document = editor.getUiDocument();
     int lineNumber = logicalPosition.line;
     int columnNumber = logicalPosition.column;
     if (lineNumber >= document.getLineCount()) {
