@@ -161,7 +161,7 @@ object PyCallableParameterMapping {
         // *args can consume multiple positional parameters
         ParameterKind.POSITIONAL_CONTAINER -> {
           val argsType = expectedParameter.getArgumentType(context)
-          // Consume all remaining positional parameters
+          // Consume all remaining parameters until we meet the corresponding *args container (error otherwise)
           var actualPositional = actualParameters.pop()
           while (actualParameters.isNotEmpty() && !actualPositional.parameter.isPositionalContainer) {
             // Parameter can't be omitted, or there can't possibly be *args in the actual signature after it
@@ -188,16 +188,18 @@ object PyCallableParameterMapping {
         // **kwargs can consume multiple keyword parameters
         ParameterKind.KEYWORD_CONTAINER -> {
           val kwargsType = expectedParameter.getArgumentType(context)
-          // Consume all remaining keyword parameters
+          // Consume all remaining parameters until we meet the corresponding **kwargs container (error otherwise)
           var actualKeywordParam = actualParameters.pop()
           while (actualParameters.isNotEmpty() && !actualKeywordParam.parameter.isKeywordContainer) {
             // Parameter can't be omitted
             if (!actualKeywordParam.hasDefault && actualKeywordParam.kind != ParameterKind.POSITIONAL_CONTAINER) {
               return null
             }
-            expectedTypes.add(kwargsType)
-            actualTypes.add(actualKeywordParam.getArgumentType(context))
-
+            // skip the types of positional-only parameters with defaults and positional container
+            if (actualKeywordParam.kind == ParameterKind.KEYWORD_ONLY || actualKeywordParam.kind == ParameterKind.POSITIONAL_OR_KEYWORD) {
+              expectedTypes.add(kwargsType)
+              actualTypes.add(actualKeywordParam.getArgumentType(context))
+            }
             actualKeywordParam = actualParameters.pop()
           }
           // match keyword containers themselves
