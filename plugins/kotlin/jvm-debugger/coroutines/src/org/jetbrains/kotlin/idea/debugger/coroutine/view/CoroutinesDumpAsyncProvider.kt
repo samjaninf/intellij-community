@@ -42,9 +42,9 @@ class CoroutinesDumpAsyncProvider : ThreadDumpItemsProviderFactory() {
 
         override fun getItems(suspendContext: SuspendContextImpl?): List<MergeableDumpItem> {
             return (
-              if (!enabled) emptyList()
+              if (!enabled || suspendContext == null) emptyList()
               else {
-                val coroutinesCache = CoroutineDebugProbesProxy(suspendContext!!).dumpCoroutinesWithHierarchy()
+                val (coroutinesCache, _) = CoroutineDebugProbesProxy(suspendContext).dumpCoroutinesWithHierarchy()
                 if (coroutinesCache.isOk()) coroutinesCache.cache.map { info ->
                     if (info.parentJobId == null) info.parentJobId = CoroutineRootDumpItem.id
                     CoroutineDumpItem(info)

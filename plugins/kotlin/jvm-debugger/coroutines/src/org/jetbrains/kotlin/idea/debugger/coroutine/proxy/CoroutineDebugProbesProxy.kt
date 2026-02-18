@@ -38,13 +38,23 @@ class CoroutineDebugProbesProxy(val suspendContext: SuspendContextImpl) {
         return coroutineInfoCache
     }
 
+    /**
+     * Dumps coroutines via [dumpCoroutines] and then enriches them with Job hierarchy
+     * information (job name, job id, and parent job id) via [fetchAndSetJobNamesAndJobUniqueIds].
+     *
+     * Should be invoked on debugger manager thread.
+     *
+     * @return a pair of the [CoroutineInfoCache] and a boolean indicating whether
+     *   the Job hierarchy was successfully fetched (`false` if the cache is empty
+     *   or the hierarchy fetch failed)
+     */
     @Synchronized
-    fun dumpCoroutinesWithHierarchy(): CoroutineInfoCache {
+    fun dumpCoroutinesWithHierarchy(): Pair<CoroutineInfoCache, Boolean> {
         val cache = dumpCoroutines()
         val infos = cache.cache
-        if (cache.cache.isEmpty()) return cache
-        fetchAndSetJobNamesAndJobUniqueIds(infos)
-        return cache
+        if (cache.cache.isEmpty()) return cache to false
+        val jobsHierarchyFetched = fetchAndSetJobNamesAndJobUniqueIds(infos)
+        return cache to jobsHierarchyFetched
     }
 
     /**
