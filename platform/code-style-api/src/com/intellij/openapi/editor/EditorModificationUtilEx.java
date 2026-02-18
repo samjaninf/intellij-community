@@ -31,7 +31,7 @@ public class EditorModificationUtilEx {
       caretModel.moveToOffset(selectionStart);
     }
     selectionModel.removeSelection();
-    editor.getDocument().deleteString(selectionStart, selectionEnd);
+    editor.getUiDocument().deleteString(selectionStart, selectionEnd);
     scrollToCaret(editor);
   }
 
