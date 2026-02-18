@@ -1,0 +1,14 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <projectService serviceInterface="com.intellij.codeInsight.InferredAnnotationsManager"
+                    serviceImplementation="com.intellij.codeInsight.InferredAnnotationsManagerImpl"/>
+
+    <fileBasedIndex implementation="com.intellij.codeInspection.bytecodeAnalysis.BytecodeAnalysisIndex"/>
+    <optionController implementation="com.intellij.codeInspection.ex.EntryPointsManagerBase$Provider"/>
+    <workspaceModel.moduleExtensionBridgeFactory implementation="com.intellij.workspaceModel.ide.legacyBridge.impl.java.LanguageLevelModuleExtensionBridge$Factory"/>
+    <resolveScopeProvider implementation="com.intellij.psi.impl.file.impl.JavaResolveScopeProvider"/>
+
+    <registryKey key="idea.report.nullity.missing.in.generated.overriders" defaultValue="true"
+                 description="Whether &quot;@NotNull/@Nullable problems&quot; inspection should complain about overriding methods or parameters missing @NotNull, which occur in generated code"/>
+  </extensions>
+</idea-plugin>
