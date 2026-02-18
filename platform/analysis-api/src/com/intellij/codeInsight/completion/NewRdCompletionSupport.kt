@@ -19,7 +19,7 @@ interface NewRdCompletionSupport {
    */
   fun scheduleAutopopup(project: Project, editor: Editor, completionType: CompletionType)
 
-  fun isFrontendForIntelliJBackendImpl(): Boolean
+  fun isFrontendForIntelliJBackend(): Boolean
 
   companion object {
     @JvmStatic
@@ -34,9 +34,6 @@ interface NewRdCompletionSupport {
 
     @JvmStatic
     fun getInstance(): NewRdCompletionSupport = service<NewRdCompletionSupport>()
-
-    fun isFrontendForIntelliJBackend(): Boolean =
-      getInstance().isFrontendForIntelliJBackendImpl()
   }
 }
 
@@ -46,5 +43,5 @@ internal class NoOpNewCompletionSupport : NewRdCompletionSupport {
   override fun scheduleAutopopup(project: Project, editor: Editor, completionType: CompletionType) =
     throw UnsupportedOperationException("Is not expected to be called, use AutopopupController directly instead")
 
-  override fun isFrontendForIntelliJBackendImpl(): Boolean = false
+  override fun isFrontendForIntelliJBackend(): Boolean = false
 }
