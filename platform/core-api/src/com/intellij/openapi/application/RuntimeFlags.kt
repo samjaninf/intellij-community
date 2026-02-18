@@ -52,4 +52,4 @@ val isRhizomeAdEnabled: Boolean = System.getProperty("ijpl.rhizome.ad.enabled", 
  * - `true` means new experimental behavior with typing without the global write lock
  */
 @get:ApiStatus.Internal
-val isEditorLockFreeTypingEnabled: Boolean = System.getProperty("editor.lockfree.typing.enabled", "true").toBoolean()
+val isEditorLockFreeTypingEnabled: Boolean = System.getProperty("editor.lockfree.typing.enabled", "false").toBoolean()
