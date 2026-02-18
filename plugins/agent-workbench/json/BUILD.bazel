@@ -18,4 +18,15 @@ jvm_library(
     "//libraries/jackson/jackson",
   ]
 )
+
+jvm_library(
+  name = "json_test_lib",
+  module_name = "intellij.agent.workbench.json",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":json",
+    "//libraries/jackson/jackson:jackson_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.agent.workbench.json` end

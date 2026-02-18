@@ -31,4 +31,16 @@ jvm_library(
     "@lib//:kotlinx-collections-immutable",
   ]
 )
+
+jvm_library(
+  name = "serialization_test_lib",
+  module_name = "fleet.util.serialization",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_serialization",
+  runtime_deps = [
+    ":serialization",
+    "//fleet/multiplatform.shims:multiplatform.shims_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.util.serialization` end

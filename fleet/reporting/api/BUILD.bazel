@@ -28,4 +28,13 @@ jvm_library(
     "@lib//:kotlinx-coroutines-core",
   ]
 )
+
+jvm_library(
+  name = "api_test_lib",
+  module_name = "fleet.reporting.api",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_api",
+  runtime_deps = [":api"]
+)
 ### auto-generated section `build fleet.reporting.api` end

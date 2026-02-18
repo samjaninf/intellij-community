@@ -23,8 +23,10 @@ jvm_library(
   kotlinc_opts = ":custom_test",
   deps = [
     "//fleet/util/codepoints",
+    "//fleet/util/codepoints:codepoints_test_lib",
     "@lib//:kotlin-stdlib",
     "//fleet/test-runtime",
+    "//fleet/test-runtime:test-runtime_test_lib",
   ],
   runtime_deps = [":test"]
 )

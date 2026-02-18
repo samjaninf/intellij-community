@@ -19,4 +19,21 @@ jvm_library(
     "//uast/uast-java:java-uast",
   ]
 )
+
+jvm_library(
+  name = "kotlin-uast-base_test_lib",
+  module_name = "intellij.kotlin.uast.base",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  kotlinc_opts = "@community//:k11",
+  runtime_deps = [
+    ":kotlin-uast-base",
+    "//libraries/asm:asm_test_lib",
+    "//uast/uast-common:uast_test_lib",
+    "//platform/core-api:core_test_lib",
+    "//platform/util:util_test_lib",
+    "//java/java-psi-impl:psi-impl_test_lib",
+    "//uast/uast-java:java-uast_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.kotlin.uast.base` end

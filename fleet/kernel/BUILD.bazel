@@ -38,4 +38,23 @@ jvm_library(
     "//fleet/rhizomedb.transactor.rebase",
   ]
 )
+
+jvm_library(
+  name = "kernel_test_lib",
+  module_name = "fleet.kernel",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_kernel",
+  exports = [
+    "//fleet/rhizomedb.transactor",
+    "//fleet/rhizomedb.transactor:rhizomedb.transactor_test_lib",
+    "//fleet/rhizomedb.transactor.rebase",
+    "//fleet/rhizomedb.transactor.rebase:rhizomedb.transactor.rebase_test_lib",
+  ],
+  runtime_deps = [
+    ":kernel",
+    "//fleet/rhizomedb.transactor:rhizomedb.transactor_test_lib",
+    "//fleet/rhizomedb.transactor.rebase:rhizomedb.transactor.rebase_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.kernel` end

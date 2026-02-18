@@ -42,4 +42,19 @@ jvm_library(
     "//fleet/util/core",
   ]
 )
+
+jvm_library(
+  name = "rpc_test_lib",
+  module_name = "fleet.rpc",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_rpc",
+  runtime_deps = [
+    ":rpc",
+    "//fleet/reporting/api:api_test_lib",
+    "//fleet/reporting/shared:shared_test_lib",
+    "//fleet/multiplatform.shims:multiplatform.shims_test_lib",
+    "//fleet/util/core:core_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.rpc` end

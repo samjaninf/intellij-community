@@ -37,4 +37,23 @@ jvm_library(
   ],
   exports = ["//fleet/bifurcan"]
 )
+
+jvm_library(
+  name = "andel_test_lib",
+  module_name = "fleet.andel",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_andel",
+  exports = [
+    "//fleet/bifurcan",
+    "//fleet/bifurcan:bifurcan_test_lib",
+  ],
+  runtime_deps = [
+    ":andel",
+    "//fleet/util/core:core_test_lib",
+    "//fleet/util/codepoints:codepoints_test_lib",
+    "//fleet/bifurcan:bifurcan_test_lib",
+    "//fleet/fastutil:fastutil_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.andel` end

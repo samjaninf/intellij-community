@@ -24,8 +24,11 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//platform/util/xmlDom",
+    "//platform/util/xmlDom:xmlDom_test_lib",
     "//libraries/aalto-xml",
+    "//libraries/aalto-xml:aalto-xml_test_lib",
     "//platform/util",
+    "//platform/util:util_test_lib",
     "@lib//:junit5",
     "@lib//:assert_j",
   ]

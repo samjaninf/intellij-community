@@ -19,4 +19,16 @@ jvm_library(
     "//platform/platform-util-io:ide-util-io",
   ]
 )
+
+jvm_library(
+  name = "base_test_lib",
+  module_name = "intellij.idea.customization.base",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":base",
+    "//platform/platform-impl:ide-impl_test_lib",
+    "//platform/platform-util-io:ide-util-io_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.idea.customization.base` end

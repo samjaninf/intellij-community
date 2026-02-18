@@ -39,13 +39,27 @@ jvm_library(
   associates = [":ide-customization"],
   deps = [
     "//java/java-psi-api:psi",
+    "//java/java-psi-api:psi_test_lib",
     "@lib//:kotlin-stdlib",
     "//platform/core-api:core",
+    "//platform/core-api:core_test_lib",
     "//platform/lang-api:lang",
+    "//platform/lang-api:lang_test_lib",
     "//platform/platform-impl:ide-impl",
     "//platform/lang-core",
+    "//platform/lang-core:lang-core_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
+  ],
+  runtime_deps = [
+    "//platform/lang-impl:lang-impl_test_lib",
+    "//platform/vcs-impl:vcs-impl_test_lib",
+    "//platform/usageView:usageView_test_lib",
+    "//java/idea-ui:ui_test_lib",
+    "//java/java-impl:impl_test_lib",
+    "//platform/testRunner:testRunner_test_lib",
+    "//notebooks/visualization:visualization_test_lib",
+    "//platform/platform-impl:ide-impl_test_lib",
   ]
 )
 ### auto-generated section `build intellij.java.ide.customization` end

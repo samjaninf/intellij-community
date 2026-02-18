@@ -22,4 +22,18 @@ jvm_library(
     "//platform/core-ui",
   ]
 )
+
+jvm_library(
+  name = "win10_test_lib",
+  module_name = "intellij.laf.win10",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":win10",
+    "//platform/core-api:core_test_lib",
+    "//platform/editor-ui-api:editor-ui_test_lib",
+    "//platform/platform-impl:ide-impl_test_lib",
+    "//platform/core-ui:core-ui_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.laf.win10` end

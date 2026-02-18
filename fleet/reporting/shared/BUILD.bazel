@@ -33,4 +33,17 @@ jvm_library(
     "//fleet/multiplatform.shims",
   ]
 )
+
+jvm_library(
+  name = "shared_test_lib",
+  module_name = "fleet.reporting.shared",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_shared",
+  runtime_deps = [
+    ":shared",
+    "//fleet/reporting/api:api_test_lib",
+    "//fleet/multiplatform.shims:multiplatform.shims_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.reporting.shared` end

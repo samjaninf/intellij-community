@@ -20,4 +20,13 @@ jvm_library(
     "@lib//:kotlin-stdlib",
   ]
 )
+
+jvm_library(
+  name = "scripting.scratch.definition_test_lib",
+  module_name = "intellij.kotlin.base.scripting.scratch.definition",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  kotlinc_opts = "@community//:k8",
+  runtime_deps = [":scripting.scratch.definition"]
+)
 ### auto-generated section `build intellij.kotlin.base.scripting.scratch.definition` end

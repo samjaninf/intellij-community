@@ -23,4 +23,19 @@ jvm_library(
     "//plugins/coverage",
   ]
 )
+
+jvm_library(
+  name = "coverage_test_lib",
+  module_name = "intellij.gradle.java.coverage",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":coverage",
+    "//platform/external-system-impl:externalSystem-impl_test_lib",
+    "//platform/execution:execution_test_lib",
+    "//platform/smRunner:smRunner_test_lib",
+    "//plugins/gradle:gradle_test_lib",
+    "//plugins/coverage:coverage_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.gradle.java.coverage` end

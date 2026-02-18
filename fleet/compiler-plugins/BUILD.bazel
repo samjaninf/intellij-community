@@ -13,4 +13,12 @@ jvm_library(
     "@lib//:jetbrains-kotlin-compose-compiler-plugin",
   ]
 )
+
+jvm_library(
+  name = "compiler-plugins_test_lib",
+  module_name = "fleet.compiler.plugins",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  runtime_deps = [":compiler-plugins"]
+)
 ### auto-generated section `build fleet.compiler.plugins` end

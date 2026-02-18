@@ -19,7 +19,9 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//platform/runtime/repository",
+    "//platform/runtime/repository:repository_test_lib",
     "//platform/util-ex",
+    "//platform/util-ex:util-ex_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "@lib//:junit5Pioneer",

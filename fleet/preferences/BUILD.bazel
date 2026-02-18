@@ -28,4 +28,18 @@ jvm_library(
   ],
   exports = ["@lib//:kotlinx-io-core"]
 )
+
+jvm_library(
+  name = "preferences_test_lib",
+  module_name = "fleet.preferences",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_preferences",
+  exports = ["@lib//:kotlinx-io-core"],
+  runtime_deps = [
+    ":preferences",
+    "//fleet/util/multiplatform",
+    "//fleet/util/multiplatform:multiplatform_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.preferences` end

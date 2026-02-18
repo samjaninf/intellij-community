@@ -25,4 +25,22 @@ jvm_library(
   ],
   exports = ["//platform/statistics/config"]
 )
+
+jvm_library(
+  name = "uploader_test_lib",
+  module_name = "intellij.platform.statistics.uploader",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  exports = [
+    "//platform/statistics/config",
+    "//platform/statistics/config:config_test_lib",
+  ],
+  runtime_deps = [
+    ":uploader",
+    "//platform/statistics/config:config_test_lib",
+    "//libraries/jackson/jackson:jackson_test_lib",
+    "//libraries/jackson/databind:databind_test_lib",
+    "//libraries/jackson/module-kotlin:libraries-jackson-module-kotlin_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.platform.statistics.uploader` end

@@ -18,4 +18,13 @@ jvm_library(
   kotlinc_opts = ":custom_api",
   deps = ["@lib//:kotlin-stdlib"]
 )
+
+jvm_library(
+  name = "api_test_lib",
+  module_name = "fleet.modules.api",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_api",
+  runtime_deps = [":api"]
+)
 ### auto-generated section `build fleet.modules.api` end

@@ -39,4 +39,18 @@ jvm_library(
     "//fleet/fastutil",
   ]
 )
+
+jvm_library(
+  name = "rhizomedb_test_lib",
+  module_name = "fleet.rhizomedb",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_rhizomedb",
+  runtime_deps = [
+    ":rhizomedb",
+    "//fleet/util/core:core_test_lib",
+    "//fleet/multiplatform.shims:multiplatform.shims_test_lib",
+    "//fleet/fastutil:fastutil_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.rhizomedb` end

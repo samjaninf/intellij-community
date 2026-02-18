@@ -23,4 +23,14 @@ jvm_library(
   ],
   exports = ["@lib//:fleet-util-modules-jetbrains-intellij-platform-util-zip-squashed"]
 )
+
+jvm_library(
+  name = "modules_test_lib",
+  module_name = "fleet.util.modules",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_modules",
+  exports = ["@lib//:fleet-util-modules-jetbrains-intellij-platform-util-zip-squashed"],
+  runtime_deps = [":modules"]
+)
 ### auto-generated section `build fleet.util.modules` end

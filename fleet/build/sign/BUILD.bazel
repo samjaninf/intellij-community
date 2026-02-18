@@ -25,4 +25,13 @@ jvm_library(
     "@lib//:slf4j-api",
   ]
 )
+
+jvm_library(
+  name = "sign_test_lib",
+  module_name = "fleet.build.sign",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_sign",
+  runtime_deps = [":sign"]
+)
 ### auto-generated section `build fleet.build.sign` end

@@ -30,4 +30,16 @@ jvm_library(
     "@lib//:kotlinx-io-core",
   ]
 )
+
+jvm_library(
+  name = "lsp.protocol_test_lib",
+  module_name = "fleet.lsp.protocol",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_lsp.protocol",
+  runtime_deps = [
+    ":lsp.protocol",
+    "//fleet/util/core:core_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.lsp.protocol` end

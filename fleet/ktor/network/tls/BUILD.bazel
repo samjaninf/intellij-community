@@ -26,4 +26,19 @@ jvm_library(
     "@lib//:slf4j-api",
   ]
 )
+
+jvm_library(
+  name = "tls_test_lib",
+  module_name = "fleet.ktor.network.tls",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  exports = [
+    "@lib//:fleet-io-ktor-http",
+    "@lib//:fleet-io-ktor-io",
+    "@lib//:fleet-io-ktor-network",
+    "@lib//:fleet-io-ktor-network-tls",
+    "@lib//:fleet-io-ktor-utils",
+  ],
+  runtime_deps = [":tls"]
+)
 ### auto-generated section `build fleet.ktor.network.tls` end

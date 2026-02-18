@@ -35,4 +35,21 @@ jvm_library(
     "//platform/projectModel-api:projectModel",
   ]
 )
+
+jvm_library(
+  name = "project-structure_test_lib",
+  module_name = "kotlin.base.fe10.project-structure",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  kotlinc_opts = ":custom_project-structure",
+  runtime_deps = [
+    ":project-structure",
+    "//platform/core-api:core_test_lib",
+    "//platform/workspace/storage:storage_test_lib",
+    "//platform/backend/workspace:workspace_test_lib",
+    "//plugins/kotlin/base/project-structure:project-structure_test_lib",
+    "//platform/util:util_test_lib",
+    "//platform/projectModel-api:projectModel_test_lib",
+  ]
+)
 ### auto-generated section `build kotlin.base.fe10.project-structure` end

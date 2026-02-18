@@ -26,4 +26,13 @@ jvm_library(
     "@lib//:kotlinx-serialization-json",
   ]
 )
+
+jvm_library(
+  name = "license_test_lib",
+  module_name = "fleet.build.license",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_license",
+  runtime_deps = [":license"]
+)
 ### auto-generated section `build fleet.build.license` end

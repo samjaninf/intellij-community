@@ -15,4 +15,19 @@ jvm_library(
   ],
   runtime_deps = ["//plugins/cucumber-jvm-formatter:cucumber-jvmFormatter"]
 )
+
+jvm_library(
+  name = "cucumber-testRunner_test_lib",
+  module_name = "intellij.cucumber.testRunner",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":cucumber-testRunner",
+    "//platform/core-api:core_test_lib",
+    "//platform/testFramework:testFramework_test_lib",
+    "@lib//:cucumber-core-1-provided",
+    "//plugins/cucumber-jvm-formatter:cucumber-jvmFormatter_test_lib",
+    "//platform/util-class-loader:util-classLoader_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.cucumber.testRunner` end

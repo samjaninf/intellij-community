@@ -19,4 +19,13 @@ jvm_library(
   exported_compiler_plugins = ["@community//fleet/compiler-plugins/expects:expects-plugin"],
   deps = ["@lib//:kotlin-stdlib"]
 )
+
+jvm_library(
+  name = "multiplatform_test_lib",
+  module_name = "fleet.util.multiplatform",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_multiplatform",
+  runtime_deps = [":multiplatform"]
+)
 ### auto-generated section `build fleet.util.multiplatform` end

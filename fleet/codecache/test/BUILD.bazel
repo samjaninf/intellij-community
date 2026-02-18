@@ -29,11 +29,16 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//fleet/test-runtime",
+    "//fleet/test-runtime:test-runtime_test_lib",
     "//fleet/codecache",
+    "//fleet/codecache:codecache_test_lib",
     "@lib//:kotlinx-coroutines-core",
     "//fleet/bundles",
+    "//fleet/bundles:bundles_test_lib",
     "//fleet/util/network",
+    "//fleet/util/network:network_test_lib",
     "//fleet/ktor/client/core",
+    "//fleet/ktor/client/core:core_test_lib",
     "@lib//:kotlinx-serialization-core",
   ],
   runtime_deps = [":test"]

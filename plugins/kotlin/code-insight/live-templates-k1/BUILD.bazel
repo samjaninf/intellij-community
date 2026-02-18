@@ -42,6 +42,30 @@ jvm_library(
     "//java/java-psi-api:psi",
   ]
 )
+
+jvm_library(
+  name = "kotlin-code-insight-live-templates-k1_test_lib",
+  module_name = "kotlin.code-insight.live-templates.k1",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  kotlinc_opts = ":custom_kotlin-code-insight-live-templates-k1",
+  runtime_deps = [
+    ":kotlin-code-insight-live-templates-k1",
+    "//platform/analysis-api:analysis_test_lib",
+    "//platform/core-api:core_test_lib",
+    "//platform/editor-ui-api:editor-ui_test_lib",
+    "//plugins/kotlin/base/plugin:plugin_test_lib",
+    "//plugins/kotlin/base/code-insight:code-insight_test_lib",
+    "//plugins/kotlin/base/fe10/analysis:analysis_test_lib",
+    "//plugins/kotlin/base/fe10/code-insight:code-insight_test_lib",
+    "//plugins/kotlin/code-insight/live-templates-shared:kotlin-code-insight-live-templates-shared_test_lib",
+    "//plugins/kotlin/completion/impl-k1:kotlin-completion-impl-k1_test_lib",
+    "//platform/core-impl:core-impl_test_lib",
+    "//platform/analysis-impl:analysis-impl_test_lib",
+    "//platform/lang-api:lang_test_lib",
+    "//java/java-psi-api:psi_test_lib",
+  ]
+)
 ### auto-generated section `build kotlin.code-insight.live-templates.k1` end
 
 ### auto-generated section `build kotlin.code-insight.live-templates.k1.tests` start
@@ -64,12 +88,19 @@ jvm_library(
   visibility = ["//visibility:public"],
   srcs = glob(["test/**/*.kt", "test/**/*.java", "test/**/*.form"], allow_empty = True),
   kotlinc_opts = ":custom_kotlin-code-insight-live-templates-k1-tests",
-  associates = ["//plugins/kotlin/code-insight/live-templates-k1:kotlin-code-insight-live-templates-k1"],
+  associates = [
+    "//plugins/kotlin/code-insight/live-templates-k1:kotlin-code-insight-live-templates-k1",
+    "//plugins/kotlin/code-insight/live-templates-k1:kotlin-code-insight-live-templates-k1_test_lib",
+  ],
   deps = [
     "//platform/analysis-api:analysis",
+    "//platform/analysis-api:analysis_test_lib",
     "//platform/core-api:core",
+    "//platform/core-api:core_test_lib",
     "//platform/editor-ui-api:editor-ui",
+    "//platform/editor-ui-api:editor-ui_test_lib",
     "//plugins/kotlin/plugin/k1",
+    "//plugins/kotlin/plugin/k1:k1_test_lib",
     "@lib//:kotlin-stdlib",
     "@lib//:kotlinc-kotlin-compiler-common",
     "@lib//:kotlinc-kotlin-compiler-fe10",
@@ -80,19 +111,29 @@ jvm_library(
     "//plugins/kotlin/base/code-insight",
     "//plugins/kotlin/base/code-insight:code-insight_test_lib",
     "//plugins/kotlin/base/fe10/analysis",
+    "//plugins/kotlin/base/fe10/analysis:analysis_test_lib",
     "//plugins/kotlin/base/fe10/code-insight",
+    "//plugins/kotlin/base/fe10/code-insight:code-insight_test_lib",
     "//plugins/kotlin/code-insight/live-templates-shared:kotlin-code-insight-live-templates-shared",
     "//plugins/kotlin/code-insight/live-templates-shared:kotlin-code-insight-live-templates-shared_test_lib",
     "//plugins/kotlin/completion/impl-k1:kotlin-completion-impl-k1",
+    "//plugins/kotlin/completion/impl-k1:kotlin-completion-impl-k1_test_lib",
+    "//plugins/kotlin/base/test",
     "//plugins/kotlin/base/test:test_test_lib",
+    "//plugins/kotlin/idea/tests",
     "//plugins/kotlin/idea/tests:tests_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "//java/testFramework",
+    "//java/testFramework:testFramework_test_lib",
     "//platform/core-impl",
+    "//platform/core-impl:core-impl_test_lib",
     "//platform/analysis-impl",
+    "//platform/analysis-impl:analysis-impl_test_lib",
     "//platform/lang-api:lang",
+    "//platform/lang-api:lang_test_lib",
     "//java/java-psi-api:psi",
+    "//java/java-psi-api:psi_test_lib",
   ],
   runtime_deps = [":kotlin-code-insight-live-templates-k1-tests"]
 )

@@ -42,4 +42,17 @@ jvm_library(
     "@lib//:fleet-clikt",
   ]
 )
+
+jvm_library(
+  name = "cli_test_lib",
+  module_name = "fleet.build.cli",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_cli",
+  exports = [
+    "@lib//:fleet-clikt-core",
+    "@lib//:fleet-clikt",
+  ],
+  runtime_deps = [":cli"]
+)
 ### auto-generated section `build fleet.build.cli` end

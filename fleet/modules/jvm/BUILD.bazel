@@ -24,4 +24,18 @@ jvm_library(
     "//fleet/util/logging/api",
   ]
 )
+
+jvm_library(
+  name = "jvm_test_lib",
+  module_name = "fleet.modules.jvm",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_jvm",
+  runtime_deps = [
+    ":jvm",
+    "//fleet/modules/api:api_test_lib",
+    "//fleet/util/modules:modules_test_lib",
+    "//fleet/util/logging/api:api_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.modules.jvm` end

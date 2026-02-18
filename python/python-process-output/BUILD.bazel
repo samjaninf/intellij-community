@@ -19,4 +19,16 @@ jvm_library(
     "//platform/core-api:core",
   ]
 )
+
+jvm_library(
+  name = "processOutput_test_lib",
+  module_name = "intellij.python.processOutput",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":processOutput",
+    "//platform/platform-api:ide_test_lib",
+    "//platform/core-api:core_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.python.processOutput` end

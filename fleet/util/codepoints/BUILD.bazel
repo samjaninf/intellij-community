@@ -33,4 +33,17 @@ jvm_library(
     ":fleet_util_multiplatform_provided",
   ]
 )
+
+jvm_library(
+  name = "codepoints_test_lib",
+  module_name = "fleet.util.codepoints",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_codepoints",
+  runtime_deps = [
+    ":codepoints",
+    "//fleet/util/multiplatform",
+    "//fleet/util/multiplatform:multiplatform_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.util.codepoints` end

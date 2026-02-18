@@ -38,4 +38,21 @@ jvm_library(
     "@lib//:kotlinx-coroutines-core",
   ]
 )
+
+jvm_library(
+  name = "api_test_lib",
+  module_name = "fleet.util.logging.api",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_api",
+  exports = [
+    "@lib//:kotlin-stdlib",
+    "@lib//:kotlinx-coroutines-core",
+  ],
+  runtime_deps = [
+    ":api",
+    "//fleet/util/multiplatform",
+    "//fleet/util/multiplatform:multiplatform_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.util.logging.api` end

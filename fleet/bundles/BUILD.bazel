@@ -30,4 +30,18 @@ jvm_library(
     "//fleet/bifurcan",
   ]
 )
+
+jvm_library(
+  name = "bundles_test_lib",
+  module_name = "fleet.bundles",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_bundles",
+  runtime_deps = [
+    ":bundles",
+    "//fleet/util/core:core_test_lib",
+    "//fleet/modules/api:api_test_lib",
+    "//fleet/bifurcan:bifurcan_test_lib",
+  ]
+)
 ### auto-generated section `build fleet.bundles` end

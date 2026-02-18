@@ -29,4 +29,13 @@ jvm_library(
     "@lib//:fleet-io-github-pdvrieze-xmlutil-core",
   ]
 )
+
+jvm_library(
+  name = "authentication_test_lib",
+  module_name = "fleet.build.authentication",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_authentication",
+  runtime_deps = [":authentication"]
+)
 ### auto-generated section `build fleet.build.authentication` end

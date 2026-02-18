@@ -22,4 +22,18 @@ jvm_library(
     "//plugins/webp/lib:webp-libwebp",
   ]
 )
+
+jvm_library(
+  name = "webp_test_lib",
+  module_name = "intellij.webp",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":webp",
+    "//platform/core-api:core_test_lib",
+    "//platform/lang-api:lang_test_lib",
+    "//platform/platform-impl:ide-impl_test_lib",
+    "//platform/lang-impl:lang-impl_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.webp` end

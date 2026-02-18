@@ -26,4 +26,24 @@ jvm_library(
     "//xml/dom-openapi:dom",
   ]
 )
+
+jvm_library(
+  name = "ant_test_lib",
+  module_name = "intellij.groovy.ant",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True),
+  runtime_deps = [
+    ":ant",
+    "//platform/core-api:core_test_lib",
+    "//platform/projectModel-api:projectModel_test_lib",
+    "//plugins/groovy:groovy_test_lib",
+    "//plugins/ant:ant_test_lib",
+    "//platform/util:util_test_lib",
+    "//java/java-psi-impl:psi-impl_test_lib",
+    "//platform/ide-core-impl:ide-core-impl_test_lib",
+    "//platform/util-class-loader:util-classLoader_test_lib",
+    "//platform/analysis-api:analysis_test_lib",
+    "//xml/dom-openapi:dom_test_lib",
+  ]
+)
 ### auto-generated section `build intellij.groovy.ant` end

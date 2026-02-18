@@ -27,4 +27,13 @@ jvm_library(
     "@lib//:kotlinx-coroutines-core",
   ]
 )
+
+jvm_library(
+  name = "platform_test_lib",
+  module_name = "fleet.build.platform",
+  visibility = ["//visibility:public"],
+  srcs = glob([], allow_empty = True, exclude = ["**/module-info.java"]),
+  kotlinc_opts = ":custom_platform",
+  runtime_deps = [":platform"]
+)
 ### auto-generated section `build fleet.build.platform` end

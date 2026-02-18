@@ -19,9 +19,11 @@ jvm_library(
   deps = [
     "@lib//:kotlin-stdlib",
     "//platform/workspace/storage",
+    "//platform/workspace/storage:storage_test_lib",
     "//platform/testFramework",
     "//platform/testFramework:testFramework_test_lib",
     "//libraries/kotlin/reflect",
+    "//libraries/kotlin/reflect:reflect_test_lib",
   ],
   runtime_deps = [":testEntities"]
 )
