@@ -706,12 +706,12 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
 
     myEditorFilteringMarkupModel.addMarkupModelListener(myCaretModel, myMarkupModelListener);
     myMarkupModel.addMarkupModelListener(myCaretModel, myMarkupModelListener);
-    myDocument.addDocumentListener(myFoldingModel, myCaretModel);
-    myDocument.addDocumentListener(myCaretModel, myCaretModel);
+    getUiDocument().addDocumentListener(myFoldingModel, myCaretModel);
+    getUiDocument().addDocumentListener(myCaretModel, myCaretModel);
 
-    myDocument.addDocumentListener(new EditorDocumentAdapter(), myCaretModel);
-    myDocument.addDocumentListener(mySoftWrapModel, myCaretModel);
-    myDocument.addDocumentListener(myMarkupModel, myCaretModel);
+    getUiDocument().addDocumentListener(new EditorDocumentAdapter(), myCaretModel);
+    getUiDocument().addDocumentListener(mySoftWrapModel, myCaretModel);
+    getUiDocument().addDocumentListener(myMarkupModel, myCaretModel);
 
     myFoldingModel.addListener(mySoftWrapModel, myCaretModel);
 
@@ -724,7 +724,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       @Override
       public void caretPositionChanged(@NotNull CaretEvent e) {
         if (myState.isStickySelection()) {
-          int selectionStart = Math.min(myStickySelectionStart, getDocument().getTextLength());
+          int selectionStart = Math.min(myStickySelectionStart, getUiDocument().getTextLength());
           mySelectionModel.setSelection(selectionStart, myCaretModel.getVisualPosition(), myCaretModel.getOffset());
         }
       }
@@ -910,7 +910,8 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   private final AtomicReference<HighlighterChange> myCompositeHighlighterChange = new AtomicReference<>();
   private void onHighlighterChanged(@NotNull RangeHighlighterEx highlighter,
                                     boolean canImpactGutterSize, boolean fontStyleChanged, boolean foregroundColorChanged) {
-    int textLength = myDocument.getTextLength();
+    DocumentEx document = getUiDocument();
+    int textLength = document.getTextLength();
     int hstart = MathUtil.clamp(highlighter.getAffectedAreaStartOffset(), 0, textLength);
     int hend = MathUtil.clamp(highlighter.getAffectedAreaEndOffset(), hstart, textLength);
     boolean isAccessibleGutterElement = AccessibleGutterLine.isAccessibleGutterElement(highlighter.getGutterIconRenderer());
@@ -929,7 +930,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     });
     if (oldChange == null || oldChange.needRestart()) {
       EdtInvocationManager.invokeLaterIfNeeded(() -> {
-        if (isDisposed() || myDocument.isInBulkUpdate() || myInlayModel.isInBatchMode() || myDocumentChangeInProgress) {
+        if (isDisposed() || document.isInBulkUpdate() || myInlayModel.isInBatchMode() || myDocumentChangeInProgress) {
           myCompositeHighlighterChange.getAndUpdate(old -> old == null ? null : new HighlighterChange(old.affectedStart(), old.affectedEnd(), old.canImpactGutterSize(), old.fontStyleChanged(), old.foregroundColorChanged(), old.isAccessibleGutterElement(), true));
           return; // will be repainted later
         }
@@ -941,15 +942,15 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
           updateGutterSize();
         }
 
-        int docTextLength = myDocument.getTextLength();
+        int docTextLength = document.getTextLength();
         int start = MathUtil.clamp(newChange.affectedStart(), 0, docTextLength);
         int end = MathUtil.clamp(newChange.affectedEnd(), start, docTextLength);
 
         if (myGutterComponent.getCurrentAccessibleLine() != null && newChange.isAccessibleGutterElement()) {
           escapeGutterAccessibleLine(start, end);
         }
-        int startLine = myDocument.getLineNumber(start);
-        int endLine = myDocument.getLineNumber(end);
+        int startLine = document.getLineNumber(start);
+        int endLine = document.getLineNumber(end);
         if (start != end && (newChange.fontStyleChanged() || newChange.foregroundColorChanged())) {
           myView.invalidateRange(start, end, newChange.fontStyleChanged());
           if (myAdView != null) {
@@ -965,9 +966,10 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   }
 
   private void onInlayUpdated(@NotNull Inlay<?> inlay, int changeFlags) {
-    if (myDocument.isInBulkUpdate() || myInlayModel.isInBatchMode()) return;
+    DocumentEx document = getUiDocument();
+    if (document.isInBulkUpdate() || myInlayModel.isInBatchMode()) return;
     if ((changeFlags & InlayModel.ChangeFlags.GUTTER_ICON_PROVIDER_CHANGED) != 0) updateGutterSize();
-    if (myDocument.isInEventsHandling() ||
+    if (document.isInEventsHandling() ||
         (changeFlags & (InlayModel.ChangeFlags.WIDTH_CHANGED | InlayModel.ChangeFlags.HEIGHT_CHANGED)) == 0) {
       return;
     }
@@ -978,7 +980,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       repaint(offset, offset, false);
     }
     else if (placement == Inlay.Placement.AFTER_LINE_END) {
-      int lineEndOffset = DocumentUtil.getLineEndOffset(offset, myDocument);
+      int lineEndOffset = DocumentUtil.getLineEndOffset(offset, document);
       repaint(lineEndOffset, lineEndOffset, false);
     }
     else {
@@ -989,7 +991,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   }
 
   private void onInlayBatchModeFinish() {
-    if (myDocument.isInBulkUpdate()) return;
+    if (isDocumentInBulkUpdate()) return;
     validateSize();
     updateGutterSize();
     myEditorComponent.repaint();
@@ -1969,7 +1971,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   }
 
   void repaint(int startOffset, int endOffset, boolean invalidateTextLayout) {
-    if (myDocument.isInBulkUpdate() || myInlayModel.isInBatchMode()) {
+    if (isDocumentInBulkUpdate() || myInlayModel.isInBatchMode()) {
       return;
     }
     if (myView == null) {
@@ -2011,6 +2013,10 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
         doRepaint(startLine, endLine);
       }
     });
+  }
+
+  private boolean isDocumentInBulkUpdate() {
+    return getUiDocument().isInBulkUpdate();
   }
 
   private boolean isShowing() {
@@ -2112,7 +2118,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     if (isStickySelection()) {
       setStickySelection(false);
     }
-    if (myDocument.isInBulkUpdate()) {
+    if (isDocumentInBulkUpdate()) {
       // Assuming that the job is done at bulk listener callback methods.
       return;
     }
@@ -2138,7 +2144,8 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
 
   private void changedUpdate(@NotNull DocumentEvent e) {
     myDocumentChangeInProgress = false;
-    if (myDocument.isInBulkUpdate()) return;
+    Document document = e.getDocument();
+    if (document.isInBulkUpdate()) return;
 
     if (myErrorStripeNeedsRepaintRange != -1) {
       queueErrorStipeRepaintRequest(e.getOffset(), e.getOffset() + e.getNewLength());
@@ -2160,11 +2167,11 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       myGutterComponent.clearLineToGutterRenderersCache();
     }
 
-    if (myRangeToRepaintStart < myDocument.getLineStartOffset(startLine)) {
-      startLine = myDocument.getLineNumber(myRangeToRepaintStart);
+    if (myRangeToRepaintStart < document.getLineStartOffset(startLine)) {
+      startLine = document.getLineNumber(myRangeToRepaintStart);
     }
-    if (myRangeToRepaintEnd > myDocument.getLineEndOffset(endLine)) {
-      endLine = myDocument.getLineNumber(Math.min(myRangeToRepaintEnd, myDocument.getTextLength()));
+    if (myRangeToRepaintEnd > document.getLineEndOffset(endLine)) {
+      endLine = document.getLineNumber(Math.min(myRangeToRepaintEnd, document.getTextLength()));
     }
     if (countLineFeeds(e.getOldFragment()) != countLineFeeds(e.getNewFragment())) {
       // Lines removed. Need to repaint till the end of the screen
@@ -2243,7 +2250,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
 
     Dimension dim = getPreferredSize();
 
-    if (!dim.equals(myPreferredSize) && !myDocument.isInBulkUpdate() && !myInlayModel.isInBatchMode()) {
+    if (!dim.equals(myPreferredSize) && !isDocumentInBulkUpdate() && !myInlayModel.isInBatchMode()) {
       dim = mySizeAdjustmentStrategy.adjust(dim, myPreferredSize, this);
       if (!dim.equals(myPreferredSize)) {
         myPreferredSize = dim;
@@ -2604,7 +2611,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
 
   private @NotNull Color getBackgroundIgnoreForced() {
     Color color = myScheme.getDefaultBackground();
-    if (myDocument.isWritable()) {
+    if (getUiDocument().isWritable()) {
       return color;
     }
     Color readOnlyColor = myScheme.getColor(EditorColors.READONLY_BACKGROUND_COLOR);
@@ -2810,21 +2817,21 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   }
 
   private int offsetToLogicalLine(int offset) {
-    int textLength = myDocument.getTextLength();
+    int textLength = getUiDocument().getTextLength();
     if (textLength == 0) return 0;
 
     if (offset > textLength || offset < 0) {
       throw new IndexOutOfBoundsException("Wrong offset: " + offset + " textLength: " + textLength);
     }
 
-    int lineIndex = myDocument.getLineNumber(offset);
-    LOG.assertTrue(lineIndex >= 0 && lineIndex < myDocument.getLineCount());
+    int lineIndex = getUiDocument().getLineNumber(offset);
+    LOG.assertTrue(lineIndex >= 0 && lineIndex < getUiDocument().getLineCount());
 
     return lineIndex;
   }
 
   private @NotNull VisualPosition getTargetPosition(int x, int y, boolean trimToLineWidth, @Nullable Caret targetCaret) {
-    if (myDocument.getLineCount() == 0) {
+    if (getUiDocument().getLineCount() == 0) {
       return new VisualPosition(0, 0);
     }
     if (x < 0) {
@@ -2845,7 +2852,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     }
     if (trimToLineWidth && !mySettings.isVirtualSpace()) {
       LogicalPosition logicalPosition = visualToLogicalPosition(visualPosition);
-      LogicalPosition lineEndPosition = offsetToLogicalPosition(myDocument.getLineEndOffset(logicalPosition.line));
+      LogicalPosition lineEndPosition = offsetToLogicalPosition(getUiDocument().getLineEndOffset(logicalPosition.line));
       if (logicalPosition.column > lineEndPosition.column) {
         visualPosition = logicalToVisualPosition(lineEndPosition.leanForward(true));
       }
@@ -3041,8 +3048,8 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       // further dragging (if any).
       if (myDragOnGutterSelectionStartLine >= 0) {
         mySelectionModel.removeSelection();
-        myCaretModel.moveToOffset(myDragOnGutterSelectionStartLine < myDocument.getLineCount()
-                                  ? myDocument.getLineStartOffset(myDragOnGutterSelectionStartLine) : myDocument.getTextLength());
+        myCaretModel.moveToOffset(myDragOnGutterSelectionStartLine < getUiDocument().getLineCount()
+                                  ? getUiDocument().getLineStartOffset(myDragOnGutterSelectionStartLine) : getUiDocument().getTextLength());
       }
       myDragOnGutterSelectionStartLine = -1;
     }
@@ -3297,7 +3304,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
 
   private int validateOffset(int offset) {
     if (offset < 0) return 0;
-    if (offset > myDocument.getTextLength()) return myDocument.getTextLength();
+    if (offset > getUiDocument().getTextLength()) return getUiDocument().getTextLength();
     return offset;
   }
 
@@ -4522,7 +4529,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
             else {
               runUndoTransparent(() -> EditorModificationUtilEx.insertStringAtCaret(EditorImpl.this, composedString, false, false));
               composedRangeMarker =
-                myDocument.createRangeMarker(getCaretModel().getOffset(), getCaretModel().getOffset() + composedString.length(), true);
+                getUiDocument().createRangeMarker(getCaretModel().getOffset(), getCaretModel().getOffset() + composedString.length(), true);
             }
           }
         }
