@@ -7,6 +7,7 @@ import com.intellij.codeInsight.multiverse.EditorContextManager;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.Language;
 import com.intellij.lang.injection.InjectedLanguageManager;
+import com.intellij.openapi.application.RuntimeFlagsKt;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Editor;
@@ -109,7 +110,7 @@ public final class PsiUtilBase extends PsiUtilCore implements PsiEditorUtil {
 
     ensureValid(psiFile);
 
-    if (psiFile instanceof PsiFileWithOneLanguage) {
+    if (psiFile instanceof PsiFileWithOneLanguage || RuntimeFlagsKt.isEditorLockFreeTypingEnabled()) {
       return psiFile;
     }
 

@@ -103,6 +103,10 @@ public final class TypedHandler extends TypedActionHandlerBase {
 
   private static @NotNull FileType getFileType(@NotNull PsiFile file, @NotNull Editor editor) {
     FileType fileType = file.getFileType();
+    if (RuntimeFlagsKt.isEditorLockFreeTypingEnabled()) {
+      // PsiUtilBase.getLanguageInEditor requires RA
+      return fileType;
+    }
     Language language = PsiUtilBase.getLanguageInEditor(editor, file.getProject());
     if (language != null && language != PlainTextLanguage.INSTANCE) {
       LanguageFileType associatedFileType = language.getAssociatedFileType();
@@ -358,7 +362,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
 
     PsiElement element;
     Language language;
-    if (file instanceof PsiFileWithOneLanguage) {
+    if (file instanceof PsiFileWithOneLanguage || RuntimeFlagsKt.isEditorLockFreeTypingEnabled()) {
       language = file.getLanguage();
 
       // we know the language, so let's try to avoid inferring the element at caret
