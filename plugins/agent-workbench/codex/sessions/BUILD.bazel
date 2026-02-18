@@ -48,6 +48,7 @@ jvm_library(
     "//platform/platform-api:ide_test_lib",
     "//platform/platform-util-io:ide-util-io",
     "//plugins/agent-workbench/filewatch",
+    "//plugins/agent-workbench/filewatch:filewatch_test_lib",
     "//plugins/agent-workbench/codex/common",
     "//plugins/agent-workbench/codex/common:common_test_lib",
     "//plugins/agent-workbench/json",
