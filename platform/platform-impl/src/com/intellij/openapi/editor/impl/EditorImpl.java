@@ -1720,7 +1720,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
 
     assertIsDispatchThread();
     WriteIntentReadAction.run(() -> {
-      Document document = getDocument();
+      Document document = getUiDocument();
       Disposer.dispose(myHighlighterDisposable);
 
       myHighlighterDisposable = Disposer.newDisposable();
