@@ -32,13 +32,9 @@ import com.jetbrains.python.psi.PyTypedElement
 import com.jetbrains.python.psi.PyUtil
 import com.jetbrains.python.psi.impl.ParamHelper
 import com.jetbrains.python.psi.impl.PyBuiltinCache.Companion.getInstance
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.impl.PyPsiUtils
 import com.jetbrains.python.psi.impl.PyTypeProvider
-import com.jetbrains.python.psi.impl.getArgumentsMappedToKeywordContainer
-import com.jetbrains.python.psi.impl.getArgumentsMappedToPositionalContainer
-import com.jetbrains.python.psi.impl.getMappedKeywordContainer
-import com.jetbrains.python.psi.impl.getMappedPositionalContainer
-import com.jetbrains.python.psi.impl.getRegularMappedParameters
 import com.jetbrains.python.psi.resolve.PyResolveContext
 import com.jetbrains.python.psi.types.PyCallableParameterMapping.mapCallableParameters
 import com.jetbrains.python.psi.types.PyLiteralStringType.Companion.match
@@ -1547,7 +1543,7 @@ object PyTypeChecker {
     // class of the receiver. In theory, it could be replaced by matching the type of self parameter
     // with the receiver uniformly with the rest of the arguments.
     val substitutions = unifyReceiver(receiver, context)
-    for ((key, paramWrapper) in arguments.getRegularMappedParameters().entries) {
+    for ((key, paramWrapper) in PyCallExpressionHelper.getRegularMappedParameters(arguments).entries) {
       val expectedType = paramWrapper.getArgumentType(context)
       val promotedToLiteral = PyLiteralType.promoteToLiteral(key, expectedType, context, substitutions)
       val actualType = promotedToLiteral ?: context.getType(key)
@@ -1561,14 +1557,14 @@ object PyTypeChecker {
       }
     }
     if (!matchContainer(
-        arguments.getMappedPositionalContainer(), arguments.getArgumentsMappedToPositionalContainer(),
+        PyCallExpressionHelper.getMappedPositionalContainer(arguments), PyCallExpressionHelper.getArgumentsMappedToPositionalContainer(arguments),
         substitutions, context
       )
     ) {
       return null
     }
     if (!matchContainer(
-        arguments.getMappedKeywordContainer(), arguments.getArgumentsMappedToKeywordContainer(),
+        PyCallExpressionHelper.getMappedKeywordContainer(arguments), PyCallExpressionHelper.getArgumentsMappedToKeywordContainer(arguments),
         substitutions, context
       )
     ) {
@@ -1584,7 +1580,7 @@ object PyTypeChecker {
     context: TypeEvalContext,
   ): GenericSubstitutions? {
     val substitutions = unifyReceiver(receiverType, context)
-    for ((key, paramWrapper) in arguments.getRegularMappedParameters()) {
+    for ((key, paramWrapper) in PyCallExpressionHelper.getRegularMappedParameters(arguments)) {
       val expectedType = paramWrapper.getArgumentType(context)
       val actualType = Ref.deref(key)
       val matchedByTypes = matchParameterArgumentTypes(paramWrapper, expectedType, actualType, substitutions, context)
@@ -1592,13 +1588,13 @@ object PyTypeChecker {
         return null
       }
     }
-    if (!matchContainerByType(arguments.getMappedPositionalContainer(),
-                              arguments.getArgumentsMappedToPositionalContainer().map(Ref<*>::deref),
+    if (!matchContainerByType(PyCallExpressionHelper.getMappedPositionalContainer(arguments),
+                              PyCallExpressionHelper.getArgumentsMappedToPositionalContainer(arguments).map(Ref<*>::deref),
                               substitutions, context)) {
       return null
     }
-    if (!matchContainerByType(arguments.getMappedKeywordContainer(),
-                              arguments.getArgumentsMappedToKeywordContainer().map(Ref<*>::deref),
+    if (!matchContainerByType(PyCallExpressionHelper.getMappedKeywordContainer(arguments),
+                              PyCallExpressionHelper.getArgumentsMappedToKeywordContainer(arguments).map(Ref<*>::deref),
                               substitutions, context)) {
       return null
     }

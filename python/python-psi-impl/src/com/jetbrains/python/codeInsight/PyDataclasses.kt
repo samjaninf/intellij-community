@@ -27,10 +27,9 @@ import com.jetbrains.python.psi.PyReferenceExpression
 import com.jetbrains.python.psi.PyTargetExpression
 import com.jetbrains.python.psi.PyUtil
 import com.jetbrains.python.psi.impl.IntentionalUnstubbing
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.impl.PyEvaluator
 import com.jetbrains.python.psi.impl.StubAwareComputation
-import com.jetbrains.python.psi.impl.mapArguments
-import com.jetbrains.python.psi.impl.selectMatchingOverload
 import com.jetbrains.python.psi.impl.stubs.PyDataclassFieldStubImpl
 import com.jetbrains.python.psi.impl.stubs.PyDataclassStubImpl
 import com.jetbrains.python.psi.resolve.PyResolveContext
@@ -271,9 +270,10 @@ private fun parseDataclassParametersFromAST(cls: PyClass, context: TypeEvalConte
         val types = decoratorAndTypeAndMarkedCallee(cls.project)
         val decoratorAndTypeAndMarkedCallee = types.firstOrNull { it.first == decoratorQualifiedName } ?: continue
 
-        val mapping = decorator.mapArguments(
-          PyCallableTypeImpl(decoratorAndTypeAndMarkedCallee.third, null),
-          context ?: TypeEvalContext.codeInsightFallback(cls.project)
+        val mapping = PyCallExpressionHelper.mapArguments(
+            decorator,
+            PyCallableTypeImpl(decoratorAndTypeAndMarkedCallee.third, null),
+            context ?: TypeEvalContext.codeInsightFallback(cls.project)
         )
 
         val builder = PyDataclassParametersBuilder(decoratorAndTypeAndMarkedCallee.second, decoratorAndTypeAndMarkedCallee.first)
@@ -790,7 +790,7 @@ fun resolveDataclassFieldParameters(
     val callExpression = IntentionalUnstubbing.onFileOf(field) {
       field.findAssignedValue() as? PyCallExpression
     }
-    val overload = callExpression?.let { fieldSpecifierCallable.selectMatchingOverload(it, context) }
+    val overload = callExpression?.let { PyCallExpressionHelper.selectMatchingOverload(fieldSpecifierCallable, it, context) }
     overload ?: fieldSpecifierCallable
   }
   else {

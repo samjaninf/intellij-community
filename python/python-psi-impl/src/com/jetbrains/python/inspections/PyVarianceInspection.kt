@@ -16,7 +16,7 @@ import com.jetbrains.python.psi.PyFunction
 import com.jetbrains.python.psi.PyNamedParameter
 import com.jetbrains.python.psi.PyReferenceExpression
 import com.jetbrains.python.psi.PyTargetExpression
-import com.jetbrains.python.psi.impl.resolveCalleeClass
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.types.PyExpectedVarianceJudgment
 import com.jetbrains.python.psi.types.PyInferredVarianceJudgment
 import com.jetbrains.python.psi.types.PyTypeChecker
@@ -48,7 +48,7 @@ class PyVarianceInspection : PyInspection() {
     override fun visitPyAssignmentStatement(node: PyAssignmentStatement) {
       super.visitPyAssignmentStatement(node)
       val typeVarCall = node.assignedValue as? PyCallExpression ?: return
-      val callee = typeVarCall.resolveCalleeClass() ?: return
+      val callee = PyCallExpressionHelper.resolveCalleeClass(typeVarCall) ?: return
       if (PyTypingTypeProvider.TYPE_VAR != callee.qualifiedName) return
       val typeVarType = PyTypingTypeProvider.getType(typeVarCall, context)?.get() as? PyTypeVarType ?: return
       if (typeVarType.constraints.size < 2) return

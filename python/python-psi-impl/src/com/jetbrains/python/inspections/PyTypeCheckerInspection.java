@@ -47,6 +47,7 @@ import com.jetbrains.python.psi.PyWithItem;
 import com.jetbrains.python.psi.PyWithStatement;
 import com.jetbrains.python.psi.PyYieldExpression;
 import com.jetbrains.python.psi.impl.PyBuiltinCache;
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper;
 import com.jetbrains.python.psi.impl.PySubscriptionExpressionImpl;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.types.PyABCUtil;
@@ -85,12 +86,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.jetbrains.python.psi.PyUtil.as;
-import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.analyzeArguments;
-import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.getArgumentsMappedToKeywordContainer;
-import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.getArgumentsMappedToPositionalContainer;
-import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.getMappedKeywordContainer;
-import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.getMappedPositionalContainer;
-import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.getRegularMappedParameters;
 import static com.jetbrains.python.psi.impl.PyCallExpressionHelper.mapArguments;
 import static com.jetbrains.python.psi.types.PyNoneTypeKt.isNoneType;
 
@@ -580,7 +575,7 @@ public class PyTypeCheckerInspection extends PyInspection {
       }
 
       final var mappedParameters = mapping.getMappedParameters();
-      final var regularMappedParameters = getRegularMappedParameters(mappedParameters);
+      final var regularMappedParameters = PyCallExpressionHelper.getRegularMappedParameters(mappedParameters);
 
       for (Map.Entry<PyExpression, PyCallableParameter> entry : regularMappedParameters.entrySet()) {
         final PyExpression argument = entry.getKey();
@@ -621,10 +616,10 @@ public class PyTypeCheckerInspection extends PyInspection {
         }
       }
 
-      PyCallableParameter positionalContainer = getMappedPositionalContainer(mappedParameters);
-      List<PyExpression> positionalArguments = getArgumentsMappedToPositionalContainer(mappedParameters);
-      PyCallableParameter keywordContainer = getMappedKeywordContainer(mappedParameters);
-      List<PyExpression> keywordArguments = getArgumentsMappedToKeywordContainer(mappedParameters);
+      PyCallableParameter positionalContainer = PyCallExpressionHelper.getMappedPositionalContainer(mappedParameters);
+      List<PyExpression> positionalArguments = PyCallExpressionHelper.getArgumentsMappedToPositionalContainer(mappedParameters);
+      PyCallableParameter keywordContainer = PyCallExpressionHelper.getMappedKeywordContainer(mappedParameters);
+      List<PyExpression> keywordArguments = PyCallExpressionHelper.getArgumentsMappedToKeywordContainer(mappedParameters);
       List<PyExpression> allArguments = ContainerUtil.concat(positionalArguments, keywordArguments);
 
       PyParamSpecType paramSpecType = getParamSpecTypeFromContainerParameters(keywordContainer, positionalContainer);
@@ -667,7 +662,7 @@ public class PyTypeCheckerInspection extends PyInspection {
       PyCallableParameterListType paramSpecSubst = as(substitutions.getParamSpecs().get(paramSpec), PyCallableParameterListType.class);
       if (paramSpecSubst == null) return;
 
-      var mapping = analyzeArguments(arguments, paramSpecSubst.getParameters(), myTypeEvalContext);
+      var mapping = PyCallExpressionHelper.analyzeArguments(arguments, paramSpecSubst.getParameters(), myTypeEvalContext);
       for (var item : mapping.getMappedParameters().entrySet()) {
         PyExpression argument = item.getKey();
         PyCallableParameter parameter = item.getValue();

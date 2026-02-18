@@ -35,8 +35,8 @@ import com.jetbrains.python.psi.PyTargetExpression
 import com.jetbrains.python.psi.PyTypedElement
 import com.jetbrains.python.psi.PyUtil
 import com.jetbrains.python.psi.impl.ParamHelper
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.impl.PyEvaluator
-import com.jetbrains.python.psi.impl.mapArguments
 import com.jetbrains.python.psi.types.PyClassType
 import com.jetbrains.python.psi.types.PyCollectionType
 import com.jetbrains.python.psi.types.PyStructuralType
@@ -217,7 +217,7 @@ class PyDataclassInspection : PyInspection() {
         }
 
         val callableType = callees.first()
-        val mapping = node.mapArguments(callableType, myTypeEvalContext)
+        val mapping = PyCallExpressionHelper.mapArguments(node, callableType, myTypeEvalContext)
 
         val dataclassParameter = callableType.getParameters(myTypeEvalContext)?.firstOrNull()
         val dataclassArgument = mapping.mappedParameters.entries.firstOrNull { it.value == dataclassParameter }?.key
@@ -445,7 +445,7 @@ class PyDataclassInspection : PyInspection() {
           .multiResolveCallee(resolveContext)
           .filter { it.callable?.qualifiedName == Dataclasses.DATACLASSES_FIELD }
           .any {
-            value.mapArguments(it, myTypeEvalContext).mappedParameters.values.any { p ->
+            PyCallExpressionHelper.mapArguments(value, it, myTypeEvalContext).mappedParameters.values.any { p ->
               p.name == "default_factory"
             }
           }

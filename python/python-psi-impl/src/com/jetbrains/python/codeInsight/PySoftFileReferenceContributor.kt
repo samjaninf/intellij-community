@@ -27,7 +27,7 @@ import com.jetbrains.python.psi.PyStringLiteralFileReferenceSet
 import com.jetbrains.python.psi.PyTargetExpression
 import com.jetbrains.python.psi.PyTypedElement
 import com.jetbrains.python.psi.impl.PyBuiltinCache
-import com.jetbrains.python.psi.impl.mapArguments
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.resolve.PyResolveContext
 import com.jetbrains.python.psi.resolve.PyResolveUtil
 import com.jetbrains.python.psi.resolve.fromFoothold
@@ -90,7 +90,7 @@ open class PySoftFileReferenceContributor : PsiReferenceContributor() {
           parameterNames.any(::matchesPathNamePattern)
         }
         .any {
-          val mapping = callExpr.mapArguments(it, typeEvalContext)
+          val mapping = PyCallExpressionHelper.mapArguments(callExpr, it, typeEvalContext)
           val parameterName = mapping.mappedParameters[expr]?.name ?: return@any false
           matchesPathNamePattern(parameterName)
         }
@@ -122,7 +122,7 @@ open class PySoftFileReferenceContributor : PsiReferenceContributor() {
       val argumentTypes = callExpr.multiResolveCallee(PyResolveContext.defaultContext(typeEvalContext))
         .asSequence()
         .mapNotNull {
-          val mapping = callExpr.mapArguments(it, typeEvalContext)
+          val mapping = PyCallExpressionHelper.mapArguments(callExpr, it, typeEvalContext)
           mapping.mappedParameters[expr]?.getArgumentType(typeEvalContext)
         }
 

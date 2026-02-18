@@ -13,8 +13,7 @@ import com.jetbrains.python.psi.PyKnownDecoratorUtil
 import com.jetbrains.python.psi.PyPossibleClassMember
 import com.jetbrains.python.psi.PyTypeParameter
 import com.jetbrains.python.psi.PyTypedElement
-import com.jetbrains.python.psi.impl.getImplicitlyInvokedMethod
-import com.jetbrains.python.psi.impl.resolveImplicitlyInvokedMethods
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.resolve.PyResolveContext
 import com.jetbrains.python.psi.types.PyClassLikeType
 import com.jetbrains.python.psi.types.PyClassType
@@ -72,12 +71,12 @@ fun inspectProtocolSubclass(protocol: PyClassType, subclass: PyClassType, contex
       PyNames.SLOTS -> continue // __slots__ in a protocol definition are not considered to be a part of the protocol
       PyNames.CLASS_GETITEM -> continue
       PyNames.CALL -> {
-        val invokedMethods = subclass.getImplicitlyInvokedMethod(resolveContext)
+        val invokedMethods = PyCallExpressionHelper.getImplicitlyInvokedMethod(subclass, resolveContext)
         if (invokedMethods.isNotEmpty()) {
           result.add(Pair(protocolMember, invokedMethods))
         }
         else {
-          val fallbackTypes = subclass.resolveImplicitlyInvokedMethods(null, resolveContext)
+          val fallbackTypes = PyCallExpressionHelper.resolveImplicitlyInvokedMethods(subclass, null, resolveContext)
             .mapNotNull { it.element }
             .filterIsInstance<PyTypedElement>()
             .mapNotNull {

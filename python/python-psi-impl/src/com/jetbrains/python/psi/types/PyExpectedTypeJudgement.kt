@@ -35,7 +35,7 @@ import com.jetbrains.python.psi.PyTupleExpression
 import com.jetbrains.python.psi.PyTypedElement
 import com.jetbrains.python.psi.PyYieldExpression
 import com.jetbrains.python.psi.impl.PyBuiltinCache
-import com.jetbrains.python.psi.impl.mapArguments
+import com.jetbrains.python.psi.impl.PyCallExpressionHelper
 import com.jetbrains.python.psi.resolve.PyResolveContext
 import com.jetbrains.python.psi.types.PyTypeChecker.hasGenerics
 import com.jetbrains.python.psi.types.PyTypeChecker.substitute
@@ -209,7 +209,7 @@ object PyExpectedTypeJudgement {
                    ?: callArgument.parent as? PySubscriptionExpression
                    ?: return null
 
-    val argMappings = callSite.mapArguments(PyResolveContext.defaultContext(ctx))
+    val argMappings = PyCallExpressionHelper.mapArguments(callSite, PyResolveContext.defaultContext(ctx))
     val argTypes = LinkedHashSet<PyType?>()
 
     for (mapping in argMappings) {
