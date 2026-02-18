@@ -271,6 +271,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
 
   private ClickInfo myLastActionableClick;
   private final @NotNull EditorImpl myEditor;
+  private final @NotNull DocumentEx myDocument;
   private final FoldingAnchorsOverlayStrategy myAnchorDisplayStrategy;
   private @Nullable Int2ObjectMap<List<GutterMark>> myLineToGutterRenderers;
   private boolean myLineToGutterRenderersCacheForLogicalLines;
@@ -315,6 +316,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
 
   EditorGutterComponentImpl(@NotNull EditorImpl editor) {
     myEditor = editor;
+    myDocument = editor.getUiDocument();
     if (!ApplicationManager.getApplication().isHeadlessEnvironment()) {
       installDnD();
     }
@@ -404,7 +406,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
             int line = convertPointToLineNumber(e.getPoint());
             if (line != -1) {
               e.setDropPossible(true);
-              myEditor.getCaretModel().moveToOffset(myEditor.getDocument().getLineStartOffset(line));
+              myEditor.getCaretModel().moveToOffset(myDocument.getLineStartOffset(line));
             }
           }
         }
@@ -966,7 +968,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
   }
 
   private int endLineNumber() {
-    return Math.max(0, myEditor.getDocument().getLineCount() - 1);
+    return Math.max(0, myDocument.getLineCount() - 1);
   }
 
   @Override
@@ -1042,7 +1044,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
 
   private int calcAnnotationsSize() {
     myGapAfterAnnotations = false;
-    int lineCount = Math.max(myEditor.getDocument().getLineCount(), 1);
+    int lineCount = Math.max(myDocument.getLineCount(), 1);
     myTextAnnotationGutterProviders.replaceAll(info -> {
       TextAnnotationGutterProvider gutterProvider = info.provider();
       int gutterSize = 0;
@@ -1121,7 +1123,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
   private @NotNull Int2ObjectMap<List<GutterMark>> buildGutterRenderersCache() {
     myLineToGutterRenderersCacheForLogicalLines = logicalLinesMatchVisualOnes();
     Int2ObjectMap<List<GutterMark>> lineToGutterRenderers = new Int2ObjectOpenHashMap<>();
-    processGutterRangeHighlighters(0, myEditor.getDocument().getTextLength(), highlighter -> {
+    processGutterRangeHighlighters(0, myDocument.getTextLength(), highlighter -> {
       GutterMark renderer = highlighter.getGutterIconRenderer();
       if (shouldBeShown(renderer) && isHighlighterVisible(highlighter)) {
         int line = myEditor.offsetToVisualLine(highlighter.getStartOffset());
@@ -1175,7 +1177,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
     myRightFreePaintersAreaShown = myRightFreePaintersAreaState == EditorGutterFreePainterAreaState.SHOW;
 
     if (leftPainterOnDemand || rightPainterOnDemand) {
-      processGutterRangeHighlighters(0, myEditor.getDocument().getTextLength(), highlighter -> {
+      processGutterRangeHighlighters(0, myDocument.getTextLength(), highlighter -> {
         LineMarkerRenderer lineMarkerRenderer = highlighter.getLineMarkerRenderer();
         if (lineMarkerRenderer != null) {
           LineMarkerRendererEx.Position position = getLineMarkerPosition(lineMarkerRenderer);
@@ -1209,7 +1211,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
     }
 
     myHasInlaysWithGutterIcons = false;
-    myEditor.getInlayModel().getBlockElementsInRange(0, myEditor.getDocument().getTextLength()).forEach(inlay -> {
+    myEditor.getInlayModel().getBlockElementsInRange(0, myDocument.getTextLength()).forEach(inlay -> {
       GutterIconRenderer iconRenderer = inlay.getGutterIconRenderer();
       if (shouldBeShown(iconRenderer) && checkDumbAware(iconRenderer) && !EditorUtil.isInlayFolded(inlay)) {
         Icon icon = scaleIcon(iconRenderer.getIcon());
@@ -2338,7 +2340,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
       if (action != null) {
         int line = getLineNumAtPoint(clickPoint);
 
-        if (line >= 0 && line < myEditor.getDocument().getLineCount() && UIUtil.isActionClick(e, MouseEvent.MOUSE_RELEASED)) {
+        if (line >= 0 && line < myDocument.getLineCount() && UIUtil.isActionClick(e, MouseEvent.MOUSE_RELEASED)) {
           UIEventLogger.EditorAnnotationClicked.log(myEditor.getProject(), provider.getClass());
           action.doAction(line);
         }
@@ -2828,7 +2830,7 @@ final class EditorGutterComponentImpl extends EditorGutterComponentEx
   }
 
   private int convertPointToLineNumber(@NotNull Point p) {
-    DocumentEx document = myEditor.getDocument();
+    DocumentEx document = myDocument;
     int line = EditorUtil.yPositionToLogicalLine(myEditor, p);
     if (!DocumentUtil.isValidLine(line, document)) return -1;
 
