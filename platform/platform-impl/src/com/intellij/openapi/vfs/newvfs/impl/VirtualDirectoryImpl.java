@@ -93,7 +93,7 @@ public class VirtualDirectoryImpl extends VirtualFileSystemEntry {
    * it could be >=1 VirtualDirectoryImpl instances wrapping the same shared directoryData.
    * Field is made package-local-visible _only_ for building diagnostic info on errors
    */
-  public final VfsData.DirectoryData directoryData;
+  final VfsData.DirectoryData directoryData;
   private final NewVirtualFileSystem fileSystem;
 
   @VisibleForTesting
