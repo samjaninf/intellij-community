@@ -35,6 +35,18 @@ interface EditorThreading {
      */
     @JvmStatic
     fun run(action: Runnable): Unit = ApplicationManager.getApplication().service<EditorThreading>().doRun(action)
+
+    @ApiStatus.Internal
+    @JvmStatic
+    fun <T, E : Throwable> computeWritable(action: ThrowableComputable<T, E>): T = ApplicationManager.getApplication().service<EditorThreading>().doComputeWritable(action)
+
+    @ApiStatus.Internal
+    @JvmStatic
+    fun runWritable(action: Runnable): Unit = ApplicationManager.getApplication().service<EditorThreading>().doRunWritable(action)
+
+    @ApiStatus.Internal
+    @JvmStatic
+    fun write(action: Runnable): Unit = ApplicationManager.getApplication().service<EditorThreading>().doWrite(action)
   }
 
   fun doAssertInteractionAllowed()
@@ -42,4 +54,13 @@ interface EditorThreading {
   fun <T, E : Throwable> doCompute(action: ThrowableComputable<T, E>): T
 
   fun doRun(action: Runnable)
+
+  @ApiStatus.Internal
+  fun <T, E : Throwable> doComputeWritable(action: ThrowableComputable<T, E>): T
+
+  @ApiStatus.Internal
+  fun doRunWritable(action: Runnable)
+
+  @ApiStatus.Internal
+  fun doWrite(action: Runnable)
 }

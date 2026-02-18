@@ -122,6 +122,7 @@ import com.intellij.openapi.editor.impl.stickyLines.ui.StickyLineColors;
 import com.intellij.openapi.editor.impl.stickyLines.ui.StickyLineShadowBorder;
 import com.intellij.openapi.editor.impl.stickyLines.ui.StickyLineShadowPainter;
 import com.intellij.openapi.editor.impl.stickyLines.ui.StickyLinesPanel;
+import com.intellij.openapi.editor.impl.uiDocument.UiDocumentManager;
 import com.intellij.openapi.editor.impl.view.CharacterGrid;
 import com.intellij.openapi.editor.impl.view.CharacterGridImpl;
 import com.intellij.openapi.editor.impl.view.EditorView;
@@ -322,6 +323,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   @ApiStatus.Internal
   public static final Key<CodeStyleSettings> CODE_STYLE_SETTINGS = Key.create("editor.code.style.settings");
   private final @NotNull DocumentEx myDocument;
+  private final @Nullable DocumentEx myUiDocument;
 
   private final JPanel myPanel;
   private final @NotNull MyScrollPane myScrollPane;
@@ -552,6 +554,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     assertIsDispatchThread();
     myProject = project;
     myDocument = (DocumentEx)document;
+    myUiDocument = UiDocumentManager.getInstance().getUiDocument(document);
     myVirtualFile = file;
     myState = new EditorState();
     myState.refreshAll();
@@ -1480,7 +1483,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
         if (event.isConsumed()) {
           return;
         }
-        if (WriteIntentReadAction.compute(() -> processKeyTyped(event))) {
+        if (EditorThreading.computeWritable(() -> processKeyTyped(event))) {
           event.consume();
         }
       }
@@ -1691,7 +1694,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
   @ApiStatus.Internal
   public void processKeyTypedNormally(char c, @NotNull DataContext dataContext) {
     EditorActionManager.getInstance();
-    WriteIntentReadAction.run( () -> {
+    EditorThreading.runWritable(() -> {
       TypedAction.getInstance().actionPerformed(this, c, dataContext);
     });
   }
@@ -4538,7 +4541,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
         EVENT_LOG.debug(e.toString());
       }
       requestFocus();
-      WriteIntentReadAction.run(() -> runMousePressedCommand(e));
+      EditorThreading.runWritable(() -> runMousePressedCommand(e));
       myInitialMouseEvent = e.isConsumed() ? e : null;
     }
 
@@ -4549,7 +4552,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       }
       myMousePressArea = null;
       myLastMousePressedLocation = null;
-      WriteIntentReadAction.run( () -> {
+      EditorThreading.runWritable(() -> {
         runMouseReleasedCommand(e);
         if (!e.isConsumed() && myMousePressedEvent != null && !myMousePressedEvent.isConsumed() &&
             Math.abs(e.getX() - myMousePressedEvent.getX()) < EditorUtil.getSpaceWidth(Font.PLAIN, EditorImpl.this) &&
@@ -5792,5 +5795,13 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
       return myAdEditorModel;
     }
     return myEditorModel;
+  }
+
+  @Override
+  public @NotNull DocumentEx getUiDocument() {
+    if (myUiDocument != null) {
+      return myUiDocument;
+    }
+    return getDocument();
   }
 }

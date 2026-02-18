@@ -5,7 +5,6 @@ import com.intellij.codeInsight.editorActions.NonWriteAccessTypedHandler;
 import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.command.CommandProcessorEx;
 import com.intellij.openapi.command.CommandToken;
@@ -14,6 +13,7 @@ import com.intellij.openapi.command.impl.UndoManagerImpl;
 import com.intellij.openapi.command.undo.UndoManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorThreading;
 import com.intellij.openapi.editor.ReadOnlyFragmentModificationException;
 import com.intellij.openapi.editor.actionSystem.ActionPlan;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
@@ -71,7 +71,7 @@ public final class DefaultRawTypedHandler implements TypedActionHandlerEx {
         HintManager.getInstance().showInformationHint(editor, writeAccess.getReadOnlyMessage(), writeAccess.getHyperlinkListener());
         return;
       }
-      ApplicationManager.getApplication().runWriteAction(() -> {
+      EditorThreading.write(() -> {
         Document doc = editor.getDocument();
         doc.startGuardedBlockChecking();
         try {

@@ -22,6 +22,7 @@ import com.intellij.lang.injection.InjectedLanguageManager;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.RuntimeFlagsKt;
 import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.command.impl.UndoManagerImpl;
 import com.intellij.openapi.command.undo.UndoManager;
@@ -292,6 +293,9 @@ public final class TypedHandler extends TypedActionHandlerBase {
                                        @NotNull Project project,
                                        @NotNull Editor editor,
                                        @NotNull PsiFile file) {
+    if (RuntimeFlagsKt.isEditorLockFreeTypingEnabled()) {
+      return false;
+    }
     boolean warned = false;
     for (TypedHandlerDelegate delegate : TypedHandlerDelegate.EP_NAME.getExtensionList()) {
       TypedHandlerDelegate.Result result = action.call(delegate, charTyped, project, editor, file);

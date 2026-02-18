@@ -70,7 +70,7 @@ public class EditorModificationUtilEx {
       s = filler + s;
     }
 
-    Document document = editor.getDocument();
+    Document document = editor.getUiDocument();
     SelectionModel selectionModel = editor.getSelectionModel();
     if (editor.isInsertMode() || !toProcessOverwriteMode) {
       if (selectionModel.hasSelection()) {

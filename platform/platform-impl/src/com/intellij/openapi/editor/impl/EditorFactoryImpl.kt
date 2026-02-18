@@ -1,4 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.openapi.editor.impl
 
 import com.intellij.injected.editor.DocumentWindow
@@ -31,6 +31,7 @@ import com.intellij.openapi.editor.highlighter.EditorHighlighter
 import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
 import com.intellij.openapi.editor.impl.ad.isRhizomeAdRebornEnabled
 import com.intellij.openapi.editor.impl.event.EditorEventMulticasterImpl
+import com.intellij.openapi.editor.impl.uiDocument.UiDocumentManager
 import com.intellij.openapi.editor.impl.view.EditorPainter
 import com.intellij.openapi.editor.impl.zombie.Necropolis
 import com.intellij.openapi.extensions.ExtensionPointName
@@ -132,6 +133,7 @@ class EditorFactoryImpl(coroutineScope: CoroutineScope?) : EditorFactory() {
 
   override fun createDocument(text: CharSequence, acceptsSlashR: Boolean, allowUpdatesWithoutWriteAction: Boolean): Document {
     val document = DocumentImpl(text, acceptsSlashR, allowUpdatesWithoutWriteAction)
+    UiDocumentManager.getInstance().bindUiDocument(document)
     editorEventMulticaster.registerDocument(document)
     return document
   }
