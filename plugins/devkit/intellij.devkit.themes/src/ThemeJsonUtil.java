@@ -75,6 +75,18 @@ public final class ThemeJsonUtil {
     return false;
   }
 
+  static boolean isInsideColors(@NotNull JsonProperty property) {
+    PsiElement parent = property.getParent(); // JsonObject
+    if (!(parent instanceof JsonObject)) return false;
+
+    PsiElement grandParent = parent.getParent(); // JsonProperty or JsonFile
+    if (!(grandParent instanceof JsonProperty topLevelProperty)) return false;
+
+    if (!COLORS_PROPERTY_NAME.equals(topLevelProperty.getName())) return false;
+    return topLevelProperty.getParent() instanceof JsonObject topLevelObject &&
+           topLevelObject.getParent() instanceof JsonFile;
+  }
+
   static String getParentNames(@NotNull JsonProperty property) {
     List<JsonProperty> parentProperties = PsiTreeUtil.collectParents(property, JsonProperty.class, false, e -> {
       //TODO check that it is TOP-LEVEL 'ui'  property
@@ -105,9 +117,40 @@ public final class ThemeJsonUtil {
     });
   }
 
+  static Map<String, ColorValueDefinition> getParentNamedColorsMap(@NotNull JsonFile file) {
+    return CachedValuesManager.getCachedValue(file, () -> {
+      Map<String, ColorValueDefinition> namedColorsMap = new HashMap<>();
+      List<JsonProperty> colors = collectParentNamedColors(file);
+      for (JsonProperty property : colors) {
+        JsonValue value = property.getValue();
+        if (value instanceof JsonStringLiteral) {
+          namedColorsMap.put(property.getName(),
+                             new ColorValueDefinition(property.getName(), ((JsonStringLiteral)value).getValue(), PsiAnchor.create(property)));
+        }
+      }
+      return Result.create(Map.copyOf(namedColorsMap), PsiModificationTracker.MODIFICATION_COUNT);
+    });
+  }
+
   private static List<JsonProperty> collectNamedColors(@NotNull JsonFile themeFile) {
     List<JsonProperty> result = new ArrayList<>();
     collectNamedColors(themeFile, result, new SmartList<>());
+    return result;
+  }
+
+  private static List<JsonProperty> collectParentNamedColors(@NotNull JsonFile themeFile) {
+    List<JsonProperty> result = new ArrayList<>();
+    JsonValue topLevelValue = themeFile.getTopLevelValue();
+    if (topLevelValue instanceof JsonObject topLevelObject) {
+      JsonProperty parentThemeProperty = topLevelObject.findProperty(PARENT_THEME_PROPERTY_NAME);
+      if (parentThemeProperty != null && parentThemeProperty.getValue() instanceof JsonStringLiteral parentThemeLiteral) {
+        String parentThemeName = parentThemeLiteral.getValue();
+        JsonFile parentThemeFile = findThemeFile(themeFile.getProject(), parentThemeName);
+        if (parentThemeFile != null) {
+          collectNamedColors(parentThemeFile, result, new SmartList<>());
+        }
+      }
+    }
     return result;
   }
 

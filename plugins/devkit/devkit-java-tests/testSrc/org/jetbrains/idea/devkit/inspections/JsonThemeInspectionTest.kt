@@ -5,6 +5,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.ui.ColorIcon
 import org.jetbrains.idea.devkit.themes.UnresolvedThemeJsonNamedColorInspection
 import org.jetbrains.idea.devkit.themes.UnresolvedThemeKeyInspection
+import org.jetbrains.idea.devkit.themes.UnusedThemeJsonNamedColorInspection
 import java.awt.Color
 
 class JsonThemeInspectionTest : BasePlatformTestCase() {
@@ -13,8 +14,61 @@ class JsonThemeInspectionTest : BasePlatformTestCase() {
     super.setUp()
     myFixture.enableInspections(
       UnresolvedThemeKeyInspection::class.java,
-      UnresolvedThemeJsonNamedColorInspection::class.java
+      UnresolvedThemeJsonNamedColorInspection::class.java,
+      UnusedThemeJsonNamedColorInspection::class.java
     )
+  }
+
+  fun testUnusedNamedColors() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "colors": {
+          "used-color": "#000000",
+          <warning descr="Named color 'unused-color' is never used">"unused-color"</warning>: "#FFFFFF"
+        },
+        "ui": {
+          "ActionButton.focusedBorderColor": "used-color"
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
+
+  fun testUnusedPaletteColors() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "colors": {
+          "blue-1": "#0000FF",
+          "gray-500": "#808080",
+          "red-unknown": "#FF0000"
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
+
+  fun testUnusedNamedColorDeclaredInParent() {
+    myFixture.addFileToProject("parent.theme.json", """
+      {
+        "name": "Parent Theme",
+        "colors": {
+          "parent-color": "#000000"
+        }
+      }
+    """.trimIndent())
+
+    myFixture.configureByText("child.theme.json", """
+      {
+        "name": "Child Theme",
+        "parentTheme": "Parent Theme",
+        "colors": {
+          "parent-color": "#FFFFFF"
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
   }
 
   fun testRegularKeys() {

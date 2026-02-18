@@ -25,6 +25,11 @@
                      groupBundle="messages.DevKitBundle" groupPathKey="inspections.group.path" groupKey="inspections.group.code"
                      implementationClass="org.jetbrains.idea.devkit.themes.UnresolvedThemeJsonNamedColorInspection"
                      bundle="messages.DevKitThemesBundle" key="inspection.unresolved.theme.json.named.color.display.name"/>
+    <localInspection language="JSON" shortName="UnusedIntelliJThemeNamedColor"
+                     enabledByDefault="true" level="WARNING"
+                     groupBundle="messages.DevKitBundle" groupPathKey="inspections.group.path" groupKey="inspections.group.code"
+                     implementationClass="org.jetbrains.idea.devkit.themes.UnusedThemeJsonNamedColorInspection"
+                     bundle="messages.DevKitThemesBundle" key="inspection.unused.theme.json.named.color.display.name"/>
     <localInspection language="UAST" shortName="UnregisteredNamedColor"
                      projectType="INTELLIJ_PLUGIN"
                      groupBundle="messages.DevKitBundle" groupPathKey="inspections.group.path" groupKey="inspections.group.code"
