@@ -1823,6 +1823,11 @@ public abstract class HighLevelQuickFixMultiFileTestGenerated extends AbstractHi
                     KotlinTestUtils.runTest(this::doTestWithExtraFile, this, testDataFilePath);
                 }
 
+                @TestMetadata("propertyWithUnresolvedTypeOnJava.before.Main.kt")
+                public void testPropertyWithUnresolvedTypeOnJava() throws Exception {
+                    runTest("../../../idea/tests/testData/quickfix/createFromUsage/createVariable/property/propertyWithUnresolvedTypeOnJava.before.Main.kt");
+                }
+
                 @TestMetadata("staticValOnJavaClass.before.Main.kt")
                 public void testStaticValOnJavaClass() throws Exception {
                     runTest("../../../idea/tests/testData/quickfix/createFromUsage/createVariable/property/staticValOnJavaClass.before.Main.kt");
