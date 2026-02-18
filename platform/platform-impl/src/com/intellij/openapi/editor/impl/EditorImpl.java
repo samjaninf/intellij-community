@@ -2998,7 +2998,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     if (myCommandProcessor == null || e.isConsumed() || myMousePressedEvent != null && myMousePressedEvent.isConsumed()) {
       return;
     }
-    WriteIntentReadAction.run(() -> {
+    EditorThreading.runWritable(() -> {
       myCommandProcessor.executeCommand(myProject, () -> mouseDragHandler.mouseDragged(e), "",
                                         MOUSE_DRAGGED_COMMAND_GROUP,
                                         UndoConfirmationPolicy.DEFAULT, getDocument());
@@ -3728,7 +3728,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
             mySelectionModel.setSelection(oldSelectionStart, getCaretModel().getOffset());
           }
         };
-        WriteIntentReadAction.run(() ->
+        EditorThreading.runWritable(() ->
           myCommandProcessor.executeCommand(myProject, command, EditorBundle.message("move.cursor.command.name"),
                                             DocCommandGroupId.noneGroupId(getDocument()), UndoConfirmationPolicy.DEFAULT, getDocument())
         );
@@ -4023,7 +4023,7 @@ public final class EditorImpl extends UserDataHolderBase implements EditorEx, Hi
     mouseSelectionStateAlarm.cancel();
     if (myMouseSelectionState != MOUSE_SELECTION_STATE_NONE) {
       if (mouseSelectionStateResetRunnable == null) {
-        mouseSelectionStateResetRunnable = () -> WriteIntentReadAction.run(() -> resetMouseSelectionState(null, null));
+        mouseSelectionStateResetRunnable = () -> EditorThreading.runWritable(() -> resetMouseSelectionState(null, null));
       }
       mouseSelectionStateAlarm.request(Registry.intValue("editor.mouseSelectionStateResetTimeout"),
                                        ModalityState.stateForComponent(myEditorComponent),
