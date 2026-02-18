@@ -51,8 +51,7 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
   private val reportedErrorIds: MutableSet<String> = HashSet()
 
   override fun modifySettings(settings: TransientCodeStyleSettings, psiFile: PsiFile): Boolean {
-    // nether called
-    return false
+    return modifySettingsInner(settings, psiFile, false)
   }
 
   private fun isAcceptable(psiFile: PsiFile): Boolean {
@@ -63,12 +62,17 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
   }
 
   override fun modifySettingsAndUiCustomization(settings: TransientCodeStyleSettings, psiFile: PsiFile): Boolean {
+    return modifySettingsInner(settings, psiFile, true)
+  }
+
+
+  private fun modifySettingsInner(settings: TransientCodeStyleSettings, psiFile: PsiFile, isAllowedToReport: Boolean): Boolean {
     if (!isAcceptable(psiFile)) {
       return false
     }
 
     val project = psiFile.project
-    val (properties, editorConfigs) = Utils.processEditorConfig(project, psiFile.virtualFile) // caching `editorConfigs` for the psiFile  
+    val (properties, editorConfigs) = Utils.processEditorConfig(project, psiFile.virtualFile) // caching `editorConfigs` for the psiFile
 
     if (Utils.isEnabled(settings)) {
       try {
@@ -82,7 +86,7 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
         settings.addDependency(EditorConfigPropertiesService.getInstance(project))
 
         // Apply editorconfig settings for the current editor
-        if (applyCodeStyleSettings(settings, properties, psiFile)) {
+        if (applyCodeStyleSettings(settings, properties, psiFile, isAllowedToReport)) {
           LOG.debug { "Modified for ${psiFile.name}" }
           return true
         }
@@ -93,7 +97,7 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
       }
       catch (e: TimeoutCancellationException) {
         LOG.warn(e)
-        if (!ApplicationManager.getApplication().isHeadlessEnvironment) {
+        if (isAllowedToReport && !ApplicationManager.getApplication().isHeadlessEnvironment) {
           error(project, "timeout",
                 message("error.timeout"),
                 DumbAwareAction.create(message("action.disable")) {
@@ -111,6 +115,7 @@ class EditorConfigCodeStyleSettingsModifier : CodeStyleSettingsModifier {
     }
     return false
   }
+
 
   @Synchronized
   fun error(project: Project?, id: String, message: @Nls String, fixAction: AnAction?, oneTime: Boolean) {
@@ -327,7 +332,12 @@ private fun getLanguageIds(properties: ResourceProperties): Collection<String> {
   return langIds
 }
 
-private fun applyCodeStyleSettings(settings: TransientCodeStyleSettings, properties: ResourceProperties, file: PsiFile): Boolean {
+private fun applyCodeStyleSettings(
+  settings: TransientCodeStyleSettings,
+  properties: ResourceProperties,
+  file: PsiFile,
+  isAllowedToReport: Boolean
+): Boolean {
   val processed = HashSet<String>()
   var isModified = false
   for (mapper in getMappers(settings = settings, properties = properties, fileBaseLanguage = file.language)) {
@@ -345,7 +355,7 @@ private fun applyCodeStyleSettings(settings: TransientCodeStyleSettings, propert
                                               languageSpecific = true,
                                               processed = processed)
   }
-  if (isModified) {
+  if (isAllowedToReport && isModified) {
     logEditorConfigUsed(file, properties)
   }
   return isModified
