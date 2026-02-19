@@ -29,7 +29,7 @@ internal class UiDocumentSync(
   private val realToUiSync = RealToUiSync()
 
   override fun getPriority(): Int {
-    return Int.MIN_VALUE - 1
+    return Int.MIN_VALUE + 1
   }
 
   override fun documentChanged(event: DocumentEvent) {
