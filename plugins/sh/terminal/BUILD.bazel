@@ -14,7 +14,7 @@ jvm_library(
   srcs = glob(["src/**/*.kt", "src/**/*.java", "src/**/*.form"], allow_empty = True),
   resources = [":terminal_resources"],
   deps = [
-    "//platform/core-api:core",
+    "@lib//:kotlin-stdlib",
     "//platform/projectModel-api:projectModel",
     "//plugins/terminal",
     "//platform/platform-api:ide",
@@ -23,6 +23,7 @@ jvm_library(
     "//libraries/jediterm-ui",
     "//plugins/sh/core",
     "//libraries/jediterm-core",
+    "//platform/core-api:core",
   ],
   runtime_deps = ["//platform/backend"]
 )
@@ -34,7 +35,6 @@ jvm_library(
   srcs = glob([], allow_empty = True),
   runtime_deps = [
     ":terminal",
-    "//platform/core-api:core_test_lib",
     "//platform/backend:backend_test_lib",
     "//platform/projectModel-api:projectModel_test_lib",
     "//plugins/terminal:terminal_test_lib",
@@ -44,6 +44,7 @@ jvm_library(
     "//libraries/jediterm-ui:jediterm-ui_test_lib",
     "//plugins/sh/core:core_test_lib",
     "//libraries/jediterm-core:jediterm-core_test_lib",
+    "//platform/core-api:core_test_lib",
   ]
 )
 ### auto-generated section `build intellij.sh.terminal` end
