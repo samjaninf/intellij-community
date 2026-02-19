@@ -27,16 +27,20 @@ class PyTypeEvaluationStatisticsServiceImpl : PyTypeEvaluationStatisticsService 
 object PyTypeEvaluationCollector : CounterUsagesCollector() {
   override fun getGroup(): EventLogGroup = GROUP
 
-  private val GROUP = EventLogGroup("python.type.evaluation", 1)
-  private val DURATION = EventFields.DurationMs
-  private val JB_TYPE_ENGINE_TIME = GROUP.registerEvent("jb.type.engine.time", DURATION)
-  private val HYBRID_TYPE_ENGINE_TIME = GROUP.registerEvent("hybrid.type.engine.time", DURATION)
+  private val GROUP = EventLogGroup("python.type.evaluation", 2)
+  private val DURATION_BASKET = EventFields.Int("duration_basket", "Duration of type resolution, grouped into 100ms time buckets")
+  private val JB_TYPE_ENGINE_TIME = GROUP.registerEvent("jb.type.engine.time", DURATION_BASKET)
+  private val HYBRID_TYPE_ENGINE_TIME = GROUP.registerEvent("hybrid.type.engine.time", DURATION_BASKET)
+
+  private fun getDurationBasket(durationMs: Long): Int {
+    return (durationMs / 100).toInt()
+  }
 
   fun logJBTypeEngineTime(durationMs: Long) {
-    JB_TYPE_ENGINE_TIME.log(durationMs)
+    JB_TYPE_ENGINE_TIME.log(getDurationBasket(durationMs))
   }
 
   fun logHybridTypeEngineTime(durationMs: Long) {
-    HYBRID_TYPE_ENGINE_TIME.log(durationMs)
+    HYBRID_TYPE_ENGINE_TIME.log(getDurationBasket(durationMs))
   }
 }
