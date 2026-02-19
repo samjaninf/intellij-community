@@ -659,6 +659,18 @@ public final class KotlinJvmDifferentiateStrategy extends JvmDifferentiateStrate
         debug(context, "A type alias declaration is contained in a source compiled with errors; affecting lookup usages ", alias.getName());
         affectMemberLookupUsages(context, jvmClass, alias.getName(), present, cache);
       }
+
+      if (meta != null) {
+        KotlinOverridesChecker overridesChecker = KotlinOverridesChecker.forClass(jvmClass);
+        if (overridesChecker.hasOverridableMembers()) {
+          // walk all subclasses and mark those that override something
+          for (JvmClass subClass : flat(map(present.allSubclasses(jvmClass.getReferenceID()), id -> present.getNodes(id, JvmClass.class)))) {
+            if (overridesChecker.hasOverrideMatchingMembers(subClass)) {
+              affectNodeSources(context, subClass.getReferenceID(), "Class" + jvmClass.getName() + " compiled with errors. Subclass " + subClass.getName() + " overrides one or more members from it. Affecting " , present);
+            }
+          }
+        }
+      }
     }
 
     if (!isEmpty(nodes)) {

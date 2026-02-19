@@ -3,8 +3,10 @@ package org.jetbrains.jps.dependency.java;
 
 import org.jetbrains.jps.dependency.Delta;
 import org.jetbrains.jps.dependency.DifferentiateContext;
+import org.jetbrains.jps.dependency.DifferentiateParameters;
 import org.jetbrains.jps.dependency.DifferentiateStrategy;
 import org.jetbrains.jps.dependency.Graph;
+import org.jetbrains.jps.dependency.LogConsumer;
 import org.jetbrains.jps.dependency.Node;
 import org.jetbrains.jps.dependency.NodeSource;
 import org.jetbrains.jps.dependency.diff.Difference;
@@ -16,8 +18,6 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static org.jetbrains.jps.util.Iterators.collect;
 import static org.jetbrains.jps.util.Iterators.filter;
@@ -26,7 +26,6 @@ import static org.jetbrains.jps.util.Iterators.flat;
 import static org.jetbrains.jps.util.Iterators.map;
 
 public final class GeneralJvmDifferentiateStrategy implements DifferentiateStrategy {
-  private static final Logger LOG = Logger.getLogger("#org.jetbrains.jps.dependency.java.GeneralJvmDifferentiateStrategy");
 
   private static final Iterable<JvmDifferentiateStrategy> ourExtensions = collect(
     ServiceLoader.load(JvmDifferentiateStrategy.class),
@@ -76,8 +75,11 @@ public final class GeneralJvmDifferentiateStrategy implements DifferentiateStrat
           }
           Iterable<NodeSource> nodeSources = present.getNodeSources(cl.getReferenceID());
           if (parentsMarked) {
+            LogConsumer logger = context.getParams().logConsumer();
             for (NodeSource source : filter(nodeSources, s -> !isMarked(s) && inCurrentChunk.test(s))) {
-              LOG.log(Level.FINE, "Intermediate class in a class hierarchy is not marked for compilation, while one of its subclasses and superclasses are going to be recompiled. Affecting  " + source.toString());
+              logger.consume(
+                "Intermediate class in a class hierarchy is not marked for compilation, while one of its subclasses and superclasses are going to be recompiled. Affecting  " + source.toString()
+              );
               context.affectNodeSource(source);
             }
           }
@@ -126,8 +128,9 @@ public final class GeneralJvmDifferentiateStrategy implements DifferentiateStrat
 
     List<JVMClassNode<?, ?>> errNodes = collect(filter(map(nodesWithErrors, n -> n instanceof JVMClassNode? (JVMClassNode<?, ?>)n : null), Objects::nonNull), new ArrayList<>());
     if (!errNodes.isEmpty()) {
+      Utils currentChunkPresent = new Utils(context.getGraph(), DifferentiateParameters.affectableInCurrentChunk(context.getParams()));
       for (JvmDifferentiateStrategy strategy : ourExtensions) {
-        if (!strategy.processNodesWithErrors(context, errNodes, present)) {
+        if (!strategy.processNodesWithErrors(context, errNodes, currentChunkPresent)) {
           return false;
         }
       }
