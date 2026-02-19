@@ -5,7 +5,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.util.registry.Registry
-import com.intellij.xdebugger.XDebuggerManager
+import com.intellij.platform.debugger.impl.shared.proxy.XDebugManagerProxy
 import org.jetbrains.annotations.ApiStatus
 
 @ApiStatus.Internal
@@ -16,6 +16,6 @@ class DebuggerCodeToolbarGroup : DefaultActionGroup() {
     val project = e.project
     e.presentation.isEnabledAndVisible = project != null
                                          && Registry.`is`("code.toolbar.debugger.actions")
-                                         && XDebuggerManager.getInstance(project).getCurrentSession() != null
+                                         && XDebugManagerProxy.getInstance().getCurrentSessionProxy(project) != null
   }
 }

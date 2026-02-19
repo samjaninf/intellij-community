@@ -101,7 +101,8 @@ import com.intellij.xdebugger.impl.rpc.models.XDebugTabLayouterModel
 import com.intellij.xdebugger.impl.rpc.models.XSuspendContextModel
 import com.intellij.xdebugger.impl.rpc.models.storeGlobally
 import com.intellij.xdebugger.impl.settings.XDebuggerSettingManagerImpl
-import com.intellij.xdebugger.impl.ui.RunnerLayoutUiBridge
+import com.intellij.xdebugger.impl.rpc.models.RunnerLayoutUiBridge
+import com.intellij.xdebugger.impl.rpc.models.XDebugSessionAdditionalTabComponentManager
 import com.intellij.xdebugger.impl.ui.XDebugSessionData
 import com.intellij.xdebugger.impl.ui.XDebugSessionTab
 import com.intellij.xdebugger.impl.ui.allowFramesViewCustomization

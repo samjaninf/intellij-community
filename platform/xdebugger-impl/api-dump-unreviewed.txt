@@ -133,13 +133,6 @@ c:com.intellij.xdebugger.impl.dfaassist.DfaResult
 - f:hints:java.util.Map
 - f:unreachable:java.util.Collection
 - <init>(com.intellij.psi.PsiFile,java.util.Map,java.util.Collection):V
-c:com.intellij.xdebugger.impl.evaluate.XExpressionDialog
-- com.intellij.openapi.ui.DialogWrapper
-- <init>(com.intellij.openapi.project.Project,com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider,java.lang.String,java.lang.String,com.intellij.xdebugger.XSourcePosition,com.intellij.xdebugger.XExpression):V
-- p:createCenterPanel():javax.swing.JComponent
-- p:getDimensionServiceKey():java.lang.String
-- f:getExpression():com.intellij.xdebugger.XExpression
-- getPreferredFocusedComponent():javax.swing.JComponent
 a:com.intellij.xdebugger.impl.runToolbar.RunToolbarXDebuggerAction
 - com.intellij.xdebugger.impl.actions.XDebuggerActionBase
 - com.intellij.execution.runToolbar.RTBarAction

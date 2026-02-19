@@ -19,7 +19,6 @@ import com.intellij.util.ThrowableRunnable
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.breakpoints.XBreakpoint
 import com.intellij.xdebugger.breakpoints.XBreakpointListener
-import com.intellij.xdebugger.impl.breakpoints.MonolithInlineBreakpointsCache
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointItem
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl

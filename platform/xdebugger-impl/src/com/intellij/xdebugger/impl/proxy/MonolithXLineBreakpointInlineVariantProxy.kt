@@ -1,5 +1,5 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package com.intellij.xdebugger.impl.breakpoints
+package com.intellij.xdebugger.impl.proxy
 
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
