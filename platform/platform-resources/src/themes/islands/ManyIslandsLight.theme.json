@@ -1546,7 +1546,7 @@
       "UserMessage": {
         "background": "layer-0-bg",
         "Snippet": {
-          "border": "control-border-default",
+          "border": "container-editor-border",
           "MoreLines": {
             "foreground": "text-secondary",
             "background": "container-tool-window-bg",
@@ -1557,7 +1557,7 @@
       },
       "HelpBrowserMessage": {
         "Snippet": {
-          "border": "control-border-default",
+          "border": "container-editor-border",
           "MoreLines": {
             "foreground": "text-secondary",
             "background": "container-tool-window-bg",
