@@ -573,7 +573,7 @@ public final class TypedHandler extends TypedActionHandlerBase {
 
     int offset = editor.getCaretModel().getOffset();
 
-    Document document = editor.getDocument();
+    Document document = editor.getUiDocument();
     CharSequence chars = document.getCharsSequence();
     int length = document.getTextLength();
     if (isTypingEscapeQuote(editor, quoteHandler, offset)) return false;
