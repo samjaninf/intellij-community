@@ -218,6 +218,7 @@ community-resources
 fleet/andel
 fleet/bifurcan
 fleet/build/authentication
+fleet/build/bundles
 fleet/build/cli
 fleet/build/codecache
 fleet/build/fs
