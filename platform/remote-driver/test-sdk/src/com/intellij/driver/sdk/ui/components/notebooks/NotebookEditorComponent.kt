@@ -166,6 +166,17 @@ class NotebookEditorUiComponent(private val data: ComponentData) : JEditorUiComp
     pasteToCurrentCell(content)
   }
 
+  /**
+   * Adds a new SQL cell to the notebook with the provided content.
+   *
+   * @param content The SQL code to be inserted into the new SQL cell.
+   * @throws IllegalStateException if the notebook does not support SQL cells.
+   */
+  fun addSqlCell(@Language("SQL") content: String) {
+    driver.invokeActionWithRetries("JupyterAddSQLCellAction")
+    driver.ui.pasteText(content)
+  }
+
   fun runAllCells(): Unit = runAllCells.strictClick()
 
   fun runCell(): Unit = runAndSelectNext.strictClick()
