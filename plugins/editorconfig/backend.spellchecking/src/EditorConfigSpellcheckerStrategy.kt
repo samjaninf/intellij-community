@@ -1,5 +1,4 @@
-// Copyright 2000-2024 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.editorconfig.language.spellchecker
+package com.intellij.editorconfig.backend.spellchecking
 
 import com.intellij.editorconfig.common.syntax.psi.EditorConfigCharClassPattern
 import com.intellij.editorconfig.common.syntax.psi.EditorConfigDescribableElement

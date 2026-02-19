@@ -436,6 +436,7 @@
       <module fileurl="file://$PROJECT_DIR$/plugins/eclipse/common-eclipse-util/intellij.eclipse.common.iml" filepath="$PROJECT_DIR$/plugins/eclipse/common-eclipse-util/intellij.eclipse.common.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/eclipse/jps-plugin/intellij.eclipse.jps.iml" filepath="$PROJECT_DIR$/plugins/eclipse/jps-plugin/intellij.eclipse.jps.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/editorconfig/backend/intellij.editorconfig.backend.iml" filepath="$PROJECT_DIR$/plugins/editorconfig/backend/intellij.editorconfig.backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/plugins/editorconfig/backend.spellchecking/intellij.editorconfig.backend.spellchecking.iml" filepath="$PROJECT_DIR$/plugins/editorconfig/backend.spellchecking/intellij.editorconfig.backend.spellchecking.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/editorconfig/common/intellij.editorconfig.common.iml" filepath="$PROJECT_DIR$/plugins/editorconfig/common/intellij.editorconfig.common.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/editorconfig/frontend/intellij.editorconfig.frontend.iml" filepath="$PROJECT_DIR$/plugins/editorconfig/frontend/intellij.editorconfig.frontend.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/editorconfig/intellij.editorconfig.plugin.iml" filepath="$PROJECT_DIR$/plugins/editorconfig/intellij.editorconfig.plugin.iml" />

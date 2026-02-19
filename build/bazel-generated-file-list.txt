@@ -963,6 +963,7 @@ plugins/eclipse/common-eclipse-util
 plugins/eclipse/jps-plugin
 plugins/editorconfig
 plugins/editorconfig/backend
+plugins/editorconfig/backend.spellchecking
 plugins/editorconfig/common
 plugins/editorconfig/frontend
 plugins/emojipicker
