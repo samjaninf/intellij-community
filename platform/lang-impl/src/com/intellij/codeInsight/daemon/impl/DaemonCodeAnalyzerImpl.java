@@ -147,7 +147,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
 
   private final UpdateRunnable myUpdateRunnable = new UpdateRunnable(this);
   private volatile @NotNull Future<?> myUpdateRunnableFuture = CompletableFuture.completedFuture(null);
-  private boolean myUpdateByTimerEnabled = true; // guarded by this
+  private volatile boolean myUpdateByTimerEnabled = true; // guarded by this
   private final Collection<VirtualFile> myDisabledHintsFiles = new HashSet<>();
   private final Collection<VirtualFile> myDisabledHighlightingFiles = new HashSet<>();
 
@@ -220,7 +220,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
   }
 
   @Override
-  public synchronized void dispose() {
+  public void dispose() {
     clearReferences();
   }
 
@@ -550,7 +550,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
   }
 
   @ApiStatus.Internal
-  public synchronized boolean isUpdateByTimerEnabled() {
+  public boolean isUpdateByTimerEnabled() {
     return myUpdateByTimerEnabled;
   }
 
@@ -689,10 +689,9 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
     List<Document> documents = ContainerUtil.mapNotNull(getSelectedEditors(), fe -> {
       Editor editor = fe instanceof TextEditor te ? te.getEditor() : null;
       VirtualFile virtualFile = getVirtualFile(fe);
-      Document document = editor == null
-                          ? virtualFile == null ? null : FileDocumentManager.getInstance().getCachedDocument(virtualFile)
-                          : editor.getDocument();
-      return document;
+      return editor == null
+             ? virtualFile == null ? null : FileDocumentManager.getInstance().getCachedDocument(virtualFile)
+             : editor.getDocument();
     });
     return
       !PsiDocumentManager.getInstance(myProject).hasUncommitedDocuments() &&
@@ -995,7 +994,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
       }
 
       if (!foundInfoList.isEmpty() && highestPriorityOnly) {
-        HighlightInfo foundInfo = foundInfoList.get(0);
+        HighlightInfo foundInfo = foundInfoList.getFirst();
         int compare = foundInfo.getSeverity().compareTo(info.getSeverity());
         if (compare < 0) {
           foundInfoList.clear();
@@ -1017,7 +1016,7 @@ public final class DaemonCodeAnalyzerImpl extends DaemonCodeAnalyzerEx
         return null;
       }
       if (foundInfoList.size() == 1) {
-        return foundInfoList.get(0);
+        return foundInfoList.getFirst();
       }
       foundInfoList.sort(Comparator.comparing(HighlightInfo::getSeverity).reversed());
       return HighlightInfo.createComposite(foundInfoList, myProject);
