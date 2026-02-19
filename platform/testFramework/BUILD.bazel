@@ -206,6 +206,7 @@ jvm_library(
     "//platform/lang-impl:lang-impl_test_lib",
     "//platform/lvcs-api:lvcs",
     "//platform/lvcs-api:lvcs_test_lib",
+    "//platform/main/intellij.platform.monolith.main:monolith-main",
     "//platform/projectModel-api:projectModel",
     "//platform/projectModel-api:projectModel_test_lib",
     "//platform/refactoring",
