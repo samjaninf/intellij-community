@@ -1,5 +1,5 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
-package org.jetbrains.kotlin.idea.k2.codeInsight.gradle
+package org.jetbrains.kotlin.idea.k2.codeInsight.gradle.completion
 
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.application.runReadAction
@@ -7,7 +7,8 @@ import com.intellij.testFramework.TestDataPath
 import com.intellij.testFramework.runInEdtAndWait
 import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.AbstractGradleCodeInsightTest
-import org.jetbrains.kotlin.gradle.AbstractKotlinGradleNavigationTest.Companion.GRADLE_KMP_KOTLIN_FIXTURE
+import org.jetbrains.kotlin.gradle.AbstractKotlinGradleNavigationTest
+import org.jetbrains.kotlin.gradle.GRADLE_KMP_KOTLIN_FIXTURE
 import org.jetbrains.kotlin.idea.base.test.TestRoot
 import org.jetbrains.kotlin.idea.test.AssertKotlinPluginMode
 import org.jetbrains.kotlin.idea.test.UseK2PluginMode
@@ -29,7 +30,7 @@ import kotlin.test.assertTrue
 @GradleProjectTestApplication
 @AssertKotlinPluginMode
 @TestRoot("idea/tests/testData/")
-@TestDataPath("\$CONTENT_ROOT")
+@TestDataPath($$"$CONTENT_ROOT")
 @TestMetadata("../../../idea/tests/testData/gradle/completion")
 class KotlinGradleCompletionTest : AbstractGradleCodeInsightTest() {
 
@@ -313,6 +314,20 @@ class KotlinGradleCompletionTest : AbstractGradleCodeInsightTest() {
         verifyCompletion(gradleVersion)
     }
 
+    @ParameterizedTest
+    @BaseGradleVersionSource
+    @TestMetadata("buildSrcDir/generatedAccessorsSuggestionsInKtsFileInBuildSrc.test")
+    fun testGeneratedAccessorsSuggstionsForKtFile(gradleVersion: GradleVersion) {
+        verifyCompletion(gradleVersion)
+    }
+
+    @ParameterizedTest
+    @BaseGradleVersionSource
+    @TestMetadata("buildSrcDir/generatedAccessorsSuggestionsInKtFileInBuildSrc.test")
+    fun testGeneratedAccessorsSuggstionsForKtsFile(gradleVersion: GradleVersion) {
+        verifyCompletion(gradleVersion)
+    }
+
     private fun verifyCompletion(gradleVersion: GradleVersion) {
         test(gradleVersion, GRADLE_KMP_KOTLIN_FIXTURE) {
             val mainFileContent = mainTestDataFile
@@ -343,7 +358,7 @@ class KotlinGradleCompletionTest : AbstractGradleCodeInsightTest() {
                             expectedSuggestion,
                             suggestion,
                             "Actual suggestion at #$index is $suggestion, expected: $expectedSuggestion\n\n" +
-                                "actual suggestions: $suggestions\nexpected suggestions: $expectedSuggestions"
+                                    "actual suggestions: $suggestions\nexpected suggestions: $expectedSuggestions"
                         )
                     }
                     unexpectedSuggestions.forEach {
