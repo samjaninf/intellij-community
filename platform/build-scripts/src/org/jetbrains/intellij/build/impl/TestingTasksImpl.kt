@@ -822,6 +822,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
           systemProperties = systemProperties + listOf(
             "intellij.build.test.list.classes" to testClassesListFile.absolutePathString(),
             "intellij.build.test.engine.vintage" to "false",
+            "intellij.build.test.ignoreFirstAndLastTests" to "true",
           ),
           jvmArgs = jvmArgs,
           envVariables = envVariables,
@@ -847,6 +848,7 @@ internal class TestingTasksImpl(context: CompilationContext, private val options
           systemProperties = systemProperties + listOf(
             "intellij.build.test.list.classes" to testClassesListFile.absolutePathString(),
             "intellij.build.test.engine.vintage" to "only",
+            "intellij.build.test.ignoreFirstAndLastTests" to "true",
             ),
           jvmArgs = jvmArgs,
           envVariables = envVariables,
