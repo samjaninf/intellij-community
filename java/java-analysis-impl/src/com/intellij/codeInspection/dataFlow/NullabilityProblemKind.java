@@ -197,11 +197,11 @@ public final class NullabilityProblemKind<T extends PsiElement> {
   }
 
   /**
-   * Creates a new {@link NullabilityProblem} of this kind using given anchor
+   * Creates a new {@link NullabilityProblem} of this kind using the given anchor.
    *
-   * @param dfaAnchor place which is actually violates the nullability
-   * @param anchor    anchor to bind the problem to
-   * @return newly created problem or null if anchor is null
+   * @param dfaAnchor the place that actually violates nullability
+   * @param anchor    the anchor to bind the problem to
+   * @return a newly created problem, or null if anchor is null
    */
   @Contract("_, null -> null")
   public @Nullable NullabilityProblem<T> problem(@NotNull JavaDfaAnchor dfaAnchor, @Nullable T anchor) {
