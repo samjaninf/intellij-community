@@ -14,17 +14,41 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.rmi.server.RMISocketFactory;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class JmxCallHandler implements InvocationHandler {
   private static final long CALL_TIMEOUT_SECONDS =
     Long.getLong("driver.jmx.call.timeout.seconds", 180);
+
+  static {
+    if (CALL_TIMEOUT_SECONDS > 0) {
+      int timeoutMs = (int) Math.min(CALL_TIMEOUT_SECONDS * 1000L, Integer.MAX_VALUE);
+      try {
+        RMISocketFactory.setSocketFactory(new RMISocketFactory() {
+          @Override
+          public Socket createSocket(String host, int port) throws IOException {
+            Socket socket = new Socket(host, port);
+            socket.setSoTimeout(timeoutMs);
+            return socket;
+          }
+
+          @Override
+          public ServerSocket createServerSocket(int port) throws IOException {
+            return RMISocketFactory.getDefaultSocketFactory().createServerSocket(port);
+          }
+        });
+      }
+      catch (IOException ignored) {
+        // RMI socket factory already set by another component; SO_TIMEOUT not applied
+      }
+    }
+  }
 
   private final JmxHost hostInfo;
   private final ObjectName mbeanName;
@@ -73,34 +97,11 @@ public class JmxCallHandler implements InvocationHandler {
     try {
       MBeanServerConnection mbsc = this.currentConnector.getMBeanServerConnection();
       MBeanServerInvocationHandler wrappedHandler = new MBeanServerInvocationHandler(mbsc, mbeanName);
-
-      if (CALL_TIMEOUT_SECONDS <= 0) {
-        return wrappedHandler.invoke(proxy, method, args);
-      }
-
-      CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> {
-        try {
-          return wrappedHandler.invoke(proxy, method, args);
-        }
-        catch (Throwable t) {
-          throw new RuntimeException(t);
-        }
-      });
-      return future.get(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      return wrappedHandler.invoke(proxy, method, args);
     }
-    catch (TimeoutException e) {
+    catch (SocketTimeoutException e) {
       resetConnector();
       throw new JmxCallException("JMX call timed out after " + CALL_TIMEOUT_SECONDS + "s: " + method.getName(), e);
-    }
-    catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      if (cause instanceof RuntimeException re && re.getCause() instanceof IOException ioe) {
-        resetConnector();
-        throw new JmxCallException("Unable to perform JMX call: " + method + "(" + (args != null ? Arrays.asList(args) : "null") + ")", ioe);
-      }
-      resetConnector();
-      throw new JmxCallException("Unable to perform JMX call: " + method + "(" + (args != null ? Arrays.asList(args) : "null") + ")",
-                                  cause != null ? cause : e);
     }
     catch (IOException e) {
       resetConnector();
