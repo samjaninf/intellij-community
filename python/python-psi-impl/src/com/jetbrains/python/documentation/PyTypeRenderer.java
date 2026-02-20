@@ -18,7 +18,6 @@ import com.jetbrains.python.highlighting.PyHighlighter;
 import com.jetbrains.python.psi.LanguageLevel;
 import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.PyQualifiedNameOwner;
-import com.jetbrains.python.psi.PyReferenceExpression;
 import com.jetbrains.python.psi.types.PyCallableParameter;
 import com.jetbrains.python.psi.types.PyCallableParameterListType;
 import com.jetbrains.python.psi.types.PyCallableType;
@@ -383,8 +382,8 @@ public abstract class PyTypeRenderer extends PyTypeVisitorExt<@NotNull HtmlChunk
       .append(styled("[", PyHighlighter.PY_BRACKETS))
       .append(StreamEx
                 .of(literals)
-                .map(PyLiteralType::getExpression)
-                .map(expr -> styledExpression(expr))
+                .map(PyLiteralType::getExpressionText)
+                .map(HtmlChunk::raw)
                 .collect(HtmlChunk.toFragment(styled(", ", PyHighlighter.PY_COMMA))))
       .append(styled("]", PyHighlighter.PY_BRACKETS))
       .toFragment();
@@ -592,16 +591,13 @@ public abstract class PyTypeRenderer extends PyTypeVisitorExt<@NotNull HtmlChunk
     result.append(HtmlChunk.raw(isRenderingFqn() ? "typing.Literal" : "Literal")); //NON-NLS
     result.append("[");
     @Nullable String classQName = literalType.getClassQName();
-    if (isRenderingFqn() && classQName != null && literalType.getExpression() instanceof PyReferenceExpression refExpr) {
+    if (isRenderingFqn() && classQName != null && literalType.getEnumMemberName() != null) {
       result.append(classQName);
-      if (refExpr.getName() != null) {
-        result.append(".");
-        result.append(refExpr.getName());
-      }
+      result.append(".");
+      result.append(literalType.getEnumMemberName());
     }
     else {
-      String enumOrLiteral = StringUtil.notNullize(literalType.getExpression().getText()).trim();
-      result.appendRaw(enumOrLiteral); // append raw since the literal can include quotes: Literal["foo"]
+      result.appendRaw(literalType.getExpressionText()); // append raw since the literal can include quotes: Literal["foo"]
     }
     result.append("]");
     return result.toFragment();
