@@ -235,6 +235,23 @@ class JsonThemeInspectionTest : BasePlatformTestCase() {
     myFixture.checkHighlighting()
   }
 
+  fun testBorderSoftReference() {
+    myFixture.configureByText("test.theme.json", """
+      {
+        "name": "Test Theme",
+        "colors": {
+          "registered-color": "#000000"
+        },
+        "ui": {
+          "ActionButton.focusedBorderColor": "registered-color",
+          "ActionButton.focusedBorderColor": "<error descr="Cannot resolve symbol 'unknown-color'">unknown-color</error>",
+          <warning descr="Unresolved key 'ActionButton.unregisteredBorder'">"ActionButton.unregisteredBorder"</warning>: "unregisteredBorder",
+        }
+      }
+    """.trimIndent())
+    myFixture.checkHighlighting()
+  }
+
   fun testLineMarkersColorHex() {
     myFixture.configureByText("test.theme.json", """
       {
