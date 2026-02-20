@@ -67,7 +67,6 @@ jvm_library(
     "//platform/observable",
     "//platform/remote-topics/shared:rpc-topics",
     "//libraries/fastutil",
-    "//platform/platform-impl/eel:ide-impl-wsl",
   ]
 )
 
@@ -128,7 +127,6 @@ jvm_library(
     "//platform/observable:observable_test_lib",
     "//platform/remote-topics/shared:rpc-topics_test_lib",
     "//libraries/fastutil:fastutil_test_lib",
-    "//platform/platform-impl/eel:ide-impl-wsl_test_lib",
   ]
 )
 ### auto-generated section `build intellij.terminal` end
