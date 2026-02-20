@@ -606,7 +606,7 @@
       "description": "Editor inplace search/replace fields background color"
     },
     {
-      "key": "Editor.SearchField.bordercolor",
+      "key": "Editor.SearchField.borderColor",
       "description": "Editor inplace search/replace fields border color",
       "since": "2024.1"
     },
