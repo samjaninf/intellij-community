@@ -57,8 +57,8 @@ private sealed interface PyLiteralValue {
     override val text: String get() = if (value) PyNames.TRUE else PyNames.FALSE
   }
 
-  data class EnumMemberValue(val memberName: String) : PyLiteralValue {
-    override val text: String get() = memberName
+  data class EnumMemberValue(private val enumClass: PyClass, val memberName: String) : PyLiteralValue {
+    override val text: String get() = "${enumClass.name}.${memberName}"
   }
 }
 
@@ -70,12 +70,8 @@ class PyLiteralType private constructor(cls: PyClass, private val value: PyLiter
 
   override val name: String = "Literal[${expressionText}]"
 
-  val expressionText: String
-    @ApiStatus.Internal
-    get() = when (value) {
-      is PyLiteralValue.EnumMemberValue -> "${pyClass.name}.${value.memberName}"
-      else -> value.text
-    }
+  @get:ApiStatus.Internal
+  val expressionText: String get() = value.text
 
   /**
    * Returns the decoded string value if this literal type represents a string, `null` otherwise.
@@ -101,8 +97,6 @@ class PyLiteralType private constructor(cls: PyClass, private val value: PyLiter
    */
   val enumMemberName: String?
     get() = (value as? PyLiteralValue.EnumMemberValue)?.memberName
-
-  override fun getName(): String = "Literal[$expressionText]"
 
   override fun toString(): String = "PyLiteralType: $expressionText"
 
@@ -135,7 +129,7 @@ class PyLiteralType private constructor(cls: PyClass, private val value: PyLiter
 
     @JvmStatic
     fun enumMember(enumClass: PyClass, memberName: String): PyLiteralType {
-      return PyLiteralType(enumClass, PyLiteralValue.EnumMemberValue(memberName))
+      return PyLiteralType(enumClass, PyLiteralValue.EnumMemberValue(enumClass, memberName))
     }
 
     @JvmStatic

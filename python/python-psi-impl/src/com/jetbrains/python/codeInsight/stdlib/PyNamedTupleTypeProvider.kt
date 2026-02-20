@@ -39,11 +39,14 @@ import com.jetbrains.python.psi.types.PyNamedTupleType
 import com.jetbrains.python.psi.types.PyType
 import com.jetbrains.python.psi.types.PyTypeMember
 import com.jetbrains.python.psi.types.PyTypeProviderBase
+import com.jetbrains.python.psi.types.PyTypeUtil
 import com.jetbrains.python.psi.types.PyTypeUtil.notNullToRef
 import com.jetbrains.python.psi.types.PyUnionType
 import com.jetbrains.python.psi.types.TypeEvalContext
 import one.util.streamex.StreamEx
 import java.util.stream.Collectors
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 private typealias NTFields = LinkedHashMap<String, PyNamedTupleType.FieldTypeAndDefaultValue>
 private typealias ImmutableNTFields = Map<String, PyNamedTupleType.FieldTypeAndDefaultValue>
@@ -78,6 +81,13 @@ class PyNamedTupleTypeProvider : PyTypeProviderBase() {
   }
 
   override fun getMemberTypes(type: PyType, name: String, location: PyExpression?, direction: AccessDirection, context: PyResolveContext): List<PyTypeMember>? {
+    val typeEvalContext = context.typeEvalContext
+    if (PyNames.MATCH_ARGS == name && isNamedTuple(type, typeEvalContext)) {
+      val fieldNames = getCallableType(type, typeEvalContext, type.pyClass)?.getParameters(typeEvalContext)?.mapNotNull { it.name }
+      if (fieldNames == null) return null
+      val matchArgsType = PyTypeUtil.createTupleOfLiteralStringsType(type.pyClass, fieldNames) ?: return null
+      return listOf(PyTypeMember(null, matchArgsType))
+    }
     if (type !is PyNamedTupleType) return null
     type.fields[name]?.let {
       return listOf(PyTypeMember(null, it.type))
@@ -86,18 +96,13 @@ class PyNamedTupleTypeProvider : PyTypeProviderBase() {
   }
 
   companion object {
+    @OptIn(ExperimentalContracts::class)
     fun isNamedTuple(type: PyType?, context: TypeEvalContext): Boolean {
+      contract { returns(true) implies (type is PyClassType) }
       if (type is PyNamedTupleType) return true
 
       val isNT = { t: PyClassLikeType? -> t is PyNamedTupleType || t != null && PyTypingTypeProvider.NAMEDTUPLE == t.classQName }
-      return type is PyClassLikeType && type.getAncestorTypes(context).any(isNT)
-    }
-
-    fun getGeneratedMatchArgs(type: PyClassType, context: TypeEvalContext): List<String>? {
-      if (isNamedTuple(type, context)) {
-        return getCallableType(type, context, type.pyClass)?.getParameters(context)?.mapNotNull { it.name }
-      }
-      return null
+      return type is PyClassType && type.getAncestorTypes(context).any(isNT)
     }
 
     fun isTypingNamedTupleDirectInheritor(cls: PyClass, context: TypeEvalContext): Boolean {

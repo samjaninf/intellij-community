@@ -25,6 +25,8 @@ import com.jetbrains.python.psi.types.PyRecursiveTypeVisitor.PyTypeTraverser
 import com.jetbrains.python.psi.types.PyTypeChecker.convertToType
 import com.jetbrains.python.psi.types.PyTypeChecker.findGenericDefinitionType
 import com.jetbrains.python.psi.types.PyTypeChecker.match
+import com.jetbrains.python.psi.types.PyTypeUtil.createTupleOfLiteralStringsType
+import com.jetbrains.python.psi.types.PyTypeUtil.extractStringLiteralsFromTupleType
 import one.util.streamex.StreamEx
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.Contract
@@ -324,5 +326,36 @@ object PyTypeUtil {
     })
 
     return Collections.unmodifiableSet(result)
+  }
+
+  /**
+   * Extracts string literal values from a `tuple[Literal["a"], Literal["b"], ...]` type.
+   * Returns `null` if the type is not a non-homogeneous tuple of string literals.
+   * 
+   * @see createTupleOfLiteralStringsType
+   */
+  @JvmStatic
+  @ApiStatus.Internal
+  fun extractStringLiteralsFromTupleType(type: PyType?): List<String>? {
+    if (type !is PyTupleType || type.isHomogeneous) return null
+    return buildList {
+      for (elementType in type.elementTypes) {
+        if (elementType !is PyLiteralType) return null
+        val str = elementType.stringValue ?: return null
+        add(str)
+      }
+    }
+  }
+
+  /**
+   * Creates a `tuple[Literal["name1"], Literal["name2"], ...]` type from a list of strings.
+   * Useful for creating types for synthetic members (e.g. `__match_args__ `, `__slots__ ` in a dataclasses).
+   * 
+   * @see extractStringLiteralsFromTupleType
+   */
+  @ApiStatus.Internal
+  fun createTupleOfLiteralStringsType(anchor: PsiElement, fieldNames: List<String>): PyTupleType? {
+    val literalTypes = fieldNames.mapNotNull { PyLiteralType.stringLiteral(anchor, it) }
+    return PyTupleType.create(anchor, literalTypes)
   }
 }
