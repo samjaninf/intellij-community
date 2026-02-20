@@ -267,4 +267,5 @@ public class SingleClassesTest extends SingleClassesTestBase {
   @Test public void testAnnotationExtendObjectStaticMethods() { doTest("pkg/TestAnnotationExtendObjectStaticMethods"); }
   @Test public void testAnnotationExtendObjectClass() { doTest("pkg/TestAnnotationExtendObjectClass"); }
   @Test public void testAnnotationExtendWildcard() { doTest("pkg/TestAnnotationExtendWildcard"); }
+  @Test public void testTernaryBoxingStatement() { doTest("pkg/TestTernaryBoxingStatement"); }
 }
