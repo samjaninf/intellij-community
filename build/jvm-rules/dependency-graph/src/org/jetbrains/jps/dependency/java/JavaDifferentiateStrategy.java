@@ -66,8 +66,8 @@ public final class JavaDifferentiateStrategy extends JvmDifferentiateStrategyImp
     for (JvmClass addedClass : addedClasses) {
       debug(context, "Class name: ", addedClass.getName());
 
-      // class duplication checks
-      if (!addedClass.isAnonymous() && !addedClass.isLocal() && !addedClass.isInnerClass()) {
+      // class duplication checks                                                           
+      if (!addedClass.isLibrary() && !addedClass.isAnonymous() && !addedClass.isLocal() && !addedClass.isInnerClass()) {
         if (affectNodeSourcesIfNotCompiled(context, asIterable(addedClass.getReferenceID()), present, "Possibly duplicated classes in the same compilation chunk; Scheduling for recompilation sources: ")) {
           affectSources(context, context.getDelta().getSources(addedClass.getReferenceID()), "Found conflicting class declarations ", true);
           continue; // if duplicates are found, do not perform further checks for classes with the same short name
