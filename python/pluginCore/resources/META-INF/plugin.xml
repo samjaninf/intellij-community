@@ -3,9 +3,9 @@
   <!--Python community support for Pycharm, DS and IC.-->
   <!--Include core Python functionality-->
 
-
   <id>PythonCore</id>
   <name>Python Community Edition</name>
+  <category>Languages</category>
 
   <description><![CDATA[
 The Python plug-in provides smart editing for Python scripts. The feature set of the plugin
