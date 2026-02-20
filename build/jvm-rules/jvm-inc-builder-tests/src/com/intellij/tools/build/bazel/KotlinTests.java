@@ -1518,4 +1518,174 @@ public class KotlinTests extends BazelIncBuildTest {
   public void testKotlinJvmFieldUnchangedUsedInJava() throws Exception {
     performTest("kotlin/custom/kotlinJvmFieldUnchangedUsedInJava").assertSuccessful();
   }
+
+  // multiModule/common tests
+
+  /*
+    todo: investigate why no lookups are reported for empty "imports-only" *.kt files
+
+  @Test
+  public void testMultiModuleSimple() throws Exception {
+    performTest(2, "kotlin/multiModule/common/simple").assertSuccessful();
+  }
+  */
+
+  @Test
+  public void testMultiModuleSimpleDependency() throws Exception {
+    performTest("kotlin/multiModule/common/simpleDependency").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleSimpleDependencyUnchanged() throws Exception {
+    performTest("kotlin/multiModule/common/simpleDependencyUnchanged").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleConstantValueChanged() throws Exception {
+    performTest("kotlin/multiModule/common/constantValueChanged").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleClassAdded() throws Exception {
+    performTest(2, "kotlin/multiModule/common/classAdded").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleClassRemoved() throws Exception {
+    performTest(2, "kotlin/multiModule/common/classRemoved").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleTransitiveDependency() throws Exception {
+    performTest("kotlin/multiModule/common/transitiveDependency").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleTwoDependants() throws Exception {
+    performTest("kotlin/multiModule/common/twoDependants").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleCopyFileToAnotherModule() throws Exception {
+    performTest("kotlin/multiModule/common/copyFileToAnotherModule").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleMoveFileToAnotherModule() throws Exception {
+    performTest("kotlin/multiModule/common/moveFileToAnotherModule").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDuplicatedClass() throws Exception {
+    performTest("kotlin/multiModule/common/duplicatedClass").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleFunctionFromDifferentPackageChanged() throws Exception {
+    performTest("kotlin/multiModule/common/functionFromDifferentPackageChanged").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDefaultParameterAdded() throws Exception {
+    performTest("kotlin/multiModule/common/defaultParameterAdded").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDefaultParameterRemoved() throws Exception {
+    performTest("kotlin/multiModule/common/defaultParameterRemoved").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDefaultParameterAddedForTopLevelFun() throws Exception {
+    performTest("kotlin/multiModule/common/defaultParameterAddedForTopLevelFun").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDefaultParameterRemovedForTopLevelFun() throws Exception {
+    performTest("kotlin/multiModule/common/defaultParameterRemovedForTopLevelFun").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDefaultArgumentInConstructorRemoved() throws Exception {
+    performTest(2, "kotlin/multiModule/common/defaultArgumentInConstructorRemoved").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleDefaultValueInConstructorRemoved() throws Exception {
+    performTest(2, "kotlin/multiModule/common/defaultValueInConstructorRemoved").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleSimpleDependencyErrorOnAccessToInternal1() throws Exception {
+    performTest("kotlin/multiModule/common/simpleDependencyErrorOnAccessToInternal1").assertFailure();
+  }
+
+  @Test
+  public void testMultiModuleSimpleDependencyErrorOnAccessToInternal2() throws Exception {
+    performTest("kotlin/multiModule/common/simpleDependencyErrorOnAccessToInternal2").assertFailure();
+  }
+
+  @Test
+  public void testMultiModuleInlineFunctionInlined() throws Exception {
+    performTest("kotlin/multiModule/common/inlineFunctionInlined").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleInlineFunctionTwoPackageParts() throws Exception {
+    performTest(2, "kotlin/multiModule/common/inlineFunctionTwoPackageParts").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleTransitiveInlining() throws Exception {
+    performTest("kotlin/multiModule/common/transitiveInlining").assertSuccessful();
+  }
+
+  @Test
+  public void testMultiModuleExportedDependency() throws Exception {
+    performTest(2, "kotlin/multiModule/common/exportedDependency").assertSuccessful();
+  }
+
+  // multiModule/withJavaUsedInKotlin tests
+
+  @Test
+  public void testMultiModuleImportedClassRemoved() throws Exception {
+    performTest("kotlin/multiModule/withJavaUsedInKotlin/importedClassRemoved").assertFailure();
+  }
+
+  // lazyKotlinCaches tests
+
+  @Test
+  public void testLazyKotlinCachesClass() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/class").assertSuccessful();
+  }
+
+  @Test
+  public void testLazyKotlinCachesClassInheritance() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/classInheritance").assertSuccessful();
+  }
+
+  @Test
+  public void testLazyKotlinCachesConstant() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/constant").assertSuccessful();
+  }
+
+  @Test
+  public void testLazyKotlinCachesFunction() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/function").assertSuccessful();
+  }
+
+  @Test
+  public void testLazyKotlinCachesInlineFunctionWithoutUsage() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/inlineFunctionWithoutUsage").assertSuccessful();
+  }
+
+  @Test
+  public void testLazyKotlinCachesInlineFunctionWithUsage() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/inlineFunctionWithUsage").assertSuccessful();
+  }
+
+  @Test
+  public void testLazyKotlinCachesTopLevelPropertyAccess() throws Exception {
+    performTest("kotlin/lazyKotlinCaches/topLevelPropertyAccess").assertSuccessful();
+  }
 }
