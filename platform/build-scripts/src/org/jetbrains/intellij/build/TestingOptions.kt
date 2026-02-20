@@ -87,7 +87,16 @@ open class TestingOptions {
    *
    * If [searchScope] is set to `singleModule`, only tests from the main module are searched.
    */
-  var mainModule: String? = System.getProperty("intellij.build.test.main.module").nullize(nullizeSpaces = true) ?: OLD_MAIN_MODULE
+  var mainModule: String? = System.getProperty("intellij.build.test.main.module")?.let {
+    when (it) {  // temporarily remap the main module for TC compatibility
+      "intellij.appcode.main" -> "intellij.appcode.main.tests"
+      "intellij.clion.main" -> "intellij.clion.main.tests"
+      "intellij.idea.community.main" -> "intellij.idea.community.main.tests"
+      "intellij.phpstorm.main" -> "intellij.phpstorm.main.tests"
+      "intellij.rustrover.main" -> "intellij.rustrover.main.tests"
+      else -> it
+    }
+  } ?: OLD_MAIN_MODULE
 
   /**
    * Abort tests execution if [mainModule] does not match the module specified in the Run Configuration from [testConfigurations].
