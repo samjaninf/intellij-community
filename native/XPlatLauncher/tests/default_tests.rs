@@ -182,6 +182,20 @@ mod tests {
     }
 
     #[test]
+    fn launcher_env_vm_options_loading_test() {
+        let test = prepare_test_env(LauncherLocation::Standard);
+        let env = HashMap::from([("IJ_JAVA_OPTIONS", "-Done.user.option=whatever '-Done.more.user.option=what ever'")]);
+
+        let dump = run_launcher_ext(&test, LauncherRunSpec::standard().with_dump().with_env(&env).assert_status()).dump();
+
+        assert_vm_option_presence(&dump, "-Done.user.option=whatever");
+        assert_vm_option_presence(&dump, "-Done.more.user.option=what ever");
+        assert_vm_option_presence(&dump, "-XX:+UseG1GC");
+        assert_vm_option_presence(&dump, "-Dsun.io.useCanonCaches=false");
+        assert_vm_option_presence(&dump, "-Didea.vendor.name=JetBrains");
+    }
+
+    #[test]
     fn product_env_properties_loading_test() {
         let test = prepare_test_env(LauncherLocation::Standard);
         let temp_file = test.create_temp_file("_product_env.properties", "one.user.property=whatever\n");
