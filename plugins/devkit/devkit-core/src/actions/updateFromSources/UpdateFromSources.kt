@@ -1,4 +1,4 @@
-// Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 @file:OptIn(ExperimentalPathApi::class)
 package org.jetbrains.idea.devkit.actions.updateFromSources
 
@@ -188,19 +188,18 @@ private fun runUpdateScript(
           }
 
           if (event.exitCode != 0) {
-            showError(
-              project,
-              DevKitBundle.message("action.UpdateIdeFromSourcesAction.task.failed.content", event.exitCode),
+            val actions = mutableListOf(
               NotificationAction.createSimple(DevKitBundle.message("action.UpdateIdeFromSourcesAction.notification.action.view.output")) {
                 FileEditorManager.getInstance(project).openFile(LightVirtualFile("output.txt", output.joinToString("")), true)
               },
-              NotificationAction.createSimple(DevKitBundle.message("action.UpdateIdeFromSourcesAction.notification.action.view.debug.log")) {
-                LocalFileSystem.getInstance().refreshAndFindFileByNioFile(deployDir.resolve("log/debug.log"))?.let { logFile ->
-                  logFile.refresh(true, false)
-                  FileEditorManager.getInstance(project).openFile(logFile, true)
-                }
-              }
             )
+            LocalFileSystem.getInstance().refreshAndFindFileByNioFile(deployDir.resolve("log/debug.log"))?.let { logFile ->
+              logFile.refresh(true, false)
+              actions += NotificationAction.createSimple(DevKitBundle.message("action.UpdateIdeFromSourcesAction.notification.action.view.debug.log")) {
+                FileEditorManager.getInstance(project).openFile(logFile, true)
+              }
+            }
+            showError(project, DevKitBundle.message("action.UpdateIdeFromSourcesAction.task.failed.content", event.exitCode), *actions.toTypedArray())
             return
           }
 
