@@ -21,12 +21,15 @@ import com.intellij.model.psi.PsiSymbolReference
 import com.intellij.model.psi.PsiSymbolReferenceHints
 import com.intellij.model.psi.PsiSymbolReferenceProvider
 import com.intellij.model.psi.PsiSymbolReferenceService
+import com.intellij.model.psi.impl.allDeclarationsInElement
 import com.intellij.model.search.LeafOccurrence
 import com.intellij.model.search.LeafOccurrenceMapper
 import com.intellij.model.search.SearchContext
 import com.intellij.model.search.SearchRequest
 import com.intellij.model.search.SearchService
+import com.intellij.model.search.SearchWordQueryBuilder
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Condition
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.TextRange
 import com.intellij.platform.backend.documentation.DocumentationTarget
@@ -39,12 +42,19 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.search.SearchScope
 import com.intellij.psi.util.walkUp
+import com.intellij.refactoring.rename.api.PsiModifiableRenameUsage.Companion.defaultPsiModifiableRenameUsage
+import com.intellij.refactoring.rename.api.PsiRenameUsage
 import com.intellij.refactoring.rename.api.RenameTarget
+import com.intellij.refactoring.rename.api.RenameUsage
+import com.intellij.refactoring.rename.api.RenameUsageSearchParameters
+import com.intellij.refactoring.rename.api.RenameUsageSearcher
 import com.intellij.util.Query
+import org.jetbrains.annotations.ApiStatus
 
 private const val COLORS_BLOCK_KEY = "colors"
 
-internal class ThemeColorKey(
+@ApiStatus.Internal
+class ThemeColorKey(
   val colorKey: String,
   val file: PsiFile?,
   val rangeInFile: TextRange?,
@@ -204,29 +214,36 @@ internal class ThemeColorKeyReferenceProvider : PsiSymbolReferenceProvider {
   }
 }
 
+private fun findPsiUsages(element: PsiElement, symbol: ThemeColorKey, offsetInElement: Int): Sequence<PsiUsage> {
+  if (element !is JsonStringLiteral) return emptySequence()
+
+  return PsiSymbolReferenceService.getService().getReferences(element, PsiSymbolReferenceHints.offsetHint(offsetInElement))
+    .asSequence()
+    .filterIsInstance<ThemeColorKeyReference>()
+    .filter { it.rangeInElement.containsOffset(offsetInElement) }
+    .filter { ref -> ref.resolvesTo(symbol) }
+    .map { PsiUsage.textUsage(it) }
+}
+
+private fun searchWordQueryBuilder(project: Project, searchScope: SearchScope, symbol: ThemeColorKey): SearchWordQueryBuilder {
+  return SearchService.getInstance()
+    .searchWord(project, symbol.colorKey)
+    .inContexts(SearchContext.inCode(), SearchContext.inStrings())
+    .inScope(searchScope)
+    .caseSensitive(true)
+    .inFilesWithLanguageOfKind(JsonLanguage.INSTANCE)
+}
+
 internal class ThemeColorKeySearcher : UsageSearcher {
   override fun collectSearchRequest(parameters: UsageSearchParameters): Query<out Usage>? {
     val symbol = parameters.target as? ThemeColorKey ?: return null
-    return SearchService.getInstance()
-      .searchWord(parameters.project, symbol.colorKey)
-      .inContexts(SearchContext.inCode(), SearchContext.inStrings())
-      .inScope(parameters.searchScope)
-      .caseSensitive(true)
-      .inFilesWithLanguageOfKind(JsonLanguage.INSTANCE)
+    return searchWordQueryBuilder(parameters.project, parameters.searchScope, symbol)
       .buildQuery(LeafOccurrenceMapper.withPointer(symbol.createPointer(), ::findReferencesToSymbol))
   }
 
-  private fun findReferencesToSymbol(symbol: Symbol, leafOccurrence: LeafOccurrence): Collection<PsiUsage> {
-    val symbolReferenceService = PsiSymbolReferenceService.getService()
+  private fun findReferencesToSymbol(symbol: ThemeColorKey, leafOccurrence: LeafOccurrence): Collection<PsiUsage> {
     for ((element, offsetInElement) in walkUp(leafOccurrence.start, leafOccurrence.offsetInStart, leafOccurrence.scope)) {
-      if (element !is PsiExternalReferenceHost) continue
-
-      val foundReferences = symbolReferenceService.getReferences(element, PsiSymbolReferenceHints.offsetHint(offsetInElement))
-        .asSequence()
-        .filterIsInstance<ThemeColorKeyReference>()
-        .filter { it.rangeInElement.containsOffset(offsetInElement) }
-        .filter { ref -> ref.resolvesTo(symbol) }
-        .map { ThemeColorKeyUsage(it.element.containingFile, it.absoluteRange, false) }
+      val foundReferences = findPsiUsages(element, symbol, offsetInElement)
         .toList()
 
       if (foundReferences.isNotEmpty()) return foundReferences
@@ -235,15 +252,45 @@ internal class ThemeColorKeySearcher : UsageSearcher {
   }
 }
 
-private class ThemeColorKeyUsage(
-  override val file: PsiFile,
-  override val range: TextRange,
-  override val declaration: Boolean,
-) : PsiUsage {
-  override fun createPointer(): Pointer<ThemeColorKeyUsage> {
-    val declaration = declaration
-    return Pointer.fileRangePointer(file, range) { restoredFile, restoredRange ->
-      ThemeColorKeyUsage(restoredFile, restoredRange, declaration)
+internal class ThemeColorKeyRenameSearcher : RenameUsageSearcher {
+  override fun collectSearchRequest(parameters: RenameUsageSearchParameters): Query<out RenameUsage>? {
+    val symbol = parameters.target as? ThemeColorKey ?: return null
+    return searchWordQueryBuilder(parameters.project, parameters.searchScope, symbol)
+      .buildQuery(LeafOccurrenceMapper.withPointer(symbol.createPointer(), ::findReferencesToSymbol))
+  }
+
+  private fun findReferencesToSymbol(symbol: ThemeColorKey, leafOccurrence: LeafOccurrence): Collection<PsiRenameUsage> {
+    for ((element, offsetInElement) in walkUp(leafOccurrence.start, leafOccurrence.offsetInStart, leafOccurrence.scope)) {
+      val foundReferences = findPsiRenameUsages(element, symbol, offsetInElement)
+        .map { defaultPsiModifiableRenameUsage(it) }
+        .toList()
+
+      if (foundReferences.isNotEmpty()) return foundReferences
     }
+    return emptyList()
+  }
+
+  private fun findPsiRenameUsages(element: PsiElement, symbol: ThemeColorKey, offsetInElement: Int): Sequence<PsiUsage> {
+    if (element is JsonProperty) {
+      val declaredUsages = allDeclarationsInElement(element).asSequence()
+        .filterIsInstance<ThemeColorKeyDeclaration>()
+        .map { PsiUsage.textUsage(it) }
+        .toList()
+
+      return declaredUsages.asSequence()
+    }
+
+    return findPsiUsages(element, symbol, offsetInElement)
+  }
+}
+
+internal class ThemeColorJsonPropertyRenameVetoer : Condition<PsiElement> {
+  override fun value(element: PsiElement?): Boolean {
+    if (element !is JsonProperty) return false
+
+    val fileName = element.containingFile?.name ?: return false
+    if (!ThemeJsonUtil.isThemeFilename(fileName)) return false
+
+    return allDeclarationsInElement(element).any { it is ThemeColorKeyDeclaration }
   }
 }

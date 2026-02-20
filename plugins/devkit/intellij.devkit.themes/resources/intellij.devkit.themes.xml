@@ -23,6 +23,9 @@
                                  implementationClass="org.jetbrains.idea.devkit.themes.ThemeColorKeyReferenceProvider"/>
     <searcher forClass="com.intellij.find.usages.api.UsageSearchParameters"
               implementationClass="org.jetbrains.idea.devkit.themes.ThemeColorKeySearcher"/>
+    <searcher forClass="com.intellij.refactoring.rename.api.RenameUsageSearchParameters"
+              implementationClass="org.jetbrains.idea.devkit.themes.ThemeColorKeyRenameSearcher"/>
+    <vetoRenameCondition implementation="org.jetbrains.idea.devkit.themes.ThemeColorJsonPropertyRenameVetoer"/>
 
     <localInspection language="JSON" shortName="UnresolvedIntelliJThemeKey"
                      enabledByDefault="true" level="WARNING"
