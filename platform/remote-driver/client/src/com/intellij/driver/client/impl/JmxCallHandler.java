@@ -17,8 +17,15 @@ import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class JmxCallHandler implements InvocationHandler {
+  private static final long CALL_TIMEOUT_SECONDS =
+    Long.getLong("driver.jmx.call.timeout.seconds", 180);
+
   private final JmxHost hostInfo;
   private final ObjectName mbeanName;
   private JMXConnector currentConnector;
@@ -65,21 +72,52 @@ public class JmxCallHandler implements InvocationHandler {
 
     try {
       MBeanServerConnection mbsc = this.currentConnector.getMBeanServerConnection();
-
       MBeanServerInvocationHandler wrappedHandler = new MBeanServerInvocationHandler(mbsc, mbeanName);
-      return wrappedHandler.invoke(proxy, method, args);
-    }
-    catch (IOException e) {
-       try {
-        if (this.currentConnector != null) {
-          this.currentConnector.close();
-        }
-      } catch (IOException ignored) {
-      } finally {
-        this.currentConnector = null;
+
+      if (CALL_TIMEOUT_SECONDS <= 0) {
+        return wrappedHandler.invoke(proxy, method, args);
       }
 
+      CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> {
+        try {
+          return wrappedHandler.invoke(proxy, method, args);
+        }
+        catch (Throwable t) {
+          throw new RuntimeException(t);
+        }
+      });
+      return future.get(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    }
+    catch (TimeoutException e) {
+      resetConnector();
+      throw new JmxCallException("JMX call timed out after " + CALL_TIMEOUT_SECONDS + "s: " + method.getName(), e);
+    }
+    catch (ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof RuntimeException re && re.getCause() instanceof IOException ioe) {
+        resetConnector();
+        throw new JmxCallException("Unable to perform JMX call: " + method + "(" + (args != null ? Arrays.asList(args) : "null") + ")", ioe);
+      }
+      resetConnector();
+      throw new JmxCallException("Unable to perform JMX call: " + method + "(" + (args != null ? Arrays.asList(args) : "null") + ")",
+                                  cause != null ? cause : e);
+    }
+    catch (IOException e) {
+      resetConnector();
       throw new JmxCallException("Unable to perform JMX call: " + method + "(" + (args != null ? Arrays.asList(args) : "null") + ")", e);
+    }
+  }
+
+  private void resetConnector() {
+    try {
+      if (this.currentConnector != null) {
+        this.currentConnector.close();
+      }
+    }
+    catch (IOException ignored) {
+    }
+    finally {
+      this.currentConnector = null;
     }
   }
 
