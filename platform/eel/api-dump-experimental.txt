@@ -296,6 +296,7 @@ f:com.intellij.platform.eel.EelProxyKtHelpersKt
 - *sf:eelProxy():com.intellij.platform.eel.eelProxyKtHelpers$EelProxy
 *:com.intellij.platform.eel.EelTunnelsApi
 - *a:getConnectionToRemotePort(com.intellij.platform.eel.EelTunnelsApi$GetConnectionToRemotePortArgs,kotlin.coroutines.Continuation):java.lang.Object
+- a:getDescriptor():com.intellij.platform.eel.EelDescriptor
 - *a:listenOnUnixSocket(com.intellij.platform.eel.EelTunnelsApi$ListenOnUnixSocketTemporaryPathOptions,kotlin.coroutines.Continuation):java.lang.Object
 - *a:listenOnUnixSocket(com.intellij.platform.eel.path.EelPath,kotlin.coroutines.Continuation):java.lang.Object
 *:com.intellij.platform.eel.EelTunnelsApi$Connection
