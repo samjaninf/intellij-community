@@ -19,6 +19,8 @@ import com.intellij.tools.ide.util.common.logError
 import com.intellij.tools.ide.util.common.logOutput
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
@@ -62,7 +64,8 @@ internal class DriverWithDetailedLogging(private val driver: Driver, logUiHierar
 
   private fun createErrorScreenshotOrNull(): String? {
     return try {
-      this.takeScreenshot("driverError")
+      val future = CompletableFuture.supplyAsync { this.takeScreenshot("driverError") }
+      future.get(30, TimeUnit.SECONDS)
     }
     catch (e: Exception) {
       logError("Failed to take error screenshot: ${e.message}")
@@ -72,7 +75,8 @@ internal class DriverWithDetailedLogging(private val driver: Driver, logUiHierar
 
   private fun saveHierarchy(path: String) {
     try {
-      ui.robotProvider.saveHierarchy(path)
+      val future = CompletableFuture.runAsync { ui.robotProvider.saveHierarchy(path) }
+      future.get(30, TimeUnit.SECONDS)
     }
     catch (e: Exception) {
       logError("Failed to save UI hierarchy: ${e.message}")
