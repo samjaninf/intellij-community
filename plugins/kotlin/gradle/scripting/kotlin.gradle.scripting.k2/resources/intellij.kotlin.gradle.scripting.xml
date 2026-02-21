@@ -5,7 +5,6 @@
     <module name="intellij.gradle"/>
     <module name="intellij.kotlin.gradle.gradle"/>
     <module name="intellij.gradle.java"/>
-    <module name="intellij.gradle.java.toml"/>
     <module name="intellij.kotlin.base.scripting"/>
     <module name="intellij.kotlin.base.scripting.shared"/>
     <module name="kotlin.gradle.gradle-java"/>
