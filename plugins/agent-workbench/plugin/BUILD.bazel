@@ -13,6 +13,7 @@ jvm_library(
   srcs = glob([], allow_empty = True),
   resources = [":plugin_resources"],
   runtime_deps = [
+    "//plugins/agent-workbench/common",
     "//plugins/agent-workbench/chat",
     "//plugins/agent-workbench/claude/common",
     "//plugins/agent-workbench/codex/common",
@@ -34,6 +35,7 @@ jvm_library(
   ],
   runtime_deps = [
     ":plugin",
+    "//plugins/agent-workbench/common:common_test_lib",
     "//plugins/agent-workbench/chat:chat_test_lib",
     "//plugins/agent-workbench/claude/common:common_test_lib",
     "//plugins/agent-workbench/codex/common:common_test_lib",
