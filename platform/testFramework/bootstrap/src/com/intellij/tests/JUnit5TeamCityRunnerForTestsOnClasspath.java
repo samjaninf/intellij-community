@@ -194,6 +194,12 @@ public final class JUnit5TeamCityRunnerForTestsOnClasspath {
     MethodHandle included = MethodHandles.publicLookup()
       .findStatic(Class.forName("com.intellij.TestCaseLoader", true, classLoader),
                   "isClassIncluded", MethodType.methodType(boolean.class, Class.class));
+    try {
+      boolean ignored = (boolean)included.invokeExact(Object.class);  // force load bucketing scheme
+    }
+    catch (Throwable e) {
+      throw new RuntimeException(e);
+    }
     return new PostDiscoveryFilter() {
       record LastCheckResult(String className, FilterResult result) {
       }
