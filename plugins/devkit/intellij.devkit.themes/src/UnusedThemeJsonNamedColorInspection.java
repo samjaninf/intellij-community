@@ -45,7 +45,7 @@ public final class UnusedThemeJsonNamedColorInspection extends LocalInspectionTo
 
         if (ContainerUtil.exists(COLOR_PALETTE_KEY_PREFIXES, name::startsWith)) return;
 
-        var searchTarget = new ThemeColorKey(name, null, null);
+        var searchTarget = new ThemeColorKey(name, null);
         var parameters = new DefaultUsageSearchParameters(holder.getProject(), searchTarget, new LocalSearchScope(file));
         var isFound = SearchService.getInstance().searchParameters(parameters)
                         .filtering(usage -> !usage.getDeclaration())

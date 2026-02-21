@@ -12,6 +12,7 @@ import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonStringLiteral
 import com.intellij.model.Pointer
+import com.intellij.model.Pointer.delegatingPointer
 import com.intellij.model.SingleTargetReference
 import com.intellij.model.Symbol
 import com.intellij.model.psi.PsiExternalReferenceHost
@@ -39,7 +40,7 @@ import com.intellij.platform.backend.presentation.TargetPresentation
 import com.intellij.psi.ElementManipulators
 import com.intellij.psi.ElementManipulators.getValueTextRange
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
+import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.search.SearchScope
 import com.intellij.psi.util.walkUp
 import com.intellij.refactoring.rename.api.PsiModifiableRenameUsage.Companion.defaultPsiModifiableRenameUsage
@@ -56,15 +57,19 @@ private const val COLORS_BLOCK_KEY = "colors"
 @ApiStatus.Internal
 class ThemeColorKey(
   val colorKey: String,
-  val file: PsiFile?,
-  val rangeInFile: TextRange?,
+  val jsonProperty: JsonProperty?,
 ) : Symbol, RenameTarget, SearchTarget, NavigationTarget, DocumentationTarget {
-  override fun createPointer(): Pointer<ThemeColorKey> = Pointer.hardPointer(this)
+  override fun createPointer(): Pointer<ThemeColorKey> {
+    if (jsonProperty == null) return Pointer.hardPointer(this)
+    return delegatingPointer(SmartPointerManager.createPointer(jsonProperty)) {
+      ThemeColorKey(it.name, it)
+    }
+  }
   override fun computePresentation(): TargetPresentation = presentation()
   override fun navigationRequest(): NavigationRequest? {
-    if (file == null || rangeInFile == null) return null
+    if (jsonProperty == null) return null
 
-    return NavigationRequest.sourceNavigationRequest(file, rangeInFile)
+    return NavigationRequest.sourceNavigationRequest(jsonProperty.containingFile, jsonProperty.textRange)
   }
 
   override val usageHandler: UsageHandler
@@ -129,9 +134,9 @@ internal class ThemeColorKeyReference(
     if (color == null) return null
 
     val targetColorKeyElement = color.declaration.retrieve()
-    if (targetColorKeyElement == null) return null
+    if (targetColorKeyElement !is JsonProperty) return null
 
-    return ThemeColorKey(colorName, targetColorKeyElement.containingFile, targetColorKeyElement.textRange)
+    return ThemeColorKey(colorName, targetColorKeyElement)
   }
 }
 
@@ -145,7 +150,7 @@ internal class ThemeColorKeyDeclarationProvider : PsiSymbolDeclarationProvider {
 
     val greatGrandParent = grandParent.getParent()
     if (greatGrandParent is JsonProperty && greatGrandParent.getName() == COLORS_BLOCK_KEY) {
-      return listOf(ThemeColorKeyDeclaration(element, ThemeColorKey(element.name, element.containingFile, element.textRange)))
+      return listOf(ThemeColorKeyDeclaration(element, ThemeColorKey(element.name, element)))
     }
 
     return emptyList()
